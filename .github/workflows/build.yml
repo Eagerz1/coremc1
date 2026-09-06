@@ -27,7 +27,7 @@ jobs:
       - name: JLink minimal Java runtime
         run: |
           rm -rf sandbox/runtime; JH=$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")
-          "$JH/bin/jlink" --add-modules java.se,jdk.unsupported,jdk.crypto.ec,jdk.zipfs \
+          "$JH/bin/jlink" --add-modules java.se,jdk.unsupported,jdk.crypto.ec,jdk.zipfs,jdk.security.auth,jdk.management,jdk.management.agent,jdk.naming.dns,jdk.jfr,jdk.xml.dom,jdk.net \
             --compress zip-9 --strip-debug --no-header-files --no-man-pages \
             --output sandbox/runtime/linux-x64
           sandbox/runtime/linux-x64/bin/java -version
