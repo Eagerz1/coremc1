@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -36,6 +37,8 @@ public final class PlayerDataService {
 
     private final ConcurrentHashMap<UUID, PlayerProfile> cache = new ConcurrentHashMap<>();
     private final Set<UUID> dirty = ConcurrentHashMap.newKeySet();
+    /** Last-known username -> UUID (lowercased names). Rebuilt from joins; persisted. */
+    private final ConcurrentHashMap<String, UUID> nameIndex = new ConcurrentHashMap<>();
     private final ExecutorService io =
             Executors.newSingleThreadExecutor(runnable -> {
                 final Thread thread = new Thread(runnable, "CoreMC-PlayerData");
@@ -51,6 +54,15 @@ public final class PlayerDataService {
         this.logger = plugin.getLogger();
         this.store = store;
         this.tasks = tasks;
+        io.execute(() -> {
+            try {
+                nameIndex.putAll(store.loadNameIndex());
+                logger.fine("Loaded username index with " + nameIndex.size() + " entr(y/ies).");
+            } catch (final IOException exception) {
+                logger.log(Level.WARNING, "Failed to load username index — offline name lookups may fail.",
+                        exception);
+            }
+        });
     }
 
     /**
@@ -94,7 +106,37 @@ public final class PlayerDataService {
         }
         profile.recordLogin(username, System.currentTimeMillis());
         dirty.add(uuid);
+        rememberName(username, uuid);
         return Optional.of(profile);
+    }
+
+    /** Learns a username->UUID pair and persists the index asynchronously. */
+    public void rememberName(final String username, final UUID uuid) {
+        final String key = username.toLowerCase(java.util.Locale.ROOT);
+        if (uuid.equals(nameIndex.put(key, uuid))) {
+            return; // unchanged
+        }
+        io.execute(() -> {
+            try {
+                store.saveNameIndex(Map.copyOf(nameIndex));
+            } catch (final IOException exception) {
+                logger.log(Level.WARNING, "Failed to save username index", exception);
+            }
+        });
+    }
+
+    /** Resolves a player name to a UUID via the index, falling back to Bukkit's usercache. */
+    public Optional<UUID> resolveUuid(final String username) {
+        final UUID indexed = nameIndex.get(username.toLowerCase(java.util.Locale.ROOT));
+        if (indexed != null) {
+            return Optional.of(indexed);
+        }
+        final org.bukkit.OfflinePlayer offline = org.bukkit.Bukkit.getOfflinePlayer(username);
+        if (offline.hasPlayedBefore()) {
+            rememberName(username, offline.getUniqueId());
+            return Optional.of(offline.getUniqueId());
+        }
+        return Optional.empty();
     }
 
     /** Saves and evicts the profile of a disconnecting player. */
@@ -120,6 +162,69 @@ public final class PlayerDataService {
     /** Online player's cached profile, if present. */
     public Optional<PlayerProfile> profileOf(final UUID uuid) {
         return Optional.ofNullable(cache.get(uuid));
+    }
+
+    /**
+     * Cached profile if online, otherwise a one-off disk load. The
+     * loaded-offline profile is NOT cached: mutate + {@link
+     * #persistAfterEconomyChange} / save immediately and let it go.
+     *
+     * WARNING: may perform disk I/O on a cache miss — call off the main
+     * thread unless the profile is known to be cached.
+     */
+    public Optional<PlayerProfile> cachedOrLoad(final UUID uuid) {
+        final PlayerProfile cached = cache.get(uuid);
+        if (cached != null) {
+            return Optional.of(cached);
+        }
+        try {
+            return store.load(uuid);
+        } catch (final IOException exception) {
+            logger.log(Level.SEVERE, "Failed to load profile " + uuid, exception);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Persistence contract after an economy mutation:
+     * premium currencies (writeThrough=true) flush to disk immediately;
+     * soft currency changes are marked dirty and ride the regular
+     * autosave/quit/shutdown flush.
+     */
+    public void persistAfterEconomyChange(final PlayerProfile profile, final boolean writeThrough) {
+        dirty.add(profile.uuid());
+        if (writeThrough) {
+            io.execute(() -> {
+                if (saveQuietly(profile)) {
+                    dirty.remove(profile.uuid());
+                }
+            });
+        }
+    }
+
+    /**
+     * Ghost-data tool for island deletion: clears the stored island
+     * association iff it still points at {@code islandId}. Works for
+     * online (cached) and offline (disk) profiles. May do disk I/O —
+     * call from a worker thread.
+     */
+    public void clearIslandAssociationIfMatches(final UUID player, final UUID islandId) {
+        final PlayerProfile profile = cachedOrLoad(player).orElse(null);
+        if (profile == null || profile.islandId() == null || !profile.islandId().equals(islandId)) {
+            return;
+        }
+        profile.islandId(null);
+        dirty.add(player);
+        io.execute(() -> {
+            if (saveQuietly(profile)) {
+                dirty.remove(player);
+            }
+        });
+    }
+
+    /** Runs work on the profile I/O executor (admin commands resolving offline players). */
+    public void ioExecute(final Runnable work) {
+        io.execute(work);
     }
 
     /** Number of profiles currently cached (roughly = online players). */

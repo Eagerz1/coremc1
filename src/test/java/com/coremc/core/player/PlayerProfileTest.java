@@ -56,4 +56,47 @@ class PlayerProfileTest {
         assertEquals(9L, restored.totalLogins());
         assertEquals(0L, restored.lastSeenMillis());
     }
+
+    @Test
+    void v1MapGetsV2Defaults() {
+        // exactly the keys a v0.1 profile file had
+        final PlayerProfile restored = PlayerProfile.fromMap(uuid, Map.of(
+                "username", "OldTimer",
+                "first-join-millis", 10L,
+                "last-seen-millis", 20L,
+                "total-logins", 3L));
+        assertEquals(0L, restored.money());
+        assertEquals(0L, restored.credits());
+        assertEquals(0L, restored.skyTokens());
+        assertEquals("none", restored.roleId());
+        assertEquals(1, restored.roleLevel());
+        assertEquals(1, restored.omniToolLevel());
+        assertEquals(null, restored.islandId());
+        assertEquals("none", restored.subscriptionTier());
+    }
+
+    @Test
+    void v2RoundTripPreservesEconomyAndProgression() {
+        final PlayerProfile profile = PlayerProfile.createNew(uuid, "Rich", 1L);
+        profile.setBalanceInternal(com.coremc.core.economy.Currency.MONEY, 123_456L);
+        profile.setBalanceInternal(com.coremc.core.economy.Currency.CREDITS, 42L);
+        profile.setBalanceInternal(com.coremc.core.economy.Currency.SKY_TOKENS, 7L);
+        profile.islandId(UUID.randomUUID());
+
+        final PlayerProfile restored = PlayerProfile.fromMap(uuid, profile.toMap());
+
+        assertEquals(123_456L, restored.money());
+        assertEquals(42L, restored.credits());
+        assertEquals(7L, restored.skyTokens());
+        assertEquals(profile.islandId(), restored.islandId());
+        assertEquals(PlayerProfile.SCHEMA_VERSION, profile.toMap().get("schema-version"));
+    }
+
+    @Test
+    void negativeBalanceViaInternalSetterIsRejected() {
+        final PlayerProfile profile = PlayerProfile.createNew(uuid, "N", 1L);
+        org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> profile.setBalanceInternal(com.coremc.core.economy.Currency.CREDITS, -1L));
+    }
 }

@@ -25,6 +25,9 @@ public final class CoreConfig {
     private int islandSpacing = 256;
     private int islandStartHeight = 64;
     private long islandDeleteConfirmSeconds = 15L;
+    private int islandBorderSize = 50;
+    private int islandMemberSlots = 3;
+    private long islandInviteExpirySeconds = 60L;
 
     public CoreConfig(final JavaPlugin plugin) {
         this.plugin = plugin;
@@ -59,6 +62,23 @@ public final class CoreConfig {
         }
         this.islandStartHeight = config.getInt("island.start-height", 64);
         this.islandDeleteConfirmSeconds = Math.max(5L, config.getLong("island.delete-confirm-seconds", 15L));
+
+        int border = config.getInt("island.border-size", 50);
+        // Border must stay strictly inside the grid cell, otherwise islands
+        // on adjacent cells could overlap. Round down to even.
+        final int maxBorder = this.islandSpacing / 2;
+        if (border > maxBorder) {
+            plugin.getLogger().warning("island.border-size " + border + " exceeds spacing/2 (" + maxBorder
+                    + "), clamping to prevent overlap.");
+            border = maxBorder;
+        }
+        if (border < 10) {
+            plugin.getLogger().warning("island.border-size below 10 (" + border + "), using 50.");
+            border = 50;
+        }
+        this.islandBorderSize = border - (border % 2);
+        this.islandMemberSlots = Math.max(0, config.getInt("island.member-slots", 3));
+        this.islandInviteExpirySeconds = Math.max(15L, config.getLong("island.invite-expiry-seconds", 60L));
     }
 
     /** Seconds between automatic flushes of dirty player profiles. */
@@ -89,5 +109,20 @@ public final class CoreConfig {
     /** Seconds the delete confirmation stays valid. */
     public long islandDeleteConfirmSeconds() {
         return islandDeleteConfirmSeconds;
+    }
+
+    /** Protected border width of a new island (full square width, e.g. 50x50). */
+    public int islandBorderSize() {
+        return islandBorderSize;
+    }
+
+    /** Base number of non-owner members an island can hold. */
+    public int islandMemberSlots() {
+        return islandMemberSlots;
+    }
+
+    /** Seconds an island invite stays valid. */
+    public long islandInviteExpirySeconds() {
+        return islandInviteExpirySeconds;
     }
 }

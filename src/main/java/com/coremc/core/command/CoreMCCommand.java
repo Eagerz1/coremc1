@@ -81,7 +81,8 @@ public final class CoreMCCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ColorUtil.colorize("&f/" + label + " reload &8— &7Reload configuration"));
         sender.sendMessage(ColorUtil.colorize("&f/profile &8— &7View your player profile"));
         sender.sendMessage(ColorUtil.colorize("&f/heal [player] &8— &7Restore health and hunger"));
-        sender.sendMessage(ColorUtil.colorize("&f/island &8— &7Skyblock island commands"));
+        sender.sendMessage(ColorUtil.colorize("&f/is &8— &7Skyblock islands (GUI + team commands)"));
+        sender.sendMessage(ColorUtil.colorize("&f/credits | /skytokens &8— &7Balances (admins: give/remove/set)"));
     }
 
     private static String formatUptime(final long millis) {

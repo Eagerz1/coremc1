@@ -2,6 +2,7 @@ package com.coremc.core.player;
 
 import com.coremc.core.config.CoreConfig;
 import com.coremc.core.config.MessageService;
+import com.coremc.core.island.IslandService;
 import java.util.Map;
 import java.util.Optional;
 import org.bukkit.entity.Player;
@@ -24,11 +25,17 @@ public final class PlayerListener implements Listener {
     private final PlayerDataService dataService;
     private final MessageService messages;
     private final CoreConfig config;
+    private final IslandService islands;
 
-    public PlayerListener(final PlayerDataService dataService, final MessageService messages, final CoreConfig config) {
+    public PlayerListener(
+            final PlayerDataService dataService,
+            final MessageService messages,
+            final CoreConfig config,
+            final IslandService islands) {
         this.dataService = dataService;
         this.messages = messages;
         this.config = config;
+        this.islands = islands;
     }
 
     @EventHandler(priority = EventPriority.NORMAL)
@@ -45,6 +52,10 @@ public final class PlayerListener implements Listener {
         }
         if (config.firstJoinMessage() && profile.get().totalLogins() == 1L) {
             messages.sendPrefixed(player, "welcome-first-join", Map.of("player", player.getName()));
+        }
+        // Self-heal any stale island association (e.g. island deleted while offline).
+        if (islands.isLoaded()) {
+            islands.reconcileAssociation(profile.get());
         }
     }
 

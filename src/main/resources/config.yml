@@ -25,3 +25,10 @@ island:
   start-height: 64
   # Seconds the player has to repeat /island delete to confirm deletion.
   delete-confirm-seconds: 15
+  # Protected border of a new island (full width). 50 = 50x50 square.
+  # Must stay below spacing/2 so borders can never overlap (enforced).
+  border-size: 50
+  # Base number of members (non-owner) an island can hold.
+  member-slots: 3
+  # Seconds an /is invite stays valid.
+  invite-expiry-seconds: 60

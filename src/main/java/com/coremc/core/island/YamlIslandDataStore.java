@@ -76,10 +76,24 @@ public final class YamlIslandDataStore implements IslandDataStore {
             throw new IOException("Island file without 'island' section: " + file);
         }
         try {
-            return Island.fromMap(section.getValues(false));
+            return Island.fromMap(deepValues(section));
         } catch (final IllegalArgumentException | NullPointerException exception) {
             throw new IOException("Invalid island data in " + file, exception);
         }
+    }
+
+    /** getValues() returns nested entries as ConfigurationSection, not Map —
+     *  convert recursively so model code never touches Bukkit config types. */
+    static Map<String, Object> deepValues(final ConfigurationSection section) {
+        final Map<String, Object> values = new java.util.LinkedHashMap<>();
+        for (final Map.Entry<String, Object> entry : section.getValues(false).entrySet()) {
+            if (entry.getValue() instanceof ConfigurationSection nested) {
+                values.put(entry.getKey(), deepValues(nested));
+            } else {
+                values.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return values;
     }
 
     private Path fileFor(final UUID owner) {

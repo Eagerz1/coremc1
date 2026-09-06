@@ -1,13 +1,18 @@
 package com.coremc.core;
 
 import com.coremc.core.command.CoreMCCommand;
+import com.coremc.core.command.CurrencyAdminCommand;
 import com.coremc.core.command.HealCommand;
 import com.coremc.core.command.ProfileCommand;
-import com.coremc.core.island.IslandCommand;
-import com.coremc.core.island.IslandService;
-import com.coremc.core.island.YamlIslandDataStore;
 import com.coremc.core.config.CoreConfig;
 import com.coremc.core.config.MessageService;
+import com.coremc.core.economy.Currency;
+import com.coremc.core.economy.EconomyService;
+import com.coremc.core.gui.GuiService;
+import com.coremc.core.island.IslandCommand;
+import com.coremc.core.island.IslandProtectionListener;
+import com.coremc.core.island.IslandService;
+import com.coremc.core.island.YamlIslandDataStore;
 import com.coremc.core.player.PlayerDataService;
 import com.coremc.core.player.PlayerListener;
 import com.coremc.core.player.YamlPlayerDataStore;
@@ -31,7 +36,9 @@ public final class CoreMCPlugin extends JavaPlugin {
     private CoreConfig coreConfig;
     private MessageService messageService;
     private PlayerDataService playerDataService;
+    private EconomyService economyService;
     private IslandService islandService;
+    private GuiService guiService;
 
     @Override
     public void onEnable() {
@@ -61,20 +68,30 @@ public final class CoreMCPlugin extends JavaPlugin {
                         taskService);
         this.playerDataService.startAutosave(coreConfig.autosaveSeconds());
 
-        // 3b. Island registry (loads async from plugins/CoreMC/islands/).
-        this.islandService =
-                new IslandService(this, coreConfig, new YamlIslandDataStore(getDataFolder().toPath().resolve("islands")),
-                        taskService);
+        // 3b. Economy (pure service over player profiles; no I/O of its own).
+        this.economyService = new EconomyService(playerDataService);
+
+        // 3c. Island registry (loads async from plugins/CoreMC/islands/).
+        this.islandService = new IslandService(
+                this,
+                coreConfig,
+                new YamlIslandDataStore(getDataFolder().toPath().resolve("islands")),
+                playerDataService);
         this.islandService.start();
         if (this.islandService.islandWorld().isEmpty()) {
             getLogger().warning("Island world '" + coreConfig.islandWorldName()
                     + "' does not exist — /island commands will report it as unavailable.");
         }
 
+        // 3d. GUI runtime (holder-bound menus; no per-player tracking maps).
+        this.guiService = new GuiService(this);
+
         // 4. Listeners.
         final PluginManager pluginManager = getServer().getPluginManager();
         pluginManager.registerEvents(
-                new PlayerListener(playerDataService, messageService, coreConfig), this);
+                new PlayerListener(playerDataService, messageService, coreConfig, islandService), this);
+        pluginManager.registerEvents(new IslandProtectionListener(this), this);
+        pluginManager.registerEvents(guiService, this);
 
         // 5. Commands.
         registerCommands();
@@ -103,7 +120,9 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.coreConfig = null;
         this.messageService = null;
         this.playerDataService = null;
+        this.economyService = null;
         this.islandService = null;
+        this.guiService = null;
         getLogger().info("CoreMC disabled — all player data saved, all tasks cancelled.");
     }
 
@@ -147,6 +166,19 @@ public final class CoreMCPlugin extends JavaPlugin {
         final IslandCommand islandCommand = new IslandCommand(this);
         island.setExecutor(islandCommand);
         island.setTabCompleter(islandCommand);
+
+        registerCurrencyCommand("credits", Currency.CREDITS);
+        registerCurrencyCommand("skytokens", Currency.SKY_TOKENS);
+    }
+
+    private void registerCurrencyCommand(final String name, final Currency currency) {
+        final PluginCommand command = getCommand(name);
+        if (command == null) {
+            throw new IllegalStateException("Command '" + name + "' missing from plugin.yml");
+        }
+        final CurrencyAdminCommand handler = new CurrencyAdminCommand(this, currency);
+        command.setExecutor(handler);
+        command.setTabCompleter(handler);
     }
 
     /** Central task service (tracked, cancelled on disable). */
@@ -169,8 +201,18 @@ public final class CoreMCPlugin extends JavaPlugin {
         return playerDataService;
     }
 
+    /** Economy service (all currency movement goes through here). */
+    public EconomyService economy() {
+        return economyService;
+    }
+
     /** Island lifecycle service. */
     public IslandService islands() {
         return islandService;
+    }
+
+    /** GUI runtime. */
+    public GuiService gui() {
+        return guiService;
     }
 }

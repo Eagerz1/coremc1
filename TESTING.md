@@ -92,11 +92,15 @@ mineflayer's 1.21.11 support is pre-release: several seconds after *any*
 teleport — including vanilla console `/tp` — the bot client re-simulates its
 old physics state and rubber-bands the (creative-mode, flying) player back
 toward its pre-teleport position, overwriting the server-side location.
-Control experiment: identical drift after vanilla `/tp` proves our plugin is
-not involved; server-authoritative position sampled promptly after the packet
-is correct for both code paths. E2E position assertions therefore read
-`data get entity … Pos` close to the teleport instead of relying on the bot's
-own `entity.position` at long delays.
+The same desync makes bot-issued **block digs rolled back by the server**
+even for island owners (both vanilla `/tp` context and block actions are
+affected; a real Java client is not). Control experiments: identical drift
+and dig-rollback after vanilla `/tp` and owner digs — the plugin is not
+involved. Protection is therefore verified at the message contract level
+(outsider dig attempts always produced the branded `island.protected`
+denial, zero exceptions) and by server-state queries (`execute if block`)
+showing island blocks unchanged after outsider attempts — while position
+assertions read server-side truth close to the event.
 
 How to run (in this sandbox): `./build.sh`  (compile + tests + jar)
 

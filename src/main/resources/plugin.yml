@@ -24,10 +24,20 @@ commands:
     permission-message: "&cYou do not have permission to use this command."
   island:
     description: CoreMC Skyblock island commands.
-    usage: /island <create|teleport|info|delete|help>
+    usage: /island [create|home|invite|accept|leave|kick|delete|info|upgrades|help]
     permission: coremc.command.island
     permission-message: "&cYou do not have permission to use this command."
     aliases: [is, isle, block]
+  credits:
+    description: View your Credits or manage them as an admin.
+    usage: /credits [give|remove|set] <player> <amount>
+    permission: coremc.command.credits
+    permission-message: "&cYou do not have permission to use this command."
+  skytokens:
+    description: View your Sky Tokens or manage them as an admin.
+    usage: /skytokens [give|remove|set] <player> <amount>
+    permission: coremc.command.skytokens
+    permission-message: "&cYou do not have permission to use this command."
 
 permissions:
   coremc.*:
@@ -45,6 +55,11 @@ permissions:
       coremc.command.heal: true
       coremc.command.heal.others: true
       coremc.command.island: true
+      coremc.command.credits: true
+      coremc.command.skytokens: true
+      coremc.admin.credits: true
+      coremc.admin.skytokens: true
+      coremc.island.bypass: true
   coremc.command.coremc:
     description: Allows using /coremc.
     default: true
@@ -66,3 +81,18 @@ permissions:
   coremc.command.island:
     description: Allows using Skyblock island commands.
     default: true
+  coremc.command.credits:
+    description: Allows viewing your Credits balance.
+    default: true
+  coremc.command.skytokens:
+    description: Allows viewing your Sky Tokens balance.
+    default: true
+  coremc.admin.credits:
+    description: Allows giving/removing/setting Credits.
+    default: op
+  coremc.admin.skytokens:
+    description: Allows giving/removing/setting Sky Tokens.
+    default: op
+  coremc.island.bypass:
+    description: Allows bypassing island border protection.
+    default: op

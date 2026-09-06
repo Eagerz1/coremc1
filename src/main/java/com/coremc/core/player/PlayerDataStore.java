@@ -25,4 +25,17 @@ public interface PlayerDataStore {
             save(profile);
         }
     }
+
+    /**
+     * Loads the username index (lowercased name -&gt; last-known UUID).
+     * Backends without an index return an empty map.
+     */
+    default java.util.Map<String, UUID> loadNameIndex() throws IOException {
+        return java.util.Map.of();
+    }
+
+    /** Persists the username index. */
+    default void saveNameIndex(final java.util.Map<String, UUID> index) throws IOException {
+        // optional — backends without an index ignore this
+    }
 }
