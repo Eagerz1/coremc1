@@ -31,6 +31,11 @@ public final class CoreConfig {
     private double roleXpMultiplier = 1.0;
     private double roleUniversalShare = 0.25;
     private long spawnerKillCapPerMinute = 120L;
+    private int upgradeBorderStepBlocks = 25;
+    private int upgradeBorderMaxTier = 5;
+    private int upgradeMemberMaxTier = 5;
+    private java.util.List<Long> upgradeBorderCosts = java.util.List.of(10L, 20L, 30L, 40L, 50L);
+    private java.util.List<Long> upgradeMemberCosts = java.util.List.of(5L, 10L, 15L, 20L, 25L);
 
     public CoreConfig(final JavaPlugin plugin) {
         this.plugin = plugin;
@@ -83,6 +88,14 @@ public final class CoreConfig {
         this.islandBorderSize = border - (border % 2);
         this.islandMemberSlots = Math.max(0, config.getInt("island.member-slots", 3));
         this.islandInviteExpirySeconds = Math.max(15L, config.getLong("island.invite-expiry-seconds", 60L));
+
+        this.upgradeBorderStepBlocks = Math.max(1, config.getInt("island.upgrades.border.step-blocks", 25));
+        this.upgradeBorderMaxTier = Math.max(0, config.getInt("island.upgrades.border.max-tier", 5));
+        this.upgradeMemberMaxTier = Math.max(0, config.getInt("island.upgrades.member-slots.max-tier", 5));
+        this.upgradeBorderCosts = longCosts(config, "island.upgrades.border.costs",
+                java.util.List.of(10L, 20L, 30L, 40L, 50L));
+        this.upgradeMemberCosts = longCosts(config, "island.upgrades.member-slots.costs",
+                java.util.List.of(5L, 10L, 15L, 20L, 25L));
 
         this.roleXpMultiplier = Math.max(0.0, config.getDouble("roles.xp-multiplier", 1.0));
         final double share = config.getDouble("roles.universal-share", 0.25);
@@ -169,5 +182,47 @@ public final class CoreConfig {
     /** Anti-farming: max counted kills per player per rolling minute. */
     public long spawnerKillCapPerMinute() {
         return spawnerKillCapPerMinute;
+    }
+
+    /** Blocks a border upgrade tier adds to the protected square. */
+    public int upgradeBorderStepBlocks() {
+        return upgradeBorderStepBlocks;
+    }
+
+    /** Max tier of an upgrade track ("border" or "member-slots"). */
+    public int upgradeMaxTier(final String upgradeId) {
+        return "border".equals(upgradeId) ? upgradeBorderMaxTier
+                : "member-slots".equals(upgradeId) ? upgradeMemberMaxTier : 0;
+    }
+
+    /** Price (Sky Tokens) for buying tier {@code tier+1}, or empty past max. */
+    public java.util.OptionalLong upgradeCost(final String upgradeId, final int tier) {
+        final java.util.List<Long> costs =
+                "border".equals(upgradeId) ? upgradeBorderCosts
+                        : "member-slots".equals(upgradeId) ? upgradeMemberCosts : null;
+        if (costs == null || tier < 0 || tier >= costs.size()) {
+            return java.util.OptionalLong.empty();
+        }
+        return java.util.OptionalLong.of(costs.get(tier));
+    }
+
+    private static java.util.List<Long> longCosts(
+            final org.bukkit.configuration.file.FileConfiguration config,
+            final String path, final java.util.List<Long> fallback) {
+        final java.util.List<?> raw = config.getList(path);
+        if (raw == null) {
+            return fallback;
+        }
+        final java.util.List<Long> out = new java.util.ArrayList<>();
+        for (final Object o : raw) {
+            if (o instanceof Number n) {
+                out.add(Math.max(0L, n.longValue()));
+            } else {
+                try {
+                    out.add(Math.max(0L, Long.parseLong(String.valueOf(o))));
+                } catch (NumberFormatException ignored) { /* skip junk */ }
+            }
+        }
+        return out.isEmpty() ? fallback : java.util.List.copyOf(out);
     }
 }

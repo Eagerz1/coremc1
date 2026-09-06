@@ -32,6 +32,18 @@ island:
   member-slots: 3
   # Seconds an /is invite stays valid.
   invite-expiry-seconds: 60
+  # Island upgrades — purchasable with Sky Tokens via /is upgrades.
+  # costs[n] = price of buying tier (n+1). Effects apply immediately.
+  upgrades:
+    border:
+      # Each tier widens the protected square by this many blocks.
+      step-blocks: 25
+      max-tier: 5
+      costs: [10, 20, 30, 40, 50]
+    member-slots:
+      # Each tier adds one member slot (on top of member-slots above).
+      max-tier: 5
+      costs: [5, 10, 15, 20, 25]
 
 roles:
   # Global multiplier applied to all role XP gains (1.0 = default).

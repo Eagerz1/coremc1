@@ -168,3 +168,8 @@ Harness caveats (environmental, non-plugin):
 
 ### Verification totals for the pass
 Quiet-click sweep over every empty/decorative slot of all 10 GUIs (n=271 slots), navigation round-trips (hub→category→back, tokenshop, upgrades), purchase & refusal flows — all deterministic with zero inventory mutations outside intended purchases.
+
+## v0.9.0 — Island upgrades go live
+- `/is upgrades` now performs real purchases with Sky Tokens: `border` (tier × 25 blocks of effective protection, applied immediately to `/is info` and the protection containment check) and `member-slots` (+1 member each, wired into invite capacity).
+- Costs/tiers are config-only (`island.upgrades.*`, upgrade-safe merge). Failure modes verified: max-tier refusal, insufficient-funds refusal; success flushes the island file instantly.
+- Live verified: 10-token tier-1 border purchase → `/island info` reports 75x75.

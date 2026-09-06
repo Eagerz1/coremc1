@@ -130,7 +130,7 @@ public final class IslandService {
         final int spacing = config.islandSpacing();
         final String cellKey = GridAssigner.key(Math.floorDiv(x, spacing), Math.floorDiv(z, spacing), worldName);
         final Island island = islandsByCell.get(cellKey);
-        if (island != null && island.containsBlock(x, z)) {
+        if (island != null && containsBlock(island, x, z)) {
             return Optional.of(island);
         }
         return Optional.empty();
@@ -150,6 +150,54 @@ public final class IslandService {
         return config.islandMemberSlots() + island.upgrades().getOrDefault("member-slots", 0);
     }
 
+    /** Protected border width including purchased border tiers. */
+    public int effectiveBorder(final Island island) {
+        return island.borderSize()
+                + island.upgrades().getOrDefault("border", 0) * config.upgradeBorderStepBlocks();
+    }
+
+    /** (x,z) containment against the island's EFFECTIVE (upgraded) border. */
+    public boolean containsBlock(final Island island, final int x, final int z) {
+        final int half = effectiveBorder(island) / 2;
+        return x >= island.centerX() - half && x < island.centerX() + half
+                && z >= island.centerZ() - half && z < island.centerZ() + half;
+    }
+
+    /**
+     * Attempts to buy the next tier of {@code upgradeId} with Sky Tokens.
+     * Failure modes are exact (maxed / insufficient) and the island file is
+     * flushed immediately on success.
+     */
+    public boolean purchaseUpgrade(final org.bukkit.entity.Player player, final Island island, final String upgradeId) {
+        final int tier = island.upgrades().getOrDefault(upgradeId, 0);
+        final int maxTier = config.upgradeMaxTier(upgradeId);
+        if (tier >= maxTier) {
+            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.maxed", Map.of());
+            return false;
+        }
+        final var cost = config.upgradeCost(upgradeId, tier);
+        if (cost.isEmpty()) {
+            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.maxed", Map.of());
+            return false;
+        }
+        final var profile = playerData.profileOf(player.getUniqueId()).orElse(null);
+        if (profile == null) {
+            return false;
+        }
+        final long price = cost.getAsLong();
+        if (!((com.coremc.core.CoreMCPlugin) plugin).economy().withdraw(profile, com.coremc.core.economy.Currency.SKY_TOKENS, price)) {
+            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.insufficient",
+                    Map.of("price", String.valueOf(price)));
+            return false;
+        }
+        island.setUpgradeTier(upgradeId, tier + 1);
+        flush(island);
+        ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.bought",
+                Map.of("tier", String.valueOf(tier + 1), "max", String.valueOf(maxTier),
+                        "price", String.valueOf(price)));
+        return true;
+    }
+
     /** Island level placeholders (for future PlaceholderAPI binding; /is info uses them today). */
     public Map<String, String> placeholdersOf(final UUID player) {
         final Optional<Island> island = islandOf(player);
@@ -160,7 +208,7 @@ public final class IslandService {
         final Island value = island.get();
         return Map.of(
                 "island_level", String.valueOf(value.level()),
-                "island_border", value.borderSize() + "x" + value.borderSize(),
+                "island_border", effectiveBorder(value) + "x" + effectiveBorder(value),
                 "island_members", String.valueOf(value.members().size()),
                 "island_owner", nameOf(value.owner()));
     }

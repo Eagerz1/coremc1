@@ -20,6 +20,10 @@ import org.bukkit.inventory.Inventory;
  */
 public final class IslandUpgradesGui implements Gui {
 
+    private static final int SLOT_BORDER = 11;
+    private static final int SLOT_MEMBERS = 13;
+    private static final int SLOT_LEVEL = 15;
+
     private final CoreMCPlugin plugin;
 
     public IslandUpgradesGui(final CoreMCPlugin plugin) {
@@ -51,25 +55,23 @@ public final class IslandUpgradesGui implements Gui {
 
         final Island value = island.get();
         inventory.setItem(
-                11,
+                SLOT_BORDER,
                 GuiService.item(
                         Material.BEACON,
                         "&bBorder Size &7(tier " + tier(value, "border") + ")",
-                        List.of(
-                                "&7Current: &f" + value.borderSize() + "x" + value.borderSize(),
-                                "&7Next tiers protect a larger square",
-                                "&ePurchasing arrives with economy upgrades")));
+                        lore(value, "border",
+                                "&7Current: &f" + plugin.islands().effectiveBorder(value) + "x"
+                                        + plugin.islands().effectiveBorder(value))));
         inventory.setItem(
-                13,
+                SLOT_MEMBERS,
                 GuiService.item(
                         Material.PLAYER_HEAD,
                         "&dMember Slots &7(tier " + tier(value, "member-slots") + ")",
-                        List.of(
-                                "&7Capacity: &f" + plugin.islands().memberCapacity(value) + " members",
-                                "&8Currently: " + value.members().size() + " member(s)",
-                                "&ePurchasing arrives with economy upgrades")));
+                        lore(value, "member-slots",
+                                "&7Capacity: &f" + plugin.islands().memberCapacity(value) + " members &8(currently "
+                                        + value.members().size() + ")")));
         inventory.setItem(
-                15,
+                SLOT_LEVEL,
                 GuiService.item(
                         Material.EXPERIENCE_BOTTLE,
                         "&bIsland Level &f" + value.level(),
@@ -78,7 +80,38 @@ public final class IslandUpgradesGui implements Gui {
         GuiService.fillGaps(inventory);
     }
 
+    private List<String> lore(final Island island, final String upgradeId, final String effectLine) {
+        final java.util.List<String> out = new java.util.ArrayList<>();
+        out.add(effectLine);
+        final int tier = tier(island, upgradeId);
+        final int max = plugin.coreConfig().upgradeMaxTier(upgradeId);
+        final var cost = plugin.coreConfig().upgradeCost(upgradeId, tier);
+        if (tier >= max || cost.isEmpty()) {
+            out.add("&a&lMAXED OUT");
+        } else {
+            out.add("&7Next tier: &f" + (tier + 1) + "&8/&7" + max);
+            out.add("&7Cost: &b" + cost.getAsLong() + " Sky Tokens");
+            out.add("&eClick to purchase.");
+        }
+        return out;
+    }
+
     private int tier(final Island island, final String upgradeId) {
         return island.upgrades().getOrDefault(upgradeId, 0);
+    }
+
+    @Override
+    public boolean onClick(final org.bukkit.entity.Player viewer, final int slot) {
+        final java.util.Optional<Island> island = plugin.islands().ownedIsland(viewer.getUniqueId());
+        if (island.isEmpty()) {
+            return false;
+        }
+        if (slot == SLOT_BORDER) {
+            return plugin.islands().purchaseUpgrade(viewer, island.get(), "border");
+        }
+        if (slot == SLOT_MEMBERS) {
+            return plugin.islands().purchaseUpgrade(viewer, island.get(), "member-slots");
+        }
+        return false;
     }
 }
