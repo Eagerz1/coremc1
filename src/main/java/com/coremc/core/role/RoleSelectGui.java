@@ -80,6 +80,8 @@ public final class RoleSelectGui implements Gui {
                                 "&7Selecting a role gives you the Omni-Tool.",
                                 "&7Relevant actions earn role XP + Omni-Tool XP.",
                                 "&7Switching roles never wipes other roles' levels.")));
+
+        GuiService.fillGaps(inventory);
     }
 
     private void slot(

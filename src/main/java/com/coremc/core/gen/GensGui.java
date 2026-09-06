@@ -69,6 +69,8 @@ public final class GensGui implements Gui {
                 List.of("&7Balance: &a" + String.format(Locale.ROOT, "%,d", balance),
                         "&7Generators are bought with Credits.")));
         inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
+
+        GuiService.fillGaps(inventory);
     }
 
     @Override

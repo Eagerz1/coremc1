@@ -33,6 +33,8 @@ import com.coremc.core.spawner.KillProgressListener;
 import com.coremc.core.spawner.SpawnerService;
 import com.coremc.core.spawner.SpawnersCommand;
 import com.coremc.core.scheduler.TaskService;
+import com.coremc.core.shop.ShopCommand;
+import com.coremc.core.shop.ShopService;
 import java.util.logging.Level;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
@@ -60,6 +62,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private PlaceableService placeableService;
     private GeneratorService generatorService;
     private SpawnerService spawnerService;
+    private ShopService shopService;
 
     @Override
     public void onEnable() {
@@ -120,7 +123,10 @@ public final class CoreMCPlugin extends JavaPlugin {
         placeableService.load();
         final int gens = generatorService.load();
         final int spawners = spawnerService.load();
-        getLogger().info("Loaded " + gens + " generator(s), " + spawners + " spawner type(s).");
+        this.shopService = new ShopService(this);
+        final int shopEntries = shopService.loadCatalogue();
+        getLogger().info("Loaded " + gens + " generator(s), " + spawners + " spawner type(s), "
+                + shopEntries + " shop entr(y/ies).");
 
         // 4. Listeners.
         final PluginManager pluginManager = getServer().getPluginManager();
@@ -174,6 +180,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         }
         this.generatorService = null;
         this.spawnerService = null;
+        this.shopService = null;
         this.islandService = null;
         this.guiService = null;
         this.omniToolService = null;
@@ -224,6 +231,7 @@ public final class CoreMCPlugin extends JavaPlugin {
 
         registerCurrencyCommand("credits", Currency.CREDITS);
         registerCurrencyCommand("skytokens", Currency.SKY_TOKENS);
+        registerCurrencyCommand("money", Currency.MONEY);
 
         final PluginCommand role = getCommand("role");
         if (role == null) {
@@ -244,6 +252,16 @@ public final class CoreMCPlugin extends JavaPlugin {
             throw new IllegalStateException("Command 'spawners' missing from plugin.yml");
         }
         spawners.setExecutor(new SpawnersCommand(this));
+
+        final ShopCommand shopCommand = new ShopCommand(this);
+        for (final String name : new String[] {"shop", "tokenshop"}) {
+            final PluginCommand cmd = getCommand(name);
+            if (cmd == null) {
+                throw new IllegalStateException("Command '" + name + "' missing from plugin.yml");
+            }
+            cmd.setExecutor(shopCommand);
+            cmd.setTabCompleter(shopCommand);
+        }
     }
 
     private void registerCurrencyCommand(final String name, final Currency currency) {
@@ -314,5 +332,10 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Spawner catalogue, unlock progression and purchases. */
     public SpawnerService spawners() {
         return spawnerService;
+    }
+
+    /** Shop catalogue and purchases. */
+    public ShopService shop() {
+        return shopService;
     }
 }

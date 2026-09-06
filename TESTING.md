@@ -134,3 +134,37 @@ Harness caveats (environmental, non-plugin):
 - Creative-gamemode test clients have client-authoritative inventories: purchased items appear to vanish across sessions. Survival mode mirrors production behavior.
 - Console `execute if block` against unloaded chunks fails **silently**; block assertions require a player nearby.
 - Long-running `tail -f console.in` pipelines can die mid-turn, silently dropping console lines; use send-and-ack (see server12111/send.sh).
+
+## v0.7.0 / v0.8.0 — Shop + GUI quality pass
+
+**Result: PASS** — 56/56 unit tests; full live verification on the 1.21.11 test server.
+
+### Shop (v0.7.0)
+- `/shop` hub (27), four 54-slot category pages, `/shop <category>` direct jump, `/tokenshop` exchange desk.
+- All prices/items defined in `shop.yml` exclusively (no Java-side prices); disk file upgrade-safe like `config.yml`.
+- Purchases verified: withdraw-then-deliver with zero-balance refusal, branded messages, ender-chest overflow safety, currency balance checks after every step (iron sword 250 Money; ender pearls 120 Money; 10,000 Money → 1 Sky Token exchange; 50-credit refusal at zero credits).
+- `/money` admin command added (parity with credits/skytokens; previously Money had no grant path at all).
+
+### GUI quality pass (v0.8.0) — inventory of all 10 GUIs
+| GUI | Size | Slots | Theft sweep | Notes/fixes |
+|---|---|---|---|---|
+| RoleSelect | 45 | ✓ constants | ✓ clean | backdrop added |
+| OmniTool panel | 54 | ✓ constants | ✓ clean | already filled |
+| Gens market | 27 | ✓ constants | ✓ clean | backdrop added |
+| Spawners overview | 27 | ✓ constants | ✓ clean | backdrop added |
+| Spawner menu | 9 | ✓ constants | ✓ clean | air spacing by design |
+| Shop hub | 27 | ✓ constants | ✓ clean | backdrop added |
+| Shop category | 54 | ✓ constants | ✓ clean | amber grid + pane fill |
+| TokenShop | 27 | ✓ constants | ✓ clean | backdrop added |
+| IslandMain | 27 | ✓ constants | ✓ clean | backdrop added; action-slot set exported |
+| IslandUpgrades | 27 | ✓ constants | ✓ clean | backdrop added |
+
+### Bugs found & fixed in the pass
+1. **Drag theft vector**: no `InventoryDragEvent` handler existed — drags could smuggle cursor items INTO any CoreMC GUI (and back out → dupe). Fixed: drags touching any top-inventory slot are cancelled; player-inventory-only drags untouched.
+2. **Resource packaging hole**: the offline build script copied an explicit file list, shipping a jar missing new resources (0.7.0 shipped without `shop.yml` → enable-time crash). Fixed: whole `src/main/resources` directory is packaged, matching `mvn package`.
+3. **Config upgrade blindness**: new `config.yml` keys never reached existing server files on upgrades. Fixed: jar defaults are merged into the disk file (user values preserved) on every load.
+4. **IslandMain GUI exposed click targets**: exported `ACTION_SLOTS` so audits/tests can't drift out of sync with the layout.
+5. **Missing admin command**: `/money` added to complete the three-currency admin toolset (shop economy untestable/unmanageable without it).
+
+### Verification totals for the pass
+Quiet-click sweep over every empty/decorative slot of all 10 GUIs (n=271 slots), navigation round-trips (hub→category→back, tokenshop, upgrades), purchase & refusal flows — all deterministic with zero inventory mutations outside intended purchases.

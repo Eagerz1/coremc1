@@ -39,8 +39,11 @@ if grep -q "ERROR" target/compile-main.log; then
 fi
 
 echo "==> Copying resources (version substitution)"
-for f in plugin.yml config.yml messages.yml; do
-    sed "s/@project.version@/$VERSION/g" "src/main/resources/$f" > "target/classes/$f"
+# copy EVERY resource (config, messages, shop, future files) — the explicit
+# list previously shipped a jar missing new files (v0.7.0 shop.yml bug)
+find src/main/resources -maxdepth 1 -type f | while read -r res; do
+    f="$(basename "$res")"
+    sed "s/@project.version@/$VERSION/g" "$res" > "target/classes/$f"
 done
 
 echo "==> Packaging target/CoreMC-$VERSION.jar"

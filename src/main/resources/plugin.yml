@@ -38,6 +38,11 @@ commands:
     usage: /skytokens [give|remove|set] <player> <amount>
     permission: coremc.command.skytokens
     permission-message: "&cYou do not have permission to use this command."
+  money:
+    description: View your Money or manage it as an admin.
+    usage: /money [give|remove|set] <player> <amount>
+    permission: coremc.command.money
+    permission-message: "&cYou do not have permission to use this command."
   role:
     description: Choose your CoreMC role and view progression.
     usage: /role [miner|logger|fisher|slayer|farmer|universal|info]
@@ -52,6 +57,16 @@ commands:
     description: View spawner unlock progress and buy spawners.
     usage: /spawners
     permission: coremc.command.spawners
+    permission-message: "&cYou do not have permission to use this command."
+  shop:
+    description: Open the CoreMC shop (optionally straight into a category).
+    usage: /shop [gear|food|end|nether]
+    permission: coremc.command.shop
+    permission-message: "&cYou do not have permission to use this command."
+  tokenshop:
+    description: Open the Sky Token exchange.
+    usage: /tokenshop
+    permission: coremc.command.tokenshop
     permission-message: "&cYou do not have permission to use this command."
 
 permissions:
@@ -72,9 +87,12 @@ permissions:
       coremc.command.island: true
       coremc.command.credits: true
       coremc.command.skytokens: true
+      coremc.command.money: true
       coremc.command.role: true
       coremc.command.gens: true
       coremc.command.spawners: true
+      coremc.command.shop: true
+      coremc.command.tokenshop: true
       coremc.admin.credits: true
       coremc.admin.skytokens: true
       coremc.island.bypass: true
@@ -113,6 +131,12 @@ permissions:
     default: true
   coremc.command.spawners:
     description: Allows viewing spawner progression and purchasing spawners.
+    default: true
+  coremc.command.shop:
+    description: Allows opening the shop.
+    default: true
+  coremc.command.tokenshop:
+    description: Allows opening the Sky Token exchange.
     default: true
   coremc.admin.credits:
     description: Allows giving/removing/setting Credits.

@@ -133,6 +133,14 @@ spawner:
 placeable:
   returned: "&7Picked up your core block."
 
+shop:
+  bought: "Bought {item}&7 for &a{price} {currency}&7."
+  exchange: "Exchanged &a{price} {currency}&7 for &b{bought}&7."
+  insufficient: "&cYou need &a{price} {currency}&c for this."
+  overflow: "&eYour inventory was full — the item went to your ender chest."
+  unavailable: "&cYour profile isn't ready — try again in a second."
+  unknown-category: "&cUnknown shop category &f{input}&c. Try &f/shop gear|food|end|nether&c."
+
 profile:
   header: "&b&lPROFILE &8— &f{player}"
   first-join: "&7First join: &f{value}"

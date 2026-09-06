@@ -66,6 +66,8 @@ public final class SpawnersGui implements Gui {
                 "&b&lSpawner Menu",
                 List.of("&7Buy unlocked spawners with Sky Tokens.")));
         inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
+
+        GuiService.fillGaps(inventory);
     }
 
     @Override

@@ -4,8 +4,11 @@ import com.coremc.core.util.ColorUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -55,6 +58,41 @@ public final class GuiService implements Listener {
             final Inventory inventory = event.getInventory();
             inventory.clear();
             holder.gui().build(player, inventory);
+        }
+    }
+
+    /**
+     * Theft shield for drag gestures: dropping cursor items INTO a CoreMC
+     * menu (top inventory) is always cancelled. Drags confined to the
+     * player's own inventory proceed untouched. Without this a client could
+     * smuggle an item onto a panel slot and re-take it on the next render.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onDrag(final InventoryDragEvent event) {
+        if (!(event.getInventory().getHolder(false) instanceof GuiHolder)) {
+            return;
+        }
+        final int topSize = event.getInventory().getSize();
+        for (final int rawSlot : event.getRawSlots()) {
+            if (rawSlot < topSize) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Decorative backdrop: fills every still-empty slot with a blank grey
+     * pane. Call at the END of {@code build()} — slots the GUI set are
+     * preserved, untouched air slots become readable decoration. Every
+     * CoreMC panel uses the same pane so the UI reads as one family.
+     */
+    public static void fillGaps(final Inventory inventory) {
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            if (inventory.getItem(slot) == null
+                    || inventory.getItem(slot).getType() == org.bukkit.Material.AIR) {
+                inventory.setItem(slot, item(org.bukkit.Material.GRAY_STAINED_GLASS_PANE, " ", List.of()));
+            }
         }
     }
 

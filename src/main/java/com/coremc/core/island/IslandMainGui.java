@@ -24,6 +24,12 @@ public final class IslandMainGui implements Gui {
         this.plugin = plugin;
     }
 
+    /**
+     * Actionable slots (teleport/info/upgrades/invite/delete) — exported so
+     * audits and tests never need to duplicate the layout.
+     */
+    public static final java.util.Set<Integer> ACTION_SLOTS = java.util.Set.of(10, 12, 14, 16, 22);
+
     @Override
     public String title() {
         return "&b&lCoreMC &8— &7Island";
@@ -81,6 +87,8 @@ public final class IslandMainGui implements Gui {
                         Material.BARRIER,
                         "&cDelete island (danger zone)",
                         List.of("&7/is delete", "&cPermanent — asks for confirmation")));
+
+        GuiService.fillGaps(inventory);
     }
 
     @Override

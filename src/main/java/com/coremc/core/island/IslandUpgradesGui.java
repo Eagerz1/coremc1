@@ -74,6 +74,8 @@ public final class IslandUpgradesGui implements Gui {
                         Material.EXPERIENCE_BOTTLE,
                         "&bIsland Level &f" + value.level(),
                         List.of("&7Levels grow from island activity and quests")));
+
+        GuiService.fillGaps(inventory);
     }
 
     private int tier(final Island island, final String upgradeId) {
