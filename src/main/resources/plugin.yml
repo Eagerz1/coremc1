@@ -1,0 +1,45 @@
+name: CoreMC
+version: '@project.version@'
+main: com.coremc.core.CoreMCPlugin
+api-version: '1.21'
+description: CoreMC Skyblock core plugin.
+author: CoreMC Team
+website: https://github.com/Eagerz1/coremc1
+
+commands:
+  coremc:
+    description: CoreMC administration and information command.
+    usage: /coremc [info|reload|help]
+    permission: coremc.command.coremc
+    permission-message: "&cYou do not have permission to use this command."
+  profile:
+    description: View your CoreMC player profile.
+    usage: /profile [player]
+    permission: coremc.command.profile
+    permission-message: "&cYou do not have permission to use this command."
+
+permissions:
+  coremc.*:
+    description: Grants all CoreMC permissions.
+    default: op
+    children:
+      coremc.command.*: true
+  coremc.command.*:
+    description: Grants all CoreMC command permissions.
+    children:
+      coremc.command.coremc: true
+      coremc.command.coremc.reload: true
+      coremc.command.profile: true
+      coremc.command.profile.others: true
+  coremc.command.coremc:
+    description: Allows using /coremc.
+    default: true
+  coremc.command.coremc.reload:
+    description: Allows reloading CoreMC configuration.
+    default: op
+  coremc.command.profile:
+    description: Allows viewing your own profile.
+    default: true
+  coremc.command.profile.others:
+    description: Allows viewing other players' profiles.
+    default: op

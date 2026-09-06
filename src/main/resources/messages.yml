@@ -1,0 +1,30 @@
+# ======================================================
+#  CoreMC — messages
+#  Uses standard Minecraft '&' colour codes.
+#  The CoreMC brand prefix is applied by *-prefixed sends;
+#  change it here only.
+# ======================================================
+
+prefix: "&b&lCOREMC &8» &f"
+
+no-permission: "&cYou do not have permission to do that."
+player-only: "That command can only be used by players."
+reload-success: "Configuration reloaded."
+unknown-subcommand: "Unknown subcommand. Usage: {usage}"
+
+welcome-first-join: "&fWelcome to &b&lCoreMC &fSkyblock, {player}&f! Enjoy your stay."
+
+profile:
+  header: "&b&lPROFILE &8— &f{player}"
+  first-join: "&7First join: &f{value}"
+  total-logins: "&7Total logins: &f{value}"
+  last-seen: "&7Last seen: &f{value}"
+  not-found: "&cNo profile found for an online player named '&f{player}&c'."
+
+info:
+  lines:
+    - "&b&lCOREMC &8— &7version &f{version}"
+    - "&7Server: &f{server}"
+    - "&7Profiles loaded: &f{profiles}"
+    - "&7Tracked tasks: &f{tasks}"
+    - "&7Uptime: &f{uptime}"

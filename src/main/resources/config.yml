@@ -1,0 +1,14 @@
+# ======================================================
+#  CoreMC — main configuration
+#  Messages and branding live in messages.yml
+# ======================================================
+
+player-data:
+  # How often dirty player profiles are flushed to disk (seconds).
+  # Data is also saved on quit and on server shutdown, so this is
+  # only a safety net against crashes.
+  autosave-seconds: 300
+
+welcome:
+  # Send the branded first-join welcome message (messages.yml -> welcome-first-join)
+  first-join-message: true
