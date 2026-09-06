@@ -16,11 +16,14 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - name: Build plugin jar (skip tests)
+      - name: Build plugin jar (javac + gradle-cache libs)
         run: |
-          mvn -B -q package -DskipTests
-          mkdir -p sandbox/plugin
-          cp target/CoreMC-*.jar sandbox/plugin/CoreMC.jar
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/NicolasLasch/ZoneGuard zg
+          (cd zg && git sparse-checkout set .gradle-home)
+          mkdir -p classes sandbox/plugin
+          CP=$(find zg/.gradle-home -name '*.jar' | grep -v sources | tr '\n' ':')
+          javac --release 21 -nowarn -cp "$CP" -d classes $(find src/main/java -name '*.java')
+          jar --create --file sandbox/plugin/CoreMC.jar -C classes . -C src/main/resources .
       - name: JLink minimal Java runtime
         run: |
           JH=$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")
