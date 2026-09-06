@@ -12,3 +12,16 @@ player-data:
 welcome:
   # Send the branded first-join welcome message (messages.yml -> welcome-first-join)
   first-join-message: true
+
+island:
+  # World islands live in. Must exist and match level name on most servers.
+  world: world
+  # Distance (blocks) between island centres on the grid. Minimum 64.
+  # Changing this only affects NEW islands; existing islands keep their
+  # absolute centre coordinates.
+  spacing: 256
+  # Y level of the island platform surface (grass layer).
+  # Players spawn one block above this.
+  start-height: 64
+  # Seconds the player has to repeat /island delete to confirm deletion.
+  delete-confirm-seconds: 15

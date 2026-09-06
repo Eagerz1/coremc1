@@ -22,6 +22,12 @@ commands:
     usage: /heal [player]
     permission: coremc.command.heal
     permission-message: "&cYou do not have permission to use this command."
+  island:
+    description: CoreMC Skyblock island commands.
+    usage: /island <create|teleport|info|delete|help>
+    permission: coremc.command.island
+    permission-message: "&cYou do not have permission to use this command."
+    aliases: [is, isle, block]
 
 permissions:
   coremc.*:
@@ -38,6 +44,7 @@ permissions:
       coremc.command.profile.others: true
       coremc.command.heal: true
       coremc.command.heal.others: true
+      coremc.command.island: true
   coremc.command.coremc:
     description: Allows using /coremc.
     default: true
@@ -56,3 +63,6 @@ permissions:
   coremc.command.heal.others:
     description: Allows healing other players.
     default: op
+  coremc.command.island:
+    description: Allows using Skyblock island commands.
+    default: true

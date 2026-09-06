@@ -20,6 +20,26 @@ heal:
   other: "Healed {player}."
   by-other: "You have been healed by {sender}."
 
+island:
+  starting: "Islands are still loading — try again in a moment."
+  world-missing: "&cThe island world is not available. Please contact an administrator."
+  create-failed: "&cFailed to create your island. Please contact an administrator."
+  created: "Your Skyblock island has been created!"
+  teleported: "Teleported to your island."
+  already-have: "You already have an island. Use &f/island teleport&7 to go home."
+  none: "You don't have an island yet. Create one with &f/island create&7."
+  deleted: "Your island has been deleted."
+  delete-failed: "&cFailed to delete your island. Please contact an administrator."
+  delete-confirm: "&cThis permanently deletes your island! Repeat &f/island delete&c within {seconds} seconds to confirm."
+  info-header: "&b&lISLAND &8— &7your island"
+  info-location: "&7Location: &f{x}, {y}, {z} &7in &f{world}"
+  info-created: "&7Created: &f{value}"
+  help-header: "&b&lISLAND &8— &7commands"
+  help-create: "&f/{label} create &8— &7Create your island and teleport there"
+  help-teleport: "&f/{label} teleport &8— &7Teleport to your island"
+  help-info: "&f/{label} info &8— &7Show your island's location and age"
+  help-delete: "&f/{label} delete &8— &7Delete your island (asks for confirmation)"
+
 profile:
   header: "&b&lPROFILE &8— &f{player}"
   first-join: "&7First join: &f{value}"

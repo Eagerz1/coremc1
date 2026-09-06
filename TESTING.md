@@ -52,7 +52,7 @@ It reproduces `mvn package`; Maven remains the canonical build.
 
 ## Unit tests
 
-`src/test/java` — 17 tests, all passing:
+`src/test/java` — 29 tests, all passing:
 
 - `PlayerProfileTest` — creation, login accounting, YAML map round-trip,
   legacy/string tolerance.
@@ -60,14 +60,58 @@ It reproduces `mvn package`; Maven remains the canonical build.
   missing-file = empty, corrupt-file = `IOException`, no `.tmp` residue.
 - `ColorUtilTest`, `DateTimeUtilTest` — colour translation and age/timestamp
   formatting edge cases.
+- `GridAssignerTest` — spiral order (`(0,0),(1,0),(1,1),(0,1),(-1,1),…`),
+  occupied-cell skipping, per-world key scoping.
+- `IslandTest` — map round-trip of every field, grid-cell floor division for
+  negative coordinates, home-spawn offset (`centre + 0.5 / +1 / +0.5`).
+- `YamlIslandDataStoreTest` — save/load/delete round-trip, corrupt file =
+  `IOException`, no `.tmp` residue.
+
+## Island system E2E (v0.3.0, executed on Paper 1.21.11)
+
+Automated (`/home/user/bot/test-island.js`, 11 checks, all PASS) with two
+offline-mode bots plus console assertions:
+
+1. `/island create` → branded creation + teleport messages; server-authoritative
+   position `(0.5, 65, 0.5)` (first spiral cell); `grass_block` under feet.
+2. Second `create` → "already have an island".
+3. Second player creates → cell `(1, 0)` → centre `(256, 64, 0)` — spacing honoured.
+4. `/island info` → stored centre `0, 64, 0`.
+5. `/island teleport` returns home.
+6. Delete flow: first call asks for confirmation (repeats the 15s window),
+   second call within the window deletes and removes `islands/<uuid>.yml`;
+   subsequent `teleport` → "don't have an island yet".
+7. **Restart persistence**: create → full server stop/boot →
+   `Loaded 1 island(s)` on enable → `/island teleport` →
+   `data get entity <player> Pos` = `[0.5, 65.0, 0.5]` — island survived the
+   restart, home teleport server-verified.
+
+### Test-harness caveat (position drift, NOT a plugin bug)
+
+mineflayer's 1.21.11 support is pre-release: several seconds after *any*
+teleport — including vanilla console `/tp` — the bot client re-simulates its
+old physics state and rubber-bands the (creative-mode, flying) player back
+toward its pre-teleport position, overwriting the server-side location.
+Control experiment: identical drift after vanilla `/tp` proves our plugin is
+not involved; server-authoritative position sampled promptly after the packet
+is correct for both code paths. E2E position assertions therefore read
+`data get entity … Pos` close to the teleport instead of relying on the bot's
+own `entity.position` at long delays.
 
 How to run (in this sandbox): `./build.sh`  (compile + tests + jar)
 
 ## Running the live test scenario manually
 
-1. `./build.sh` → copy `target/CoreMC-0.1.0.jar` into the server's `plugins/`.
+1. `./build.sh` → copy `target/CoreMC-<version>.jar` into the server's
+   `plugins/` (remove any previous CoreMC jar first — never keep two jars of
+   the same plugin).
 2. Start Paper, wait for `Done (...)`.
 3. From console: `coremc`, `coremc reload`, `profile` (expect player-only).
 4. Join a real client (offline mode): expect branded welcome; run
    `/profile`; quit; rejoin; verify `Total logins` increments and the
    profile YAML updates.
+5. Islands: `/island create` (expect teleport onto new platform),
+   `/island info`, walk away, `/island teleport`, then `/island delete`
+   twice (confirmation) and confirm `plugins/CoreMC/islands/` is empty again.
+   Restart the server, rejoin, re-create and reboot once more to check
+   `Loaded 1 island(s)` + persistent home teleport.

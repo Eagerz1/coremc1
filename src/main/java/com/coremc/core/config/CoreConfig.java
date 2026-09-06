@@ -20,6 +20,12 @@ public final class CoreConfig {
     private long autosaveSeconds = DEFAULT_AUTOSAVE_SECONDS;
     private boolean firstJoinMessage = true;
 
+    // island settings
+    private String islandWorldName = "world";
+    private int islandSpacing = 256;
+    private int islandStartHeight = 64;
+    private long islandDeleteConfirmSeconds = 15L;
+
     public CoreConfig(final JavaPlugin plugin) {
         this.plugin = plugin;
     }
@@ -42,6 +48,17 @@ public final class CoreConfig {
         }
 
         this.firstJoinMessage = config.getBoolean("welcome.first-join-message", true);
+
+        this.islandWorldName = config.getString("island.world", "world");
+        final int spacing = config.getInt("island.spacing", 256);
+        if (spacing < 64) {
+            plugin.getLogger().warning("island.spacing below 64 (" + spacing + "), clamping to 256.");
+            this.islandSpacing = 256;
+        } else {
+            this.islandSpacing = spacing;
+        }
+        this.islandStartHeight = config.getInt("island.start-height", 64);
+        this.islandDeleteConfirmSeconds = Math.max(5L, config.getLong("island.delete-confirm-seconds", 15L));
     }
 
     /** Seconds between automatic flushes of dirty player profiles. */
@@ -52,5 +69,25 @@ public final class CoreConfig {
     /** Whether the first-join welcome message is enabled. */
     public boolean firstJoinMessage() {
         return firstJoinMessage;
+    }
+
+    /** Name of the world islands are created in. */
+    public String islandWorldName() {
+        return islandWorldName;
+    }
+
+    /** Distance between island centres on the island grid. */
+    public int islandSpacing() {
+        return islandSpacing;
+    }
+
+    /** Y level of the island platform surface. */
+    public int islandStartHeight() {
+        return islandStartHeight;
+    }
+
+    /** Seconds the delete confirmation stays valid. */
+    public long islandDeleteConfirmSeconds() {
+        return islandDeleteConfirmSeconds;
     }
 }

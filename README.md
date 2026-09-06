@@ -7,7 +7,7 @@ contains the complete from-scratch rebuild of the plugin.
 - **Language:** Java 21
 - **Build:** Maven (`mvn package`) — one consistent build system for the project
 
-## Current feature set (v0.2.0)
+## Current feature set (v0.3.0)
 
 | Area | Details |
 |---|---|
@@ -17,6 +17,7 @@ contains the complete from-scratch rebuild of the plugin.
 | `/coremc` | `info` (default): version, server, loaded profiles, tracked tasks, uptime. `reload`: reloads config + messages and re-applies the autosave interval without leaking tasks. `help`. |
 | `/profile [player]` | Shows your own profile; `coremc.command.profile.others` for viewing an online player's profile. |
 | `/heal [player]` | Restores health, hunger and saturation, extinguishes fire. Self-heal: `coremc.command.heal`; targeted (incl. console): `coremc.command.heal.others`. |
+| Skyblock islands (`/island`, aliases `/is`, `/isle`, `/block`) | One island per player on a spiral grid around `(0, 64, 0)` in the configured world. `create`: 5×5 grass platform + bedrock core + oak tree, then teleports you home. `teleport`/`home`: back to your island. `info`: centre + age. `delete`: two-step timed confirmation; frees the grid cell for reuse (blocks stay, documented). Registry loads async at startup (dedicated `CoreMC-Islands` worker); per-owner YAML under `plugins/CoreMC/islands/`, atomic writes, survives restarts. Config: `island.world` (default `world`), `island.spacing` (default 256, min 64), `island.start-height` (64), `island.delete-confirm-seconds` (15). Centres are stored absolutely, so changing spacing later never corrupts existing islands. |
 | Branding | Messages use standard Minecraft `&` colour codes (MiniMessage is intentionally not used). Brand prefix: `&b&lCOREMC &8» &f`, configurable in messages.yml. messages.yml merges bundled defaults, so upgrades never show "missing message" for your old config file. |
 
 Note on command permissions: on Paper, commands whose permission you lack
@@ -55,6 +56,7 @@ second build system — `pom.xml` remains the single source of truth and
 | `coremc.command.profile.others` | op | `/profile <player>` |
 | `coremc.command.heal` | op | `/heal` |
 | `coremc.command.heal.others` | op | `/heal <player>` |
+| `coremc.command.island` | everyone | `/island [create\|teleport\|info\|delete\|help]` |
 | `coremc.*` / `coremc.command.*` | op / children | parent nodes |
 
 ## Architecture

@@ -3,6 +3,9 @@ package com.coremc.core;
 import com.coremc.core.command.CoreMCCommand;
 import com.coremc.core.command.HealCommand;
 import com.coremc.core.command.ProfileCommand;
+import com.coremc.core.island.IslandCommand;
+import com.coremc.core.island.IslandService;
+import com.coremc.core.island.YamlIslandDataStore;
 import com.coremc.core.config.CoreConfig;
 import com.coremc.core.config.MessageService;
 import com.coremc.core.player.PlayerDataService;
@@ -28,6 +31,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private CoreConfig coreConfig;
     private MessageService messageService;
     private PlayerDataService playerDataService;
+    private IslandService islandService;
 
     @Override
     public void onEnable() {
@@ -57,6 +61,16 @@ public final class CoreMCPlugin extends JavaPlugin {
                         taskService);
         this.playerDataService.startAutosave(coreConfig.autosaveSeconds());
 
+        // 3b. Island registry (loads async from plugins/CoreMC/islands/).
+        this.islandService =
+                new IslandService(this, coreConfig, new YamlIslandDataStore(getDataFolder().toPath().resolve("islands")),
+                        taskService);
+        this.islandService.start();
+        if (this.islandService.islandWorld().isEmpty()) {
+            getLogger().warning("Island world '" + coreConfig.islandWorldName()
+                    + "' does not exist — /island commands will report it as unavailable.");
+        }
+
         // 4. Listeners.
         final PluginManager pluginManager = getServer().getPluginManager();
         pluginManager.registerEvents(
@@ -82,10 +96,14 @@ public final class CoreMCPlugin extends JavaPlugin {
         if (playerDataService != null) {
             playerDataService.shutdown();
         }
+        if (islandService != null) {
+            islandService.shutdown();
+        }
         this.taskService = null;
         this.coreConfig = null;
         this.messageService = null;
         this.playerDataService = null;
+        this.islandService = null;
         getLogger().info("CoreMC disabled — all player data saved, all tasks cancelled.");
     }
 
@@ -121,6 +139,14 @@ public final class CoreMCPlugin extends JavaPlugin {
         final HealCommand healCommand = new HealCommand(this);
         heal.setExecutor(healCommand);
         heal.setTabCompleter(healCommand);
+
+        final PluginCommand island = getCommand("island");
+        if (island == null) {
+            throw new IllegalStateException("Command 'island' missing from plugin.yml");
+        }
+        final IslandCommand islandCommand = new IslandCommand(this);
+        island.setExecutor(islandCommand);
+        island.setTabCompleter(islandCommand);
     }
 
     /** Central task service (tracked, cancelled on disable). */
@@ -141,5 +167,10 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Player profile lifecycle service. */
     public PlayerDataService playerData() {
         return playerDataService;
+    }
+
+    /** Island lifecycle service. */
+    public IslandService islands() {
+        return islandService;
     }
 }
