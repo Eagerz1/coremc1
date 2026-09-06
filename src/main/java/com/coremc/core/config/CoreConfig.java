@@ -28,6 +28,8 @@ public final class CoreConfig {
     private int islandBorderSize = 50;
     private int islandMemberSlots = 3;
     private long islandInviteExpirySeconds = 60L;
+    private double roleXpMultiplier = 1.0;
+    private double roleUniversalShare = 0.25;
 
     public CoreConfig(final JavaPlugin plugin) {
         this.plugin = plugin;
@@ -79,6 +81,10 @@ public final class CoreConfig {
         this.islandBorderSize = border - (border % 2);
         this.islandMemberSlots = Math.max(0, config.getInt("island.member-slots", 3));
         this.islandInviteExpirySeconds = Math.max(15L, config.getLong("island.invite-expiry-seconds", 60L));
+
+        this.roleXpMultiplier = Math.max(0.0, config.getDouble("roles.xp-multiplier", 1.0));
+        final double share = config.getDouble("roles.universal-share", 0.25);
+        this.roleUniversalShare = share < 0 ? 0.25 : Math.min(1.0, share);
     }
 
     /** Seconds between automatic flushes of dirty player profiles. */
@@ -124,5 +130,15 @@ public final class CoreConfig {
     /** Seconds an island invite stays valid. */
     public long islandInviteExpirySeconds() {
         return islandInviteExpirySeconds;
+    }
+
+    /** Global role XP multiplier. */
+    public double roleXpMultiplier() {
+        return roleXpMultiplier;
+    }
+
+    /** Universal role's share of full XP per category action (0..1). */
+    public double roleUniversalShare() {
+        return roleUniversalShare;
     }
 }

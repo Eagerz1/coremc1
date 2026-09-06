@@ -16,6 +16,15 @@ import com.coremc.core.island.YamlIslandDataStore;
 import com.coremc.core.player.PlayerDataService;
 import com.coremc.core.player.PlayerListener;
 import com.coremc.core.player.YamlPlayerDataStore;
+import com.coremc.core.role.OmniToolListener;
+import com.coremc.core.role.OmniToolService;
+import com.coremc.core.role.RoleCommand;
+import com.coremc.core.role.RoleService;
+import com.coremc.core.role.xp.FarmingXpListener;
+import com.coremc.core.role.xp.FishingXpListener;
+import com.coremc.core.role.xp.LoggingXpListener;
+import com.coremc.core.role.xp.MiningXpListener;
+import com.coremc.core.role.xp.SlayerXpListener;
 import com.coremc.core.scheduler.TaskService;
 import java.util.logging.Level;
 import org.bukkit.command.PluginCommand;
@@ -39,6 +48,8 @@ public final class CoreMCPlugin extends JavaPlugin {
     private EconomyService economyService;
     private IslandService islandService;
     private GuiService guiService;
+    private OmniToolService omniToolService;
+    private RoleService roleService;
 
     @Override
     public void onEnable() {
@@ -86,12 +97,22 @@ public final class CoreMCPlugin extends JavaPlugin {
         // 3d. GUI runtime (holder-bound menus; no per-player tracking maps).
         this.guiService = new GuiService(this);
 
+        // 3e. Roles + OmniTool (profile-driven progression).
+        this.omniToolService = new OmniToolService(this);
+        this.roleService = new RoleService(this);
+
         // 4. Listeners.
         final PluginManager pluginManager = getServer().getPluginManager();
         pluginManager.registerEvents(
                 new PlayerListener(playerDataService, messageService, coreConfig, islandService), this);
         pluginManager.registerEvents(new IslandProtectionListener(this), this);
         pluginManager.registerEvents(guiService, this);
+        pluginManager.registerEvents(new OmniToolListener(this), this);
+        pluginManager.registerEvents(new MiningXpListener(this), this);
+        pluginManager.registerEvents(new LoggingXpListener(this), this);
+        pluginManager.registerEvents(new FarmingXpListener(this), this);
+        pluginManager.registerEvents(new FishingXpListener(this), this);
+        pluginManager.registerEvents(new SlayerXpListener(this), this);
 
         // 5. Commands.
         registerCommands();
@@ -121,8 +142,13 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.messageService = null;
         this.playerDataService = null;
         this.economyService = null;
+        if (omniToolService != null) {
+            omniToolService.clearTransient();
+        }
         this.islandService = null;
         this.guiService = null;
+        this.omniToolService = null;
+        this.roleService = null;
         getLogger().info("CoreMC disabled — all player data saved, all tasks cancelled.");
     }
 
@@ -169,6 +195,14 @@ public final class CoreMCPlugin extends JavaPlugin {
 
         registerCurrencyCommand("credits", Currency.CREDITS);
         registerCurrencyCommand("skytokens", Currency.SKY_TOKENS);
+
+        final PluginCommand role = getCommand("role");
+        if (role == null) {
+            throw new IllegalStateException("Command 'role' missing from plugin.yml");
+        }
+        final RoleCommand roleCommand = new RoleCommand(this);
+        role.setExecutor(roleCommand);
+        role.setTabCompleter(roleCommand);
     }
 
     private void registerCurrencyCommand(final String name, final Currency currency) {
@@ -214,5 +248,15 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** GUI runtime. */
     public GuiService gui() {
         return guiService;
+    }
+
+    /** OmniTool service. */
+    public OmniToolService omniTool() {
+        return omniToolService;
+    }
+
+    /** Role service (selection + progression routing). */
+    public RoleService roles() {
+        return roleService;
     }
 }

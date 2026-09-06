@@ -32,3 +32,9 @@ island:
   member-slots: 3
   # Seconds an /is invite stays valid.
   invite-expiry-seconds: 60
+
+roles:
+  # Global multiplier applied to all role XP gains (1.0 = default).
+  xp-multiplier: 1.0
+  # Fraction of full XP the Universal role earns from ANY category action.
+  universal-share: 0.25

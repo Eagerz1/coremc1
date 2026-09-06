@@ -103,6 +103,19 @@ money:
   set-done: "Set &f{player}&7's Money to &a${balance}&7."
   insufficient: "&f{player}&c only has &a${balance}&c."
 
+role:
+  selected: "You are now a {role}&7! Your Omni-Tool is in your inventory."
+  already: "You are already a {role}&7."
+  unknown: "&cUnknown role &f{role}&c. Use &f/role&c and click a role."
+  level-up: "&e{role} &7level up — you are now level &e{level}&7!"
+  info-header: "&b&lROLES &8— &7your progression"
+  info-line: "{role}{state}&8: &7level &f{level}&8, &7xp &f{xp}&8/&f{next}"
+  info-tool: "&bOmni-Tool&8: &7level &f{level}&8, &7xp &f{xp}&8/&f{next}"
+
+omnitool:
+  soulbound: "&cThe Omni-Tool is soulbound and cannot be dropped or stored."
+  level-up: "&bYour Omni-Tool reached level {level}&7!"
+
 profile:
   header: "&b&lPROFILE &8— &f{player}"
   first-join: "&7First join: &f{value}"

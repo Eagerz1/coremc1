@@ -6,7 +6,12 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Persistent per-player data for CoreMC (schema version 2).
+ * Persistent per-player data for CoreMC (schema version 3).
+ *
+ * Schema versions: 1 = join stats only; 2 = + currencies, single
+ * role/omnitool slots, island association, placeholders; 3 = per-role
+ * progress map (role switching never wipes your other roles' progress).
+ * All loads are tolerant: unknown/missing fields become defaults.
  *
  * A profile is created the first time a player connects and survives
  * server restarts (YAML on disk). It is deliberately designed for
@@ -25,7 +30,7 @@ import java.util.UUID;
 public final class PlayerProfile {
 
     /** Current on-disk schema version. */
-    public static final int SCHEMA_VERSION = 2;
+    public static final int SCHEMA_VERSION = 3;
 
     private final UUID uuid;
 
@@ -45,6 +50,8 @@ public final class PlayerProfile {
     private long roleXp;
     private int omniToolLevel = 1;
     private long omniToolXp;
+    /** roleKey -> {"level": int, "xp": long} — per-role, survives switches. */
+    private final Map<String, Map<String, Object>> roleProgress = new LinkedHashMap<>();
 
     // --- island association (islandId or null; authoritative membership lives in the island file) ---
     private UUID islandId;
@@ -92,6 +99,23 @@ public final class PlayerProfile {
         profile.islandId = island == null ? null : UUID.fromString(String.valueOf(island));
         profile.subscriptionTier = String.valueOf(map.getOrDefault("subscription-tier", "none"));
         profile.subscriptionExpiresMillis = Math.max(0L, asLong(map.get("subscription-expires-millis"), 0L));
+        final Object progress = map.get("role-progress");
+        if (progress instanceof Map<?, ?> raw) {
+            for (final Map.Entry<?, ?> entry : raw.entrySet()) {
+                if (entry.getValue() instanceof Map<?, ?> data) {
+                    final Map<String, Object> record = new LinkedHashMap<>();
+                    record.put("level", Math.max(1L, asLong(data.get("level"), 1L)));
+                    record.put("xp", Math.max(0L, asLong(data.get("xp"), 0L)));
+                    profile.roleProgress.put(String.valueOf(entry.getKey()), record);
+                }
+            }
+        } else if (!"none".equals(profile.roleId) && (profile.roleLevel > 1 || profile.roleXp > 0)) {
+            // v2 migration: fold the single role-level fields into the progress map
+            final Map<String, Object> record = new LinkedHashMap<>();
+            record.put("level", (long) profile.roleLevel);
+            record.put("xp", profile.roleXp);
+            profile.roleProgress.put(profile.roleId, record);
+        }
         final Object cosmeticsMap = map.get("cosmetics");
         if (cosmeticsMap instanceof Map<?, ?> raw) {
             for (final Map.Entry<?, ?> entry : raw.entrySet()) {
@@ -114,6 +138,7 @@ public final class PlayerProfile {
         map.put("role", roleId);
         map.put("role-level", roleLevel);
         map.put("role-xp", roleXp);
+        map.put("role-progress", deepCopyProgress());
         map.put("omnitool-level", omniToolLevel);
         map.put("omnitool-xp", omniToolXp);
         map.put("island-id", islandId == null ? null : islandId.toString());
@@ -200,12 +225,45 @@ public final class PlayerProfile {
         return roleId;
     }
 
+    public void roleId(final String roleId) {
+        this.roleId = roleId;
+    }
+
     public int roleLevel() {
-        return roleLevel;
+        return (int) asLong(progressOf(roleId).get("level"), roleLevel);
     }
 
     public long roleXp() {
-        return roleXp;
+        return asLong(progressOf(roleId).get("xp"), roleXp);
+    }
+
+    /** Per-role progress view: level/xp for any role key (defaults 1/0). */
+    public Map<String, Object> progressOf(final String roleKey) {
+        return roleProgress.getOrDefault(roleKey, java.util.Map.of("level", 1, "xp", 0));
+    }
+
+    /** Writes progress for a role key (validated by the progression service). */
+    public void setProgress(final String roleKey, final int level, final long xp) {
+        final Map<String, Object> record = new LinkedHashMap<>();
+        record.put("level", level);
+        record.put("xp", xp);
+        roleProgress.put(roleKey, record);
+        if (roleKey.equals(roleId)) {
+            this.roleLevel = level;
+            this.roleXp = xp;
+        }
+    }
+
+    public Map<String, Map<String, Object>> roleProgress() {
+        return Map.copyOf(roleProgress);
+    }
+
+    private Map<String, Object> deepCopyProgress() {
+        final Map<String, Object> copy = new LinkedHashMap<>();
+        for (final Map.Entry<String, Map<String, Object>> entry : roleProgress.entrySet()) {
+            copy.put(entry.getKey(), new LinkedHashMap<>(entry.getValue()));
+        }
+        return copy;
     }
 
     public int omniToolLevel() {
@@ -214,6 +272,12 @@ public final class PlayerProfile {
 
     public long omniToolXp() {
         return omniToolXp;
+    }
+
+    /** OmniTool progression — use RoleService/ProgressionService math. */
+    public void setOmniToolProgress(final int level, final long xp) {
+        this.omniToolLevel = Math.max(1, level);
+        this.omniToolXp = Math.max(0L, xp);
     }
 
     /** Island this player owns or belongs to (null = none). Fast redirect only;

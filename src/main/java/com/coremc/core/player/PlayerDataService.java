@@ -187,6 +187,20 @@ public final class PlayerDataService {
 
     /**
      * Persistence contract after an economy mutation:
+     * Calls write-through immediately (use for rare, high-value changes:
+     * currency, role selection, island association).
+     */
+    public void persistImportant(final PlayerProfile profile) {
+        persistAfterEconomyChange(profile, true);
+    }
+
+    /** Marks a profile dirty for the autosave/quite flush (cheap changes: XP ticks). */
+    public void markDirty(final UUID uuid) {
+        dirty.add(uuid);
+    }
+
+    /**
+     * Persistence contract after an economy mutation:
      * premium currencies (writeThrough=true) flush to disk immediately;
      * soft currency changes are marked dirty and ride the regular
      * autosave/quit/shutdown flush.

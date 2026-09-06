@@ -99,4 +99,37 @@ class PlayerProfileTest {
                 IllegalArgumentException.class,
                 () -> profile.setBalanceInternal(com.coremc.core.economy.Currency.CREDITS, -1L));
     }
+
+    @Test
+    void roleProgressRoundTripKeepsEveryRole() {
+        final PlayerProfile profile = PlayerProfile.createNew(uuid, "Pro", 1L);
+        profile.roleId("miner");
+        profile.setProgress("miner", 12, 345L);
+        profile.setProgress("logger", 4, 10L);
+        profile.setOmniToolProgress(7, 55L);
+
+        final PlayerProfile restored = PlayerProfile.fromMap(uuid, profile.toMap());
+
+        assertEquals(12L, ((Number) restored.progressOf("miner").get("level")).longValue());
+        assertEquals(345L, ((Number) restored.progressOf("miner").get("xp")).longValue());
+        assertEquals(4L, ((Number) restored.progressOf("logger").get("level")).longValue());
+        assertEquals("miner", restored.roleId());
+        assertEquals(12, restored.roleLevel());
+        assertEquals(345L, restored.roleXp());
+        assertEquals(7, restored.omniToolLevel());
+        assertEquals(55L, restored.omniToolXp());
+    }
+
+    @Test
+    void v2RoleFieldsMigrateIntoProgressMap() {
+        final java.util.Map<String, Object> v2 = new java.util.LinkedHashMap<>();
+        v2.put("username", "Veteran");
+        v2.put("first-join-millis", 1L);
+        v2.put("role", "miner");
+        v2.put("role-level", 9L);
+        v2.put("role-xp", 88L);
+        final PlayerProfile restored = PlayerProfile.fromMap(uuid, v2);
+        assertEquals(9L, ((Number) restored.progressOf("miner").get("level")).longValue());
+        assertEquals(88L, ((Number) restored.progressOf("miner").get("xp")).longValue());
+    }
 }
