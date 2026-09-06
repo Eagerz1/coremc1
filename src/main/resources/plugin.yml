@@ -17,6 +17,11 @@ commands:
     usage: /profile [player]
     permission: coremc.command.profile
     permission-message: "&cYou do not have permission to use this command."
+  heal:
+    description: Restore a player's health, hunger and extinguish fire.
+    usage: /heal [player]
+    permission: coremc.command.heal
+    permission-message: "&cYou do not have permission to use this command."
 
 permissions:
   coremc.*:
@@ -31,6 +36,8 @@ permissions:
       coremc.command.coremc.reload: true
       coremc.command.profile: true
       coremc.command.profile.others: true
+      coremc.command.heal: true
+      coremc.command.heal.others: true
   coremc.command.coremc:
     description: Allows using /coremc.
     default: true
@@ -42,4 +49,10 @@ permissions:
     default: true
   coremc.command.profile.others:
     description: Allows viewing other players' profiles.
+    default: op
+  coremc.command.heal:
+    description: Allows healing yourself.
+    default: op
+  coremc.command.heal.others:
+    description: Allows healing other players.
     default: op

@@ -11,15 +11,21 @@ no-permission: "&cYou do not have permission to do that."
 player-only: "That command can only be used by players."
 reload-success: "Configuration reloaded."
 unknown-subcommand: "Unknown subcommand. Usage: {usage}"
+player-not-online: "&cNo online player named '&f{player}&c'."
 
 welcome-first-join: "&fWelcome to &b&lCoreMC &fSkyblock, {player}&f! Enjoy your stay."
+
+heal:
+  self: "You have been healed."
+  other: "Healed {player}."
+  by-other: "You have been healed by {sender}."
 
 profile:
   header: "&b&lPROFILE &8— &f{player}"
   first-join: "&7First join: &f{value}"
   total-logins: "&7Total logins: &f{value}"
   last-seen: "&7Last seen: &f{value}"
-  not-found: "&cNo profile found for an online player named '&f{player}&c'."
+  not-found: "&cNo profile data found for '&f{player}&c'."
 
 info:
   lines:

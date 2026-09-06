@@ -7,7 +7,7 @@ contains the complete from-scratch rebuild of the plugin.
 - **Language:** Java 21
 - **Build:** Maven (`mvn package`) — one consistent build system for the project
 
-## Current feature set (v0.1.0)
+## Current feature set (v0.2.0)
 
 | Area | Details |
 |---|---|
@@ -16,7 +16,13 @@ contains the complete from-scratch rebuild of the plugin.
 | First-join welcome | Branded welcome message on a player's first ever join (messages.yml). |
 | `/coremc` | `info` (default): version, server, loaded profiles, tracked tasks, uptime. `reload`: reloads config + messages and re-applies the autosave interval without leaking tasks. `help`. |
 | `/profile [player]` | Shows your own profile; `coremc.command.profile.others` for viewing an online player's profile. |
-| Branding | Messages use standard Minecraft `&` colour codes (MiniMessage is intentionally not used). Brand prefix: `&b&lCOREMC &8» &f`, configurable in messages.yml. |
+| `/heal [player]` | Restores health, hunger and saturation, extinguishes fire. Self-heal: `coremc.command.heal`; targeted (incl. console): `coremc.command.heal.others`. |
+| Branding | Messages use standard Minecraft `&` colour codes (MiniMessage is intentionally not used). Brand prefix: `&b&lCOREMC &8» &f`, configurable in messages.yml. messages.yml merges bundled defaults, so upgrades never show "missing message" for your old config file. |
+
+Note on command permissions: on Paper, commands whose permission you lack
+(e.g. `/heal` for non-ops) are removed from the client command tree and
+report as "Unknown or incomplete command" — standard EssentialsX-style
+behaviour; Spigot instead sends the configured permission message.
 
 ## Building
 
@@ -47,6 +53,8 @@ second build system — `pom.xml` remains the single source of truth and
 | `coremc.command.coremc.reload` | op | `/coremc reload` |
 | `coremc.command.profile` | everyone | `/profile` |
 | `coremc.command.profile.others` | op | `/profile <player>` |
+| `coremc.command.heal` | op | `/heal` |
+| `coremc.command.heal.others` | op | `/heal <player>` |
 | `coremc.*` / `coremc.command.*` | op / children | parent nodes |
 
 ## Architecture

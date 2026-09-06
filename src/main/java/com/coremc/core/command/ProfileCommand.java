@@ -50,7 +50,7 @@ public final class ProfileCommand implements CommandExecutor, TabCompleter {
 
         final Player target = Bukkit.getPlayerExact(args[0]);
         if (target == null) {
-            messages.sendPrefixed(sender, "profile.not-found", Map.of("player", args[0]));
+            messages.sendPrefixed(sender, "player-not-online", Map.of("player", args[0]));
             return true;
         }
         showProfile(sender, target.getUniqueId());

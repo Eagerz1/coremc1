@@ -33,7 +33,16 @@ It reproduces `mvn package`; Maven remains the canonical build.
    shows header/first-join/logins/last-seen with correct legacy colours.
 4. Permissions: non-op player is denied `/coremc reload`
    (`You do not have permission to do that.`), default `/coremc` and
-   `/profile` allowed.
+   `/profile` allowed. `/heal` (op-default) is hidden from a non-op
+   player's command tree on Paper ("Unknown or incomplete command") and
+   they are not healed.
+4b. `/heal` gameplay: op player switched to survival was damaged by the
+   console (hp 20 → 19), `/heal` restored hp 20 and food 20 with the
+   branded message; `heal TestSteve` from the console healed an online
+   player (`Healed TestSteve.` / `You have been healed by CONSOLE.`).
+   `heal <offline>` answers with the branded player-not-online message,
+   resolved through the messages.yml defaults merge (old messages.yml on
+   disk contained no heal keys — no "Missing message" errors).
 5. Persistence: quit → YAML written (`plugins/CoreMC/profiles/<uuid>.yml`);
    rejoin (same session) → `Total logins: 2`; **full server restart** →
    rejoin → `Total logins: 2` → data survives restarts.

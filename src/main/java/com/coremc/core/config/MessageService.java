@@ -38,6 +38,22 @@ public final class MessageService {
             plugin.saveResource(FILE_NAME, false);
         }
         this.yaml = YamlConfiguration.loadConfiguration(file);
+
+        // Merge the bundled defaults as a fallback chain so that new message
+        // keys shipped in plugin updates work on older installs without the
+        // admin having to delete their customised messages.yml.
+        try (java.io.InputStream stream = plugin.getResource(FILE_NAME)) {
+            if (stream != null) {
+                final YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
+                        new java.io.InputStreamReader(stream, java.nio.charset.StandardCharsets.UTF_8));
+                this.yaml.setDefaults(defaults);
+            } else {
+                plugin.getLogger().warning("Bundled messages.yml resource missing from jar.");
+            }
+        } catch (final java.io.IOException exception) {
+            plugin.getLogger().warning("Failed to load bundled messages.yml defaults: " + exception.getMessage());
+        }
+
         this.prefix = ColorUtil.colorize(yaml.getString("prefix", ""));
     }
 

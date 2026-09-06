@@ -1,6 +1,7 @@
 package com.coremc.core;
 
 import com.coremc.core.command.CoreMCCommand;
+import com.coremc.core.command.HealCommand;
 import com.coremc.core.command.ProfileCommand;
 import com.coremc.core.config.CoreConfig;
 import com.coremc.core.config.MessageService;
@@ -112,6 +113,14 @@ public final class CoreMCPlugin extends JavaPlugin {
         final ProfileCommand profileCommand = new ProfileCommand(this);
         profile.setExecutor(profileCommand);
         profile.setTabCompleter(profileCommand);
+
+        final PluginCommand heal = getCommand("heal");
+        if (heal == null) {
+            throw new IllegalStateException("Command 'heal' missing from plugin.yml");
+        }
+        final HealCommand healCommand = new HealCommand(this);
+        heal.setExecutor(healCommand);
+        heal.setTabCompleter(healCommand);
     }
 
     /** Central task service (tracked, cancelled on disable). */
