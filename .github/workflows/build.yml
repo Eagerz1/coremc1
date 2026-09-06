@@ -26,7 +26,7 @@ jobs:
           jar --create --file sandbox/plugin/CoreMC.jar -C classes . -C src/main/resources .
       - name: JLink minimal Java runtime
         run: |
-          JH=$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")
+          rm -rf sandbox/runtime; JH=$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")
           "$JH/bin/jlink" --add-modules java.se,jdk.unsupported,jdk.crypto.ec,jdk.zipfs \
             --compress zip-9 --strip-debug --no-header-files --no-man-pages \
             --output sandbox/runtime/linux-x64
