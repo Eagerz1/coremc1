@@ -116,6 +116,23 @@ omnitool:
   soulbound: "&cThe Omni-Tool is soulbound and cannot be dropped or stored."
   level-up: "&bYour Omni-Tool reached level {level}&7!"
 
+gen:
+  bought: "Purchased {name}&7 for &a{price} Credits&7. Place it anywhere to set it down."
+  bought-enderchest: "&eYour inventory was full — the item went to your ender chest."
+  insufficient: "&cYou need &a{price} Credits&c for this generator."
+  harvest: "&e+1 &f{product}"
+  cooldown: "&7This generator needs &f{seconds}s&7 to recharge."
+  broken: "&cThis generator type no longer exists and cannot produce."
+
+spawner:
+  unlocked: "&a&lSPAWNER UNLOCKED! &7You can now buy {name}&7 in &f/spawners&7."
+  locked: "&cLocked &8(&f{kills}&8/&f{needed}&c kills&8). Keep hunting!"
+  insufficient: "&cYou need &b{price} Sky Tokens&c for this spawner."
+  bought: "Purchased {name}&7 for &b{price} Sky Tokens&7. Place it to spawn."
+
+placeable:
+  returned: "&7Picked up your core block."
+
 profile:
   header: "&b&lPROFILE &8— &f{player}"
   first-join: "&7First join: &f{value}"

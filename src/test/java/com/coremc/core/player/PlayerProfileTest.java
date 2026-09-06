@@ -121,6 +121,30 @@ class PlayerProfileTest {
     }
 
     @Test
+    void killCountsRoundTrip() {
+        final PlayerProfile profile = PlayerProfile.createNew(uuid, "Hunter", 1L);
+        assertEquals(0L, profile.killCountOf("zombie"));
+        profile.addKillCount("zombie");
+        profile.addKillCount("zombie");
+        profile.addKillCount("skeleton");
+        assertEquals(2L, profile.killCountOf("zombie"));
+        assertEquals(1L, profile.killCountOf("skeleton"));
+
+        final PlayerProfile restored = PlayerProfile.fromMap(uuid, profile.toMap());
+        assertEquals(2L, restored.killCountOf("zombie"));
+        assertEquals(1L, restored.killCountOf("skeleton"));
+        assertEquals(0L, restored.killCountOf("creeper"));
+    }
+
+    @Test
+    void negativeKillCountsInFilesAreClamped() {
+        final java.util.Map<String, Object> data = new java.util.LinkedHashMap<>();
+        data.put("kill-counts", java.util.Map.of("zombie", -7L));
+        final PlayerProfile restored = PlayerProfile.fromMap(uuid, data);
+        assertEquals(0L, restored.killCountOf("zombie"));
+    }
+
+    @Test
     void v2RoleFieldsMigrateIntoProgressMap() {
         final java.util.Map<String, Object> v2 = new java.util.LinkedHashMap<>();
         v2.put("username", "Veteran");

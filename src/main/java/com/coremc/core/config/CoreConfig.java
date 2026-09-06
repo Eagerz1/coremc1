@@ -30,6 +30,7 @@ public final class CoreConfig {
     private long islandInviteExpirySeconds = 60L;
     private double roleXpMultiplier = 1.0;
     private double roleUniversalShare = 0.25;
+    private long spawnerKillCapPerMinute = 120L;
 
     public CoreConfig(final JavaPlugin plugin) {
         this.plugin = plugin;
@@ -38,6 +39,7 @@ public final class CoreConfig {
     /** (Re)loads config.yml and re-reads every setting. */
     public void load() {
         plugin.saveDefaultConfig();
+        mergeNewDefaultKeys();
         plugin.reloadConfig();
 
         final FileConfiguration config = plugin.getConfig();
@@ -85,6 +87,28 @@ public final class CoreConfig {
         this.roleXpMultiplier = Math.max(0.0, config.getDouble("roles.xp-multiplier", 1.0));
         final double share = config.getDouble("roles.universal-share", 0.25);
         this.roleUniversalShare = share < 0 ? 0.25 : Math.min(1.0, share);
+        this.spawnerKillCapPerMinute = Math.max(0L, config.getLong("spawners.kill-cap-per-minute", 120L));
+    }
+
+    /**
+     * Copies keys present in the bundled config.yml but missing on disk into
+     * the server's config file, then saves. Existing values are never
+     * touched — operators keep their edits, upgrades gain new balance keys.
+     * Without this, {@code saveDefaultConfig()} alone would permanently hide
+     * new sections from servers upgrading CoreMC.
+     */
+    private void mergeNewDefaultKeys() {
+        try (var reader = new java.io.InputStreamReader(
+                java.util.Objects.requireNonNull(plugin.getResource("config.yml")),
+                java.nio.charset.StandardCharsets.UTF_8)) {
+            final FileConfiguration disk = plugin.getConfig();
+            final var defaults = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(reader);
+            disk.setDefaults(defaults);
+            disk.options().copyDefaults(true);
+            plugin.saveConfig();
+        } catch (Exception e) {
+            plugin.getLogger().warning("Could not merge new config defaults: " + e.getMessage());
+        }
     }
 
     /** Seconds between automatic flushes of dirty player profiles. */
@@ -140,5 +164,10 @@ public final class CoreConfig {
     /** Universal role's share of full XP per category action (0..1). */
     public double roleUniversalShare() {
         return roleUniversalShare;
+    }
+
+    /** Anti-farming: max counted kills per player per rolling minute. */
+    public long spawnerKillCapPerMinute() {
+        return spawnerKillCapPerMinute;
     }
 }

@@ -119,3 +119,18 @@ How to run (in this sandbox): `./build.sh`  (compile + tests + jar)
    twice (confirmation) and confirm `plugins/CoreMC/islands/` is empty again.
    Restart the server, rejoin, re-create and reboot once more to check
    `Loaded 1 island(s)` + persistent home teleport.
+
+## v0.5.0 / v0.6.0 — Roles, Omni-Tool, Generators, Spawners
+
+**Result: PASS** — 56/56 unit tests; live E2E on Paper 1.21.11-test server all green.
+
+- Roles + Omni-Tool: GUI role select, soulbound drop/storage cancels, no-dup grant, death/respawn retention, restart persistence of per-role XP and Omni-Tool level, 14/14 checks; plus 45+36-slot anti-theft sweep of both role GUIs.
+- Generator market: GUI purchases withdraw Credits exactly once per click, minting PDC-tagged deployment items; locked/insufficient paths denied with branded messages; 15/15 checks incl. theft sweep.
+- Spawners: kill-progress tracked per entity via `EntityDeathEvent` killer attribution (verified with console-attributed kills), unlock boundary message, menu purchase for Sky Tokens, locked purchases refused, 15/15 checks incl. 9-slot spaced menu sweep.
+- Placeable lifecycle (generators): place → registry → right-click harvest (server-authoritative inventory received product) → break → exactly one core item returned (no dupe), verified end-to-end on a pristine chunk with `execute if block` ground truth.
+
+Harness caveats (environmental, non-plugin):
+- mineflayer clients on Paper 1.21.11: server-side block-state truth lags/disagrees inside previously-probed chunks; all world assertions must run on pristine coordinates or via `execute if block` from console.
+- Creative-gamemode test clients have client-authoritative inventories: purchased items appear to vanish across sessions. Survival mode mirrors production behavior.
+- Console `execute if block` against unloaded chunks fails **silently**; block assertions require a player nearby.
+- Long-running `tail -f console.in` pipelines can die mid-turn, silently dropping console lines; use send-and-ack (see server12111/send.sh).

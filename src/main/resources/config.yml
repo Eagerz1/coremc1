@@ -38,3 +38,67 @@ roles:
   xp-multiplier: 1.0
   # Fraction of full XP the Universal role earns from ANY category action.
   universal-share: 0.25
+
+# --------------------------------------------------------------------------
+# GENERATOR MARKET (/gens)
+# Generators are bought with Credits, placed in the world, and right-clicked
+# to harvest their product after a cooldown. All balance lives here.
+# --------------------------------------------------------------------------
+generators:
+  cobble:
+    display: "&fCobblestone Generator"
+    block: OBSERVER
+    product: COBBLESTONE
+    price: 5000
+    cooldown-seconds: 5
+  obsidian:
+    display: "&5Obsidian Generator"
+    block: CRYING_OBSIDIAN
+    product: OBSIDIAN
+    price: 15000
+    cooldown-seconds: 15
+  ice:
+    display: "&bIce Generator"
+    block: BLUE_ICE
+    product: PACKED_ICE
+    price: 25000
+    cooldown-seconds: 20
+  quartz:
+    display: "&eQuartz Generator"
+    block: QUARTZ_BRICKS
+    product: QUARTZ
+    price: 40000
+    cooldown-seconds: 25
+
+# --------------------------------------------------------------------------
+# SPAWNERS (/spawners)
+# Spawners are unlocked by killing <required-kills> of the entity type,
+# then purchased with Sky Tokens. Place them to spawn that entity.
+# --------------------------------------------------------------------------
+spawners:
+  # Anti-farming: kills above this per rolling minute do not count.
+  kill-cap-per-minute: 120
+  zombie:
+    display: "&2Zombie Spawner"
+    entity: ZOMBIE
+    icon: ZOMBIE_SPAWN_EGG
+    required-kills: 25
+    price: 5
+  skeleton:
+    display: "&7Skeleton Spawner"
+    entity: SKELETON
+    icon: SKELETON_SPAWN_EGG
+    required-kills: 35
+    price: 8
+  spider:
+    display: "&cSpider Spawner"
+    entity: SPIDER
+    icon: SPIDER_SPAWN_EGG
+    required-kills: 50
+    price: 12
+  creeper:
+    display: "&aCreeper Spawner"
+    entity: CREEPER
+    icon: CREEPER_SPAWN_EGG
+    required-kills: 75
+    price: 20

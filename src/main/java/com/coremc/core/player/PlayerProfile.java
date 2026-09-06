@@ -30,7 +30,7 @@ import java.util.UUID;
 public final class PlayerProfile {
 
     /** Current on-disk schema version. */
-    public static final int SCHEMA_VERSION = 3;
+    public static final int SCHEMA_VERSION = 4;
 
     private final UUID uuid;
 
@@ -52,6 +52,9 @@ public final class PlayerProfile {
     private long omniToolXp;
     /** roleKey -> {"level": int, "xp": long} — per-role, survives switches. */
     private final Map<String, Map<String, Object>> roleProgress = new LinkedHashMap<>();
+
+    /** entityKey (lowercase) -> kills — spawner unlock progression, survives restarts. */
+    private final Map<String, Long> killCounts = new LinkedHashMap<>();
 
     // --- island association (islandId or null; authoritative membership lives in the island file) ---
     private UUID islandId;
@@ -116,6 +119,12 @@ public final class PlayerProfile {
             record.put("xp", profile.roleXp);
             profile.roleProgress.put(profile.roleId, record);
         }
+        final Object killMap = map.get("kill-counts");
+        if (killMap instanceof Map<?, ?> raw) {
+            for (final Map.Entry<?, ?> entry : raw.entrySet()) {
+                profile.killCounts.put(String.valueOf(entry.getKey()), Math.max(0L, asLong(entry.getValue(), 0L)));
+            }
+        }
         final Object cosmeticsMap = map.get("cosmetics");
         if (cosmeticsMap instanceof Map<?, ?> raw) {
             for (final Map.Entry<?, ?> entry : raw.entrySet()) {
@@ -145,6 +154,7 @@ public final class PlayerProfile {
         map.put("subscription-tier", subscriptionTier);
         map.put("subscription-expires-millis", subscriptionExpiresMillis);
         map.put("cosmetics", new LinkedHashMap<>(cosmetics));
+        map.put("kill-counts", new LinkedHashMap<>(killCounts));
         return map;
     }
 
@@ -278,6 +288,18 @@ public final class PlayerProfile {
     public void setOmniToolProgress(final int level, final long xp) {
         this.omniToolLevel = Math.max(1, level);
         this.omniToolXp = Math.max(0L, xp);
+    }
+
+    // --- spawner kill progression ---
+
+    /** Kills recorded for {@code entityKey} (lowercase entity name). */
+    public long killCountOf(final String entityKey) {
+        return killCounts.getOrDefault(entityKey, 0L);
+    }
+
+    /** Increments the kill counter for {@code entityKey} by one. */
+    public void addKillCount(final String entityKey) {
+        killCounts.merge(entityKey, 1L, Long::sum);
     }
 
     /** Island this player owns or belongs to (null = none). Fast redirect only;

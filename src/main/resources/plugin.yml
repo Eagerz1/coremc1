@@ -43,6 +43,16 @@ commands:
     usage: /role [miner|logger|fisher|slayer|farmer|universal|info]
     permission: coremc.command.role
     permission-message: "&cYou do not have permission to use this command."
+  gens:
+    description: Open the generator market.
+    usage: /gens
+    permission: coremc.command.gens
+    permission-message: "&cYou do not have permission to use this command."
+  spawners:
+    description: View spawner unlock progress and buy spawners.
+    usage: /spawners
+    permission: coremc.command.spawners
+    permission-message: "&cYou do not have permission to use this command."
 
 permissions:
   coremc.*:
@@ -63,6 +73,8 @@ permissions:
       coremc.command.credits: true
       coremc.command.skytokens: true
       coremc.command.role: true
+      coremc.command.gens: true
+      coremc.command.spawners: true
       coremc.admin.credits: true
       coremc.admin.skytokens: true
       coremc.island.bypass: true
@@ -95,6 +107,12 @@ permissions:
     default: true
   coremc.command.role:
     description: Allows choosing a role and viewing progression.
+    default: true
+  coremc.command.gens:
+    description: Allows opening the generator market.
+    default: true
+  coremc.command.spawners:
+    description: Allows viewing spawner progression and purchasing spawners.
     default: true
   coremc.admin.credits:
     description: Allows giving/removing/setting Credits.

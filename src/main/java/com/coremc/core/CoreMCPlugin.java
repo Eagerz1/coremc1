@@ -15,6 +15,10 @@ import com.coremc.core.island.IslandService;
 import com.coremc.core.island.YamlIslandDataStore;
 import com.coremc.core.player.PlayerDataService;
 import com.coremc.core.player.PlayerListener;
+import com.coremc.core.gen.GensCommand;
+import com.coremc.core.gen.GeneratorService;
+import com.coremc.core.placeable.PlaceableListener;
+import com.coremc.core.placeable.PlaceableService;
 import com.coremc.core.player.YamlPlayerDataStore;
 import com.coremc.core.role.OmniToolListener;
 import com.coremc.core.role.OmniToolService;
@@ -25,6 +29,9 @@ import com.coremc.core.role.xp.FishingXpListener;
 import com.coremc.core.role.xp.LoggingXpListener;
 import com.coremc.core.role.xp.MiningXpListener;
 import com.coremc.core.role.xp.SlayerXpListener;
+import com.coremc.core.spawner.KillProgressListener;
+import com.coremc.core.spawner.SpawnerService;
+import com.coremc.core.spawner.SpawnersCommand;
 import com.coremc.core.scheduler.TaskService;
 import java.util.logging.Level;
 import org.bukkit.command.PluginCommand;
@@ -50,6 +57,9 @@ public final class CoreMCPlugin extends JavaPlugin {
     private GuiService guiService;
     private OmniToolService omniToolService;
     private RoleService roleService;
+    private PlaceableService placeableService;
+    private GeneratorService generatorService;
+    private SpawnerService spawnerService;
 
     @Override
     public void onEnable() {
@@ -101,6 +111,17 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.omniToolService = new OmniToolService(this);
         this.roleService = new RoleService(this);
 
+        // 3f. Placeables: generators + spawners.
+        this.placeableService = new PlaceableService(this);
+        this.generatorService = new GeneratorService(this);
+        this.spawnerService = new SpawnerService(this);
+
+        // 3g. Load persistent world/service data (after worlds exist).
+        placeableService.load();
+        final int gens = generatorService.load();
+        final int spawners = spawnerService.load();
+        getLogger().info("Loaded " + gens + " generator(s), " + spawners + " spawner type(s).");
+
         // 4. Listeners.
         final PluginManager pluginManager = getServer().getPluginManager();
         pluginManager.registerEvents(
@@ -113,6 +134,8 @@ public final class CoreMCPlugin extends JavaPlugin {
         pluginManager.registerEvents(new FarmingXpListener(this), this);
         pluginManager.registerEvents(new FishingXpListener(this), this);
         pluginManager.registerEvents(new SlayerXpListener(this), this);
+        pluginManager.registerEvents(new PlaceableListener(this), this);
+        pluginManager.registerEvents(new KillProgressListener(this), this);
 
         // 5. Commands.
         registerCommands();
@@ -145,6 +168,12 @@ public final class CoreMCPlugin extends JavaPlugin {
         if (omniToolService != null) {
             omniToolService.clearTransient();
         }
+        if (placeableService != null) {
+            placeableService.save(); // shutdown-critical: never lose placed blocks
+            placeableService = null;
+        }
+        this.generatorService = null;
+        this.spawnerService = null;
         this.islandService = null;
         this.guiService = null;
         this.omniToolService = null;
@@ -203,6 +232,18 @@ public final class CoreMCPlugin extends JavaPlugin {
         final RoleCommand roleCommand = new RoleCommand(this);
         role.setExecutor(roleCommand);
         role.setTabCompleter(roleCommand);
+
+        final PluginCommand gens = getCommand("gens");
+        if (gens == null) {
+            throw new IllegalStateException("Command 'gens' missing from plugin.yml");
+        }
+        gens.setExecutor(new GensCommand(this));
+
+        final PluginCommand spawners = getCommand("spawners");
+        if (spawners == null) {
+            throw new IllegalStateException("Command 'spawners' missing from plugin.yml");
+        }
+        spawners.setExecutor(new SpawnersCommand(this));
     }
 
     private void registerCurrencyCommand(final String name, final Currency currency) {
@@ -258,5 +299,20 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Role service (selection + progression routing). */
     public RoleService roles() {
         return roleService;
+    }
+
+    /** Placeable identity + placement registry. */
+    public PlaceableService placeables() {
+        return placeableService;
+    }
+
+    /** Generator catalogue and purchases. */
+    public GeneratorService generators() {
+        return generatorService;
+    }
+
+    /** Spawner catalogue, unlock progression and purchases. */
+    public SpawnerService spawners() {
+        return spawnerService;
     }
 }
