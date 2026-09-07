@@ -22,6 +22,13 @@ heal:
 
 island:
   starting: "Islands are still loading — try again in a moment."
+  created-themed: "Your {theme} &7island has been created!"
+  theme-unknown: "&cUnknown island theme. Available themes: &f{themes}"
+  kick-confirm: "&cClick again within 5 seconds to kick &f{player}&c."
+  setting-toggled: "Island setting &f{setting}&7 {state}&7."
+  permission-toggled: "Island permission &f{setting}&7 now {state}&7."
+  permission-blocked: "&cThe island owner has disabled this for members."
+  visitors-blocked: "&cThis island does not allow visitors."
   upgrade:
     bought: "&aUpgrade purchased! &7Tier &f{tier}&7/&f{max}&7 for &b{price} Sky Tokens&7."
     maxed: "&cThis upgrade is already at its maximum tier."
@@ -68,7 +75,7 @@ island:
   info-members: "&7Members &8({current}/{max})&7: &f{members}"
   info-created: "&7Created: &f{value}"
   help-header: "&b&lISLAND &8— &7commands"
-  help-create: "&f/{label} create &8— &7Create your island and teleport there"
+  help-create: "&f/{label} create [theme] &8— &7Create your island (plains, desert, mushroom)"
   help-home: "&f/{label} home &8— &7Teleport to your island"
   help-invite: "&f/{label} invite <player> &8— &7Invite a player to your island"
   help-team: "&f/{label} accept &8— &7Accept an invite  |  &f/{label} leave &8— &7Leave  |  &f/{label} kick <p>"

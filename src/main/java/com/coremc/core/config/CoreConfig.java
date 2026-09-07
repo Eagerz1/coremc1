@@ -21,7 +21,7 @@ public final class CoreConfig {
     private boolean firstJoinMessage = true;
 
     // island settings
-    private String islandWorldName = "world";
+    private String islandWorldName = "islands";
     private int islandSpacing = 256;
     private int islandStartHeight = 64;
     private long islandDeleteConfirmSeconds = 15L;
@@ -61,7 +61,7 @@ public final class CoreConfig {
 
         this.firstJoinMessage = config.getBoolean("welcome.first-join-message", true);
 
-        this.islandWorldName = config.getString("island.world", "world");
+        this.islandWorldName = config.getString("island.world", "islands");
         final int spacing = config.getInt("island.spacing", 256);
         if (spacing < 64) {
             plugin.getLogger().warning("island.spacing below 64 (" + spacing + "), clamping to 256.");

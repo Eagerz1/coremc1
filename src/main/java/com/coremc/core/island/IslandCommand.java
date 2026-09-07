@@ -70,7 +70,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
 
         final String sub = args[0].toLowerCase();
         switch (sub) {
-            case "create" -> create(player);
+            case "create" -> create(player, args);
             case "home", "tp", "teleport", "go" -> home(player);
             case "invite" -> invite(player, args);
             case "accept", "join" -> accept(player);
@@ -86,9 +86,27 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
 
     // ------------------------------------------------------------------ subcommands
 
-    private void create(final Player player) {
-        final IslandService.CreateResult result = islands.createIsland(player, island -> {
-            messages.sendPrefixed(player, "island.created", Map.of());
+    private void create(final Player player, final String[] args) {
+        IslandTheme theme = null;
+        if (args.length >= 2) {
+            final Optional<IslandTheme> resolved = plugin.themes().theme(args[1]);
+            if (resolved.isEmpty()) {
+                messages.sendPrefixed(player, "island.theme-unknown",
+                        Map.of("themes", String.join(", ", plugin.themes().keys())));
+                return;
+            }
+            theme = resolved.get();
+        } else {
+            theme = plugin.themes().defaultTheme().orElse(null);
+        }
+        final IslandTheme chosen = theme;
+        final IslandService.CreateResult result = islands.createIsland(player, chosen, island -> {
+            if (chosen != null) {
+                messages.sendPrefixed(player, "island.created-themed",
+                        Map.of("theme", com.coremc.core.util.ColorUtil.colorize(chosen.display())));
+            } else {
+                messages.sendPrefixed(player, "island.created", Map.of());
+            }
             islands.teleportHome(player, island);
             messages.sendPrefixed(player, "island.teleported", Map.of());
         });
@@ -329,6 +347,14 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
                     }
                 }
             });
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("create")) {
+            final String partial = args[1].toLowerCase();
+            for (final String key : plugin.themes().keys()) {
+                if (key.startsWith(partial)) {
+                    completions.add(key);
+                }
+            }
         }
         return completions;
     }

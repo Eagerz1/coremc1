@@ -63,6 +63,34 @@ public final class CoreMCPlugin extends JavaPlugin {
     private GeneratorService generatorService;
     private SpawnerService spawnerService;
     private ShopService shopService;
+    private com.coremc.core.island.ThemeService themeService;
+
+    /**
+     * Creates (or attaches to) the dedicated island world. Islands live in
+     * their own void world, never in the main world: terrain cannot leak
+     * between islands and the void keeps the world small. If the world
+     * already exists (e.g. {@code world} from before the dedicated world
+     * existed), that world is simply reused — nothing is regenerated.
+     */
+    private void ensureIslandWorld() {
+        final String name = coreConfig.islandWorldName();
+        if (org.bukkit.Bukkit.getWorld(name) != null) {
+            return;
+        }
+        getLogger().info("Creating dedicated island world '" + name + "' (void terrain)...");
+        final org.bukkit.World created = new org.bukkit.WorldCreator(name)
+                .generator(new com.coremc.core.island.VoidChunkGenerator())
+                .environment(org.bukkit.World.Environment.NORMAL)
+                .generateStructures(false)
+                .createWorld();
+        if (created == null) {
+            getLogger().severe("Failed to create the island world '" + name + "'!");
+            return;
+        }
+        created.setSpawnFlags(false, false); // no ambient/animal spawns cluttering the void
+        created.setKeepSpawnInMemory(false);
+        getLogger().info("Island world ready: " + name);
+    }
 
     @Override
     public void onEnable() {
@@ -95,12 +123,18 @@ public final class CoreMCPlugin extends JavaPlugin {
         // 3b. Economy (pure service over player profiles; no I/O of its own).
         this.economyService = new EconomyService(playerDataService);
 
-        // 3c. Island registry (loads async from plugins/CoreMC/islands/).
+        // 3c. Island registry (loads async from plugins/CoreMC/islands/) inside
+        //     the DEDICATED island world (created as void terrain when absent).
+        ensureIslandWorld();
+        this.themeService = new com.coremc.core.island.ThemeService(this);
+        final int themes = themeService.load();
+        getLogger().info(themes + " island theme(s) loaded from themes.yml.");
         this.islandService = new IslandService(
                 this,
                 coreConfig,
                 new YamlIslandDataStore(getDataFolder().toPath().resolve("islands")),
-                playerDataService);
+                playerDataService,
+                getDataFolder().toPath().resolve("islands"));
         this.islandService.start();
         if (this.islandService.islandWorld().isEmpty()) {
             getLogger().warning("Island world '" + coreConfig.islandWorldName()
@@ -302,6 +336,11 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Island lifecycle service. */
     public IslandService islands() {
         return islandService;
+    }
+
+    /** Island themes (themes.yml). */
+    public com.coremc.core.island.ThemeService themes() {
+        return themeService;
     }
 
     /** GUI runtime. */

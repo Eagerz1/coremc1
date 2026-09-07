@@ -42,6 +42,34 @@ class IslandTest {
     }
 
     @Test
+    void mapRoundTripPreservesThemeAndSettings() {
+        final Island island = fresh();
+        island.theme("desert");
+        island.setting(Island.Setting.VISITORS, true);
+        island.setting(Island.Setting.MEMBERS_BUILD, false);
+
+        final Island restored = Island.fromMap(island.toMap());
+        assertEquals("desert", restored.theme());
+        assertTrue(restored.setting(Island.Setting.VISITORS));
+        assertFalse(restored.setting(Island.Setting.MEMBERS_BUILD));
+        assertTrue(restored.setting(Island.Setting.MOB_SPAWNING)); // untouched -> default
+        assertTrue(restored.setting(Island.Setting.MEMBERS_CONTAINERS));
+    }
+
+    @Test
+    void legacyMapsGetLegacyDefaultsForThemeAndSettings() {
+        final java.util.Map<String, Object> v2 = fresh().toMap();
+        v2.remove("theme");
+        v2.remove("settings");
+
+        final Island restored = Island.fromMap(v2);
+        assertEquals(Island.DEFAULT_THEME, restored.theme());
+        assertTrue(restored.setting(Island.Setting.MOB_SPAWNING));
+        assertFalse(restored.setting(Island.Setting.VISITORS)); // strict legacy posture
+        assertTrue(restored.setting(Island.Setting.MEMBERS_BUILD));
+    }
+
+    @Test
     void legacyV1MapGetsDefaults() {
         final java.util.Map<String, Object> v1 = new java.util.LinkedHashMap<>();
         v1.put("island-id", islandId.toString());

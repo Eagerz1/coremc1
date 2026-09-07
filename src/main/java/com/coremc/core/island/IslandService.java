@@ -58,6 +58,14 @@ public final class IslandService {
     private final Map<UUID, Island> islandsByMember = new ConcurrentHashMap<>();
     private final Map<String, Island> islandsByCell = new ConcurrentHashMap<>();
     private final Set<String> usedCells = ConcurrentHashMap.newKeySet();
+    /**
+     * Cells a DELETED island once occupied. On top of {@link #usedCells} the
+     * spiral never assigns them again, so a fresh island can never spawn on
+     * top of the old island's leftover platform blocks (ghost-reuse guard).
+     * Persisted in {@code islands/deleted-cells.txt}.
+     */
+    private final Set<String> retiredCells = ConcurrentHashMap.newKeySet();
+    private final java.nio.file.Path retiredCellsFile;
     private final MemberInviteLedger invites = new MemberInviteLedger();
 
     private final ExecutorService io = Executors.newSingleThreadExecutor(runnable -> {
@@ -72,28 +80,53 @@ public final class IslandService {
             final JavaPlugin plugin,
             final CoreConfig config,
             final IslandDataStore store,
-            final PlayerDataService playerData) {
+            final PlayerDataService playerData,
+            final java.nio.file.Path islandFolder) {
         this.plugin = plugin;
         this.logger = plugin.getLogger();
         this.config = config;
         this.store = store;
         this.playerData = playerData;
+        this.retiredCellsFile = islandFolder.resolve("deleted-cells.txt");
     }
 
     /** Loads the registry from disk on the I/O executor. */
     public void start() {
         io.execute(() -> {
             try {
+                loadRetiredCells();
                 for (final Island island : store.loadAll()) {
                     register(island);
                 }
-                logger.info("Loaded " + islandsByOwner.size() + " island(s).");
+                logger.info("Loaded " + islandsByOwner.size() + " island(s) (" + retiredCells.size()
+                        + " retired cell(s) reserved).");
             } catch (final IOException exception) {
                 logger.log(Level.SEVERE, "Failed to load islands — island commands may misbehave.", exception);
             } finally {
                 loaded = true;
             }
         });
+    }
+
+    private void loadRetiredCells() {
+        if (!java.nio.file.Files.exists(retiredCellsFile)) {
+            return;
+        }
+        try {
+            retiredCells.addAll(java.nio.file.Files.readAllLines(retiredCellsFile));
+        } catch (final IOException exception) {
+            logger.log(Level.WARNING, "Could not read deleted-cells.txt — ghost reuse guard in-memory only.",
+                    exception);
+        }
+    }
+
+    private void persistRetiredCells() {
+        try {
+            java.nio.file.Files.createDirectories(retiredCellsFile.getParent());
+            java.nio.file.Files.write(retiredCellsFile, new java.util.ArrayList<>(retiredCells));
+        } catch (final IOException exception) {
+            logger.log(Level.WARNING, "Could not persist deleted-cells.txt — guard resets on restart.", exception);
+        }
     }
 
     /** Whether the registry finished loading (commands wait for this). */
@@ -138,6 +171,11 @@ public final class IslandService {
 
     public int islandCount() {
         return islandsByOwner.size();
+    }
+
+    /** Snapshot of every live island (for timers that tick island-scoped effects). */
+    public List<Island> allIslands() {
+        return List.copyOf(islandsByOwner.values());
     }
 
     /** The configured island world, or empty if it does not exist. */
@@ -230,12 +268,23 @@ public final class IslandService {
     public enum CreateResult { CREATED, ALREADY_ISLAND, WORLD_MISSING }
 
     /**
-     * Creates an island for {@code player}: assigns the next grid cell,
-     * generates the starter platform, registers + persists the island
-     * and records the profile association. Must be called on the main
-     * thread.
+     * Creates an island for {@code player} with the default theme. Convenience
+     * overload of {@link #createIsland(Player, IslandTheme, java.util.function.Consumer)}.
      */
     public CreateResult createIsland(final Player player, final java.util.function.Consumer<Island> onCreated) {
+        return createIsland(player, null, onCreated);
+    }
+
+    /**
+     * Creates an island for {@code player}: assigns the next grid cell,
+     * generates the themed starter platform, registers + persists the island
+     * and records the profile association. Must be called on the main
+     * thread. {@code theme} may be null → the default theme is used.
+     */
+    public CreateResult createIsland(
+            final Player player,
+            final IslandTheme theme,
+            final java.util.function.Consumer<Island> onCreated) {
         final UUID owner = player.getUniqueId();
         if (islandOf(owner).isPresent()) {
             return CreateResult.ALREADY_ISLAND;
@@ -246,7 +295,7 @@ public final class IslandService {
         }
         final World target = world.get();
         final int spacing = config.islandSpacing();
-        final int[] cell = GridAssigner.nextFreeCell(usedCells, target.getName());
+        final int[] cell = GridAssigner.nextFreeCell(occupiedCells(), target.getName());
         final Island island = new Island(
                 UUID.randomUUID(),
                 owner,
@@ -256,8 +305,9 @@ public final class IslandService {
                 cell[1] * spacing,
                 config.islandBorderSize(),
                 System.currentTimeMillis());
+        island.theme(theme == null ? Island.DEFAULT_THEME : theme.key());
 
-        generateStarterIsland(target, island);
+        generateStarterIsland(target, island, theme);
         register(island);
         setAssociation(owner, island.islandId());
         flush(island);
@@ -265,11 +315,20 @@ public final class IslandService {
         return CreateResult.CREATED;
     }
 
+    /** Live + retired cells: the spiral never reuses either (ghost-reuse guard). */
+    private Set<String> occupiedCells() {
+        final Set<String> occupied = new java.util.HashSet<>(usedCells);
+        occupied.addAll(retiredCells);
+        return occupied;
+    }
+
     /**
      * Deletes the island owned by {@code owner}. Ghost-proof ordering:
      *  1. un-register + purge invites referencing the island,
-     *  2. scrub member/owner associations (online + offline profiles),
-     *  3. delete the island file LAST.
+     *  2. RETIRE the grid cell so the spiral never reuses it (a fresh island
+     *     can never spawn on the old platform's leftover blocks),
+     *  3. scrub member/owner associations (online + offline profiles),
+     *  4. delete the island file LAST.
      * Platform blocks stay in the world (documented).
      */
     public void deleteIsland(final UUID owner) throws IOException {
@@ -279,18 +338,22 @@ public final class IslandService {
         }
         unregisterIndexes(removed);
         invites.purgeIsland(removed.islandId());
+        final int spacing = config.islandSpacing();
+        final int[] cell = removed.gridCell(spacing);
+        retiredCells.add(GridAssigner.key(cell[0], cell[1], removed.worldName()));
         final List<UUID> scrubTargets = new ArrayList<>();
         scrubTargets.add(owner);
         scrubTargets.addAll(removed.members());
 
         io.execute(() -> {
+            persistRetiredCells();
             for (final UUID player : scrubTargets) {
                 playerData.clearIslandAssociationIfMatches(player, removed.islandId());
             }
             try {
                 store.delete(owner);
                 logger.info("Deleted island " + removed.islandId() + " of " + owner + " (" + scrubTargets.size()
-                        + " association(s) scrubbed).");
+                        + " association(s) scrubbed, cell retired).");
             } catch (final IOException exception) {
                 logger.log(Level.SEVERE, "Failed to delete island file of " + owner, exception);
             }
@@ -478,27 +541,89 @@ public final class IslandService {
         }
     }
 
+    // ------------------------------------------------------------------ themed generation
+
+    /** Platform radius: a 7x7 starter island (r=3) — a proper base, not a tiny plot. */
+    private static final int PLATFORM_RADIUS = 3;
+
     /**
-     * Builds the classic starter island: a 5x5 grass platform on dirt,
-     * one bedrock in the centre and an oak tree in the north-east corner.
+     * Builds the themed starter island: a 7x7 two-layer platform (surface over
+     * filler), one bedrock in the centre, the theme's decorations (a tree is
+     * attempted for sapling entries on tree themes) and a starter chest with
+     * the theme's contents.
+     *
+     * {@code theme} may be null (legacy callers): the classic plains look is
+     * generated from hard defaults.
      */
-    private void generateStarterIsland(final World world, final Island island) {
+    private void generateStarterIsland(final World world, final Island island, final IslandTheme theme) {
         final int cx = island.centerX();
         final int cy = island.centerY();
         final int cz = island.centerZ();
+        final Material top = theme == null ? Material.GRASS_BLOCK : theme.top();
+        final Material under = theme == null ? Material.DIRT : theme.under();
 
-        for (int dx = -2; dx <= 2; dx++) {
-            for (int dz = -2; dz <= 2; dz++) {
-                setBlock(world, cx + dx, cy - 1, cz + dz, Material.DIRT);
-                setBlock(world, cx + dx, cy, cz + dz, Material.GRASS_BLOCK);
+        for (int dx = -PLATFORM_RADIUS; dx <= PLATFORM_RADIUS; dx++) {
+            for (int dz = -PLATFORM_RADIUS; dz <= PLATFORM_RADIUS; dz++) {
+                setBlock(world, cx + dx, cy - 2, cz + dz, under);
+                setBlock(world, cx + dx, cy - 1, cz + dz, under);
+                setBlock(world, cx + dx, cy, cz + dz, top);
             }
         }
         setBlock(world, cx, cy - 1, cz, Material.BEDROCK);
 
-        final Location sapling = new Location(world, cx + 2, cy + 1, cz + 2);
-        setBlock(world, cx + 2, cy + 1, cz + 2, Material.OAK_SAPLING);
-        if (!world.generateTree(sapling, TreeType.TREE)) {
-            logger.fine("Tree generation reported failure at " + sapling + " — sapling remains.");
+        final java.util.List<Location> saplings = new ArrayList<>();
+        final java.util.List<String> decorations =
+                theme == null ? List.of("2,1,2=OAK_SAPLING", "-2,0,-2=WATER", "-1,0,-2=WATER")
+                        : theme.decorations();
+        for (final String entry : decorations) {
+            final Object[] parsed = ThemeService.parseDecoration(entry);
+            if (parsed == null) {
+                continue;
+            }
+            final int dx = (Integer) parsed[0];
+            final int dy = (Integer) parsed[1];
+            final int dz = (Integer) parsed[2];
+            final Material material = (Material) parsed[3];
+            if (Math.abs(dx) > PLATFORM_RADIUS || Math.abs(dz) > PLATFORM_RADIUS) {
+                continue; // decoration outside the platform — skip safely
+            }
+            final Location at = new Location(world, cx + dx, cy + dy, cz + dz);
+            if (material.name().endsWith("_SAPLING")) {
+                saplings.add(at);
+            }
+            setBlock(world, at.getBlockX(), at.getBlockY(), at.getBlockZ(), material);
+        }
+
+        final boolean tree = theme == null || theme.tree();
+        if (tree && !saplings.isEmpty()) {
+            final Location sapling = saplings.get(0);
+            if (!world.generateTree(sapling, TreeType.TREE)) {
+                logger.fine("Tree generation reported failure at " + sapling + " — sapling remains.");
+            }
+        }
+
+        placeStarterChest(world, island, theme == null
+                ? List.of("ICE:2", "LAVA_BUCKET:1", "BREAD:4", "BONE_MEAL:3")
+                : theme.chestContents());
+    }
+
+    /** Chest south of the centre with the theme's starter contents. */
+    private void placeStarterChest(
+            final World world, final Island island, final List<String> contents) {
+        final int x = island.centerX();
+        final int y = island.centerY() + 1;
+        final int z = island.centerZ() + 2;
+        setBlock(world, x, y, z, Material.CHEST);
+        if (world.getBlockAt(x, y, z).getState() instanceof org.bukkit.block.Chest chest) {
+            for (final String entry : contents) {
+                final Object[] parsed = ThemeService.parseContent(entry);
+                if (parsed == null) {
+                    continue;
+                }
+                chest.getBlockInventory()
+                        .addItem(new org.bukkit.inventory.ItemStack((Material) parsed[0], (Integer) parsed[1]));
+            }
+            chest.update(true);
         }
     }
 

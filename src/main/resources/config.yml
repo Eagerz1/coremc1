@@ -14,8 +14,11 @@ welcome:
   first-join-message: true
 
 island:
-  # World islands live in. Must exist and match level name on most servers.
-  world: world
+  # World islands live in. CoreMC creates this world automatically when it
+  # does not exist (as empty void terrain — the dedicated island world).
+  # Islands created before the dedicated world existed keep working in
+  # whatever world they were created in (stored per island).
+  world: islands
   # Distance (blocks) between island centres on the grid. Minimum 64.
   # Changing this only affects NEW islands; existing islands keep their
   # absolute centre coordinates.

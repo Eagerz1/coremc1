@@ -16,6 +16,10 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+      - name: Run unit tests (Maven)
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/.m2"
+          mvn -q -B --no-transfer-progress test -Dmaven.repo.local="$GITHUB_WORKSPACE/.m2"
       - name: Build plugin jar (javac + gradle-cache libs)
         run: |
           git clone --depth 1 --filter=blob:none --sparse https://github.com/NicolasLasch/ZoneGuard zg

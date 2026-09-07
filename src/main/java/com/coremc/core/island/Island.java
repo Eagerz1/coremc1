@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * A CoreMC Skyblock island (schema version 2).
+ * A CoreMC Skyblock island (schema version 3).
  *
  * Ownership & membership: exactly one owner plus a bounded member set.
  * The island FILE is authoritative for membership; player profiles only
@@ -24,12 +24,52 @@ import java.util.UUID;
  * Levels & upgrades: {@link #level} is the island prestige level;
  * {@link #upgrades} is a map of upgrade-id -&gt; purchased tier that
  * future CoreMC upgrade systems extend without schema changes.
+ *
+ * Theme & settings (schema v3): the {@link #theme} key records which
+ * theme the island was generated with (defaults to "plains" for
+ * islands created before themes existed); {@link #settings} holds
+ * owner-controlled switches (Settings/Permissions GUI) as
+ * boolean-by-string keys that enums guard on read.
  */
 public final class Island {
 
     /** Default border width for brand-new islands (brief requirement). */
     public static final int DEFAULT_BORDER_SIZE = 50;
     public static final int DEFAULT_LEVEL = 1;
+    /** Theme assigned to islands that predate the theme system. */
+    public static final String DEFAULT_THEME = "plains";
+
+    /** Toggleable island settings keys (Settings + Permissions GUIs). */
+    public enum Setting {
+        /** Settings: natural mob spawning inside the border (default ON). */
+        MOB_SPAWNING("mob-spawning", true),
+        /**
+         * Settings: non-team players may interact (doors/buttons/containers)
+         * inside the border. Default OFF — matches the legacy strict posture
+         * where outsiders could never touch anything; owners opt in.
+         */
+        VISITORS("visitors", false),
+        /** Permissions: members may break/place blocks (default ON). */
+        MEMBERS_BUILD("members-build", true),
+        /** Permissions: members may open containers and use doors/buttons (default ON). */
+        MEMBERS_CONTAINERS("members-containers", true);
+
+        private final String key;
+        private final boolean defaultValue;
+
+        Setting(final String key, final boolean defaultValue) {
+            this.key = key;
+            this.defaultValue = defaultValue;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public boolean defaultValue() {
+            return defaultValue;
+        }
+    }
 
     private final UUID islandId;
     private final UUID owner;
@@ -43,6 +83,8 @@ public final class Island {
 
     private int level = DEFAULT_LEVEL;
     private final Map<String, Integer> upgrades = new LinkedHashMap<>();
+    private String theme = DEFAULT_THEME;
+    private final Map<String, Boolean> settings = new LinkedHashMap<>();
 
     public Island(
             final UUID islandId,
@@ -125,11 +167,13 @@ public final class Island {
         map.put("border-size", borderSize);
         map.put("level", level);
         map.put("upgrades", new LinkedHashMap<>(upgrades));
+        map.put("theme", theme);
+        map.put("settings", new LinkedHashMap<>(settings));
         map.put("created-millis", createdMillis);
         return map;
     }
 
-    /** Tolerant load: v1 files (no members/border/level/upgrades) get defaults. */
+    /** Tolerant load: v1/v2 files (no members/border/level/upgrades/theme/settings) get defaults. */
     public static Island fromMap(final Map<String, Object> map) {
         final int border = map.containsKey("border-size") ? asInt(map.get("border-size")) : DEFAULT_BORDER_SIZE;
         final Island island = new Island(
@@ -155,6 +199,18 @@ public final class Island {
             for (final Map.Entry<?, ?> entry : raw.entrySet()) {
                 if (entry.getValue() instanceof Number tier) {
                     island.upgrades.put(String.valueOf(entry.getKey()), tier.intValue());
+                }
+            }
+        }
+        final Object themeObject = map.get("theme");
+        if (themeObject != null && !String.valueOf(themeObject).isBlank()) {
+            island.theme = String.valueOf(themeObject);
+        }
+        final Object settingsObject = map.get("settings");
+        if (settingsObject instanceof Map<?, ?> raw) {
+            for (final Map.Entry<?, ?> entry : raw.entrySet()) {
+                if (entry.getValue() instanceof Boolean on) {
+                    island.settings.put(String.valueOf(entry.getKey()), on);
                 }
             }
         }
@@ -211,6 +267,26 @@ public final class Island {
 
     public void setUpgradeTier(final String upgradeId, final int tier) {
         upgrades.put(Objects.requireNonNull(upgradeId, "upgradeId"), Math.max(0, tier));
+    }
+
+    /** The theme key this island was generated with (never null). */
+    public String theme() {
+        return theme;
+    }
+
+    public void theme(final String theme) {
+        if (theme != null && !theme.isBlank()) {
+            this.theme = theme;
+        }
+    }
+
+    /** Effective value of a toggleable setting (stored override or its default). */
+    public boolean setting(final Setting setting) {
+        return settings.getOrDefault(setting.key(), setting.defaultValue());
+    }
+
+    public void setting(final Setting setting, final boolean value) {
+        settings.put(setting.key(), value);
     }
 
     private static int asInt(final Object value) {
