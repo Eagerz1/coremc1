@@ -1,12 +1,215 @@
 Cloning into 'zg'...
 ==> compile main sources
-src/main/java/com/coremc/core/island/VoidChunkGenerator.java:36: error: cannot find symbol
-                chunkData.setBiome(x, 0, z, Biome.PLAINS);
-                         ^
-  symbol:   method setBiome(int,int,int,Biome)
-  location: variable chunkData of type ChunkData
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 Note: src/main/java/com/coremc/core/CoreMCPlugin.java uses or overrides a deprecated API that is marked for removal.
 Note: Recompile with -Xlint:removal for details.
-1 error
+==> fetch junit-platform-console-standalone 1.10.2
+junit runner sha256: a1de557821293ce903c213c694165fff532cf92081bac4238b9e05b35f04f43f
+==> compile tests
+==> run tests
+
+Thanks for using JUnit! Support its development at https://junit.org/sponsoring
+
+
+Failures (15):
+  JUnit Jupiter:YamlPlayerDataStoreTest:saveLeavesNoTempFileBehind()
+    MethodSource [className = 'com.coremc.core.player.YamlPlayerDataStoreTest', methodName = 'saveLeavesNoTempFileBehind', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/configuration/InvalidConfigurationException
+       com.coremc.core.player.YamlPlayerDataStoreTest.saveLeavesNoTempFileBehind(YamlPlayerDataStoreTest.java:53)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.configuration.InvalidConfigurationException
+       java.base/java.net.URLClassLoader.findClass(URLClassLoader.java:445)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:593)
+       java.base/java.net.FactoryURLClassLoader.loadClass(URLClassLoader.java:872)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+       [...]
+  JUnit Jupiter:YamlPlayerDataStoreTest:saveThenLoadRoundTrip()
+    MethodSource [className = 'com.coremc.core.player.YamlPlayerDataStoreTest', methodName = 'saveThenLoadRoundTrip', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/configuration/InvalidConfigurationException
+       com.coremc.core.player.YamlPlayerDataStoreTest.saveThenLoadRoundTrip(YamlPlayerDataStoreTest.java:22)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.configuration.InvalidConfigurationException
+       java.base/java.net.URLClassLoader.findClass(URLClassLoader.java:445)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:593)
+       java.base/java.net.FactoryURLClassLoader.loadClass(URLClassLoader.java:872)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+       [...]
+  JUnit Jupiter:YamlPlayerDataStoreTest:corruptFileThrowsIOException()
+    MethodSource [className = 'com.coremc.core.player.YamlPlayerDataStoreTest', methodName = 'corruptFileThrowsIOException', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/configuration/InvalidConfigurationException
+       com.coremc.core.player.YamlPlayerDataStoreTest.corruptFileThrowsIOException(YamlPlayerDataStoreTest.java:44)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.configuration.InvalidConfigurationException
+       java.base/java.net.URLClassLoader.findClass(URLClassLoader.java:445)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:593)
+       java.base/java.net.FactoryURLClassLoader.loadClass(URLClassLoader.java:872)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+       [...]
+  JUnit Jupiter:YamlPlayerDataStoreTest:loadMissingReturnsEmpty()
+    MethodSource [className = 'com.coremc.core.player.YamlPlayerDataStoreTest', methodName = 'loadMissingReturnsEmpty', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/configuration/InvalidConfigurationException
+       com.coremc.core.player.YamlPlayerDataStoreTest.loadMissingReturnsEmpty(YamlPlayerDataStoreTest.java:38)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.configuration.InvalidConfigurationException
+       java.base/java.net.URLClassLoader.findClass(URLClassLoader.java:445)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:593)
+       java.base/java.net.FactoryURLClassLoader.loadClass(URLClassLoader.java:872)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+       [...]
+  JUnit Jupiter:ThemeServiceParseTest:decorationParsesValidEntry()
+    MethodSource [className = 'com.coremc.core.island.ThemeServiceParseTest', methodName = 'decorationParsesValidEntry', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/Material
+       com.coremc.core.island.ThemeService.parseDecoration(ThemeService.java:128)
+       com.coremc.core.island.ThemeServiceParseTest.decorationParsesValidEntry(ThemeServiceParseTest.java:15)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.Material
+       java.base/java.net.URLClassLoader.findClass(URLClassLoader.java:445)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:593)
+       java.base/java.net.FactoryURLClassLoader.loadClass(URLClassLoader.java:872)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+       [...]
+  JUnit Jupiter:ThemeServiceParseTest:chestContentParsesAndClampsCount()
+    MethodSource [className = 'com.coremc.core.island.ThemeServiceParseTest', methodName = 'chestContentParsesAndClampsCount', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/Material
+       com.coremc.core.island.ThemeService.parseContent(ThemeService.java:152)
+       com.coremc.core.island.ThemeServiceParseTest.chestContentParsesAndClampsCount(ThemeServiceParseTest.java:34)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.Material
+       [...]
+  JUnit Jupiter:ThemeServiceParseTest:chestContentRejectsMalformedEntries()
+    MethodSource [className = 'com.coremc.core.island.ThemeServiceParseTest', methodName = 'chestContentRejectsMalformedEntries', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/Material
+       com.coremc.core.island.ThemeService.parseContent(ThemeService.java:152)
+       com.coremc.core.island.ThemeServiceParseTest.chestContentRejectsMalformedEntries(ThemeServiceParseTest.java:47)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.Material
+       [...]
+  JUnit Jupiter:ThemeServiceParseTest:decorationRejectsMalformedEntries()
+    MethodSource [className = 'com.coremc.core.island.ThemeServiceParseTest', methodName = 'decorationRejectsMalformedEntries', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/Material
+       com.coremc.core.island.ThemeService.parseDecoration(ThemeService.java:128)
+       com.coremc.core.island.ThemeServiceParseTest.decorationRejectsMalformedEntries(ThemeServiceParseTest.java:26)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.Material
+       [...]
+  JUnit Jupiter:ColorUtilTest:plainTextPassesThrough()
+    MethodSource [className = 'com.coremc.core.util.ColorUtilTest', methodName = 'plainTextPassesThrough', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/ChatColor
+       com.coremc.core.util.ColorUtil.colorize(ColorUtil.java:25)
+       com.coremc.core.util.ColorUtilTest.plainTextPassesThrough(ColorUtilTest.java:22)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.ChatColor
+       java.base/java.net.URLClassLoader.findClass(URLClassLoader.java:445)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:593)
+       java.base/java.net.FactoryURLClassLoader.loadClass(URLClassLoader.java:872)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+       [...]
+  JUnit Jupiter:ColorUtilTest:translatesAmpersandCodes()
+    MethodSource [className = 'com.coremc.core.util.ColorUtilTest', methodName = 'translatesAmpersandCodes', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/ChatColor
+       com.coremc.core.util.ColorUtil.colorize(ColorUtil.java:25)
+       com.coremc.core.util.ColorUtilTest.translatesAmpersandCodes(ColorUtilTest.java:11)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.ChatColor
+       [...]
+  JUnit Jupiter:YamlIslandDataStoreTest:saveLeavesNoTempFiles()
+    MethodSource [className = 'com.coremc.core.island.YamlIslandDataStoreTest', methodName = 'saveLeavesNoTempFiles', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/configuration/InvalidConfigurationException
+       com.coremc.core.island.YamlIslandDataStoreTest.saveLeavesNoTempFiles(YamlIslandDataStoreTest.java:86)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.configuration.InvalidConfigurationException
+       java.base/java.net.URLClassLoader.findClass(URLClassLoader.java:445)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:593)
+       java.base/java.net.FactoryURLClassLoader.loadClass(URLClassLoader.java:872)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+       [...]
+  JUnit Jupiter:YamlIslandDataStoreTest:saveAndLoadAllRoundTrip()
+    MethodSource [className = 'com.coremc.core.island.YamlIslandDataStoreTest', methodName = 'saveAndLoadAllRoundTrip', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/configuration/InvalidConfigurationException
+       com.coremc.core.island.YamlIslandDataStoreTest.saveAndLoadAllRoundTrip(YamlIslandDataStoreTest.java:22)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.configuration.InvalidConfigurationException
+       java.base/java.net.URLClassLoader.findClass(URLClassLoader.java:445)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:593)
+       java.base/java.net.FactoryURLClassLoader.loadClass(URLClassLoader.java:872)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+       [...]
+  JUnit Jupiter:YamlIslandDataStoreTest:legacyV1FileLoadsWithDefaults()
+    MethodSource [className = 'com.coremc.core.island.YamlIslandDataStoreTest', methodName = 'legacyV1FileLoadsWithDefaults', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/configuration/InvalidConfigurationException
+       com.coremc.core.island.YamlIslandDataStoreTest.legacyV1FileLoadsWithDefaults(YamlIslandDataStoreTest.java:56)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.configuration.InvalidConfigurationException
+       java.base/java.net.URLClassLoader.findClass(URLClassLoader.java:445)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:593)
+       java.base/java.net.FactoryURLClassLoader.loadClass(URLClassLoader.java:872)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+       [...]
+  JUnit Jupiter:YamlIslandDataStoreTest:deleteRemovesTheFile()
+    MethodSource [className = 'com.coremc.core.island.YamlIslandDataStoreTest', methodName = 'deleteRemovesTheFile', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/configuration/InvalidConfigurationException
+       com.coremc.core.island.YamlIslandDataStoreTest.deleteRemovesTheFile(YamlIslandDataStoreTest.java:67)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.configuration.InvalidConfigurationException
+       java.base/java.net.URLClassLoader.findClass(URLClassLoader.java:445)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:593)
+       java.base/java.net.FactoryURLClassLoader.loadClass(URLClassLoader.java:872)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+       [...]
+  JUnit Jupiter:YamlIslandDataStoreTest:corruptFileFailsLoadWithIOException()
+    MethodSource [className = 'com.coremc.core.island.YamlIslandDataStoreTest', methodName = 'corruptFileFailsLoadWithIOException', methodParameterTypes = '']
+    => java.lang.NoClassDefFoundError: org/bukkit/configuration/InvalidConfigurationException
+       com.coremc.core.island.YamlIslandDataStoreTest.corruptFileFailsLoadWithIOException(YamlIslandDataStoreTest.java:80)
+       java.base/java.lang.reflect.Method.invoke(Method.java:580)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+     Caused by: java.lang.ClassNotFoundException: org.bukkit.configuration.InvalidConfigurationException
+       java.base/java.net.URLClassLoader.findClass(URLClassLoader.java:445)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:593)
+       java.base/java.net.FactoryURLClassLoader.loadClass(URLClassLoader.java:872)
+       java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+       [...]
+
+Test run finished after 517 ms
+[        13 containers found      ]
+[         0 containers skipped    ]
+[        13 containers started    ]
+[         0 containers aborted    ]
+[        13 containers successful ]
+[         0 containers failed     ]
+[        62 tests found           ]
+[         0 tests skipped         ]
+[        62 tests started         ]
+[         0 tests aborted         ]
+[        47 tests successful      ]
+[        15 tests failed          ]
+
