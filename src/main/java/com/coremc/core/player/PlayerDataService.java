@@ -46,6 +46,8 @@ public final class PlayerDataService {
                 return thread;
             });
 
+    private static final long LOAD_TIMEOUT_SECONDS = 4L;
+
     private volatile boolean shuttingDown = false;
     private org.bukkit.scheduler.BukkitTask autosaveTask;
 
@@ -86,13 +88,24 @@ public final class PlayerDataService {
             return;
         }
         try {
-            final Optional<PlayerProfile> loaded = store.load(uuid);
+            // Run the load on the I/O executor (audited race): a pending quit-save
+            // of the SAME player is therefore guaranteed to complete before this
+            // load starts, so a quick reconnect can never resurrect stale data.
+            final Optional<PlayerProfile> loaded =
+                    io.submit(() -> store.load(uuid)).get(LOAD_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             final PlayerProfile profile =
                     loaded.orElseGet(() -> PlayerProfile.createNew(uuid, username, System.currentTimeMillis()));
             cache.put(uuid, profile);
-        } catch (final IOException exception) {
+        } catch (final java.util.concurrent.ExecutionException exception) {
             logger.log(Level.SEVERE, "Failed to load profile for " + uuid
+                    + " — starting session with a fresh in-memory profile.", exception.getCause());
+            cache.put(uuid, PlayerProfile.createNew(uuid, username, System.currentTimeMillis()));
+        } catch (final java.util.concurrent.TimeoutException exception) {
+            logger.log(Level.SEVERE, "Timed out loading profile for " + uuid
                     + " — starting session with a fresh in-memory profile.", exception);
+            cache.put(uuid, PlayerProfile.createNew(uuid, username, System.currentTimeMillis()));
+        } catch (final InterruptedException exception) {
+            Thread.currentThread().interrupt();
             cache.put(uuid, PlayerProfile.createNew(uuid, username, System.currentTimeMillis()));
         }
     }

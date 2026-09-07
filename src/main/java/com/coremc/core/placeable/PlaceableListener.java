@@ -73,6 +73,13 @@ public final class PlaceableListener implements Listener {
         if (placement.isEmpty()) {
             return;
         }
+        final UUID placer = placement.get().owner();
+        if (placer != null && !placer.equals(event.getPlayer().getUniqueId())
+                && !event.getPlayer().hasPermission("coremc.island.bypass")) {
+            event.setCancelled(true);
+            plugin.messages().sendPrefixed(event.getPlayer(), "gen.not-yours", Map.of());
+            return;
+        }
         event.setDropItems(false);
         placeables.unregister(event.getBlock().getLocation());
         final ItemStack returned = switch (placement.get().type()) {
@@ -81,6 +88,26 @@ public final class PlaceableListener implements Listener {
         };
         if (returned != null) {
             event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), returned);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPistonExtend(final org.bukkit.event.block.BlockPistonExtendEvent event) {
+        for (final Block block : event.getBlocks()) {
+            if (placeables.at(block.getLocation()).isPresent()) {
+                event.setCancelled(true); // a pushed block would desync from the placement registry
+                return;
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPistonRetract(final org.bukkit.event.block.BlockPistonRetractEvent event) {
+        for (final Block block : event.getBlocks()) {
+            if (placeables.at(block.getLocation()).isPresent()) {
+                event.setCancelled(true);
+                return;
+            }
         }
     }
 
@@ -114,6 +141,12 @@ public final class PlaceableListener implements Listener {
         }
         event.setCancelled(true);
         final Player player = event.getPlayer();
+        final UUID placer = placement.get().owner();
+        if (placer != null && !placer.equals(player.getUniqueId())
+                && !player.hasPermission("coremc.island.bypass")) {
+            plugin.messages().sendPrefixed(player, "gen.not-yours", Map.of());
+            return;
+        }
         final Optional<GeneratorDefinition> definition =
                 plugin.generators().definition(placement.get().id());
         if (definition.isEmpty()) {
@@ -136,9 +169,13 @@ public final class PlaceableListener implements Listener {
             final long threshold = now - (def.cooldownSeconds() * 1000L + 60_000L);
             lastHarvest.entrySet().removeIf(e -> e.getValue() < threshold);
         }
-        final Map<Integer, ItemStack> overflow =
-                player.getInventory().addItem(new ItemStack(def.product()));
-        overflow.values().forEach(player.getEnderChest()::addItem);
+        final boolean delivered =
+                com.coremc.core.util.ItemDelivery.deliver(player, new ItemStack(def.product()));
+        if (!delivered) {
+            lastHarvest.remove(rateKey); // don't burn the cooldown for a product the player never got
+            plugin.messages().sendPrefixed(player, "purchase.no-space", Map.of());
+            return;
+        }
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.6f, 1.5f);
         plugin.messages().sendPrefixed(
                 player, "gen.harvest", Map.of("product", def.productName()));

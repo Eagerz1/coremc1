@@ -128,14 +128,21 @@ public final class SpawnerService {
             return false;
         }
         final String price = String.format(Locale.ROOT, "%,d", def.priceSkyTokens());
-        if (!plugin.economy().withdraw(profile, Currency.SKY_TOKENS, def.priceSkyTokens())) {
+        final boolean free = def.priceSkyTokens() <= 0L;
+        if (!free && !plugin.economy().withdraw(profile, Currency.SKY_TOKENS, def.priceSkyTokens())) {
             plugin.messages().sendPrefixed(player, "spawner.insufficient", Map.of("price", price));
             return false;
         }
         final ItemStack item = mint(def);
-        final Map<Integer, ItemStack> overflow = player.getInventory().addItem(item);
-        if (!overflow.isEmpty()) {
-            player.getEnderChest().addItem(overflow.values().toArray(ItemStack[]::new));
+        final var delivery = com.coremc.core.util.ItemDelivery.deliverDetailed(player, item);
+        if (delivery == com.coremc.core.util.ItemDelivery.Result.FAILED) {
+            if (!free) {
+                plugin.economy().deposit(profile, Currency.SKY_TOKENS, def.priceSkyTokens());
+            }
+            plugin.messages().sendPrefixed(player, "purchase.no-space", Map.of());
+            return false;
+        }
+        if (delivery == com.coremc.core.util.ItemDelivery.Result.DELIVERED_TO_ENDER_CHEST) {
             plugin.messages().sendPrefixed(player, "gen.bought-enderchest", Map.of());
         }
         plugin.messages().sendPrefixed(

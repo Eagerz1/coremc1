@@ -95,6 +95,7 @@ permissions:
       coremc.command.tokenshop: true
       coremc.admin.credits: true
       coremc.admin.skytokens: true
+      coremc.admin.money: true
       coremc.island.bypass: true
   coremc.command.coremc:
     description: Allows using /coremc.
@@ -123,6 +124,9 @@ permissions:
   coremc.command.skytokens:
     description: Allows viewing your Sky Tokens balance.
     default: true
+  coremc.command.money:
+    description: Allows viewing your Money balance.
+    default: true
   coremc.command.role:
     description: Allows choosing a role and viewing progression.
     default: true
@@ -143,6 +147,9 @@ permissions:
     default: op
   coremc.admin.skytokens:
     description: Allows giving/removing/setting Sky Tokens.
+    default: op
+  coremc.admin.money:
+    description: Allows giving/removing/setting Money.
     default: op
   coremc.island.bypass:
     description: Allows bypassing island border protection.

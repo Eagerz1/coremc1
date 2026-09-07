@@ -91,6 +91,16 @@ public final class CoreConfig {
 
         this.upgradeBorderStepBlocks = Math.max(1, config.getInt("island.upgrades.border.step-blocks", 25));
         this.upgradeBorderMaxTier = Math.max(0, config.getInt("island.upgrades.border.max-tier", 5));
+        // The effective border (base + tiers * step) must stay inside the grid cell,
+        // like the base border above — otherwise upgraded protection could extend
+        // past the cell even though lookups only check the point's own cell.
+        final int roomToGrow = (this.islandSpacing / 2) - this.islandBorderSize;
+        final int maxSafeTier = Math.max(0, roomToGrow / this.upgradeBorderStepBlocks);
+        if (this.upgradeBorderMaxTier > maxSafeTier) {
+            plugin.getLogger().warning("island.upgrades.border.max-tier " + this.upgradeBorderMaxTier
+                    + " would push the effective border past spacing/2; clamping to " + maxSafeTier + ".");
+            this.upgradeBorderMaxTier = maxSafeTier;
+        }
         this.upgradeMemberMaxTier = Math.max(0, config.getInt("island.upgrades.member-slots.max-tier", 5));
         this.upgradeBorderCosts = longCosts(config, "island.upgrades.border.costs",
                 java.util.List.of(10L, 20L, 30L, 40L, 50L));

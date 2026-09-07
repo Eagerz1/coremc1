@@ -162,12 +162,23 @@ public final class OmniToolService {
 
     /** Called from PlayerRespawnEvent: returns held tools. */
     public void onRespawn(final Player player) {
+        restoreTrust(player);
+    }
+
+    /**
+     * Returns trusted tools immediately (respawn OR quit-at-death-screen).
+     * Idempotent via map removal. Post-death the inventory is empty, so
+     * addItem cannot overflow; if a future edge ever makes it do, the
+     * remainder drops at the player instead of being lost.
+     */
+    public void restoreTrust(final Player player) {
         final List<ItemStack> held = respawnTrust.remove(player.getUniqueId());
         if (held == null) {
             return;
         }
         for (final ItemStack tool : held) {
-            player.getInventory().addItem(tool);
+            final Map<Integer, ItemStack> overflow = player.getInventory().addItem(tool);
+            overflow.values().forEach(rest -> player.getWorld().dropItem(player.getLocation(), rest));
         }
     }
 

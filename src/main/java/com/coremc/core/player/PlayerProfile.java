@@ -6,11 +6,12 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Persistent per-player data for CoreMC (schema version 3).
+ * Persistent per-player data for CoreMC (schema version 4).
  *
  * Schema versions: 1 = join stats only; 2 = + currencies, single
  * role/omnitool slots, island association, placeholders; 3 = per-role
- * progress map (role switching never wipes your other roles' progress).
+ * progress map (role switching never wipes your other roles' progress);
+ * 4 = + spawner unlock kill counters.
  * All loads are tolerant: unknown/missing fields become defaults.
  *
  * A profile is created the first time a player connects and survives

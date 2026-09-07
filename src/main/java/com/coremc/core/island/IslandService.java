@@ -185,7 +185,9 @@ public final class IslandService {
             return false;
         }
         final long price = cost.getAsLong();
-        if (!((com.coremc.core.CoreMCPlugin) plugin).economy().withdraw(profile, com.coremc.core.economy.Currency.SKY_TOKENS, price)) {
+        if (price > 0L
+                && !((com.coremc.core.CoreMCPlugin) plugin).economy()
+                        .withdraw(profile, com.coremc.core.economy.Currency.SKY_TOKENS, price)) {
             ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.insufficient",
                     Map.of("price", String.valueOf(price)));
             return false;

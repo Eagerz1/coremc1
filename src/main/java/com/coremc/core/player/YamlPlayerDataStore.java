@@ -107,8 +107,10 @@ public final class YamlPlayerDataStore implements PlayerDataStore {
         for (final String name : yaml.getKeys(false)) {
             final String raw = yaml.getString(name);
             try {
-                index.put(name.toLowerCase(java.util.Locale.ROOT), UUID.fromString(raw));
-            } catch (final IllegalArgumentException ignored) {
+                if (raw != null) {
+                    index.put(name.toLowerCase(java.util.Locale.ROOT), UUID.fromString(raw));
+                }
+            } catch (final IllegalArgumentException | NullPointerException ignored) {
                 // skip corrupt entries; the index is rebuildable from joins
             }
         }

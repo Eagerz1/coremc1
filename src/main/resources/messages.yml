@@ -127,6 +127,7 @@ gen:
   harvest: "&e+1 &f{product}"
   cooldown: "&7This generator needs &f{seconds}s&7 to recharge."
   broken: "&cThis generator type no longer exists and cannot produce."
+  not-yours: "&cThis belongs to someone else."
 
 spawner:
   unlocked: "&a&lSPAWNER UNLOCKED! &7You can now buy {name}&7 in &f/spawners&7."
@@ -137,7 +138,6 @@ spawner:
 placeable:
   returned: "&7Picked up your core block."
 
-shop:
   bought: "Bought {item}&7 for &a{price} {currency}&7."
   exchange: "Exchanged &a{price} {currency}&7 for &b{bought}&7."
   insufficient: "&cYou need &a{price} {currency}&c for this."
@@ -159,3 +159,7 @@ info:
     - "&7Profiles loaded: &f{profiles}"
     - "&7Tracked tasks: &f{tasks}"
     - "&7Uptime: &f{uptime}"
+
+# purchase delivery failure (inventory + ender chest full -> refunded)
+purchase:
+  no-space: "&cNo space in your inventory and ender chest — purchase cancelled and refunded."

@@ -122,7 +122,8 @@ public final class ShopService {
         }
         final String price = String.format(Locale.ROOT, "%,d", entry.price());
         final String currencyName = entry.currency().displayName();
-        if (!plugin.economy().withdraw(profile, entry.currency(), entry.price())) {
+        final boolean free = entry.price() <= 0L; // withdraw(0) would throw by contract
+        if (!free && !plugin.economy().withdraw(profile, entry.currency(), entry.price())) {
             plugin.messages().sendPrefixed(player, "shop.insufficient",
                     Map.of("price", price, "currency", currencyName));
             return false;
@@ -133,9 +134,16 @@ public final class ShopService {
             meta.setDisplayName(ColorUtil.colorize(entry.display()));
             item.setItemMeta(meta);
         }
-        final Map<Integer, ItemStack> overflow = player.getInventory().addItem(item);
-        if (!overflow.isEmpty()) {
-            player.getEnderChest().addItem(overflow.values().toArray(ItemStack[]::new));
+        final var delivery = com.coremc.core.util.ItemDelivery.deliverDetailed(player, item);
+        if (delivery == com.coremc.core.util.ItemDelivery.Result.FAILED) {
+            // nothing fit anywhere: the rollback restored both inventories, so refund the price.
+            if (!free) {
+                plugin.economy().deposit(profile, entry.currency(), entry.price());
+            }
+            plugin.messages().sendPrefixed(player, "purchase.no-space", Map.of());
+            return false;
+        }
+        if (delivery == com.coremc.core.util.ItemDelivery.Result.DELIVERED_TO_ENDER_CHEST) {
             plugin.messages().sendPrefixed(player, "shop.overflow", Map.of());
         }
         plugin.messages().sendPrefixed(player, "shop.bought", Map.of(

@@ -73,24 +73,46 @@ public final class OmniToolListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
-        // Block any path that would move an OmniTool OUT of the player inventory:
-        if (event.getClickedInventory() == null
-                || event.getClickedInventory().getType() == InventoryType.PLAYER) {
-            return; // moving inside own inventory is fine (and our GUI clicks are cancelled upstream)
+        // The rule is DESTINATION-based (audit fix): an OmniTool may move
+        // anywhere the player could carry it, and may always be TAKEN OUT of
+        // a container (retrieving from the ender chest is the supported
+        // overflow path); it may never be INSERTED into a foreign container.
+        final var top = event.getView().getTopInventory();
+        final boolean foreignTop = top != null
+                && top.getType() != InventoryType.PLAYER
+                && top.getType() != InventoryType.CRAFTING
+                && top.getType() != InventoryType.WORKBENCH;
+        if (!foreignTop) {
+            return; // own inventory / crafting grid — still on the player
         }
-        if (tools.isOmniTool(event.getCursor()) || tools.isOmniTool(event.getCurrentItem())) {
-            cancelWithHint(event, player);
-            return;
-        }
-        // number-key swap moves the hotbar item into the container
-        if (event.getClick() == ClickType.NUMBER_KEY) {
-            final ItemStack hotbar = player.getInventory().getItem(event.getHotbarButton());
-            if (tools.isOmniTool(hotbar)) {
-                cancelWithHint(event, player);
+        final boolean clickedTop = event.getClickedInventory() == top;
+        switch (event.getAction()) {
+            case MOVE_TO_OTHER_INVENTORY -> {
+                // shift-click: bottom -> container is a stash attempt; container -> bottom is retrieval
+                if (!clickedTop && tools.isOmniTool(event.getCurrentItem())) {
+                    cancelWithHint(event, player);
+                }
+            }
+            case PLACE_ALL, PLACE_SOME, PLACE_ONE, SWAP_WITH_CURSOR -> {
+                if (clickedTop && tools.isOmniTool(event.getCursor())) {
+                    cancelWithHint(event, player);
+                }
+            }
+            case HOTBAR_SWAP, HOTBAR_MOVE_AND_READD -> {
+                if (clickedTop) {
+                    final ItemStack source = event.getHotbarButton() >= 0
+                            ? player.getInventory().getItem(event.getHotbarButton())
+                            : player.getInventory().getItemInOffHand(); // F-key swap
+                    if (tools.isOmniTool(source)) {
+                        cancelWithHint(event, player);
+                    }
+                }
+            }
+            default -> {
+                // pickups from the container, drops (caught by PlayerDropItemEvent)
+                // and collect-to-cursor all end on the player side — allowed.
             }
         }
-        // shift-click from a container would pull items OUT of it — allowed;
-        // shift-click FROM the player inventory is covered by the PLAYER branch above.
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -120,6 +142,17 @@ public final class OmniToolListener implements Listener {
     @EventHandler(priority = EventPriority.NORMAL)
     public void onRespawn(final PlayerRespawnEvent event) {
         tools.onRespawn(event.getPlayer());
+    }
+
+    /**
+     * Death-disconnect safety (audit fix): a player who dies holding the
+     * tool and then logs out at the death screen must not leave the tool
+     * in the respawn trust until some future respawn — hand it straight
+     * back into the (empty-after-death) inventory during the quit event.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onQuit(final org.bukkit.event.player.PlayerQuitEvent event) {
+        tools.restoreTrust(event.getPlayer());
     }
 
     // ------------------------------------------------------------------

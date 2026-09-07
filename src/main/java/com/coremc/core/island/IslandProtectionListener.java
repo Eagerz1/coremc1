@@ -60,6 +60,67 @@ public final class IslandProtectionListener implements Listener {
         }
     }
 
+    // ---- audit fixes: grief vectors beyond plain block place/break ----
+
+    /** Lava/water dumping inside a protected island (classic grief vector). */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBucketEmpty(final org.bukkit.event.player.PlayerBucketEmptyEvent event) {
+        if (deny(event.getPlayer(), event.getBlock())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBucketFill(final org.bukkit.event.player.PlayerBucketFillEvent event) {
+        if (deny(event.getPlayer(), event.getBlock())) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** Item frames / paintings / armor stands placement. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onHangingPlace(final org.bukkit.event.hanging.HangingPlaceEvent event) {
+        final Player placer = event.getPlayer();
+        if (placer != null && deny(placer, event.getBlock())) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** Breaking frames/armor stands (incl. via projectiles). */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onHangingBreak(final org.bukkit.event.hanging.HangingBreakByEntityEvent event) {
+        final Player attacker = event.getRemover() instanceof Player player
+                ? player
+                : (event.getRemover() instanceof org.bukkit.entity.Projectile projectile
+                        && projectile.getShooter() instanceof Player shooter
+                        ? shooter
+                        : null);
+        if (attacker != null && deny(attacker, event.getEntity().getLocation().getBlock())) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
+     * Killing another island's passive entities (animals, villagers, pets)
+     * or damaging their entities. Hostile mobs stay damageable everywhere —
+     * spawner farms are a CoreMC feature.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onEntityDamage(final org.bukkit.event.entity.EntityDamageByEntityEvent event) {
+        if (event.getEntity() instanceof org.bukkit.entity.Monster) {
+            return;
+        }
+        final Player attacker = event.getDamager() instanceof Player player
+                ? player
+                : (event.getDamager() instanceof org.bukkit.entity.Projectile projectile
+                        && projectile.getShooter() instanceof Player shooter
+                        ? shooter
+                        : null);
+        if (attacker != null && deny(attacker, event.getEntity().getLocation().getBlock())) {
+            event.setCancelled(true);
+        }
+    }
+
     private boolean deny(final Player player, final Block block) {
         if (!islands.isLoaded() || player.hasPermission("coremc.island.bypass")) {
             return false;
