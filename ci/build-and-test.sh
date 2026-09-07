@@ -23,12 +23,8 @@ echo "==> compile tests"
 javac --release 21 -nowarn -cp "classes:$CP/tmp/junit-runner.jar" \
   -d test-classes $(find src/test/java -name '*.java')
 
-echo "==> run tests"
-java -jar /tmp/junit-runner.jar execute \
-  --class-path "classes:test-classes" \
-  --scan-class-path \
-  --fail-if-no-tests \
-  --details=summary
+echo "==> run tests (curated runner: bundles plugin API + libs + JUnit on the classpath)"
+java -cp "classes:test-classes:$CP/tmp/junit-runner.jar" com.coremc.testrun.TestRunner
 
 echo "==> package jar"
 jar --create --file "sandbox/plugin/CoreMC-$VER.jar" -C classes . -C src/main/resources .
