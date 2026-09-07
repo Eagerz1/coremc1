@@ -2,14 +2,11 @@ package com.coremc.core.island;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.Biome;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
-import org.bukkit.generator.WorldInfo;
 
 /**
  * The generator behind CoreMC's dedicated island world.
@@ -22,21 +19,11 @@ import org.bukkit.generator.WorldInfo;
  */
 public final class VoidChunkGenerator extends ChunkGenerator {
 
-    @Override
-    public void generateNoise(
-            final WorldInfo worldInfo,
-            final Random random,
-            final int chunkX,
-            final int chunkZ,
-            final ChunkData chunkData) {
-        // Void: set the base biome so the world is not "minecraft:void" everywhere,
-        // which would tint grass/sky grey on clients.
-        for (int x = 0; x < 16; x++) {
-            for (int z = 0; z < 16; z++) {
-                chunkData.setBiome(x, 0, z, Biome.PLAINS);
-            }
-        }
-    }
+    // The superclass' default chunk-creation already produces empty void
+    // chunks, and a NORMAL-environment world's default biome layout is
+    // plains — exactly what the skyblock world needs. The overrides below
+    // switch off every terrain feature so initial generation stays as
+    // cheap as the default emptiness.
 
     @Override
     public List<BlockPopulator> getDefaultPopulators(final World world) {
@@ -79,7 +66,7 @@ public final class VoidChunkGenerator extends ChunkGenerator {
     }
 
     @Override
-    public Location getFixedSpawnLocation(final World world, final Random random) {
+    public Location getFixedSpawnLocation(final World world, final java.util.Random random) {
         return new Location(world, 0.5, 65, 0, 0f, 0f);
     }
 
