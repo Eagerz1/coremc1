@@ -173,3 +173,37 @@ Quiet-click sweep over every empty/decorative slot of all 10 GUIs (n=271 slots),
 - `/is upgrades` now performs real purchases with Sky Tokens: `border` (tier × 25 blocks of effective protection, applied immediately to `/is info` and the protection containment check) and `member-slots` (+1 member each, wired into invite capacity).
 - Costs/tiers are config-only (`island.upgrades.*`, upgrade-safe merge). Failure modes verified: max-tier refusal, insufficient-funds refusal; success flushes the island file instantly.
 - Live verified: 10-token tier-1 border purchase → `/island info` reports 75x75.
+
+## v0.9.1 — Full production-readiness audit
+
+### Bugs discovered (and fixed)
+| # | Category | Bug | Fix |
+|---|----------|-----|-----|
+| 1 | Inventory exploit (critical) | OmniTool shift-click stash: the container rule checked the CLICKED inventory, so shift+click moved the soulbound tool into open chests | Destination-based rules: insertion into any foreign container cancelled (click paths, number-key, F-key swap, drag) |
+| 2 | Inventory soft-lock | OmniTool overflow into ender chest could never be retrieved (retrieval clicks were also cancelled) | Retrieval from containers explicitly allowed; only *insertion* is denied |
+| 3 | Item loss / soulbound leak | Dying and logging out at the death screen left the tool in the respawn-trust map forever (lost on rejoin; slow in-memory leak) | PlayerQuitEvent restores trust immediately into the (post-death empty) inventory |
+| 4 | Currency exploit (critical) | Pay-for-nothing: purchases withdrew currency, overflowed into the ender chest, and if that was full too the items were silently destroyed | New `ItemDelivery` helper: inventory→ender-chest delivery with full snapshot rollback + automatic refund ("purchase.no-space") — applied to shop, generators, spawners, generator harvest |
+| 5 | Runtime exception | Free (0-price) catalogue entries/upgrades called `withdraw(0)` which throws by economy contract | All four purchase paths + upgrade path treat price 0 as free |
+| 6 | Item dupe | Pistons could push a registered generator/spawner — registry desynced from the world, old spot would mint a second core item when reoccupied/broken | Piston extend/retract involving registered blocks is cancelled |
+| 7 | Theft | Generators outside islands were harvestable/breakable by anyone (break returned a fresh core item to a stranger) | Placer-ownership enforced on break + harvest (coremc.island.bypass overrides) |
+| 8 | Island grief | Buckets (lava/water), item frames/armor stands, and passive-entity damage were unprotected inside islands | Bucket empty/fill, hanging place/break (incl. projectiles), and EntityDamageByEntity for non-Monster victims now respect island protection |
+| 9 | Config edge | `border-size + tiers * step` could exceed spacing/2 | Effective border is clamped to the grid cell at load with a warning |
+| 10 | Race condition | Pre-login loads ran off the I/O worker; a quick reconnect could beat the pending quit-save and reload stale data | Pre-login load now runs *on* the I/O worker (4s timeout with safe fallback), serialised behind the quit-save |
+| 11 | NPE robustness | Username index entries with null values escaped as NPE past the IllegalArgumentException guard | Null-guarded |
+| 12 | Permissions | `coremc.command.money` unregistered → `/money` de-facto op-only; `coremc.admin.money` missing from the wildcard children | Both registered with correct defaults |
+| 13 | Messages | Entire `shop:*` message group was orphaned under `placeable:` (missing `shop:` header) → "Missing message: shop.bought" etc. at runtime (found live during journey testing) | `shop:` header restored; full used-vs-defined key audit now shows 0 missing |
+
+### Regression check
+Every fix was reviewed against its neighbouring paths (GuiService click cancellation order, GUI classes, island listeners, purchase call-sites) and the whole pack re-compiled through CI. The player journeys below exercise: island create/team/delete, role select, OmniTool grant, currency admin, shop purchase, island upgrade purchase, restart persistence.
+
+### Live journey verification (Paper 1.21.11, mineflayer bots)
+- NEW PLAYER: welcome → create island → role select (+OmniTool granted) → /money visible to non-op → grant 50000/500/100 via console → buy Iron Sword in /shop gear (250 Money, delivered) → buy border upgrade tier 1 (10 Sky Tokens → 75×75 live) → balances assert (90 tokens, 49,750 money) ✓
+- RESTART: graceful stop ("all player data saved, all tasks cancelled") → rejoin → island at 75×75, role Miner (level 1), 90 Sky Tokens, OmniTool in inventory ✓
+- ADMIN: console grants to online *and* offline players via username index ✓
+- MULTIPLAYER: create island → invite → accept (`Members (1/3)` in /is info) → leave → delete (two-step) → all island files/associations cleaned, no ghost data ✓
+- No CoreMC exceptions logged across ~10 bot sessions and 3 server restarts.
+
+### Limitations documented
+- Platform blocks of a deleted island remain in the world (by design).
+- Invites are in-memory only (standard; expire on restart).
+- Protection denial for entity damage shares the 2s "protected" throttle with build denial.
