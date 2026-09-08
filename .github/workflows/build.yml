@@ -38,18 +38,35 @@ jobs:
           sandbox/runtime/linux-x64/bin/java -version
       - name: Fetch Paper 1.21.11 server jar (sandbox has no papermc.io egress; CI does)
         if: always()
+        continue-on-error: true
         run: |
-          set -euo pipefail
-          BUILD=$(curl -fsSL 'https://api.papermc.io/v2/projects/paper/versions/1.21.11/builds' \
-            | python3 -c "import json,sys; print(max(b['build'] for b in json.load(sys.stdin)['builds']))")
-          OUT="sandbox/paper-1.21.11-${BUILD}.jar"
+          set -uo pipefail
+          rm -f sandbox/PAPER-FAIL.log
+          exec 2>&1
+          BUILD=$(curl -sSL 'https://api.papermc.io/v2/projects/paper/versions/1.21.11/builds' \
+            | python3 -c "import json,sys; print(max(b['build'] for b in json.load(sys.stdin)['builds']))" 2>&1) || true
+          if [ -z "${BUILD:-}" ]; then
+            { echo "build-list fetch failed"; } > sandbox/PAPER-FAIL.log
+            exit 0
+          fi
           mkdir -p sandbox
+          OUT="sandbox/paper-1.21.11-${BUILD}.jar"
           if [ ! -f "$OUT" ]; then
             rm -f sandbox/paper-1.21.11-*.jar
-            curl -fSL -o "$OUT" \
-              "https://api.papermc.io/v2/projects/paper/versions/1.21.11/builds/${BUILD}/downloads/paper-1.21.11-${BUILD}.jar"
+            if ! curl -sSL -o "$OUT" \
+              "https://api.papermc.io/v2/projects/paper/versions/1.21.11/builds/${BUILD}/downloads/paper-1.21.11-${BUILD}.jar"; then
+              { echo "download failed for build ${BUILD}"; } > sandbox/PAPER-FAIL.log
+              rm -f "$OUT"
+              exit 0
+            fi
           fi
-          test -s "$OUT" && echo "paper build ${BUILD} ready: $OUT"
+          if [ -s "$OUT" ]; then
+            SIZE_MB=$(( $(stat -c%s "$OUT") / 1048576 ))
+            echo "paper build ${BUILD} ready: $OUT (${SIZE_MB} MB)"
+          else
+            echo "empty jar for build ${BUILD}" > sandbox/PAPER-FAIL.log
+          fi
+          exit 0
       - name: Commit artifacts + build status
         if: always()
         run: |
