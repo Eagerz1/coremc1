@@ -43,10 +43,10 @@ jobs:
           set -uo pipefail
           rm -f sandbox/PAPER-FAIL.log
           exec 2>&1
-          BUILD=$(curl -sSL 'https://api.papermc.io/v2/projects/paper/versions/1.21.11/builds' \
-            | python3 -c "import json,sys; print(max(b['build'] for b in json.load(sys.stdin)['builds']))" 2>&1) || true
+          BUILD=$(curl -sSL 'https://api.papermc.io/v2/projects/paper/versions/1.21.11' \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print(max(map(int, d['builds'])))" 2>/tmp/paper-err.txt) || true
           if [ -z "${BUILD:-}" ]; then
-            { echo "build-list fetch failed"; } > sandbox/PAPER-FAIL.log
+            { echo "build-list fetch failed:"; cat /tmp/paper-err.txt; } > sandbox/PAPER-FAIL.log
             exit 0
           fi
           mkdir -p sandbox
