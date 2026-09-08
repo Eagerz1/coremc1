@@ -207,3 +207,62 @@ Every fix was reviewed against its neighbouring paths (GuiService click cancella
 - Platform blocks of a deleted island remain in the world (by design).
 - Invites are in-memory only (standard; expire on restart).
 - Protection denial for entity damage shares the 2s "protected" throttle with build denial.
+
+---
+
+## Restoration (v0.10.0, spec-compliant rebuild) — test status
+
+The restoration re-implements the systems the v0.9.x line had drifted from,
+exactly per the design spec. Each landed commit is verified on three levels:
+(1) unit tests (JUnit, offline), (2) config/message/persistence audits,
+(3) live mineflayer bot journeys on Paper 1.21.11.
+
+### A — Island foundation, themes, GUI sections
+- Dedicated void-island world (`islands`) created by the plugin; verified in boot log.
+- 3 themes from themes.yml (Plains/Desert/Mushroom), GUI theme picker on first island.
+- Main `/is` GUI: Home, Members, Information, Upgrades, **Settings**, **Permissions**, Invite, Delete.
+- Journeys (40+ assertions, `bot/restore-journey.js`): create via GUI + command,
+  platform geometry per theme (grass/sand), void terrain, grid cells, deleted-cell
+  guard, two-step delete, settings/permissions toggles persisted across restart. **GREEN.**
+
+### B+C — Upgrades hub (27 slots, 6 categories) + Mining Cube + wired tracks
+- `UpgradeCatalog`: Mining/Fishing/Farming/Slaying/Logging/Island, tracks incl.
+  **Crop Regrowth (0–20)** and **Mining Cube** (size grows toward 5×5, weighted
+  ore contents, regen cycle) — replaces the old cobblestone-generator concept.
+- Woodcutter/Fisher/Slayer-bonus/Crop-Regrowth tracks wired to real listeners.
+- `MiningCubeService` builds/rebuilds on upgrade purchase; ore weights + regen
+  seconds from config.
+- Journey (`bot/upgrades-journey.js`): hub categories, category submenu nav,
+  Sky Token purchase + persistence, mining-cube block existence + cube growth,
+  crop replant probe. **STAGED — pending first 0.10.0 CI build.**
+
+### D — OmniTool upgrades
+- Panel slots 47/49/51 are now live purchases (Credits): Efficiency I–V,
+  Fortune I–III, Auto-Smelter (ores drop pre-smelted with furnace-comparable XP;
+  Fortune coats smelted drops with extra ingots).
+- Profile schema v5 (`omni-upgrades`), write-through persistence, tools re-stamped
+  in place (no re-grant churn); enchant + lore refresh visible immediately.
+- Journey (`bot/omni-journey.js`): role→tool→panel layout, insufficient-funds deny,
+  console-granted Credits → buy → profile/assertions, smelt probe (iron ore → ingot
+  via console setblock), restart persistence. **STAGED — pending CI build.**
+
+### E — Spawner progression (per spec)
+- Per-mob kill progression: 4 mobs × 4 spawner tiers; each tier unlocked at its
+  own kill threshold and separately purchasable with Sky Tokens.
+- `/spawners` main GUI = 4 mob lanes (kills, unlocked-count, next unlock) → click
+  opens **small-chest per-mob submenu** with 4 spawners properly spaced (1/3/5/7)
+  and LOCKED(BARRIER)/UNLOCKED(SPAWNER) display.
+- Better tiers are real: placed spawners get the tier's spawn-count + cycle delay.
+- `spawners.kill-cap-per-minute` (previously inert) now enforced via RollingKillCap.
+- Legacy single-tier configs still load; pre-tier placements refund correctly.
+- Journey (`bot/spawners-journey.js`): lanes, submenu spacing, locked deny,
+  25 zombie kills via console summons → unlock message → buy tier I → tier II stays
+  locked, restart persistence. **STAGED — pending CI build.**
+
+### F — This commit: audit, tests, docs
+- GUI audit: all 15 GUI classes have cancellable clicks via GuiService, named
+  layout constants, holder-bound (no per-player maps); purchases re-render.
+- Message-key audit: 0 keys used-but-undefined.
+- Unit tests added: OmniUpgradeCatalog (cost/level/smelt/fortune math),
+  profile omni-upgrades round-trip, spawner lane/unlock math, tier validation,
+  RollingKillCap timing (window + disabled semantics).
