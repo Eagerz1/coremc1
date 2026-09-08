@@ -1,0 +1,8 @@
+target/
+*.class
+.idea/
+*.iml
+.vscode/
+
+# CI sandbox artifacts (63M, re-created by CI)
+sandbox/

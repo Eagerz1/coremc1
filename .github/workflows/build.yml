@@ -1,0 +1,49 @@
+name: sandbox-runtime-build
+on:
+  push:
+    branches: [ "arena/**" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Compile, test and package plugin jar
+        run: |
+          set +e
+          bash ci/build-and-test.sh 2>&1 | tee build-output.log
+          CODE=${PIPESTATUS[0]}
+          if [ "$CODE" -ne 0 ]; then
+            cp build-output.log sandbox/BUILD-FAIL.log
+          else
+            rm -f sandbox/BUILD-FAIL.log
+            echo "build $GITHUB_SHA OK" > sandbox/BUILD-OK
+          fi
+          echo "$CODE" > .ci-exit-code
+      - name: JLink minimal Java runtime
+        if: success()
+        run: |
+          rm -rf sandbox/runtime; JH=$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")
+          "$JH/bin/jlink" --add-modules java.se,jdk.unsupported,jdk.crypto.ec,jdk.zipfs,jdk.security.auth,jdk.management,jdk.management.agent,jdk.naming.dns,jdk.jfr,jdk.xml.dom,jdk.net \
+            --compress zip-9 --strip-debug --no-header-files --no-man-pages \
+            --output sandbox/runtime/linux-x64
+          sandbox/runtime/linux-x64/bin/java -version
+      - name: Commit artifacts + build status
+        if: always()
+        run: |
+          git config user.name "arena-build"
+          git config user.email "bot@users.noreply.github.com"
+          git add -f sandbox/
+          git commit -m "sandbox artifacts: jre + CoreMC jar + build status" || true
+          git push origin HEAD:${GITHUB_REF_NAME}
+      - name: Propagate exit code
+        if: always()
+        run: exit "$(cat .ci-exit-code 2>/dev/null || echo 0)"

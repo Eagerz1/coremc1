@@ -1,0 +1,130 @@
+# ==========================================================================
+# CoreMC Shop — every price lives here, never in Java.
+#
+# /shop <category> opens a category; /tokenshop opens the exchange. Each
+# entry:  <id>: { material, display, currency, price, amount }
+# currency: MONEY | CREDITS | SKY_TOKENS   (amount defaults to 1)
+# ==========================================================================
+
+gear:
+  iron-sword:
+    material: IRON_SWORD
+    display: "&bIron Sword"
+    currency: MONEY
+    price: 250
+  iron-helmet:
+    material: IRON_HELMET
+    display: "&bIron Helmet"
+    currency: MONEY
+    price: 300
+  iron-chestplate:
+    material: IRON_CHESTPLATE
+    display: "&bIron Chestplate"
+    currency: MONEY
+    price: 450
+  shield:
+    material: SHIELD
+    display: "&bShield"
+    currency: MONEY
+    price: 400
+  diamond-helmet:
+    material: DIAMOND_HELMET
+    display: "&bDiamond Helmet"
+    currency: CREDITS
+    price: 50
+
+food:
+  bread-16:
+    material: BREAD
+    display: "&6Bread x16"
+    currency: MONEY
+    price: 20
+    amount: 16
+  steak-8:
+    material: COOKED_BEEF
+    display: "&6Steak x8"
+    currency: MONEY
+    price: 40
+    amount: 8
+  golden-carrot-8:
+    material: GOLDEN_CARROT
+    display: "&6Golden Carrots x8"
+    currency: MONEY
+    price: 90
+    amount: 8
+  enchanted-golden-apple:
+    material: ENCHANTED_GOLDEN_APPLE
+    display: "&6Enchanted Golden Apple"
+    currency: CREDITS
+    price: 250
+
+end:
+  ender-pearl-4:
+    material: ENDER_PEARL
+    display: "&5Ender Pearls x4"
+    currency: MONEY
+    price: 120
+    amount: 4
+  end-stone-16:
+    material: END_STONE
+    display: "&5End Stone x16"
+    currency: MONEY
+    price: 60
+    amount: 16
+  chorus-fruit-4:
+    material: CHORUS_FRUIT
+    display: "&5Chorus Fruit x4"
+    currency: MONEY
+    price: 80
+    amount: 4
+  elytra:
+    material: ELYTRA
+    display: "&5Elytra"
+    currency: SKY_TOKENS
+    price: 25
+
+nether:
+  netherrack-32:
+    material: NETHERRACK
+    display: "&cNetherrack x32"
+    currency: MONEY
+    price: 15
+    amount: 32
+  quartz-8:
+    material: QUARTZ
+    display: "&cQuartz x8"
+    currency: MONEY
+    price: 40
+    amount: 8
+  blaze-rod-2:
+    material: BLAZE_ROD
+    display: "&cBlaze Rods x2"
+    currency: MONEY
+    price: 90
+    amount: 2
+  netherite-scrap:
+    material: NETHERITE_SCRAP
+    display: "&cNetherite Scrap"
+    currency: SKY_TOKENS
+    price: 10
+
+# /tokenshop — Sky Token exchange desk (currency conversions + token packs)
+tokens:
+  token-small:
+    material: SUNFLOWER
+    display: "&b1 Sky Token"
+    currency: MONEY
+    price: 10000
+    amount: 1
+  token-big:
+    material: NETHER_STAR
+    display: "&b5 Sky Tokens"
+    currency: MONEY
+    price: 45000
+    amount: 5
+  token-from-credits:
+    material: AMETHYST_SHARD
+    display: "&b1 Sky Token &7(via Credits)"
+    currency: CREDITS
+    price: 20
+    amount: 1

@@ -1,0 +1,164 @@
+# ======================================================
+#  CoreMC — main configuration
+#  Messages and branding live in messages.yml
+# ======================================================
+
+player-data:
+  # How often dirty player profiles are flushed to disk (seconds).
+  # Data is also saved on quit and on server shutdown, so this is
+  # only a safety net against crashes.
+  autosave-seconds: 300
+
+welcome:
+  # Send the branded first-join welcome message (messages.yml -> welcome-first-join)
+  first-join-message: true
+
+island:
+  # World islands live in. CoreMC creates this world automatically when it
+  # does not exist (as empty void terrain — the dedicated island world).
+  # Islands created before the dedicated world existed keep working in
+  # whatever world they were created in (stored per island).
+  world: islands
+  # Distance (blocks) between island centres on the grid. Minimum 64.
+  # Changing this only affects NEW islands; existing islands keep their
+  # absolute centre coordinates.
+  spacing: 256
+  # Y level of the island platform surface (grass layer).
+  # Players spawn one block above this.
+  start-height: 64
+  # Seconds the player has to repeat /island delete to confirm deletion.
+  delete-confirm-seconds: 15
+  # Protected border of a new island (full width). 50 = 50x50 square.
+  # Must stay below spacing/2 so borders can never overlap (enforced).
+  border-size: 50
+  # Base number of members (non-owner) an island can hold.
+  member-slots: 3
+  # Seconds an /is invite stays valid.
+  invite-expiry-seconds: 60
+  # Island upgrades — purchasable with Sky Tokens via /is upgrades.
+  # costs[n] = price of buying tier (n+1). Effects apply immediately.
+  # Every subsection here is a track; the GUI groups them by category
+  # (Mining, Fishing, Farming, Slaying, Logging, Island).
+  upgrades:
+    # ---- ISLAND category ----
+    border:
+      # Each tier widens the protected square by this many blocks.
+      step-blocks: 25
+      max-tier: 5
+      costs: [10, 20, 30, 40, 50]
+    member-slots:
+      # Each tier adds one member slot (on top of member-slots above).
+      max-tier: 5
+      costs: [5, 10, 15, 20, 25]
+    # ---- MINING category ----
+    mining-cube:
+      # Tier 0 = no cube, tier T = a (T+1)x(T+1)x(T+1) mining cube beside
+      # the island (tier 4 = the spec's 5x5 mining area).
+      max-tier: 4
+      costs: [15, 25, 40, 60]
+      # Weighted contents of regenerated cube blocks (material: weight).
+      contents:
+        STONE: 60
+        COBBLESTONE: 15
+        COAL_ORE: 10
+        IRON_ORE: 7
+        GOLD_ORE: 4
+        LAPIS_ORE: 3
+        DIAMOND_ORE: 1
+      # Seconds between regeneration of one missing cube block per island.
+      regen-seconds: 30
+    # ---- FARMING category ----
+    crop-regrowth:
+      # Spec track: level 0-20. Level L = L*5% chance that a harvested
+      # mature crop replants itself (consuming one seed from the drops).
+      max-tier: 20
+      costs: [5, 5, 8, 8, 10, 10, 12, 12, 14, 14, 16, 16, 18, 18, 20, 20, 22, 22, 24, 25]
+      chance-percent-per-level: 5
+    # ---- FISHING category ----
+    fisher-blessing:
+      # Tier L = L*10% chance of a second catch while fishing on the island.
+      max-tier: 5
+      costs: [10, 20, 30, 40, 50]
+      chance-percent-per-level: 10
+    # ---- SLAYING category ----
+    slayer-force:
+      # Tier L = +L*5% melee damage while on your own island.
+      max-tier: 5
+      costs: [10, 20, 30, 40, 50]
+      damage-percent-per-level: 5
+    # ---- LOGGING category ----
+    woodcutter:
+      # Tier L = L*10% chance of double log drops on the island.
+      max-tier: 5
+      costs: [8, 16, 24, 32, 40]
+      chance-percent-per-level: 10
+
+roles:
+  # Global multiplier applied to all role XP gains (1.0 = default).
+  xp-multiplier: 1.0
+  # Fraction of full XP the Universal role earns from ANY category action.
+  universal-share: 0.25
+
+# --------------------------------------------------------------------------
+# GENERATOR MARKET (/gens)
+# Generators are bought with Credits, placed in the world, and right-clicked
+# to harvest their product after a cooldown. All balance lives here.
+# --------------------------------------------------------------------------
+generators:
+  cobble:
+    display: "&fCobblestone Generator"
+    block: OBSERVER
+    product: COBBLESTONE
+    price: 5000
+    cooldown-seconds: 5
+  obsidian:
+    display: "&5Obsidian Generator"
+    block: CRYING_OBSIDIAN
+    product: OBSIDIAN
+    price: 15000
+    cooldown-seconds: 15
+  ice:
+    display: "&bIce Generator"
+    block: BLUE_ICE
+    product: PACKED_ICE
+    price: 25000
+    cooldown-seconds: 20
+  quartz:
+    display: "&eQuartz Generator"
+    block: QUARTZ_BRICKS
+    product: QUARTZ
+    price: 40000
+    cooldown-seconds: 25
+
+# --------------------------------------------------------------------------
+# SPAWNERS (/spawners)
+# Spawners are unlocked by killing <required-kills> of the entity type,
+# then purchased with Sky Tokens. Place them to spawn that entity.
+# --------------------------------------------------------------------------
+spawners:
+  # Anti-farming: kills above this per rolling minute do not count.
+  kill-cap-per-minute: 120
+  zombie:
+    display: "&2Zombie Spawner"
+    entity: ZOMBIE
+    icon: ZOMBIE_SPAWN_EGG
+    required-kills: 25
+    price: 5
+  skeleton:
+    display: "&7Skeleton Spawner"
+    entity: SKELETON
+    icon: SKELETON_SPAWN_EGG
+    required-kills: 35
+    price: 8
+  spider:
+    display: "&cSpider Spawner"
+    entity: SPIDER
+    icon: SPIDER_SPAWN_EGG
+    required-kills: 50
+    price: 12
+  creeper:
+    display: "&aCreeper Spawner"
+    entity: CREEPER
+    icon: CREEPER_SPAWN_EGG
+    required-kills: 75
+    price: 20
