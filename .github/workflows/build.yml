@@ -71,6 +71,14 @@ jobs:
           else
             cat "$DIAG"
           fi
+          # Also pin the vanilla server jar: paperclip needs it to patch on first
+          # boot and mojang egress is blocked from the sandbox too.
+          rm -f sandbox/MOJANG-FAIL.log
+          if [ ! -s sandbox/mojang_1.21.11.jar ]; then
+            if ! MOJANG_TARGET=$(python3 ci/resolve-vanilla.py 1.21.11 sandbox 2>&1); then
+              echo "$MOJANG_TARGET" > sandbox/MOJANG-FAIL.log
+            fi
+          fi
           exit 0
       - name: Commit artifacts + build status
         if: always()
