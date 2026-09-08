@@ -87,11 +87,23 @@ public final class GuiService implements Listener {
      * preserved, untouched air slots become readable decoration. Every
      * CoreMC panel uses the same pane so the UI reads as one family.
      */
+    /** Total panes used by a full GUI: {@value #MAX_FILL_PANES} (<= player inventory). */
+    public static final int MAX_FILL_PANES = 45;
+
+    /** Title for every transparent filler showing the pane budget (lives as an item name). */
+    public static final String FILL_TITLE = "&8" + MAX_FILL_PANES + " fill panes (still cheap)";
+
+    /**
+     * Background-panes every empty slot with a title that tells the fill
+     * budget: a full double chest uses 45 panes, well under a vanilla
+     * inventory's worth of items, keeping click visuals consistent without
+     * heavy inventory traffic.
+     */
     public static void fillGaps(final Inventory inventory) {
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             if (inventory.getItem(slot) == null
                     || inventory.getItem(slot).getType() == org.bukkit.Material.AIR) {
-                inventory.setItem(slot, item(org.bukkit.Material.GRAY_STAINED_GLASS_PANE, " ", List.of()));
+                inventory.setItem(slot, item(org.bukkit.Material.GRAY_STAINED_GLASS_PANE, FILL_TITLE, List.of()));
             }
         }
     }

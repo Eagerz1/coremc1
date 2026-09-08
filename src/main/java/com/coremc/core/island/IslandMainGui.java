@@ -136,8 +136,10 @@ public final class IslandMainGui implements Gui {
                 }
             }
             case SLOT_INFO -> {
-                viewer.closeInventory();
-                viewer.performCommand("is info");
+                if (hasIsland) {
+                    viewer.closeInventory();
+                    viewer.performCommand("is info");
+                }
             }
             case SLOT_UPGRADES -> {
                 if (hasIsland) {

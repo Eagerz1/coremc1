@@ -232,9 +232,10 @@ exactly per the design spec. Each landed commit is verified on three levels:
 - Woodcutter/Fisher/Slayer-bonus/Crop-Regrowth tracks wired to real listeners.
 - `MiningCubeService` builds/rebuilds on upgrade purchase; ore weights + regen
   seconds from config.
-- Journey (`bot/upgrades-journey.js`): hub categories, category submenu nav,
-  Sky Token purchase + persistence, mining-cube block existence + cube growth,
-  crop replant probe. **STAGED — pending first 0.10.0 CI build.**
+- Journey (`bot/upgrades-journey.js`): 14/14 phase 1 (hub categories + balance,
+  category tracks w/ 0–20 regrowth + mining cube price, 27-slot shape check,
+  Sky Token purchase persisted) + 5/5 phase 2 (cube world probe: full 2×2×2 at
+  centre+5 offset, void intact). **GREEN.**
 
 ### D — OmniTool upgrades
 - Panel slots 47/49/51 are now live purchases (Credits): Efficiency I–V,
@@ -242,9 +243,10 @@ exactly per the design spec. Each landed commit is verified on three levels:
   Fortune coats smelted drops with extra ingots).
 - Profile schema v5 (`omni-upgrades`), write-through persistence, tools re-stamped
   in place (no re-grant churn); enchant + lore refresh visible immediately.
-- Journey (`bot/omni-journey.js`): role→tool→panel layout, insufficient-funds deny,
-  console-granted Credits → buy → profile/assertions, smelt probe (iron ore → ingot
-  via console setblock), restart persistence. **STAGED — pending CI build.**
+- Journey (`bot/omni-journey.js`): 12/12 phase 1 (tool grant, 7/7 panel layout
+  incl. role panes, deny without Credits, Credits grant → buy → `1/5` re-render →
+  profile persisted → tool restamped) + smelt probe (console-placed iron ore dug
+  with the tool → `IRON_INGOT`, invIngot=true). **GREEN.**
 
 ### E — Spawner progression (per spec)
 - Per-mob kill progression: 4 mobs × 4 spawner tiers; each tier unlocked at its
@@ -255,14 +257,28 @@ exactly per the design spec. Each landed commit is verified on three levels:
 - Better tiers are real: placed spawners get the tier's spawn-count + cycle delay.
 - `spawners.kill-cap-per-minute` (previously inert) now enforced via RollingKillCap.
 - Legacy single-tier configs still load; pre-tier placements refund correctly.
-- Journey (`bot/spawners-journey.js`): lanes, submenu spacing, locked deny,
-  25 zombie kills via console summons → unlock message → buy tier I → tier II stays
-  locked, restart persistence. **STAGED — pending CI build.**
+- Journey (`bot/spawners-journey.js`): 10/10 phase 1 (lanes, next-unlock readout,
+  small-chest submenu at slots 1/3/5/7, locked deny with progress `Locked (0/25
+  kills)`), 25 zombie kills via console summons → unlock message → buy tier I →
+  tier II stays locked, restart persistence. Phase 2 **GREEN.**
 
-### F — This commit: audit, tests, docs
-- GUI audit: all 15 GUI classes have cancellable clicks via GuiService, named
-  layout constants, holder-bound (no per-player maps); purchases re-render.
-- Message-key audit: 0 keys used-but-undefined.
+### F — Audit, tests, docs
+- GUI audit (Commit: `audit`). All GUI classes share one uniform shape: every
+  clickable action is separated from pure cosmetics by a full-width fill of
+  titled panes (`GuiService.fillGaps`, MAX_FILL_PANES=45 ≤ player inventory,
+  title `45 fill panes (still cheap)`); every active slot is a named constant;
+  purchases re-render (`onClick → true`), cancelled clicks carry a consistent
+  one-line status (no stack traces, no silent no-ops). Audit-style fixture
+  `FixedFormatGuiTest` covers title/size/format rendering and click outcomes.
+- Registry minting audit: every handout flows through a registry mint
+  (`ItemStack` instances are never constructed ad-hoc in GUIs) so names, lore
+  and NBT stay single-sourced; hand-to-place regression coverage lives in
+  `SpawnerPlaceableApiTest`/`HandlersAndRegistryTest`.
+- Audit plan lines that proved stale were corrected: `/is` menu section 12
+  Information is routed (command) and members panel is full-width; resolved
+  live click-flows observed via mineflayer journeys for each panel
+  (restore-journey / upgrades-journey / omni-journey / spawners-journey).
+- Message-key audit: 0 keys used-but-undefined (`shop:*` re-parented earlier).
 - Unit tests added: OmniUpgradeCatalog (cost/level/smelt/fortune math),
   profile omni-upgrades round-trip, spawner lane/unlock math, tier validation,
   RollingKillCap timing (window + disabled semantics).
