@@ -43,28 +43,40 @@ jobs:
           set -uo pipefail
           rm -f sandbox/PAPER-FAIL.log
           exec 2>&1
-          BUILD=$(curl -sSL 'https://api.papermc.io/v2/projects/paper/versions/1.21.11' \
-            | python3 -c "import json,sys; d=json.load(sys.stdin); print(max(map(int, d['builds'])))" 2>/tmp/paper-err.txt) || true
-          if [ -z "${BUILD:-}" ]; then
-            { echo "build-list fetch failed:"; cat /tmp/paper-err.txt; } > sandbox/PAPER-FAIL.log
-            exit 0
-          fi
           mkdir -p sandbox
-          OUT="sandbox/paper-1.21.11-${BUILD}.jar"
-          if [ ! -f "$OUT" ]; then
-            rm -f sandbox/paper-1.21.11-*.jar
-            if ! curl -sSL -o "$OUT" \
-              "https://api.papermc.io/v2/projects/paper/versions/1.21.11/builds/${BUILD}/downloads/paper-1.21.11-${BUILD}.jar"; then
-              { echo "download failed for build ${BUILD}"; } > sandbox/PAPER-FAIL.log
-              rm -f "$OUT"
-              exit 0
+          rm -f sandbox/PAPER-FAIL.log
+          DIAG=/tmp/paper-diag.log
+          : > "$DIAG"
+          OUT_DIR="sandbox"
+          OK=""
+          # Probe what the paper API looks like today (shape may have moved).
+          for BASE in 'https://api.papermc.io/v2/projects/paper' 'https://fill.papermc.io/v3/projects/paper'; do
+            CODE=$(curl -sSL -o /tmp/pb.json -w '%{http_code}' "$BASE" || true)
+            echo "== $BASE -> $CODE" >> "$DIAG"
+            head -c 300 /tmp/pb.json >> "$DIAG"; echo >> "$DIAG"
+          done
+          # Try a batch of direct download candidates (build 92 is known-good for 1.21.11).
+          CANDS=(
+            'https://api.papermc.io/v2/projects/paper/versions/1.21.11/builds/92/downloads/paper-1.21.11-92.jar'
+            'https://api.papermc.io/v2/projects/paper/versions/1.21.11/builds/92/downloads/paper-1.21.11-92.jar?build=92'
+            'https://dl.papermc.io/api/v2/projects/paper/versions/1.21.11/builds/92/downloads/paper-1.21.11-92.jar'
+          )
+          for URL in "${CANDS[@]}"; do
+            CODE=$(curl -sSL -o "$OUT_DIR/paper-try.jar" -w '%{http_code}' "$URL" || true)
+            SZ=$(stat -c%s "$OUT_DIR/paper-try.jar" 2>/dev/null || echo 0)
+            echo "== $URL -> $CODE ($SZ bytes)" >> "$DIAG"
+            if [ "$CODE" = "200" ] && [ "$SZ" -gt 10000000 ]; then
+              mv "$OUT_DIR/paper-try.jar" "$OUT_DIR/paper-1.21.11-92.jar"
+              echo "SUCCESS: $URL" >> "$DIAG"
+              OK=1
+              break
             fi
-          fi
-          if [ -s "$OUT" ]; then
-            SIZE_MB=$(( $(stat -c%s "$OUT") / 1048576 ))
-            echo "paper build ${BUILD} ready: $OUT (${SIZE_MB} MB)"
+          done
+          rm -f "$OUT_DIR/paper-try.jar"
+          if [ -z "$OK" ]; then
+            cp "$DIAG" sandbox/PAPER-FAIL.log
           else
-            echo "empty jar for build ${BUILD}" > sandbox/PAPER-FAIL.log
+            cat "$DIAG"
           fi
           exit 0
       - name: Commit artifacts + build status
