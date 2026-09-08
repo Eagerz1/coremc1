@@ -40,39 +40,32 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
-          set -uo pipefail
-          rm -f sandbox/PAPER-FAIL.log
-          exec 2>&1
-          mkdir -p sandbox
-          rm -f sandbox/PAPER-FAIL.log
           DIAG=/tmp/paper-diag.log
           : > "$DIAG"
-          OUT_DIR="sandbox"
           OK=""
-          # Probe what the paper API looks like today (shape may have moved).
-          for BASE in 'https://api.papermc.io/v2/projects/paper' 'https://fill.papermc.io/v3/projects/paper'; do
-            CODE=$(curl -sSL -o /tmp/pb.json -w '%{http_code}' "$BASE" || true)
-            echo "== $BASE -> $CODE" >> "$DIAG"
-            head -c 300 /tmp/pb.json >> "$DIAG"; echo >> "$DIAG"
-          done
-          # Try a batch of direct download candidates (build 92 is known-good for 1.21.11).
-          CANDS=(
-            'https://api.papermc.io/v2/projects/paper/versions/1.21.11/builds/92/downloads/paper-1.21.11-92.jar'
-            'https://api.papermc.io/v2/projects/paper/versions/1.21.11/builds/92/downloads/paper-1.21.11-92.jar?build=92'
-            'https://dl.papermc.io/api/v2/projects/paper/versions/1.21.11/builds/92/downloads/paper-1.21.11-92.jar'
-          )
-          for URL in "${CANDS[@]}"; do
-            CODE=$(curl -sSL -o "$OUT_DIR/paper-try.jar" -w '%{http_code}' "$URL" || true)
-            SZ=$(stat -c%s "$OUT_DIR/paper-try.jar" 2>/dev/null || echo 0)
+          LIST_URL='https://fill.papermc.io/v3/projects/paper/versions/1.21.11/builds'
+          CODE=$(curl -sSL -o /tmp/builds.json -w '%{http_code}' "$LIST_URL" || true)
+          echo "== $LIST_URL -> $CODE" >> "$DIAG"
+          head -c 400 /tmp/builds.json >> "$DIAG"; echo >> "$DIAG"
+          INFO=$(python3 ci/resolve-paper.py /tmp/builds.json 2>>"$DIAG" || true)
+          echo "resolved: ${INFO:-<empty>}" >> "$DIAG"
+          URL=$(printf '%s' "$INFO" | python3 -c 'import json,sys; print(json.load(sys.stdin)["url"])' 2>/dev/null || true)
+          NAME=$(printf '%s' "$INFO" | python3 -c 'import json,sys; print(json.load(sys.stdin)["name"])' 2>/dev/null || true)
+          SHA=$(printf '%s' "$INFO" | python3 -c 'import json,sys; print(json.load(sys.stdin)["sha256"])' 2>/dev/null || true)
+          if [ -n "$URL" ] && [ -n "$NAME" ]; then
+            CODE=$(curl -sSL -o "sandbox/$NAME" -w '%{http_code}' "$URL" || true)
+            SZ=$(stat -c%s "sandbox/$NAME" 2>/dev/null || echo 0)
             echo "== $URL -> $CODE ($SZ bytes)" >> "$DIAG"
             if [ "$CODE" = "200" ] && [ "$SZ" -gt 10000000 ]; then
-              mv "$OUT_DIR/paper-try.jar" "$OUT_DIR/paper-1.21.11-92.jar"
-              echo "SUCCESS: $URL" >> "$DIAG"
-              OK=1
-              break
+              if [ -n "$SHA" ]; then
+                if echo "${SHA}  sandbox/${NAME}" | sha256sum -c - >> "$DIAG" 2>&1; then OK=1; else rm -f "sandbox/$NAME"; fi
+              else
+                OK=1
+              fi
+            else
+              rm -f "sandbox/$NAME"
             fi
-          done
-          rm -f "$OUT_DIR/paper-try.jar"
+          fi
           if [ -z "$OK" ]; then
             cp "$DIAG" sandbox/PAPER-FAIL.log
           else
