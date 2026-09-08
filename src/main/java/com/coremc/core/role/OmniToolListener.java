@@ -178,6 +178,17 @@ public final class OmniToolListener implements Listener {
     }
 
     /**
+     * Join re-stamp: a tool that was parked in the ender chest (the
+     * supported overflow path) while upgrades were purchased carries stale
+     * enchants; refreshHeldTools closes that staleness window on rejoin.
+     */
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onJoin(final org.bukkit.event.player.PlayerJoinEvent event) {
+        plugin.playerData().profileOf(event.getPlayer().getUniqueId())
+                .ifPresent(profile -> tools.refreshHeldTools(event.getPlayer(), profile));
+    }
+
+    /**
      * Death-disconnect safety (audit fix): a player who dies holding the
      * tool and then logs out at the death screen must not leave the tool
      * in the respawn trust until some future respawn — hand it straight

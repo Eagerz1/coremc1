@@ -137,14 +137,24 @@ public final class OmniToolService {
     /** Stamps the enchantments implied by purchased upgrades (Efficiency/Fortune);
      * the smelter is behavioural (see {@code OmniToolListener#onBlockBreak}). */
     private void applyUpgradeEnchants(final ItemMeta meta, final PlayerProfile profile) {
-        stamp(meta, org.bukkit.enchantments.Enchantment.EFFICIENCY,
-                profile.omniUpgrade(OmniUpgradeCatalog.EFFICIENCY));
-        stamp(meta, org.bukkit.enchantments.Enchantment.FORTUNE,
-                profile.omniUpgrade(OmniUpgradeCatalog.FORTUNE));
+        stamp(meta, enchantByKey("efficiency"), profile.omniUpgrade(OmniUpgradeCatalog.EFFICIENCY));
+        stamp(meta, enchantByKey("fortune"), profile.omniUpgrade(OmniUpgradeCatalog.FORTUNE));
+    }
+
+    /**
+     * Resolves an enchantment by namespaced key ({@code in} since Bukkit 1.14).
+     * Key names are permanently stable, unlike the legacy enum constants
+     * (renamed in 1.20.5), so this compiles and runs on both API eras.
+     */
+    private static org.bukkit.enchantments.Enchantment enchantByKey(final String key) {
+        return org.bukkit.enchantments.Enchantment.getByKey(new NamespacedKey("minecraft", key));
     }
 
     private void stamp(
             final ItemMeta meta, final org.bukkit.enchantments.Enchantment enchantment, final int level) {
+        if (enchantment == null) {
+            return; // enchant unavailable on this server version — upgrades stay profile-only
+        }
         if (level <= 0) {
             meta.removeEnchant(enchantment);
         } else {
