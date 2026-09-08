@@ -109,9 +109,11 @@ public final class SpawnerService {
         int index = 0;
         for (final Map<?, ?> entry : raw) {
             index++;
+            final Object rawDisplay = entry.get("display");
             appendTier(mobId, tiers,
-                    String.valueOf(entry.getOrDefault(
-                            "display", mobDisplay + " Spawner " + SpawnerTier.roman(index))),
+                    rawDisplay == null
+                            ? mobDisplay + " Spawner " + SpawnerTier.roman(index)
+                            : String.valueOf(rawDisplay),
                     entry.get("required-kills"), entry.get("price"),
                     entry.get("spawn-count"), entry.get("spawn-delay-ticks"));
         }
