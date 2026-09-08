@@ -1,3 +1,4 @@
-download failed for build Traceback (most recent call last):
+build-list fetch failed:
+Traceback (most recent call last):
   File "<string>", line 1, in <module>
 KeyError: 'builds'
