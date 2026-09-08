@@ -36,13 +36,27 @@ jobs:
             --compress zip-9 --strip-debug --no-header-files --no-man-pages \
             --output sandbox/runtime/linux-x64
           sandbox/runtime/linux-x64/bin/java -version
+      - name: Fetch Paper 1.21.11 server jar (sandbox has no papermc.io egress; CI does)
+        if: always()
+        run: |
+          set -euo pipefail
+          BUILD=$(curl -fsSL 'https://api.papermc.io/v2/projects/paper/versions/1.21.11/builds' \
+            | python3 -c "import json,sys; print(max(b['build'] for b in json.load(sys.stdin)['builds']))")
+          OUT="sandbox/paper-1.21.11-${BUILD}.jar"
+          mkdir -p sandbox
+          if [ ! -f "$OUT" ]; then
+            rm -f sandbox/paper-1.21.11-*.jar
+            curl -fSL -o "$OUT" \
+              "https://api.papermc.io/v2/projects/paper/versions/1.21.11/builds/${BUILD}/downloads/paper-1.21.11-${BUILD}.jar"
+          fi
+          test -s "$OUT" && echo "paper build ${BUILD} ready: $OUT"
       - name: Commit artifacts + build status
         if: always()
         run: |
           git config user.name "arena-build"
           git config user.email "bot@users.noreply.github.com"
           git add -f sandbox/
-          git commit -m "sandbox artifacts: jre + CoreMC jar + build status" || true
+          git commit -m "sandbox artifacts: jre + CoreMC jar + build status + paper" || true
           git push origin HEAD:${GITHUB_REF_NAME}
       - name: Propagate exit code
         if: always()
