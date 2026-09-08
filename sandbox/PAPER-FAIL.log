@@ -1,4 +1,7 @@
-build-list fetch failed:
-Traceback (most recent call last):
-  File "<string>", line 1, in <module>
-KeyError: 'builds'
+== https://api.papermc.io/v2/projects/paper -> 410
+{"ok":false,"error":"sunset","message":"This API version has been sunset and is no longer available. To continue using the service, please upgrade to a supported API version."}
+== https://fill.papermc.io/v3/projects/paper -> 200
+{"project":{"id":"paper","name":"Paper"},"versions":{"26.2":["26.2","26.2-rc-2"],"26.1":["26.1.2","26.1.1"],"1.21":["1.21.11","1.21.11-rc3","1.21.11-rc2","1.21.11-rc1","1.21.11-pre5","1.21.11-pre4","1.21.11-pre3","1.21.10","1.21.9","1.21.9-rc1","1.21.9-pre4","1.21.9-pre3","1.21.9-pre2","1.21.8","1.2
+== https://api.papermc.io/v2/projects/paper/versions/1.21.11/builds/92/downloads/paper-1.21.11-92.jar -> 410 (176 bytes)
+== https://api.papermc.io/v2/projects/paper/versions/1.21.11/builds/92/downloads/paper-1.21.11-92.jar?build=92 -> 410 (176 bytes)
+== https://dl.papermc.io/api/v2/projects/paper/versions/1.21.11/builds/92/downloads/paper-1.21.11-92.jar -> 000 (176 bytes)
