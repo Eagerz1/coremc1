@@ -1,0 +1,34 @@
+Cloning into 'zg'...
+==> compile main sources
+src/main/java/com/coremc/core/spawner/SpawnerService.java:114: error: incompatible types: String cannot be converted to CAP#1
+                            "display", mobDisplay + " Spawner " + SpawnerTier.roman(index))),
+                                                                ^
+  where CAP#1 is a fresh type-variable:
+    CAP#1 extends Object from capture of ?
+src/main/java/com/coremc/core/spawner/SpawnerMenuGui.java:55: error: incompatible types: SpawnerDefinition cannot be converted to TierRef
+            final boolean unlocked = profile != null && plugin.spawners().isUnlocked(profile, def);
+                                                                                              ^
+src/main/java/com/coremc/core/spawner/SpawnerMenuGui.java:56: error: cannot find symbol
+            final String price = String.format(Locale.ROOT, "%,d", def.priceSkyTokens());
+                                                                      ^
+  symbol:   method priceSkyTokens()
+  location: variable def of type SpawnerDefinition
+src/main/java/com/coremc/core/spawner/SpawnerMenuGui.java:63: error: cannot find symbol
+                                    "&7Requires &f" + def.requiredKills() + "&7 kills &8(&f" + kills
+                                                         ^
+  symbol:   method requiredKills()
+  location: variable def of type SpawnerDefinition
+src/main/java/com/coremc/core/spawner/SpawnerMenuGui.java:64: error: cannot find symbol
+                                            + "&8/&7" + def.requiredKills() + "&8)")));
+                                                           ^
+  symbol:   method requiredKills()
+  location: variable def of type SpawnerDefinition
+src/main/java/com/coremc/core/spawner/SpawnerMenuGui.java:87: error: incompatible types: SpawnerDefinition cannot be converted to TierRef
+            plugin.spawners().buy(viewer, profile, defs.get(i));
+                                                           ^
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: src/main/java/com/coremc/core/CoreMCPlugin.java uses or overrides a deprecated API that is marked for removal.
+Note: Recompile with -Xlint:removal for details.
+Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
+6 errors
