@@ -153,33 +153,48 @@ generators:
 
 # --------------------------------------------------------------------------
 # SPAWNERS (/spawners)
-# Spawners are unlocked by killing <required-kills> of the entity type,
-# then purchased with Sky Tokens. Place them to spawn that entity.
+# Per-mob kill progression unlocks progressively BETTER spawner tiers.
+# Each mob lane has up to 4 tiers; a tier is unlocked once the player has
+# killed <required-kills> of that entity, then bought with Sky Tokens.
+# spawn-count / spawn-delay-ticks are applied to the placed spawner block
+# (fewer ticks = faster cycle, more spawns per cycle = better tier).
 # --------------------------------------------------------------------------
 spawners:
   # Anti-farming: kills above this per rolling minute do not count.
   kill-cap-per-minute: 120
   zombie:
-    display: "&2Zombie Spawner"
+    display: "&2Zombie"
     entity: ZOMBIE
     icon: ZOMBIE_SPAWN_EGG
-    required-kills: 25
-    price: 5
+    tiers:
+      - { display: "&2Zombie Spawner I",    required-kills: 25,  price: 5,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&2Zombie Spawner II",   required-kills: 60,  price: 15, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&2Zombie Spawner III",  required-kills: 120, price: 30, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&2Zombie Spawner IV",   required-kills: 200, price: 50, spawn-count: 4, spawn-delay-ticks: 160 }
   skeleton:
-    display: "&7Skeleton Spawner"
+    display: "&7Skeleton"
     entity: SKELETON
     icon: SKELETON_SPAWN_EGG
-    required-kills: 35
-    price: 8
+    tiers:
+      - { display: "&7Skeleton Spawner I",   required-kills: 35,  price: 8,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&7Skeleton Spawner II",  required-kills: 75,  price: 22, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&7Skeleton Spawner III", required-kills: 140, price: 40, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&7Skeleton Spawner IV",  required-kills: 240, price: 65, spawn-count: 4, spawn-delay-ticks: 160 }
   spider:
-    display: "&cSpider Spawner"
+    display: "&cSpider"
     entity: SPIDER
     icon: SPIDER_SPAWN_EGG
-    required-kills: 50
-    price: 12
+    tiers:
+      - { display: "&cSpider Spawner I",   required-kills: 50,  price: 12, spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&cSpider Spawner II",  required-kills: 100, price: 30, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&cSpider Spawner III", required-kills: 180, price: 55, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&cSpider Spawner IV",  required-kills: 300, price: 90, spawn-count: 4, spawn-delay-ticks: 160 }
   creeper:
-    display: "&aCreeper Spawner"
+    display: "&aCreeper"
     entity: CREEPER
     icon: CREEPER_SPAWN_EGG
-    required-kills: 75
-    price: 20
+    tiers:
+      - { display: "&aCreeper Spawner I",   required-kills: 75,  price: 20,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&aCreeper Spawner II",  required-kills: 150, price: 50,  spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&aCreeper Spawner III", required-kills: 260, price: 90,  spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&aCreeper Spawner IV",  required-kills: 400, price: 150, spawn-count: 4, spawn-delay-ticks: 160 }

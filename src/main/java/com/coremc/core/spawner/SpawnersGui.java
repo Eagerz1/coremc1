@@ -4,23 +4,27 @@ import com.coremc.core.CoreMCPlugin;
 import com.coremc.core.gui.Gui;
 import com.coremc.core.gui.GuiService;
 import com.coremc.core.player.PlayerProfile;
+import java.util.ArrayList;
 import java.util.List;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 /**
- * {@code /spawners} — unlock progression overview (27-slot single chest).
+ * {@code /spawners} — per-mob progression overview (27-slot single chest).
+ *
+ * Each mob lane shows the player's kill count for the entity, how many
+ * spawner tiers are unlocked, and the next unlockable tier. Clicking a
+ * lane opens its {@link SpawnerTierGui} (the small-chest submenu with the
+ * mob's four spawners).
  *
  * Layout (all positions named constants):
- *   10/12/14/16  spawner entries with kill progress and unlock state
- *   22           "Open the spawner menu" shortcut
+ *   10/12/14/16  mob lanes (zombie / skeleton / spider / creeper)
  *   26           close
  */
 public final class SpawnersGui implements Gui {
 
-    private static final int[] SLOTS_SPAWNERS = {10, 12, 14, 16};
-    private static final int SLOT_MENU = 22;
+    private static final int[] SLOTS_LANES = {10, 12, 14, 16};
     private static final int SLOT_CLOSE = 26;
 
     private final CoreMCPlugin plugin;
@@ -31,7 +35,7 @@ public final class SpawnersGui implements Gui {
 
     @Override
     public String title() {
-        return com.coremc.core.util.ColorUtil.colorize("&b&lCOREMC &8» &fSpawner Unlocks");
+        return com.coremc.core.util.ColorUtil.colorize("&b&lCOREMC &8» &fSpawners");
     }
 
     @Override
@@ -42,29 +46,30 @@ public final class SpawnersGui implements Gui {
     @Override
     public void build(final Player viewer, final Inventory inventory) {
         final PlayerProfile profile = plugin.playerData().profileOf(viewer.getUniqueId()).orElse(null);
-        final List<SpawnerDefinition> defs = plugin.spawners().all();
-        for (int i = 0; i < SLOTS_SPAWNERS.length; i++) {
-            if (i >= defs.size()) {
+        final List<SpawnerDefinition> lanes = plugin.spawners().all();
+        for (int i = 0; i < SLOTS_LANES.length; i++) {
+            if (i >= lanes.size()) {
                 break;
             }
-            final SpawnerDefinition def = defs.get(i);
-            final long kills = profile == null ? 0L : plugin.spawners().killsOf(profile, def);
-            final boolean unlocked = profile != null && plugin.spawners().isUnlocked(profile, def);
-            final String state = unlocked
-                    ? "&a&lUNLOCKED"
-                    : "&c&lLOCKED &8(&7" + kills + "&8/&7" + def.requiredKills() + " kills&8)";
-            inventory.setItem(SLOTS_SPAWNERS[i], GuiService.item(
-                    def.icon(),
-                    def.display(),
-                    List.of(
-                            "&7Kill &f" + def.requiredKills() + "&7 " + def.killKey() + "s to unlock.",
-                            "&7Progress: &f" + kills + "&7 of &f" + def.requiredKills(),
-                            state)));
+            final SpawnerDefinition mob = lanes.get(i);
+            final long kills = profile == null ? 0L : plugin.spawners().killsOf(profile, mob);
+            final int unlocked = mob.unlockedTierCount(kills);
+            final List<String> lore = new ArrayList<>();
+            lore.add("&7Kills: &f" + kills + " &8(" + mob.killKey() + ")");
+            lore.add("&7Spawner tiers unlocked: &b" + unlocked + "&7/&b" + mob.tiers().size());
+            final var next = mob.nextLockedTier(kills);
+            if (next.isPresent()) {
+                lore.add("&7Next: " + next.get().display()
+                        + " &7at &f" + next.get().requiredKills() + "&7 kills");
+            } else {
+                lore.add("&aAll spawner tiers unlocked!");
+            }
+            lore.add("&eClick to view this mob's spawners.");
+            inventory.setItem(SLOTS_LANES[i], GuiService.item(
+                    mob.icon(),
+                    mob.display(),
+                    lore));
         }
-        inventory.setItem(SLOT_MENU, GuiService.item(
-                Material.NETHER_STAR,
-                "&b&lSpawner Menu",
-                List.of("&7Buy unlocked spawners with Sky Tokens.")));
         inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
 
         GuiService.fillGaps(inventory);
@@ -76,14 +81,12 @@ public final class SpawnersGui implements Gui {
             viewer.closeInventory();
             return false;
         }
-        if (slot == SLOT_MENU) {
-            plugin.gui().open(viewer, new SpawnerMenuGui(plugin));
-            return false;
-        }
-        // entry clicks act as info/deny hints — purchases happen in the menu
-        for (int i = 0; i < SLOTS_SPAWNERS.length; i++) {
-            if (slot == SLOTS_SPAWNERS[i]) {
-                plugin.gui().open(viewer, new SpawnerMenuGui(plugin));
+        for (int i = 0; i < SLOTS_LANES.length; i++) {
+            if (slot == SLOTS_LANES[i]) {
+                final List<SpawnerDefinition> lanes = plugin.spawners().all();
+                if (i < lanes.size()) {
+                    plugin.gui().open(viewer, new SpawnerTierGui(plugin, lanes.get(i)));
+                }
                 return false;
             }
         }

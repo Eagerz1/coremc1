@@ -58,9 +58,14 @@ public final class PlaceableListener implements Listener {
                 block.getWorld().getName(), block.getX(), block.getY(), block.getZ(),
                 id.get().getKey(), id.get().getValue(), event.getPlayer().getUniqueId());
         if (id.get().getKey() == PlaceableService.Type.SPAWNER) {
-            plugin.spawners().definition(id.get().getValue()).ifPresent(def -> {
+            plugin.spawners().tierFor(id.get().getValue()).ifPresent(ref -> {
                 if (block.getState() instanceof org.bukkit.block.CreatureSpawner spawnerState) {
-                    spawnerState.setSpawnedType(def.entityType());
+                    spawnerState.setSpawnedType(ref.mob().entityType());
+                    // "Better tiers" are real world-level behaviour: more mobs
+                    // per cycle and a faster cycle, taken from the tier config.
+                    spawnerState.setSpawnCount(ref.tier().spawnCount());
+                    spawnerState.setMinSpawnDelay(ref.tier().spawnDelayTicks());
+                    spawnerState.setMaxSpawnDelay(ref.tier().spawnDelayTicks());
                     spawnerState.update(true);
                 }
             });
