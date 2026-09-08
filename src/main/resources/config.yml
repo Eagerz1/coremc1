@@ -100,6 +100,27 @@ roles:
   universal-share: 0.25
 
 # --------------------------------------------------------------------------
+# OMNITOOL UPGRADES (Omni-Tool panel, shift right-click with the tool)
+# Permanent per-player upgrades bought with Credits. `costs` has one entry
+# per level (index 0 = price of level 1). The Efficiency level is stamped
+# onto the soulbound tool; Fortune multiplies Auto-Smelter ingots.
+# --------------------------------------------------------------------------
+omnitool:
+  upgrades:
+    efficiency:
+      display: "&eOmni Efficient Material"
+      max-level: 5
+      costs: [2500, 7500, 25000, 75000, 200000]
+    fortune:
+      display: "&6Omni Fortune Coating"
+      max-level: 3
+      costs: [10000, 40000, 120000]
+    smelter:
+      display: "&cOmni Auto-Smelter"
+      max-level: 1
+      costs: [50000]
+
+# --------------------------------------------------------------------------
 # GENERATOR MARKET (/gens)
 # Generators are bought with Credits, placed in the world, and right-clicked
 # to harvest their product after a cooldown. All balance lives here.

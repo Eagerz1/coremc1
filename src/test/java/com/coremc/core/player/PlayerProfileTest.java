@@ -156,4 +156,30 @@ class PlayerProfileTest {
         assertEquals(9L, ((Number) restored.progressOf("miner").get("level")).longValue());
         assertEquals(88L, ((Number) restored.progressOf("miner").get("xp")).longValue());
     }
+
+    @Test
+    void omniUpgradesRoundTripAndDefaults() {
+        final PlayerProfile profile = PlayerProfile.createNew(uuid, "Upgrader", 1L);
+        assertEquals(0, profile.omniUpgrade("efficiency"));
+        assertEquals(0, profile.omniUpgrade("never-heard-of-it"));
+
+        profile.setOmniUpgrade("efficiency", 5);
+        profile.setOmniUpgrade("smelter", 1);
+        profile.setOmniUpgrade("fortune", 0); // 0 = cleared, never persisted
+
+        final PlayerProfile restored = PlayerProfile.fromMap(uuid, profile.toMap());
+        assertEquals(5, restored.omniUpgrade("efficiency"));
+        assertEquals(1, restored.omniUpgrade("smelter"));
+        assertEquals(0, restored.omniUpgrade("fortune"));
+        assertFalse(((java.util.Map<?, ?>) profile.toMap().get("omni-upgrades")).containsKey("fortune"));
+
+        // downgrade-to-zero also removes the entry
+        restored.setOmniUpgrade("efficiency", 0);
+        assertEquals(0, restored.omniUpgrade("efficiency"));
+
+        // v4 profiles (no omni-upgrades key) load with fully-absent upgrades
+        final java.util.Map<String, Object> v4 = new java.util.LinkedHashMap<>(profile.toMap());
+        v4.remove("omni-upgrades");
+        assertEquals(0, PlayerProfile.fromMap(uuid, v4).omniUpgrade("smelter"));
+    }
 }

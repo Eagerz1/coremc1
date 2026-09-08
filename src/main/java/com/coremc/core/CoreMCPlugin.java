@@ -153,6 +153,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         // 3e. Roles + OmniTool (profile-driven progression).
         this.omniToolService = new OmniToolService(this);
         this.roleService = new RoleService(this);
+        final int omniUpgrades = omniToolService.load();
 
         // 3f. Placeables: generators + spawners.
         this.placeableService = new PlaceableService(this);
@@ -166,7 +167,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.shopService = new ShopService(this);
         final int shopEntries = shopService.loadCatalogue();
         getLogger().info("Loaded " + gens + " generator(s), " + spawners + " spawner type(s), "
-                + shopEntries + " shop entr(y/ies).");
+                + shopEntries + " shop entr(y/ies), " + omniUpgrades + " omni upgrade(s).");
 
         // 4. Listeners.
         final PluginManager pluginManager = getServer().getPluginManager();
@@ -240,6 +241,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         spawnerService.load();
         generatorService.load();
         shopService.loadCatalogue();
+        omniToolService.load();
     }
 
     private void registerCommands() {

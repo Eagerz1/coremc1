@@ -55,6 +55,39 @@ public final class OmniToolListener implements Listener {
         plugin.gui().open(event.getPlayer(), new OmniToolGui(plugin));
     }
 
+    // ------------------------------------------------------------------ Auto-Smelter upgrade
+
+    /**
+     * Auto-Smelter (+ Fortune coating on smelted drops): breaking an ore
+     * with the Omni-Tool and the smelter upgrade owned drops the smelted
+     * product with furnace-comparable XP. Runs at HIGH+ignoreCancelled so
+     * island protection and other deny-plugins always win first.
+     * Vanilla drops are suppressed — exactly one smelted stack appears
+     * (no double-drop exploits possible).
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBlockBreak(final org.bukkit.event.block.BlockBreakEvent event) {
+        final ItemStack tool = tools.toolInMainHand(event.getPlayer());
+        if (tool == null) {
+            return;
+        }
+        final var profile = plugin.playerData().profileOf(event.getPlayer().getUniqueId()).orElse(null);
+        if (profile == null || profile.omniUpgrade(OmniUpgradeCatalog.SMELTER) <= 0) {
+            return;
+        }
+        final var smelted = OmniUpgradeCatalog.smeltedResult(event.getBlock().getType());
+        if (smelted == null) {
+            return;
+        }
+        event.setDropItems(false);
+        final int amount = 1 + OmniUpgradeCatalog.fortuneRollAmount(
+                profile.omniUpgrade(OmniUpgradeCatalog.FORTUNE), java.util.concurrent.ThreadLocalRandom.current());
+        event.setExpToDrop(OmniUpgradeCatalog.smeltXpFor(event.getBlock().getType()));
+        event.getBlock()
+                .getWorld()
+                .dropItemNaturally(event.getBlock().getLocation(), new ItemStack(smelted, amount));
+    }
+
     // ------------------------------------------------------------------ no dropping
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

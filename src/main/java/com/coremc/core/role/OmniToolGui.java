@@ -17,7 +17,8 @@ import org.bukkit.inventory.Inventory;
  *   top-left:    selected role + role level progress
  *   top-right:   OmniTool level progress
  *   middle row:  per-role level overview (6 panes)
- *   bottom row:  future upgrade slots (visually reserved today)
+ *   bottom row:  OmniTool upgrades (Efficient Material / Fortune Coating /
+ *                Auto-Smelter) — click to buy the next level with Credits
  *   bottom-centre: close
  */
 public final class OmniToolGui implements Gui {
@@ -85,9 +86,9 @@ public final class OmniToolGui implements Gui {
         progressPane(inventory, profile, current, Role.FARMER, SLOT_PROGRESS_FARMER);
         progressPane(inventory, profile, current, Role.UNIVERSAL, SLOT_PROGRESS_UNIVERSAL);
 
-        reserveUpgrade(inventory, SLOT_UPGRADE_1, "Omni Efficient Material");
-        reserveUpgrade(inventory, SLOT_UPGRADE_2, "Omni Fortune Coating");
-        reserveUpgrade(inventory, SLOT_UPGRADE_3, "Omni Auto-Smelter");
+        upgradeEntry(inventory, profile, SLOT_UPGRADE_1, OmniUpgradeCatalog.EFFICIENCY);
+        upgradeEntry(inventory, profile, SLOT_UPGRADE_2, OmniUpgradeCatalog.FORTUNE);
+        upgradeEntry(inventory, profile, SLOT_UPGRADE_3, OmniUpgradeCatalog.SMELTER);
 
         inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&cClose", List.of()));
     }
@@ -118,13 +119,47 @@ public final class OmniToolGui implements Gui {
                                 "&7XP: &f" + view.xp() + (view.maxed() ? "" : "&7/&f" + view.xpToNext()))));
     }
 
-    private void reserveUpgrade(final Inventory inventory, final int slot, final String name) {
-        inventory.setItem(
-                slot,
-                GuiService.item(
-                        Material.LIGHT_GRAY_STAINED_GLASS_PANE,
-                        "&8" + name,
-                        List.of("&7Upgrade slot — arrives in a future CoreMC update")));
+    /** Per-upgrade pane: icon + purchased level + next-level price (or MAXED). */
+    private void upgradeEntry(
+            final Inventory inventory, final PlayerProfile profile, final int slot, final String upgradeId) {
+        final var found = plugin.omniTool().upgrades().upgrade(upgradeId);
+        if (found.isEmpty()) {
+            inventory.setItem(slot, GuiService.item(
+                    Material.LIGHT_GRAY_STAINED_GLASS_PANE, "&8Upgrade", List.of("&7Not configured.")));
+            return;
+        }
+        final OmniUpgradeCatalog.Upgrade def = found.get();
+        final int level = profile.omniUpgrade(upgradeId);
+        final Material icon = switch (upgradeId) {
+            case OmniUpgradeCatalog.FORTUNE -> Material.AMETHYST_CLUSTER;
+            case OmniUpgradeCatalog.SMELTER -> Material.BLAZE_ROD;
+            default -> Material.GOLDEN_PICKAXE; // efficiency: better material
+        };
+        final List<String> lore = new ArrayList<>();
+        lore.add("&7Level: &b" + level + "&7/&b" + def.maxLevel());
+        lore.add("&7Effect: " + effectLine(upgradeId, Math.max(level, 1)));
+        if (def.maxed(level)) {
+            lore.add("&a&lMAXED OUT");
+        } else {
+            final long price = def.costForNextLevel(level);
+            lore.add("&7Next level: &a" + String.format(java.util.Locale.ROOT, "%,d", price) + " Credits");
+            lore.add("&eClick to purchase.");
+        }
+        inventory.setItem(slot, GuiService.item(icon, def.display(), lore));
+    }
+
+    /** Human-readable effect line for an upgrade level (mirrors the listener behaviour). */
+    private String effectLine(final String upgradeId, final int level) {
+        return switch (upgradeId) {
+            case OmniUpgradeCatalog.FORTUNE ->
+                "&bExtra ingots on smelted ores &8(avg +" + switch (level) {
+                    case 1 -> "0.33";
+                    case 2 -> "0.75";
+                    default -> "1.20";
+                } + "&8)";
+            case OmniUpgradeCatalog.SMELTER -> "&bOres drop pre-smelted";
+            default -> "&bEfficiency " + level + " mining speed";
+        };
     }
 
     private String bar(final RoleService.ProgressView view) {
@@ -143,6 +178,19 @@ public final class OmniToolGui implements Gui {
             viewer.closeInventory();
             return false;
         }
-        return false; // display-only panel
+        final String upgradeId = switch (slot) {
+            case SLOT_UPGRADE_1 -> OmniUpgradeCatalog.EFFICIENCY;
+            case SLOT_UPGRADE_2 -> OmniUpgradeCatalog.FORTUNE;
+            case SLOT_UPGRADE_3 -> OmniUpgradeCatalog.SMELTER;
+            default -> null;
+        };
+        if (upgradeId != null) {
+            final PlayerProfile profile = plugin.playerData().profileOf(viewer.getUniqueId()).orElse(null);
+            if (profile != null) {
+                plugin.omniTool().purchaseUpgrade(viewer, profile, upgradeId);
+            }
+            return true; // re-render: level/price line updates immediately
+        }
+        return false; // all other panes are display-only
     }
 }

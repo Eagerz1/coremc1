@@ -40,10 +40,49 @@ public final class OmniToolService {
     /** uuid -> tools held in trust across death until respawn. */
     private final Map<UUID, List<ItemStack>> respawnTrust = new ConcurrentHashMap<>();
 
+    /** Purchased-upgrade catalogue (config-driven; {@code omnitool.upgrades}). */
+    private volatile OmniUpgradeCatalog upgrades = new OmniUpgradeCatalog(Map.of());
+
     public OmniToolService(final CoreMCPlugin plugin) {
         this.plugin = plugin;
         this.markerKey = new NamespacedKey(plugin, "omnitool");
         this.roleKey = new NamespacedKey(plugin, "omnitool-role");
+    }
+
+    /** (Re)loads {@code omnitool.upgrades} from config. Returns loaded count. */
+    public int load() {
+        final org.bukkit.configuration.ConfigurationSection section =
+                plugin.getConfig().getConfigurationSection("omnitool.upgrades");
+        final Map<String, OmniUpgradeCatalog.Upgrade> parsed = new java.util.LinkedHashMap<>();
+        if (section != null) {
+            for (final String id : section.getKeys(false)) {
+                final org.bukkit.configuration.ConfigurationSection def =
+                        section.getConfigurationSection(id);
+                if (def == null) {
+                    continue;
+                }
+                final int maxLevel = Math.max(1, def.getInt("max-level", 1));
+                final List<Long> costs = new ArrayList<>();
+                for (final long cost : def.getLongList("costs")) {
+                    costs.add(Math.max(0L, cost));
+                }
+                while (costs.size() < maxLevel) {
+                    costs.add(0L); // tolerant defaults: missing tiers become free
+                }
+                try {
+                    parsed.put(id, new OmniUpgradeCatalog.Upgrade(
+                            id, def.getString("display", "&f" + id), maxLevel, costs.subList(0, maxLevel)));
+                } catch (IllegalArgumentException e) {
+                    plugin.getLogger().warning("OmniTool upgrade '" + id + "' skipped: " + e.getMessage());
+                }
+            }
+        }
+        this.upgrades = new OmniUpgradeCatalog(parsed);
+        return parsed.size();
+    }
+
+    public OmniUpgradeCatalog upgrades() {
+        return upgrades;
     }
 
     public boolean isOmniTool(final ItemStack item) {
@@ -63,22 +102,84 @@ public final class OmniToolService {
         return key == null ? null : Role.byKey(key).orElse(null);
     }
 
-    /** Builds a fresh OmniTool bound to {@code role}, stamped with the tool level. */
-    public ItemStack create(final Role role, final int toolLevel) {
+    /** Builds a fresh OmniTool bound to {@code role}, stamped with the tool level
+     * and every OmniTool upgrade the owner has purchased. */
+    public ItemStack create(final Role role, final PlayerProfile profile) {
         final ItemStack item = new ItemStack(Material.NETHERITE_PICKAXE);
         final ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(ColorUtil.colorize("&b&lOmni-Tool"));
         final List<String> lore = new ArrayList<>();
         lore.add(ColorUtil.colorize("&7Role: " + role.display()));
-        lore.add(ColorUtil.colorize("&7OmniTool level: &b" + toolLevel));
+        lore.add(ColorUtil.colorize("&7OmniTool level: &b" + profile.omniToolLevel()));
         lore.add(ColorUtil.colorize("&8Shift right-click to open the Omni Panel."));
         lore.add(ColorUtil.colorize("&8Soulbound — cannot be dropped or lost on death."));
+        appendUpgradeLore(lore, profile);
         meta.setLore(lore);
         meta.setUnbreakable(true);
         meta.getPersistentDataContainer().set(markerKey, PersistentDataType.BYTE, (byte) 1);
         meta.getPersistentDataContainer().set(roleKey, PersistentDataType.STRING, role.key());
+        applyUpgradeEnchants(meta, profile);
         item.setItemMeta(meta);
         return item;
+    }
+
+    /** Tool lore line per owned upgrade (level/shield visibility = investment proof). */
+    private void appendUpgradeLore(final List<String> lore, final PlayerProfile profile) {
+        for (final Map.Entry<String, OmniUpgradeCatalog.Upgrade> entry : upgrades.all().entrySet()) {
+            final int level = profile.omniUpgrade(entry.getKey());
+            if (level > 0) {
+                lore.add(ColorUtil.colorize("&7" + ColorUtil.colorize(entry.getValue().display())
+                        + " &8→ &b" + level + "&7/&b" + entry.getValue().maxLevel()));
+            }
+        }
+    }
+
+    /** Stamps the enchantments implied by purchased upgrades (Efficiency/Fortune);
+     * the smelter is behavioural (see {@code OmniToolListener#onBlockBreak}). */
+    private void applyUpgradeEnchants(final ItemMeta meta, final PlayerProfile profile) {
+        stamp(meta, org.bukkit.enchantments.Enchantment.EFFICIENCY,
+                profile.omniUpgrade(OmniUpgradeCatalog.EFFICIENCY));
+        stamp(meta, org.bukkit.enchantments.Enchantment.FORTUNE,
+                profile.omniUpgrade(OmniUpgradeCatalog.FORTUNE));
+    }
+
+    private void stamp(
+            final ItemMeta meta, final org.bukkit.enchantments.Enchantment enchantment, final int level) {
+        if (level <= 0) {
+            meta.removeEnchant(enchantment);
+        } else {
+            meta.addEnchant(enchantment, level, true);
+        }
+    }
+
+    /**
+     * Re-stamps every OmniTool the player currently carries after a purchase —
+     * the item stays exactly where it was (no re-grant, no position churn).
+     */
+    public void refreshHeldTools(final Player player, final PlayerProfile profile) {
+        final PlayerInventory inventory = player.getInventory();
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            final ItemStack item = inventory.getItem(slot);
+            if (!isOmniTool(item)) {
+                continue;
+            }
+            final ItemMeta meta = item.getItemMeta();
+            applyUpgradeEnchants(meta, profile);
+            // Rebuild lore deterministically from the template (upgrade lines
+            // must never be duplicated across refresh cycles).
+            final Role role = boundRole(item);
+            if (role != null) {
+                final List<String> fresh = new ArrayList<>();
+                fresh.add(ColorUtil.colorize("&7Role: " + role.display()));
+                fresh.add(ColorUtil.colorize("&7OmniTool level: &b" + profile.omniToolLevel()));
+                fresh.add(ColorUtil.colorize("&8Shift right-click to open the Omni Panel."));
+                fresh.add(ColorUtil.colorize("&8Soulbound — cannot be dropped or lost on death."));
+                appendUpgradeLore(fresh, profile);
+                meta.setLore(fresh);
+            }
+            item.setItemMeta(meta);
+            inventory.setItem(slot, item);
+        }
     }
 
     /**
@@ -91,7 +192,7 @@ public final class OmniToolService {
         if (removed > 0) {
             plugin.getLogger().fine("Removed " + removed + " old OmniTool(s) from " + player.getName());
         }
-        final ItemStack tool = create(role, profile.omniToolLevel());
+        final ItemStack tool = create(role, profile);
         final Map<Integer, ItemStack> overflow = player.getInventory().addItem(tool);
         if (!overflow.isEmpty()) {
             // Inventory full: never drop it on the ground (exploitable) —
@@ -185,5 +286,43 @@ public final class OmniToolService {
     /** Plugin disable hook (defensive; trust map is short-lived in-memory only). */
     public void clearTransient() {
         respawnTrust.clear();
+    }
+
+    // ------------------------------------------------------------------ purchased upgrades
+
+    /**
+     * Buys the next level of {@code upgradeId} for {@code player}: fully
+     * transactional — unlock check → price check → withdraw → persist
+     * (permanent paid progression) → re-stamp held tools → confirm.
+     * Returns true when the level was granted, false when the player was
+     * denied (unknown id, maxed level, or too few Credits).
+     */
+    public boolean purchaseUpgrade(final Player player, final PlayerProfile profile, final String upgradeId) {
+        final java.util.Optional<OmniUpgradeCatalog.Upgrade> found = upgrades.upgrade(upgradeId);
+        if (found.isEmpty()) {
+            plugin.messages().sendPrefixed(player, "omnitool.upgrade-unknown", Map.of());
+            return false;
+        }
+        final OmniUpgradeCatalog.Upgrade def = found.get();
+        final int current = profile.omniUpgrade(upgradeId);
+        if (def.maxed(current)) {
+            plugin.messages().sendPrefixed(player, "omnitool.upgrade-maxed", Map.of());
+            return false;
+        }
+        final long price = def.costForNextLevel(current);
+        final String priceText = String.format(java.util.Locale.ROOT, "%,d", price);
+        if (price > 0L && !plugin.economy().withdraw(profile, com.coremc.core.economy.Currency.CREDITS, price)) {
+            plugin.messages().sendPrefixed(player, "omnitool.insufficient", Map.of("price", priceText));
+            return false;
+        }
+        profile.setOmniUpgrade(upgradeId, current + 1);
+        plugin.playerData().persistImportant(profile); // permanent paid progression — write through
+        refreshHeldTools(player, profile);
+        player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.7f, 1.2f);
+        plugin.messages().sendPrefixed(player, "omnitool.upgrade-bought", Map.of(
+                "upgrade", ColorUtil.colorize(def.display()),
+                "level", (current + 1) + "/" + def.maxLevel(),
+                "price", priceText));
+        return true;
     }
 }

@@ -126,6 +126,10 @@ role:
 omnitool:
   soulbound: "&cThe Omni-Tool is soulbound and cannot be dropped or stored."
   level-up: "&bYour Omni-Tool reached level {level}&7!"
+  upgrade-bought: "{upgrade}&7 upgraded to level &b{level}&7 for &a{price} Credits&7."
+  upgrade-maxed: "&cThat Omni-Tool upgrade is already at its maximum level."
+  upgrade-unknown: "&cUnknown Omni-Tool upgrade."
+  insufficient: "&cYou need &a{price} Credits&c for this Omni-Tool upgrade."
 
 gen:
   bought: "Purchased {name}&7 for &a{price} Credits&7. Place it anywhere to set it down."

@@ -11,7 +11,8 @@ import java.util.UUID;
  * Schema versions: 1 = join stats only; 2 = + currencies, single
  * role/omnitool slots, island association, placeholders; 3 = per-role
  * progress map (role switching never wipes your other roles' progress);
- * 4 = + spawner unlock kill counters.
+ * 4 = + spawner unlock kill counters;
+ * 5 = + OmniTool purchased upgrade levels.
  * All loads are tolerant: unknown/missing fields become defaults.
  *
  * A profile is created the first time a player connects and survives
@@ -31,7 +32,7 @@ import java.util.UUID;
 public final class PlayerProfile {
 
     /** Current on-disk schema version. */
-    public static final int SCHEMA_VERSION = 4;
+    public static final int SCHEMA_VERSION = 5;
 
     private final UUID uuid;
 
@@ -56,6 +57,9 @@ public final class PlayerProfile {
 
     /** entityKey (lowercase) -> kills — spawner unlock progression, survives restarts. */
     private final Map<String, Long> killCounts = new LinkedHashMap<>();
+
+    /** OmniTool purchased upgrade id -> level (0 = not owned). Schema v5. */
+    private final Map<String, Integer> omniUpgrades = new LinkedHashMap<>();
 
     // --- island association (islandId or null; authoritative membership lives in the island file) ---
     private UUID islandId;
@@ -132,6 +136,16 @@ public final class PlayerProfile {
                 profile.cosmetics.put(String.valueOf(entry.getKey()), String.valueOf(entry.getValue()));
             }
         }
+        final Object upgradesMap = map.get("omni-upgrades");
+        if (upgradesMap instanceof Map<?, ?> raw) {
+            for (final Map.Entry<?, ?> entry : raw.entrySet()) {
+                final long level = Math.max(0L, asLong(entry.getValue(), 0L));
+                if (level > 0L) { // level 0 is the default; never persisted, never loaded
+                    profile.omniUpgrades.put(
+                            String.valueOf(entry.getKey()), (int) Math.min(level, Integer.MAX_VALUE));
+                }
+            }
+        }
     }
 
     /** Serialises this profile to a YAML-safe map. */
@@ -156,6 +170,7 @@ public final class PlayerProfile {
         map.put("subscription-expires-millis", subscriptionExpiresMillis);
         map.put("cosmetics", new LinkedHashMap<>(cosmetics));
         map.put("kill-counts", new LinkedHashMap<>(killCounts));
+        map.put("omni-upgrades", new LinkedHashMap<>(omniUpgrades));
         return map;
     }
 
@@ -301,6 +316,26 @@ public final class PlayerProfile {
     /** Increments the kill counter for {@code entityKey} by one. */
     public void addKillCount(final String entityKey) {
         killCounts.merge(entityKey, 1L, Long::sum);
+    }
+
+    // --- OmniTool purchased upgrades (schema v5) ---
+
+    /** Level of the OmniTool upgrade {@code upgradeId} (0 = not owned). */
+    public int omniUpgrade(final String upgradeId) {
+        return omniUpgrades.getOrDefault(upgradeId, 0);
+    }
+
+    /**
+     * Sets the level of OmniTool upgrade {@code upgradeId}. Level 0 clears
+     * the entry (defaults are never persisted). The max is enforced by the
+     * OmniUpgradeCatalog, which owns the catalogue definition.
+     */
+    public void setOmniUpgrade(final String upgradeId, final int level) {
+        if (level <= 0) {
+            omniUpgrades.remove(upgradeId);
+        } else {
+            omniUpgrades.put(upgradeId, level);
+        }
     }
 
     /** Island this player owns or belongs to (null = none). Fast redirect only;
