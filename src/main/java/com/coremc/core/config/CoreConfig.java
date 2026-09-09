@@ -127,8 +127,8 @@ public final class CoreConfig {
             this.upgradeBorderSizes.add(even);
         }
         // The effective border (base + tiers * step) must stay inside the grid cell,
-        // like the base border above — otherwise upgraded protection could extend
-        // past the cell even though lookups only check the point's own cell.
+        // like the base border above — otherwise upgraded protection could overlap
+        // the neighbour island (lookups probe the 2x2 candidate neighbourhood).
         final int roomToGrow = this.islandSpacing - this.islandBorderSize;
         final int maxSafeTier = this.upgradeBorderSizes.isEmpty()
                 ? Math.max(0, roomToGrow / this.upgradeBorderStepBlocks)

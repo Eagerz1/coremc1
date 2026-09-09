@@ -161,18 +161,35 @@ public final class IslandService {
     }
 
     /**
-     * Island whose protected border contains (worldName, x, z), O(1).
-     * Only callable for points inside an island cell; borders are smaller
-     * than the cell by config validation so at most one island can match.
+     * Island whose protected border contains (worldName, x, z).
+     *
+     * Island centres sit on grid corners ({@code cell * spacing}), so a
+     * border straddles up to FOUR cells — probing only the point's own
+     * cell resolves just the south-east quadrant. Centres are spacing
+     * apart and borders never exceed spacing (config-clamped), so at
+     * most one island can contain the point: probe the 2x2 candidate
+     * neighbourhood, containment-test each hit, first match wins.
+     * Still O(1) — four hash lookups, no scans.
      */
     public Optional<Island> islandAt(final String worldName, final int x, final int z) {
         final int spacing = config.islandSpacing();
-        final String cellKey = GridAssigner.key(Math.floorDiv(x, spacing), Math.floorDiv(z, spacing), worldName);
-        final Island island = islandsByCell.get(cellKey);
-        if (island != null && containsBlock(island, x, z)) {
-            return Optional.of(island);
+        for (final int[] cell : candidateCells(x, z, spacing)) {
+            final Island island = islandsByCell.get(GridAssigner.key(cell[0], cell[1], worldName));
+            if (island != null && containsBlock(island, x, z)) {
+                return Optional.of(island);
+            }
         }
         return Optional.empty();
+    }
+
+    /**
+     * The 2x2 grid cells whose corner-centred islands can reach (x, z):
+     * the point's own cell plus its +x/+z neighbours. Pure (unit-tested).
+     */
+    static List<int[]> candidateCells(final int x, final int z, final int spacing) {
+        final int i = Math.floorDiv(x, spacing);
+        final int j = Math.floorDiv(z, spacing);
+        return List.of(new int[] {i, j}, new int[] {i + 1, j}, new int[] {i, j + 1}, new int[] {i + 1, j + 1});
     }
 
     public int islandCount() {
@@ -425,6 +442,22 @@ public final class IslandService {
         scrubTargets.add(owner);
         scrubTargets.addAll(removed.members());
 
+        // Nobody is left standing on a deleted island: the owner and any
+        // online members on it go to the main-world spawn. Members are
+        // always told why, wherever they are.
+        final Player ownerPlayer = Bukkit.getPlayer(owner);
+        if (ownerPlayer != null) {
+            rescueIfStranded(ownerPlayer, removed);
+        }
+        for (final UUID member : removed.members()) {
+            final Player online = Bukkit.getPlayer(member);
+            if (online != null) {
+                rescueIfStranded(online, removed);
+                ((com.coremc.core.CoreMCPlugin) plugin).messages()
+                        .sendPrefixed(online, "island.deleted-member", Map.of());
+            }
+        }
+
         io.execute(() -> {
             persistRetiredCells();
             for (final UUID player : scrubTargets) {
@@ -442,7 +475,7 @@ public final class IslandService {
 
     // ------------------------------------------------------------------ teams
 
-    public enum InviteResult { SENT, TARGET_HAS_ISLAND, SENDER_NOT_OWNER, TARGET_BUSY, TEAM_FULL }
+    public enum InviteResult { SENT, TARGET_HAS_ISLAND, SENDER_NOT_OWNER, TEAM_FULL }
 
     /** Owner invites a target. Invites expire per config; ledger is in-memory only. */
     public InviteResult invite(final Player inviter, final Player target) {
@@ -504,6 +537,7 @@ public final class IslandService {
         }
         island.removeMember(player.getUniqueId());
         setAssociation(player.getUniqueId(), null);
+        rescueIfStranded(player, island);
         flush(island);
         return LeaveResult.LEFT;
     }
@@ -526,8 +560,37 @@ public final class IslandService {
         islandsByMember.remove(target, team);
         io.execute(() -> playerData.clearIslandAssociationIfMatches(target, team.islandId()));
         setAssociation(target, null); // no-op if offline; offline scrub above covers them
+        final Player kicked = Bukkit.getPlayer(target);
+        if (kicked != null) {
+            rescueIfStranded(kicked, team);
+        }
         flush(team);
         return KickResult.KICKED;
+    }
+
+    /**
+     * Main-world spawn: the fallback whenever a player has no island home
+     * (void rescue, leave/kick/delete safety). World 0 is the server's
+     * main world by Bukkit convention.
+     */
+    public Location safeSpawn() {
+        return Bukkit.getWorlds().get(0).getSpawnLocation();
+    }
+
+    /**
+     * Teleports the player to the main-world spawn when they stand on an
+     * island they no longer belong to (leave/kick/delete safety).
+     * Players elsewhere — visiting another island, out in the world —
+     * are left exactly where they are.
+     */
+    private void rescueIfStranded(final Player player, final Island island) {
+        final Location at = player.getLocation();
+        if (at.getWorld() == null || !at.getWorld().getName().equals(island.worldName())) {
+            return;
+        }
+        if (containsBlock(island, at.getBlockX(), at.getBlockZ())) {
+            player.teleport(safeSpawn());
+        }
     }
 
     // ------------------------------------------------------------------ persistence & associations
@@ -539,13 +602,16 @@ public final class IslandService {
 
     /** Flushes every progression-dirty island (progress timer + shutdown). */
     public void flushDirty() {
-        final List<UUID> pending = new ArrayList<>(dirtyIslands);
-        dirtyIslands.removeAll(pending);
-        for (final UUID islandId : pending) {
+        // Per-id removal AFTER the save is queued: an island dirtied
+        // mid-flush stays (or re-lands) in the set and is caught by the
+        // next flush — the old snapshot+removeAll could drop a dirty
+        // island without saving it (progress loss, worst at shutdown).
+        for (final UUID islandId : new ArrayList<>(dirtyIslands)) {
             final Island island = islandsById.get(islandId);
             if (island != null) {
                 flush(island);
             }
+            dirtyIslands.remove(islandId);
         }
     }
 
@@ -721,6 +787,16 @@ public final class IslandService {
                 chest.getBlockInventory()
                         .addItem(new org.bukkit.inventory.ItemStack((Material) parsed[0], (Integer) parsed[1]));
             }
+            chest.update(true);
+        }
+    }
+
+    private void setBlock(final World world, final int x, final int y, final int z, final Material material) {
+        final Block block = world.getBlockAt(x, y, z);
+        block.setType(material);
+    }
+}
+}
             chest.update(true);
         }
     }

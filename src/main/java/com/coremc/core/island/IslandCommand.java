@@ -197,7 +197,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             }
             case TARGET_HAS_ISLAND -> messages.sendPrefixed(player, "island.invite.target-busy", Map.of());
             case SENDER_NOT_OWNER -> messages.sendPrefixed(player, "island.not-owner", Map.of());
-            case TARGET_BUSY, TEAM_FULL -> messages.sendPrefixed(player, "island.team-full", Map.of());
+            case TEAM_FULL -> messages.sendPrefixed(player, "island.team-full", Map.of());
         }
     }
 

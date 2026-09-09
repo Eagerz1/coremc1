@@ -19,6 +19,7 @@ import com.coremc.core.enchant.SlayerEnchantHandler;
 import com.coremc.core.gui.GuiService;
 import com.coremc.core.island.IslandCommand;
 import com.coremc.core.island.IslandProtectionListener;
+import com.coremc.core.island.IslandVoidRescueListener;
 import com.coremc.core.island.IslandService;
 import com.coremc.core.island.YamlIslandDataStore;
 import com.coremc.core.player.PlayerDataService;
@@ -198,6 +199,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         pluginManager.registerEvents(
                 new PlayerListener(playerDataService, messageService, coreConfig, islandService), this);
         pluginManager.registerEvents(new IslandProtectionListener(this), this);
+        pluginManager.registerEvents(new IslandVoidRescueListener(this), this);
         pluginManager.registerEvents(islandUpgradeEffects, this);
         pluginManager.registerEvents(islandActivityEffects, this);
         pluginManager.registerEvents(islandProgressService, this);
