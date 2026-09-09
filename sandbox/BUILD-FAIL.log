@@ -1,0 +1,47 @@
+Cloning into 'zg'...
+==> compile main sources
+src/main/java/com/coremc/core/CoreMCPlugin.java:270: error: cannot find symbol
+        islandActivityEffects.clearCaches();
+        ^
+  symbol:   variable islandActivityEffects
+  location: class CoreMCPlugin
+src/main/java/com/coremc/core/island/IslandService.java:364: error: cannot find symbol
+        ((com.coremc.core.CoreMCPlugin) plugin).islandActivity().purgeIsland(removed.islandId());
+                                               ^
+  symbol:   method islandActivity()
+  location: class CoreMCPlugin
+src/main/java/com/coremc/core/role/RoleService.java:108: error: cannot find symbol
+        final double islandBoost = plugin.islandProgress().xpMultiplier(player, category);
+                                         ^
+  symbol:   method islandProgress()
+  location: variable plugin of type CoreMCPlugin
+src/main/java/com/coremc/core/island/IslandProgressService.java:44: error: cannot find symbol
+        tasks.runTimer(() -> plugin.islands().flushDirty(), 1200L, 1200L);
+                                             ^
+  symbol:   method flushDirty()
+  location: class IslandService
+src/main/java/com/coremc/core/island/IslandProgressService.java:114: error: cannot find symbol
+        plugin.islands().markDirty(island);
+                        ^
+  symbol:   method markDirty(Island)
+  location: class IslandService
+src/main/java/com/coremc/core/island/IslandUpgradeCategoryGui.java:129: error: cannot find symbol
+                plugin.coreConfig().upgradeRequiresAt(trackId, nextTier).entrySet()) {
+                                   ^
+  symbol:   method upgradeRequiresAt(String,int)
+  location: class CoreConfig
+src/main/java/com/coremc/core/island/IslandCommand.java:268: error: cannot find symbol
+        player.sendMessage(messages.get("island.info-stats", Map.of("stats", formatStats(island))));
+                                                                             ^
+  symbol:   method formatStats(Island)
+  location: class IslandCommand
+src/main/java/com/coremc/core/placeable/PlaceableListener.java:209: error: cannot find symbol
+                .ifPresent(island -> plugin.islandProgress().recordGeneratorHarvest(island, player));
+                                           ^
+  symbol:   method islandProgress()
+  location: variable plugin of type CoreMCPlugin
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use or override a deprecated API that is marked for removal.
+Note: Recompile with -Xlint:removal for details.
+8 errors
