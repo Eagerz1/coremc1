@@ -96,6 +96,14 @@ public final class TokenShopGui implements Gui {
                             java.util.Map.of("price", price, "currency", entry.currency().displayName()));
                     return false;
                 }
+                if (!plugin.economy().fitsDeposit(
+                        profile, com.coremc.core.economy.Currency.SKY_TOKENS, entry.amount())) {
+                    // Payout would overflow: exact refund (cannot itself overflow —
+                    // it restores the pre-withdraw balance) and a clean refusal.
+                    plugin.economy().deposit(profile, entry.currency(), entry.price());
+                    plugin.messages().sendPrefixed(viewer, "economy.error.too-large", java.util.Map.of());
+                    return false;
+                }
                 plugin.economy().deposit(profile, com.coremc.core.economy.Currency.SKY_TOKENS, entry.amount());
                 plugin.messages().sendPrefixed(viewer, "shop.exchange", java.util.Map.of(
                         "bought", entry.amount() + " Sky Token" + (entry.amount() == 1 ? "" : "s"),

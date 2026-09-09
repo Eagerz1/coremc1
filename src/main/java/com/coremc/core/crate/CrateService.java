@@ -333,6 +333,14 @@ public final class CrateService {
             return false;
         }
         final ItemStack preResolved = preResolve(reward);
+        if (reward.type() == CrateReward.RewardType.CURRENCY
+                && !plugin.economy().fitsDeposit(
+                        profile, Currency.valueOf(reward.currency()), reward.max())) {
+            // Conservative cap-check on the maximum roll: the key stays in
+            // the inventory and nothing is consumed.
+            plugin.messages().sendPrefixed(player, "economy.error.too-large", Map.of());
+            return false;
+        }
         if (preResolved == null && needsItem(reward)) {
             plugin.getLogger().warning("[crates] crate '" + crate.id() + "' reward no longer resolves — refused.");
             plugin.messages().sendPrefixed(player, "crate.broken", Map.of());

@@ -83,6 +83,16 @@ public final class EconomyService {
         apply(profile, currency, balance + amount);
     }
 
+    /**
+     * True when {@code amount} would deposit without overflowing. Pure
+     * pre-check (never mutates): spend-then-pay paths (exchanges, crates)
+     * consult it BEFORE consuming payment so a full balance refuses
+     * instead of paying out into an exception.
+     */
+    public boolean fitsDeposit(final PlayerProfile profile, final Currency currency, final long amount) {
+        return amount > 0L && profile.balanceOf(currency) <= Long.MAX_VALUE - amount;
+    }
+
     /** Removes {@code amount}; returns false (no change) if unaffordable. */
     public boolean withdraw(final PlayerProfile profile, final Currency currency, final long amount) {
         validatePositive(amount);
