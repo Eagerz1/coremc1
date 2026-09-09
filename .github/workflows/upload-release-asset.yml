@@ -1,0 +1,51 @@
+# One-shot helper: attach a build artifact to an existing GitHub release.
+# Used when the publishing environment cannot reach uploads.github.com directly.
+# The workflow runs on GitHub-hosted infrastructure (full network access).
+#
+# Usage:
+#   gh workflow run upload-release-asset.yml \
+#     --ref <this-branch> \
+#     -f tag=v0.10.0 \
+#     -f source_ref=arena/01a077ab-coremc1 \
+#     -f jar_path=sandbox/plugin/CoreMC-0.10.0.jar
+name: upload-release-asset
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to attach the asset to (must already exist)'
+        required: true
+        type: string
+      source_ref:
+        description: 'Branch, tag or SHA to fetch the jar from'
+        required: true
+        type: string
+      jar_path:
+        description: 'Path of the jar within the source ref'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch jar from source ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          sparse-checkout: ${{ inputs.jar_path }}
+          sparse-checkout-cone-mode: false
+
+      - name: Verify jar
+        run: |
+          ls -l "${{ inputs.jar_path }}"
+          unzip -p "${{ inputs.jar_path }}" plugin.yml | head -n 6
+
+      - name: Upload asset to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ inputs.tag }}" "${{ inputs.jar_path }}" --clobber
