@@ -36,13 +36,13 @@ jobs:
       - name: Fetch jar from source ref
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref || 'arena/01a077ab-coremc1' }}
-          sparse-checkout: ${{ inputs.jar_path || 'sandbox/plugin/CoreMC-0.10.0.jar' }}
+          ref: ${{ inputs.source_ref || 'arena/01a0867a-coremc1' }}
+          sparse-checkout: ${{ inputs.jar_path || 'sandbox/plugin/CoreMC-0.11.0.jar' }}
           sparse-checkout-cone-mode: false
 
       - name: Verify jar
         run: |
-          JAR="${{ inputs.jar_path || 'sandbox/plugin/CoreMC-0.10.0.jar' }}"
+          JAR="${{ inputs.jar_path || 'sandbox/plugin/CoreMC-0.11.0.jar' }}"
           ls -l "$JAR"
           unzip -p "$JAR" plugin.yml | head -n 6
 
@@ -50,5 +50,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ inputs.tag || 'v0.10.0' }}" \
-            "${{ inputs.jar_path || 'sandbox/plugin/CoreMC-0.10.0.jar' }}" --clobber
+          gh release upload "${{ inputs.tag || 'v0.11.0' }}" \
+            "${{ inputs.jar_path || 'sandbox/plugin/CoreMC-0.11.0.jar' }}" --clobber
