@@ -1264,6 +1264,8 @@ enchants:
     min-role-level: 15
     values:
       mode: EXECUTE_BURST
+      boss-cap-fraction: 0.25
+      cap: 100.0
       rewards:
         - {chance: 0.4, type: ITEM, material: WITHER_SKELETON_SKULL, amount: 1}
         - {chance: 0.02, type: ITEM, material: NETHER_STAR, amount: 1}

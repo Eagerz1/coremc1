@@ -9,7 +9,13 @@ import com.coremc.core.config.MessageService;
 import com.coremc.core.crate.KeyService;
 import com.coremc.core.economy.Currency;
 import com.coremc.core.economy.EconomyService;
+import com.coremc.core.enchant.EnchantEngine;
 import com.coremc.core.enchant.EnchantService;
+import com.coremc.core.enchant.FarmingEnchantHandler;
+import com.coremc.core.enchant.FishingEnchantHandler;
+import com.coremc.core.enchant.LoggingEnchantHandler;
+import com.coremc.core.enchant.MiningEnchantHandler;
+import com.coremc.core.enchant.SlayerEnchantHandler;
 import com.coremc.core.gui.GuiService;
 import com.coremc.core.island.IslandCommand;
 import com.coremc.core.island.IslandProtectionListener;
@@ -66,6 +72,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private SpawnerService spawnerService;
     private ShopService shopService;
     private EnchantService enchantService;
+    private EnchantEngine enchantEngine;
     private KeyService keyService;
     private com.coremc.core.island.ThemeService themeService;
     private com.coremc.core.island.MiningCubeService miningCubeService;
@@ -179,6 +186,7 @@ public final class CoreMCPlugin extends JavaPlugin {
                 + enchantCount + " enchant(s), " + keyCount + " crate key(s).");
 
         // 4. Listeners.
+        this.enchantEngine = new EnchantEngine(this);
         final PluginManager pluginManager = getServer().getPluginManager();
         pluginManager.registerEvents(
                 new PlayerListener(playerDataService, messageService, coreConfig, islandService), this);
@@ -193,6 +201,12 @@ public final class CoreMCPlugin extends JavaPlugin {
         pluginManager.registerEvents(new SlayerXpListener(this), this);
         pluginManager.registerEvents(new PlaceableListener(this), this);
         pluginManager.registerEvents(new KillProgressListener(this), this);
+        pluginManager.registerEvents(enchantEngine, this);
+        pluginManager.registerEvents(new MiningEnchantHandler(this, enchantEngine), this);
+        pluginManager.registerEvents(new LoggingEnchantHandler(this, enchantEngine), this);
+        pluginManager.registerEvents(new FarmingEnchantHandler(this, enchantEngine), this);
+        pluginManager.registerEvents(new FishingEnchantHandler(this, enchantEngine), this);
+        pluginManager.registerEvents(new SlayerEnchantHandler(this, enchantEngine), this);
 
         // 5. Commands.
         registerCommands();
@@ -416,6 +430,11 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Custom-enchant catalogue, purchases and boost queries. */
     public EnchantService enchants() {
         return enchantService;
+    }
+
+    /** Custom-enchant behaviour engine (combos, cooldowns, grants). */
+    public EnchantEngine enchantEngine() {
+        return enchantEngine;
     }
 
     /** Crate-key minting and identification. */

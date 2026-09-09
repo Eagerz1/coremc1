@@ -79,6 +79,9 @@ public final class OmniToolListener implements Listener {
         if (smelted == null) {
             return;
         }
+        if (!event.isDropItems()) {
+            return; // a custom enchant already claimed these drops — never double-claim
+        }
         event.setDropItems(false);
         final int amount = 1 + OmniUpgradeCatalog.fortuneRollAmount(
                 profile.omniUpgrade(OmniUpgradeCatalog.FORTUNE), java.util.concurrent.ThreadLocalRandom.current());

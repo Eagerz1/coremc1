@@ -133,7 +133,7 @@ public final class EnchantRegistry {
                 currency = Currency.valueOf(
                         String.valueOf(currencyRaw).trim().toUpperCase(Locale.ROOT));
             } catch (final IllegalArgumentException unknown) {
-                errors.add(where + "unknown currency '" + currencyRaw "' — defaulting to SKY_TOKENS");
+                errors.add(where + "unknown currency '" + currencyRaw + "' — defaulting to SKY_TOKENS");
             }
         }
 

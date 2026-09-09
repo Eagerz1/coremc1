@@ -13,8 +13,8 @@ import java.util.Random;
  * and chances are small, so jackpots stay bounded).
  *
  * Types: ITEM (material + amount), TOKENS / CREDITS (amount),
- * XP (bonus role XP, flat — multipliers do not apply), KEY
- * (crate key id, amount).
+ * XP (bonus role XP via the standard funnel — boosts apply), KEY
+ * (crate key id, amount), SOULS (souls via the soul path).
  *
  * Amounts accept a plain number or a {@code "min-max"} range string.
  */
@@ -26,7 +26,8 @@ public record RewardRoll(
         TOKENS,
         CREDITS,
         XP,
-        KEY
+        KEY,
+        SOULS
     }
 
     /** Parses one raw table entry; problems go to {@code errors}, fatal ones yield empty. */

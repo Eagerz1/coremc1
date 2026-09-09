@@ -44,6 +44,11 @@ public final class TaskService {
         return track(Bukkit.getScheduler().runTask(plugin, wrap(runnable)));
     }
 
+    /** Runs a one-off delayed task on the main thread and tracks it. */
+    public BukkitTask runLater(final Runnable runnable, final long delayTicks) {
+        return track(Bukkit.getScheduler().runTaskLater(plugin, wrap(runnable), delayTicks));
+    }
+
     /** Cancels a single tracked task (idempotent). */
     public void cancel(final BukkitTask task) {
         if (task != null) {

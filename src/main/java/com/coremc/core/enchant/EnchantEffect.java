@@ -34,7 +34,7 @@ import java.util.Optional;
  *   <li>SMELT — drop conversions from {@code values.table}
  *       (in-material → out-material), else the built-in ore table.</li>
  *   <li>VEIN — breadth-first break of connected matching blocks
- *       (ores/logs); {@code values.max-blocks},
+ *       (ores/logs); max blocks = floored magnitude;
  *       {@code values.match} = ORE (default) or LOG.</li>
  *   <li>REWARD_TABLE — rolls {@code values.rewards} (see
  *       {@link RewardRoll}).</li>

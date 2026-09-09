@@ -183,6 +183,8 @@ enchant:
   wrong-role: "&cThis enchant needs the {role} &crole. Switch with &f/role&c."
   no-role: "&cSelect a role first with &f/role&c."
   locked: "&cRequires {role} &clevel &f{level}&c."
+  ultimate: "&d&lULTIMATE &f{name}&d!"
+  overcharge: "&e&lOVERCHARGE &f{name} &7for &f{seconds}s&7!"
 
 key:
   received: "&e+{amount} {name}&7."
