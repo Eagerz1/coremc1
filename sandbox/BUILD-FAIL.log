@@ -1,0 +1,6 @@
+Cloning into 'zg'...
+==> compile main sources
+src/main/java/com/coremc/core/enchant/EnchantRegistry.java:136: error: ')' or ',' expected
+                errors.add(where + "unknown currency '" + currencyRaw "' — defaulting to SKY_TOKENS");
+                                                                     ^
+1 error
