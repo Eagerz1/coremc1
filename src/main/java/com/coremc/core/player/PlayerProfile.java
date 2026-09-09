@@ -618,6 +618,11 @@ public final class PlayerProfile {
         }
     }
 
+    /** Overwrites a stat (crate pity counters reset this way). */
+    public void setStat(final String statKey, final long value) {
+        stats.put(statKey, Math.max(0L, value));
+    }
+
     // --- subscriptions ---
 
     /** Day-key the {@code tier} rewards were last claimed ("" = never). */

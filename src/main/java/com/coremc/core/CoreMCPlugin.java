@@ -6,6 +6,8 @@ import com.coremc.core.command.HealCommand;
 import com.coremc.core.command.ProfileCommand;
 import com.coremc.core.config.CoreConfig;
 import com.coremc.core.config.MessageService;
+import com.coremc.core.crate.CrateService;
+import com.coremc.core.crate.CratesCommand;
 import com.coremc.core.crate.KeyService;
 import com.coremc.core.economy.Currency;
 import com.coremc.core.economy.EconomyService;
@@ -75,6 +77,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private EnchantService enchantService;
     private EnchantEngine enchantEngine;
     private KeyService keyService;
+    private CrateService crateService;
     private com.coremc.core.island.ThemeService themeService;
     private com.coremc.core.island.MiningCubeService miningCubeService;
     private com.coremc.core.island.IslandUpgradeEffects islandUpgradeEffects;
@@ -189,9 +192,13 @@ public final class CoreMCPlugin extends JavaPlugin {
         final int enchantCount = enchantService.load();
         this.keyService = new KeyService(this);
         final int keyCount = keyService.load();
+        // Crates last: reward refs validate against the live catalogues above.
+        this.crateService = new CrateService(this);
+        final int crateCount = crateService.load();
         getLogger().info("Loaded " + gens + " generator(s), " + spawners + " spawner type(s), "
                 + shopEntries + " shop entr(y/ies), " + omniUpgrades + " omni upgrade(s), "
-                + enchantCount + " enchant(s), " + keyCount + " crate key(s).");
+                + enchantCount + " enchant(s), " + keyCount + " crate key(s), "
+                + crateCount + " crate(s).");
 
         // 4. Listeners.
         this.enchantEngine = new EnchantEngine(this);
@@ -280,6 +287,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         omniToolService.load();
         enchantService.load();
         keyService.load();
+        crateService.load();
         islandActivityEffects.clearCaches();
     }
 
@@ -339,6 +347,12 @@ public final class CoreMCPlugin extends JavaPlugin {
             throw new IllegalStateException("Command 'spawners' missing from plugin.yml");
         }
         spawners.setExecutor(new SpawnersCommand(this));
+
+        final PluginCommand crates = getCommand("crates");
+        if (crates == null) {
+            throw new IllegalStateException("Command 'crates' missing from plugin.yml");
+        }
+        crates.setExecutor(new CratesCommand(this));
 
         final ShopCommand shopCommand = new ShopCommand(this);
         for (final String name : new String[] {"shop", "tokenshop"}) {
@@ -469,5 +483,10 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Crate-key minting and identification. */
     public KeyService keys() {
         return keyService;
+    }
+
+    /** Crate lineup, rolls and pity. */
+    public CrateService crates() {
+        return crateService;
     }
 }

@@ -213,3 +213,11 @@ enchant:
 
 key:
   received: "&e+{amount} {name}&7."
+
+crate:
+  opened: "{crate} &7opened — you won {reward}&7!"
+  pity: "&d&lPITY! &7{crate} &7grants {reward}&7."
+  no-key: "&cYou need {key}&c to open {crate}&c."
+  dropped: "&eNo space — your reward dropped at your feet."
+  broken: "&cThis crate is misconfigured — contact an administrator."
+  empty: "&cNo crates are available right now."

@@ -57,6 +57,10 @@ commands:
     description: View spawner unlock progress and buy spawners.
     usage: /spawners
     permission: coremc.command.spawners
+  crates:
+    description: Open the crate lineup.
+    usage: /crates
+    permission: coremc.command.crates
     permission-message: "&cYou do not have permission to use this command."
   shop:
     description: Open the CoreMC shop (optionally straight into a category).
@@ -91,6 +95,7 @@ permissions:
       coremc.command.role: true
       coremc.command.gens: true
       coremc.command.spawners: true
+      coremc.command.crates: true
       coremc.command.shop: true
       coremc.command.tokenshop: true
       coremc.admin.credits: true
@@ -135,6 +140,9 @@ permissions:
     default: true
   coremc.command.spawners:
     description: Allows viewing spawner progression and purchasing spawners.
+    default: true
+  coremc.command.crates:
+    description: Allows opening the crate lineup.
     default: true
   coremc.command.shop:
     description: Allows opening the shop.
