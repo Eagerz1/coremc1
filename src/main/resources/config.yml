@@ -557,3 +557,102 @@ spawners:
       - { display: "&aCreeper Spawner II",  required-kills: 150, price: 50,  spawn-count: 2, spawn-delay-ticks: 320 }
       - { display: "&aCreeper Spawner III", required-kills: 260, price: 90,  spawn-count: 3, spawn-delay-ticks: 240 }
       - { display: "&aCreeper Spawner IV",  required-kills: 400, price: 150, spawn-count: 4, spawn-delay-ticks: 160 }
+  cave-spider:
+    display: "&4Cave Spider"
+    entity: CAVE_SPIDER
+    icon: CAVE_SPIDER_SPAWN_EGG
+    tiers:
+      - { display: "&4Cave Spider Spawner I",   required-kills: 90,  price: 25,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&4Cave Spider Spawner II",  required-kills: 180, price: 60,  spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&4Cave Spider Spawner III", required-kills: 300, price: 110, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&4Cave Spider Spawner IV",  required-kills: 450, price: 180, spawn-count: 4, spawn-delay-ticks: 160 }
+  drowned:
+    display: "&3Drowned"
+    entity: DROWNED
+    icon: DROWNED_SPAWN_EGG
+    tiers:
+      - { display: "&3Drowned Spawner I",   required-kills: 100, price: 30,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&3Drowned Spawner II",  required-kills: 200, price: 70,  spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&3Drowned Spawner III", required-kills: 330, price: 130, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&3Drowned Spawner IV",  required-kills: 500, price: 210, spawn-count: 4, spawn-delay-ticks: 160 }
+  slime:
+    display: "&aSlime"
+    entity: SLIME
+    icon: SLIME_SPAWN_EGG
+    tiers:
+      - { display: "&aSlime Spawner I",   required-kills: 110, price: 30,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&aSlime Spawner II",  required-kills: 220, price: 75,  spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&aSlime Spawner III", required-kills: 360, price: 140, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&aSlime Spawner IV",  required-kills: 550, price: 225, spawn-count: 4, spawn-delay-ticks: 160 }
+  witch:
+    display: "&5Witch"
+    entity: WITCH
+    icon: WITCH_SPAWN_EGG
+    tiers:
+      - { display: "&5Witch Spawner I",   required-kills: 130, price: 40,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&5Witch Spawner II",  required-kills: 260, price: 95,  spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&5Witch Spawner III", required-kills: 420, price: 175, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&5Witch Spawner IV",  required-kills: 650, price: 280, spawn-count: 4, spawn-delay-ticks: 160 }
+  enderman:
+    display: "&dEnderman"
+    entity: ENDERMAN
+    icon: ENDERMAN_SPAWN_EGG
+    tiers:
+      - { display: "&dEnderman Spawner I",   required-kills: 150, price: 50,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&dEnderman Spawner II",  required-kills: 300, price: 120, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&dEnderman Spawner III", required-kills: 480, price: 220, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&dEnderman Spawner IV",  required-kills: 750, price: 350, spawn-count: 4, spawn-delay-ticks: 160 }
+  piglin:
+    display: "&6Piglin"
+    entity: PIGLIN
+    icon: PIGLIN_SPAWN_EGG
+    tiers:
+      - { display: "&6Piglin Spawner I",   required-kills: 170, price: 55,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&6Piglin Spawner II",  required-kills: 340, price: 135, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&6Piglin Spawner III", required-kills: 550, price: 250, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&6Piglin Spawner IV",  required-kills: 850, price: 400, spawn-count: 4, spawn-delay-ticks: 160 }
+  guardian:
+    display: "&bGuardian"
+    entity: GUARDIAN
+    icon: GUARDIAN_SPAWN_EGG
+    tiers:
+      - { display: "&bGuardian Spawner I",   required-kills: 200,  price: 65,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&bGuardian Spawner II",  required-kills: 400,  price: 160, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&bGuardian Spawner III", required-kills: 650,  price: 300, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&bGuardian Spawner IV",  required-kills: 1000, price: 475, spawn-count: 4, spawn-delay-ticks: 160 }
+  magma-cube:
+    display: "&cMagma Cube"
+    entity: MAGMA_CUBE
+    icon: MAGMA_CUBE_SPAWN_EGG
+    tiers:
+      - { display: "&cMagma Cube Spawner I",   required-kills: 220,  price: 70,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&cMagma Cube Spawner II",  required-kills: 440,  price: 175, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&cMagma Cube Spawner III", required-kills: 700,  price: 330, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&cMagma Cube Spawner IV",  required-kills: 1100, price: 525, spawn-count: 4, spawn-delay-ticks: 160 }
+  blaze:
+    display: "&eBlaze"
+    entity: BLAZE
+    icon: BLAZE_SPAWN_EGG
+    tiers:
+      - { display: "&eBlaze Spawner I",   required-kills: 250,  price: 80,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&eBlaze Spawner II",  required-kills: 500,  price: 200, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&eBlaze Spawner III", required-kills: 800,  price: 380, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&eBlaze Spawner IV",  required-kills: 1250, price: 600, spawn-count: 4, spawn-delay-ticks: 160 }
+  ghast:
+    display: "&fGhast"
+    entity: GHAST
+    icon: GHAST_SPAWN_EGG
+    tiers:
+      - { display: "&fGhast Spawner I",   required-kills: 300,  price: 100, spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&fGhast Spawner II",  required-kills: 600,  price: 250, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&fGhast Spawner III", required-kills: 950,  price: 470, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&fGhast Spawner IV",  required-kills: 1500, price: 750, spawn-count: 4, spawn-delay-ticks: 160 }
+  wither-skeleton:
+    display: "&7Wither Skeleton"
+    entity: WITHER_SKELETON
+    icon: WITHER_SKELETON_SPAWN_EGG
+    tiers:
+      - { display: "&7Wither Skeleton Spawner I",   required-kills: 350,  price: 120, spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&7Wither Skeleton Spawner II",  required-kills: 700,  price: 300, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&7Wither Skeleton Spawner III", required-kills: 1100, price: 560, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&7Wither Skeleton Spawner IV",  required-kills: 1750, price: 900, spawn-count: 4, spawn-delay-ticks: 160 }

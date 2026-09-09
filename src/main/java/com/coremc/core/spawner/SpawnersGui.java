@@ -19,12 +19,16 @@ import org.bukkit.inventory.Inventory;
  * four spawners).
  *
  * Layout (all positions named constants):
- *   20/21/23/24  mob lanes (zombie / skeleton / spider / creeper)
- *   53           close
+ *   10..16 / 19..25 / 31  the 15 mob lanes in catalogue order
+ *   53                    close
  */
 public final class SpawnersGui implements Gui {
 
-    private static final int[] SLOTS_LANES = {20, 21, 23, 24};
+    private static final int[] SLOTS_LANES = {
+        10, 11, 12, 13, 14, 15, 16,
+        19, 20, 21, 22, 23, 24, 25,
+        31
+    };
     private static final int SLOT_CLOSE = 53;
 
     private final CoreMCPlugin plugin;
