@@ -13,7 +13,7 @@
 //
 // Stock balance numbers are NOT what the journey verifies; it verifies the
 // mechanics and the wiring. Run from the repo root.
-import yaml from 'js-yaml'
+import { load as yamlLoad, dump as yamlDump } from 'js-yaml'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -21,8 +21,8 @@ const SRC = 'src/main/resources'
 const OUT = 'journey-server/plugins/CoreMC'
 fs.mkdirSync(OUT, { recursive: true })
 
-const ench = yaml.load(fs.readFileSync(path.join(SRC, 'enchants.yml'), 'utf8'))
-const tm = ench['miner.treasure-miner']
+const ench = yamlLoad(fs.readFileSync(path.join(SRC, 'enchants.yml'), 'utf8'))
+const tm = ench.enchants && ench.enchants['miner.treasure-miner']
 if (!tm) throw new Error('stock enchants.yml has no miner.treasure-miner')
 tm['chance-base'] = 1.0
 tm['chance-scale'] = 0.0
@@ -35,16 +35,16 @@ for (const r of tm.values.rewards) {
   if (r.type === 'KEY' && r.key === 'sky') { r.chance = 1.0; keyPatched = true }
 }
 if (!keyPatched) throw new Error('treasure-miner has no sky KEY reward to tune')
-fs.writeFileSync(path.join(OUT, 'enchants.yml'), yaml.dump(ench))
+fs.writeFileSync(path.join(OUT, 'enchants.yml'), yamlDump(ench))
 
-const crates = yaml.load(fs.readFileSync(path.join(SRC, 'crates.yml'), 'utf8'))
+const crates = yamlLoad(fs.readFileSync(path.join(SRC, 'crates.yml'), 'utf8'))
 const sky = crates.crates.sky
 if (!sky) throw new Error('stock crates.yml has no sky crate')
 sky['pity-count'] = 2
 for (const r of sky.rewards) {
   if (String(r.rarity).toLowerCase() === 'legendary') r.weight = 0
 }
-fs.writeFileSync(path.join(OUT, 'crates.yml'), yaml.dump(crates))
+fs.writeFileSync(path.join(OUT, 'crates.yml'), yamlDump(crates))
 
 console.log('overlays written to', OUT)
 console.log('  miner.treasure-miner: chance 1.0, cooldown 0, min-role-level 0, cost-base 1, sky key chance 1.0')

@@ -26,7 +26,7 @@
 import mineflayer from 'mineflayer'
 import { Vec3 } from 'vec3'
 import { Rcon } from 'rcon-client'
-import yaml from 'js-yaml'
+import { load as yamlLoad } from 'js-yaml'
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -744,11 +744,11 @@ async function main() {
   check(await waitChat(owner, /JOwner/i, 15000), '/is info shows the owner')
 
   // data-file asserts (post-stop flush => files are authoritative now)
-  const users = yaml.load(fs.readFileSync(path.join(PLUGIN_DIR, 'usernames.yml'), 'utf8'))
+  const users = yamlLoad(fs.readFileSync(path.join(PLUGIN_DIR, 'usernames.yml'), 'utf8'))
   const uuid = users && (users[OWNER.toLowerCase()] || users[OWNER])
   check(!!uuid, 'username index maps the owner', String(uuid))
   if (uuid) {
-    const prof = yaml.load(fs.readFileSync(
+    const prof = yamlLoad(fs.readFileSync(
       path.join(PLUGIN_DIR, 'profiles', `${uuid}.yml`), 'utf8'))
     check(prof.role === 'miner', 'profile: role=miner', String(prof.role))
     const zk = (prof['kill-counts'] && prof['kill-counts'].zombie) || 0
@@ -759,7 +759,7 @@ async function main() {
     check(enchLvl >= 1, 'profile: treasure-miner owned', `level=${enchLvl}`)
     check(prof.money === snapMoney && prof.credits === snapCredits && prof['sky-tokens'] === snapTokens,
       'profile file balances match live snapshot')
-    const isl = yaml.load(fs.readFileSync(
+    const isl = yamlLoad(fs.readFileSync(
       path.join(PLUGIN_DIR, 'islands', `${uuid}.yml`), 'utf8'))
     check(isl.world === 'islands', 'island file: world=islands', String(isl.world))
     check(isl.upgrades && isl.upgrades.border === 1, 'island file: border tier persists')
