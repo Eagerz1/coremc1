@@ -111,7 +111,7 @@ public final class CrateService {
     }
 
     private Optional<CrateReward> parseReward(final String crateId, final Map<?, ?> raw) {
-        final String typeName = String.valueOf(raw.getOrDefault("type", "")).toUpperCase(Locale.ROOT);
+        final String typeName = strOf(raw.get("type"), "").toUpperCase(Locale.ROOT);
         final CrateReward.RewardType type;
         try {
             type = CrateReward.RewardType.valueOf(typeName);
@@ -121,14 +121,14 @@ public final class CrateService {
             return Optional.empty();
         }
         final int weight = intOf(raw.get("weight"), 0);
-        final String rarity = String.valueOf(raw.getOrDefault("rarity", "common"));
-        final String currency = String.valueOf(raw.getOrDefault("currency", "MONEY")).toUpperCase(Locale.ROOT);
+        final String rarity = strOf(raw.get("rarity"), "common");
+        final String currency = strOf(raw.get("currency"), "MONEY").toUpperCase(Locale.ROOT);
         final long min = longOf(raw.get("min"), longOf(raw.get("amount"), 1L));
         final long max = longOf(raw.get("max"), min);
-        final String key = String.valueOf(raw.getOrDefault("key", ""));
+        final String key = strOf(raw.get("key"), "");
         final int amount = Math.max(1, intOf(raw.get("amount"), 1));
-        final String refId = String.valueOf(raw.getOrDefault("ref", ""));
-        final String material = String.valueOf(raw.getOrDefault("material", "")).toUpperCase(Locale.ROOT);
+        final String refId = strOf(raw.get("ref"), "");
+        final String material = strOf(raw.get("material"), "").toUpperCase(Locale.ROOT);
         // Validate references against the live catalogues (load order matters).
         switch (type) {
             case CURRENCY -> {
@@ -176,6 +176,10 @@ public final class CrateService {
 
     private void warn(final String crateId, final String detail) {
         plugin.getLogger().warning("[crates] crate '" + crateId + "' reward skipped: " + detail + ".");
+    }
+
+    private static String strOf(final Object value, final String fallback) {
+        return value == null ? fallback : String.valueOf(value);
     }
 
     private static int intOf(final Object value, final int fallback) {
