@@ -42,10 +42,8 @@ public final class EnchantRegistry {
 
     /** (Re)loads {@code enchants.yml}; returns the number of valid enchants. */
     public int load() {
+        com.coremc.core.util.YamlFiles.mergeNewDefaults(plugin, "enchants.yml");
         final File file = new File(plugin.getDataFolder(), "enchants.yml");
-        if (!file.exists()) {
-            plugin.saveResource("enchants.yml", false);
-        }
         final YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
         final ConfigurationSection root = yaml.getConfigurationSection("enchants");
         final List<String> errors = new ArrayList<>();

@@ -5,14 +5,11 @@ import com.coremc.core.economy.Currency;
 import com.coremc.core.player.PlayerProfile;
 import com.coremc.core.util.ColorUtil;
 import java.io.File;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -51,10 +48,7 @@ public final class ShopService {
     /** (Re)loads the catalogue; used by startup and by a future reload flow. */
     public int loadCatalogue() {
         catalogue.clear();
-        if (!file.isFile()) {
-            plugin.saveResource(FILE_NAME, false);
-        }
-        mergeNewDefaults();
+        com.coremc.core.util.YamlFiles.mergeNewDefaults(plugin, FILE_NAME);
         final YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
         for (final ShopCategory category : ShopCategory.values()) {
             final List<ShopEntry> entries = new ArrayList<>();
@@ -91,19 +85,6 @@ public final class ShopService {
         final long sellPrice = Math.max(0L, def.getLong("sell-price", 0L));
         final String display = def.getString("display", "&f" + material.name());
         return Optional.of(new ShopEntry(id, material, display, currency, price, amount, sellPrice));
-    }
-
-    /** Same upgrade-safety as config.yml: new jar keys flow into the disk file. */
-    private void mergeNewDefaults() {
-        try (var reader = new InputStreamReader(
-                Objects.requireNonNull(plugin.getResource(FILE_NAME)), StandardCharsets.UTF_8)) {
-            final YamlConfiguration disk = YamlConfiguration.loadConfiguration(file);
-            disk.setDefaults(YamlConfiguration.loadConfiguration(reader));
-            disk.options().copyDefaults(true);
-            disk.save(file);
-        } catch (Exception e) {
-            plugin.getLogger().warning("Could not merge shop.yml defaults: " + e.getMessage());
-        }
     }
 
     public List<ShopEntry> entriesOf(final ShopCategory category) {

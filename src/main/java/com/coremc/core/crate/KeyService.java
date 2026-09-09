@@ -42,10 +42,8 @@ public final class KeyService {
 
     /** (Re)loads {@code crates.yml} keys; returns the key count. */
     public int load() {
+        com.coremc.core.util.YamlFiles.mergeNewDefaults(plugin, "crates.yml");
         final File file = new File(plugin.getDataFolder(), "crates.yml");
-        if (!file.exists()) {
-            plugin.saveResource("crates.yml", false);
-        }
         final YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
         final ConfigurationSection root = yaml.getConfigurationSection("keys");
         final Map<String, CrateKey> parsed = new LinkedHashMap<>();

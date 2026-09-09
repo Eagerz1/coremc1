@@ -35,7 +35,10 @@ public final class ThemeService {
     /** (Re)loads themes.yml. Returns the number of valid themes loaded. */
     public int load() {
         themes.clear();
-        plugin.saveResource("themes.yml", true);
+        // Never saveResource(replace=true) here: that wiped admin themes on
+        // every load. Missing file -> bundled copy; existing file -> new
+        // jar keys merge in, disk values always win.
+        com.coremc.core.util.YamlFiles.mergeNewDefaults(plugin, "themes.yml");
         final YamlConfiguration config =
                 YamlConfiguration.loadConfiguration(new java.io.File(plugin.getDataFolder(), "themes.yml"));
         final ConfigurationSection section = config.getConfigurationSection("themes");
