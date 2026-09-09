@@ -33,7 +33,11 @@ class UpgradeCatalogTest {
                 .filter(t -> t.id().equals("mining-cube")).count());
         assertEquals(1, UpgradeCatalog.ofCategory(UpgradeCatalog.Category.FARMING).stream()
                 .filter(t -> t.id().equals("crop-regrowth")).count());
-        assertEquals(2, UpgradeCatalog.ofCategory(UpgradeCatalog.Category.ISLAND).size());
+        assertEquals(4, UpgradeCatalog.ofCategory(UpgradeCatalog.Category.ISLAND).size());
+        assertEquals(1, UpgradeCatalog.ofCategory(UpgradeCatalog.Category.ISLAND).stream()
+                .filter(t -> t.id().equals("generator-boost")).count());
+        assertEquals(1, UpgradeCatalog.ofCategory(UpgradeCatalog.Category.ISLAND).stream()
+                .filter(t -> t.id().equals("spawner-boost")).count());
     }
 
     @Test
@@ -44,5 +48,12 @@ class UpgradeCatalogTest {
         final var cube = UpgradeCatalog.TRACKS.stream()
                 .filter(t -> t.id().equals("mining-cube")).findFirst().orElseThrow();
         assertTrue(cube.effectText(4).contains("5x5")); // spec: toward a 5x5 mining area
+        assertTrue(cube.effectText(15).contains("5x5")); // spec: 5x5 cap on the 1-15 scale
+        final var gen = UpgradeCatalog.TRACKS.stream()
+                .filter(t -> t.id().equals("generator-boost")).findFirst().orElseThrow();
+        assertTrue(gen.effectText(5).contains("40%"));
+        final var spawner = UpgradeCatalog.TRACKS.stream()
+                .filter(t -> t.id().equals("spawner-boost")).findFirst().orElseThrow();
+        assertTrue(spawner.effectText(5).contains("50%"));
     }
 }

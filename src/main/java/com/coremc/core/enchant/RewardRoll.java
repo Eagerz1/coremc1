@@ -43,7 +43,8 @@ public record RewardRoll(
         }
         final RewardType type;
         try {
-            type = RewardType.valueOf(String.valueOf(map.getOrDefault("type", "ITEM"))
+            final Object typeRaw = map.get("type");
+            type = RewardType.valueOf(String.valueOf(typeRaw == null ? "ITEM" : typeRaw)
                     .trim().toUpperCase(Locale.ROOT));
         } catch (final IllegalArgumentException unknown) {
             errors.add(where + ": unknown reward type " + map.get("type"));

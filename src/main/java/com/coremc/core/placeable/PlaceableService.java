@@ -197,4 +197,9 @@ public final class PlaceableService {
     public int size() {
         return placements.size();
     }
+
+    /** Read-only view of the registry (keys are {@code world:x:y:z}); used by the spawner retune. */
+    public Map<String, Placement> placements() {
+        return java.util.Collections.unmodifiableMap(placements);
+    }
 }

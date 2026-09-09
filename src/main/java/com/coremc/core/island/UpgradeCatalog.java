@@ -10,6 +10,9 @@ import org.bukkit.Material;
  * Categories match the CoreMC spec exactly: Mining, Fishing, Farming,
  * Slaying, Logging and Island. Adding a track here + a config section is
  * the supported way to extend the system.
+ *
+ * There is deliberately no storage track: CoreMC has no island storage
+ * system, so storage upgrades would have nothing to scale.
  */
 public final class UpgradeCatalog {
 
@@ -57,14 +60,25 @@ public final class UpgradeCatalog {
             String display,
             List<String> summary) {
 
-        /** Effect description for the CURRENT tier (used in lore). */
+        /**
+         * Effect description for the CURRENT tier (used in lore).
+         * Percentages mirror the config defaults
+         * ({@code *-percent-per-level}); retune both together.
+         */
         public String effectText(final int tier) {
             return switch (id) {
                 case "crop-regrowth" -> "&7Replant chance: &f" + (tier * 5) + "%";
-                case "mining-cube" -> "&7Mining area: &f" + (tier + 1) + "x" + (tier + 1);
+                case "mining-cube" -> {
+                    final int size = Math.min(tier + 1, 5);
+                    final String bonus = tier >= 11 ? " &6+rich" : tier >= 5 ? " &8(max size)" : "";
+                    yield "&7Mining area: &f" + size + "x" + size + bonus;
+                }
                 case "fisher-blessing" -> "&7Bonus catch: &f" + (tier * 10) + "%";
                 case "slayer-force" -> "&7Melee damage: &f+" + (tier * 5) + "%";
                 case "woodcutter" -> "&7Double log chance: &f" + (tier * 10) + "%";
+                case "generator-boost" -> "&7Gen cooldown: &f-" + (tier * 8) + "%";
+                case "spawner-boost" ->
+                    "&7Spawner speed: &f+" + (tier * 10) + "% &8(+extra " + (tier * 5) + "%)";
                 default -> "";
             };
         }
@@ -74,7 +88,8 @@ public final class UpgradeCatalog {
     public static final List<Track> TRACKS = List.of(
             new Track("mining-cube", Category.MINING, Material.COBBLESTONE,
                     "Mining Cube",
-                    List.of("&7Grows your mining cube", "&7toward a &f5x5&7 mining area.")),
+                    List.of("&7Grows your mining cube", "&7toward a &f5x5&7 mining area,",
+                            "&7then faster regen & richer ores.")),
             new Track("fisher-blessing", Category.FISHING, Material.FISHING_ROD,
                     "Fisher's Blessing",
                     List.of("&7Chance of a bonus catch", "&7while fishing.")),
@@ -89,13 +104,28 @@ public final class UpgradeCatalog {
                     List.of("&7Chance of double log drops", "&7while chopping.")),
             new Track("border", Category.ISLAND, Material.BEACON,
                     "Border Size",
-                    List.of("&7Widens the protected", "&7island square.")),
+                    List.of("&7Widens the protected", "&7island square up to &f200x200&7.")),
             new Track("member-slots", Category.ISLAND, Material.PLAYER_HEAD,
                     "Member Slots",
-                    List.of("&7Adds one team slot", "&7per tier.")));
+                    List.of("&7Adds one team slot", "&7per tier.")),
+            new Track("generator-boost", Category.ISLAND, Material.OBSERVER,
+                    "Generator Boost",
+                    List.of("&7Generators on your island", "&7recharge faster.")),
+            new Track("spawner-boost", Category.ISLAND, Material.SPAWNER,
+                    "Spawner Boost",
+                    List.of("&7Spawners on your island run", "&7faster, with extra spawns.")));
 
     /** All tracks of one category, in display order. */
     public static List<Track> ofCategory(final Category category) {
         return TRACKS.stream().filter(track -> track.category() == category).toList();
+    }
+
+    /** Display name of a track id (falls back to the raw id). */
+    public static String displayOf(final String trackId) {
+        return TRACKS.stream()
+                .filter(track -> track.id().equals(trackId))
+                .map(Track::display)
+                .findFirst()
+                .orElse(trackId);
     }
 }

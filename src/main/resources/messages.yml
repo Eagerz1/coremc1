@@ -33,6 +33,7 @@ island:
     bought: "&aUpgrade purchased! &7Tier &f{tier}&7/&f{max}&7 for &b{price} Sky Tokens&7."
     maxed: "&cThis upgrade is already at its maximum tier."
     insufficient: "&cYou need &b{price} Sky Tokens&c for the next tier."
+    locked: "&cRequires &f{track}&c tier &f{tier}&c first."
   world-missing: "&cThe island world is not available. Please contact an administrator."
   create-failed: "&cFailed to create your island. Please contact an administrator."
   created: "Your Skyblock island has been created!"

@@ -5,6 +5,7 @@ import com.coremc.core.gui.GuiService;
 import com.coremc.core.CoreMCPlugin;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -17,6 +18,10 @@ import org.bukkit.inventory.Inventory;
  *   10 / 12 / 14 / 16  upgrade tracks (click = buy next tier)
  *   22                 Sky Token balance
  *   26                 back to the category hub
+ *
+ * Tracks whose requirements are unmet render locked (redstone block)
+ * with the missing prerequisite named; clicking one explains the
+ * requirement instead of charging anything.
  */
 public final class IslandUpgradeCategoryGui implements Gui {
 
@@ -77,6 +82,7 @@ public final class IslandUpgradeCategoryGui implements Gui {
         final int tier = island.upgrades().getOrDefault(track.id(), 0);
         final int max = plugin.coreConfig().upgradeMaxTier(track.id());
         final var cost = plugin.coreConfig().upgradeCost(track.id(), tier);
+        final Map.Entry<String, Integer> locked = unmetRequirement(island, track.id());
 
         final List<String> lore = new ArrayList<>(track.summary());
         lore.add("");
@@ -90,6 +96,19 @@ public final class IslandUpgradeCategoryGui implements Gui {
             lore.add(track.effectText(tier));
         }
         lore.add("");
+        if (locked != null) {
+            final int have = island.upgrades().getOrDefault(locked.getKey(), 0);
+            lore.add("&c&lLOCKED");
+            lore.add("&7Requires: &f" + UpgradeCatalog.displayOf(locked.getKey())
+                    + " tier " + locked.getValue() + " &8(yours: " + have + "&8)");
+            if (tier < max && cost.isPresent()) {
+                lore.add("&8Next: tier " + (tier + 1) + " — " + cost.getAsLong() + " Sky Tokens");
+            }
+            return GuiService.item(
+                    Material.REDSTONE_BLOCK,
+                    "&c" + track.display() + " &8[LOCKED]",
+                    lore);
+        }
         if (tier >= max || cost.isEmpty()) {
             lore.add("&a&lMAXED OUT");
         } else {
@@ -102,6 +121,17 @@ public final class IslandUpgradeCategoryGui implements Gui {
                 category.color() + track.display()
                         + (tier > 0 ? " &8[&f" + tier + "&8/&7" + max + "&8]" : ""),
                 lore);
+    }
+
+    /** First unmet purchase requirement, or null when the track can be bought. */
+    private Map.Entry<String, Integer> unmetRequirement(final Island island, final String trackId) {
+        for (final Map.Entry<String, Integer> requirement :
+                plugin.coreConfig().upgradeRequires(trackId).entrySet()) {
+            if (island.upgrades().getOrDefault(requirement.getKey(), 0) < requirement.getValue()) {
+                return requirement;
+            }
+        }
+        return null;
     }
 
     @Override

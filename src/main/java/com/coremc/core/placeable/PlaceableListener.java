@@ -64,8 +64,15 @@ public final class PlaceableListener implements Listener {
                     // "Better tiers" are real world-level behaviour: more mobs
                     // per cycle and a faster cycle, taken from the tier config.
                     spawnerState.setSpawnCount(ref.tier().spawnCount());
-                    spawnerState.setMinSpawnDelay(ref.tier().spawnDelayTicks());
-                    spawnerState.setMaxSpawnDelay(ref.tier().spawnDelayTicks());
+                    // Island spawner-boost shrinks the cycle further.
+                    final int boost = plugin.upgradeEffects().spawnerBoostTierAt(
+                            block.getWorld().getName(), block.getX(), block.getZ());
+                    final int pct = Math.max(0, plugin.getConfig().getInt(
+                            "island.upgrades.spawner-boost.delay-reduction-percent-per-level", 10));
+                    final int delay = com.coremc.core.island.IslandUpgradeEffects
+                            .reducedDelayTicks(ref.tier().spawnDelayTicks(), boost, pct);
+                    spawnerState.setMinSpawnDelay(delay);
+                    spawnerState.setMaxSpawnDelay(delay);
                     spawnerState.update(true);
                 }
             });
@@ -160,18 +167,25 @@ public final class PlaceableListener implements Listener {
         }
         final GeneratorDefinition def = definition.get();
         final Location loc = event.getClickedBlock().getLocation();
+        // Island generator-boost shrinks the harvest cooldown.
+        final int boost = plugin.upgradeEffects().generatorBoostTierAt(
+                loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+        final int pct = Math.max(0, plugin.getConfig().getInt(
+                "island.upgrades.generator-boost.cooldown-reduction-percent-per-level", 8));
+        final long effectiveCooldown = com.coremc.core.island.IslandUpgradeEffects
+                .reducedCooldownSeconds(def.cooldownSeconds(), boost, pct);
         final String rateKey = player.getUniqueId() + ":" + PlaceableService.keyOf(
                 loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
         final long now = System.currentTimeMillis();
         final Long last = lastHarvest.get(rateKey);
-        if (last != null && now - last < def.cooldownSeconds() * 1000L) {
-            final long waits = (def.cooldownSeconds() * 1000L - (now - last)) / 1000L + 1;
+        if (last != null && now - last < effectiveCooldown * 1000L) {
+            final long waits = (effectiveCooldown * 1000L - (now - last)) / 1000L + 1;
             plugin.messages().sendPrefixed(player, "gen.cooldown", Map.of("seconds", String.valueOf(waits)));
             return;
         }
         lastHarvest.put(rateKey, now);
         if (lastHarvest.size() > 256) {
-            final long threshold = now - (def.cooldownSeconds() * 1000L + 60_000L);
+            final long threshold = now - (effectiveCooldown * 1000L + 60_000L);
             lastHarvest.entrySet().removeIf(e -> e.getValue() < threshold);
         }
         final boolean delivered =

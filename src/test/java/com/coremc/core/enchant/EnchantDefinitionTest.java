@@ -1,36 +1,21 @@
 package com.coremc.core.enchant;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.coremc.core.economy.Currency;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.Test;
 
 /**
  * Pure unit tests for the custom-enchant catalogue rules: level
  * math, definition parsing, and reward-roll parsing. No server.
  */
-public final class EnchantDefinitionTest {
-
-    private EnchantDefinitionTest() {
-    }
-
-    public static void runAll() {
-        costCurveUsesBaseTimesGrowth();
-        chanceAndValueInterpolateLinearly();
-        chanceIsCapped();
-        levelZeroYieldsNothing();
-        explicitCostsWinOverFormula();
-        unknownEffectRejectsDefinition();
-        unknownTriggerRejectsDefinition();
-        unknownRoleRejectsDefinition();
-        multiplierRequiresPassiveTrigger();
-        rewardTableWithoutRewardsWarns();
-        rewardRollParsesAllTypes();
-        rewardRollParsesAmountRanges();
-        rewardRollRejectsBadEntries();
-    }
+class EnchantDefinitionTest {
 
     private static Map<String, Object> validDef() {
         final Map<String, Object> def = new LinkedHashMap<>();
@@ -58,47 +43,54 @@ public final class EnchantDefinitionTest {
         return parsed.get();
     }
 
-    private static void costCurveUsesBaseTimesGrowth() {
+    @Test
+    void costCurveUsesBaseTimesGrowth() {
         final Enchant enchant = parseValid();
-        assertTrue(enchant.costForLevel(1) == 100L, "level 1 costs the base");
-        assertTrue(enchant.costForLevel(2) == 110L, "level 2 costs base*growth");
-        assertTrue(enchant.costForLevel(10) == Math.round(100.0 * Math.pow(1.1, 9)), "level 10 follows curve");
+        assertEquals(100L, enchant.costForLevel(1), "level 1 costs the base");
+        assertEquals(110L, enchant.costForLevel(2), "level 2 costs base*growth");
+        assertEquals(Math.round(100.0 * Math.pow(1.1, 9)), enchant.costForLevel(10),
+                "level 10 follows curve");
     }
 
-    private static void chanceAndValueInterpolateLinearly() {
+    @Test
+    void chanceAndValueInterpolateLinearly() {
         final Enchant enchant = parseValid();
-        assertTrue(Math.abs(enchant.chanceAt(1) - 0.05) < 1e-9, "chance at 1 is base");
-        assertTrue(Math.abs(enchant.chanceAt(10) - 0.14) < 1e-9, "chance scales linearly");
-        assertTrue(Math.abs(enchant.valueAt(1) - 1.0) < 1e-9, "value at 1 is base");
-        assertTrue(Math.abs(enchant.valueAt(10) - 5.5) < 1e-9, "value scales linearly");
+        assertEquals(0.05, enchant.chanceAt(1), 1e-9, "chance at 1 is base");
+        assertEquals(0.14, enchant.chanceAt(10), 1e-9, "chance scales linearly");
+        assertEquals(1.0, enchant.valueAt(1), 1e-9, "value at 1 is base");
+        assertEquals(5.5, enchant.valueAt(10), 1e-9, "value scales linearly");
     }
 
-    private static void chanceIsCapped() {
+    @Test
+    void chanceIsCapped() {
         final Map<String, Object> def = validDef();
         def.put("chance-cap", 0.1);
         final List<String> errors = new ArrayList<>();
         final Enchant enchant = EnchantRegistry.parseDefinition("miner.test", def, errors).orElseThrow();
-        assertTrue(Math.abs(enchant.chanceAt(10) - 0.1) < 1e-9, "chance never exceeds the cap");
+        assertEquals(0.1, enchant.chanceAt(10), 1e-9, "chance never exceeds the cap");
     }
 
-    private static void levelZeroYieldsNothing() {
+    @Test
+    void levelZeroYieldsNothing() {
         final Enchant enchant = parseValid();
-        assertTrue(enchant.chanceAt(0) == 0.0, "unowned chance is 0");
-        assertTrue(enchant.valueAt(0) == 0.0, "unowned value is 0");
+        assertEquals(0.0, enchant.chanceAt(0), "unowned chance is 0");
+        assertEquals(0.0, enchant.valueAt(0), "unowned value is 0");
     }
 
-    private static void explicitCostsWinOverFormula() {
+    @Test
+    void explicitCostsWinOverFormula() {
         final Map<String, Object> def = validDef();
         def.put("max-level", 3);
         def.put("costs", List.of(5L, 10L, 25L));
         final List<String> errors = new ArrayList<>();
         final Enchant enchant = EnchantRegistry.parseDefinition("miner.test", def, errors).orElseThrow();
-        assertTrue(enchant.costForLevel(1) == 5L, "explicit cost level 1");
-        assertTrue(enchant.costForLevel(3) == 25L, "explicit cost level 3");
-        assertTrue(enchant.currency() == Currency.SKY_TOKENS, "currency parsed");
+        assertEquals(5L, enchant.costForLevel(1), "explicit cost level 1");
+        assertEquals(25L, enchant.costForLevel(3), "explicit cost level 3");
+        assertEquals(Currency.SKY_TOKENS, enchant.currency(), "currency parsed");
     }
 
-    private static void unknownEffectRejectsDefinition() {
+    @Test
+    void unknownEffectRejectsDefinition() {
         final Map<String, Object> def = validDef();
         def.put("effect", "FLY");
         final List<String> errors = new ArrayList<>();
@@ -107,7 +99,8 @@ public final class EnchantDefinitionTest {
         assertTrue(!errors.isEmpty(), "rejection must explain itself");
     }
 
-    private static void unknownTriggerRejectsDefinition() {
+    @Test
+    void unknownTriggerRejectsDefinition() {
         final Map<String, Object> def = validDef();
         def.put("trigger", "DANCE");
         final List<String> errors = new ArrayList<>();
@@ -115,7 +108,8 @@ public final class EnchantDefinitionTest {
                 "unknown trigger must reject the definition");
     }
 
-    private static void unknownRoleRejectsDefinition() {
+    @Test
+    void unknownRoleRejectsDefinition() {
         final Map<String, Object> def = validDef();
         def.put("role", "ninja");
         final List<String> errors = new ArrayList<>();
@@ -123,7 +117,8 @@ public final class EnchantDefinitionTest {
                 "unknown role must reject the definition");
     }
 
-    private static void multiplierRequiresPassiveTrigger() {
+    @Test
+    void multiplierRequiresPassiveTrigger() {
         final Map<String, Object> def = validDef();
         def.put("effect", "MULTIPLIER");
         def.put("trigger", "MINE");
@@ -132,7 +127,8 @@ public final class EnchantDefinitionTest {
                 "MULTIPLIER with a non-PASSIVE trigger must be rejected");
     }
 
-    private static void rewardTableWithoutRewardsWarns() {
+    @Test
+    void rewardTableWithoutRewardsWarns() {
         final Map<String, Object> def = validDef();
         def.put("effect", "REWARD_TABLE");
         def.put("values", Map.of());
@@ -143,7 +139,8 @@ public final class EnchantDefinitionTest {
                 "warning must mention the rewards table");
     }
 
-    private static void rewardRollParsesAllTypes() {
+    @Test
+    void rewardRollParsesAllTypes() {
         final List<String> errors = new ArrayList<>();
         assertTrue(RewardRoll.parse(Map.of("chance", 0.5, "type", "ITEM", "material", "DIAMOND",
                 "amount", 2), errors, "t").map(roll -> roll.type()
@@ -156,20 +153,25 @@ public final class EnchantDefinitionTest {
                 .map(roll -> roll.type() == RewardRoll.RewardType.XP).orElse(false), "XP parses");
         assertTrue(RewardRoll.parse(Map.of("chance", 0.05, "type", "KEY", "key", "sky"), errors, "t")
                 .map(roll -> "sky".equals(roll.keyId())).orElse(false), "KEY parses");
+        assertTrue(RewardRoll.parse(Map.of("chance", 0.4, "type", "SOULS", "amount", 3), errors, "t")
+                .map(roll -> roll.type() == RewardRoll.RewardType.SOULS).orElse(false), "SOULS parses");
         assertTrue(errors.isEmpty(), "valid rolls must not warn: " + errors);
     }
 
-    private static void rewardRollParsesAmountRanges() {
+    @Test
+    void rewardRollParsesAmountRanges() {
         final List<String> errors = new ArrayList<>();
         final RewardRoll roll = RewardRoll.parse(
                         Map.of("chance", 0.3, "type", "TOKENS", "amount", "3-8"), errors, "t")
                 .orElseThrow();
-        assertTrue(roll.minAmount() == 3 && roll.maxAmount() == 8, "range parses to min/max");
+        assertEquals(3, roll.minAmount(), "range min parses");
+        assertEquals(8, roll.maxAmount(), "range max parses");
         final int sampled = roll.rollAmount(new java.util.Random(42));
         assertTrue(sampled >= 3 && sampled <= 8, "rollAmount stays in range");
     }
 
-    private static void rewardRollRejectsBadEntries() {
+    @Test
+    void rewardRollRejectsBadEntries() {
         final List<String> errors = new ArrayList<>();
         assertTrue(RewardRoll.parse(Map.of("chance", 2.0, "type", "ITEM", "material", "DIRT"),
                 errors, "t").isEmpty(), "chance > 1 rejected");
@@ -180,11 +182,5 @@ public final class EnchantDefinitionTest {
         assertTrue(RewardRoll.parse(Map.of("chance", 0.5, "type", "DRAGON"), errors, "t").isEmpty(),
                 "unknown type rejected");
         assertTrue(RewardRoll.parse("not-a-map", errors, "t").isEmpty(), "non-map rejected");
-    }
-
-    private static void assertTrue(final boolean condition, final String message) {
-        if (!condition) {
-            throw new AssertionError(message);
-        }
     }
 }

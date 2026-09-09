@@ -188,10 +188,18 @@ public final class IslandService {
         return config.islandMemberSlots() + island.upgrades().getOrDefault("member-slots", 0);
     }
 
-    /** Protected border width including purchased border tiers. */
+    /**
+     * Protected border width including purchased border tiers: absolute
+     * widths from the sizes list when configured (50 -> 200), else the
+     * legacy base + tiers × step.
+     */
     public int effectiveBorder(final Island island) {
-        return island.borderSize()
-                + island.upgrades().getOrDefault("border", 0) * config.upgradeBorderStepBlocks();
+        final int tier = island.upgrades().getOrDefault("border", 0);
+        final java.util.List<Integer> sizes = config.upgradeBorderSizes();
+        if (!sizes.isEmpty()) {
+            return sizes.get(Math.min(tier, sizes.size() - 1));
+        }
+        return island.borderSize() + tier * config.upgradeBorderStepBlocks();
     }
 
     /** (x,z) containment against the island's EFFECTIVE (upgraded) border. */
@@ -217,6 +225,14 @@ public final class IslandService {
         if (cost.isEmpty()) {
             ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.maxed", Map.of());
             return false;
+        }
+        for (final Map.Entry<String, Integer> requirement : config.upgradeRequires(upgradeId).entrySet()) {
+            if (island.upgrades().getOrDefault(requirement.getKey(), 0) < requirement.getValue()) {
+                ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.locked",
+                        Map.of("track", UpgradeCatalog.displayOf(requirement.getKey()),
+                                "tier", String.valueOf(requirement.getValue())));
+                return false;
+            }
         }
         final var profile = playerData.profileOf(player.getUniqueId()).orElse(null);
         if (profile == null) {

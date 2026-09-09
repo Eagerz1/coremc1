@@ -40,22 +40,48 @@ island:
   # Every subsection here is a track; the GUI groups them by category
   # (Mining, Fishing, Farming, Slaying, Logging, Island).
   upgrades:
+    # NOTE: there is deliberately no storage track — CoreMC has no
+    # island storage system, so storage upgrades would scale nothing.
     # ---- ISLAND category ----
     border:
-      # Each tier widens the protected square by this many blocks.
+      # Absolute border width per tier (index = tier): 50 -> 200.
+      # When present this list wins; step-blocks below is the legacy
+      # fallback for configs without sizes.
+      sizes: [50, 75, 100, 125, 150, 175, 200]
+      # Each tier widens the protected square by this many blocks
+      # (legacy fallback when sizes: is absent).
       step-blocks: 25
-      max-tier: 5
-      costs: [10, 20, 30, 40, 50]
+      max-tier: 6
+      costs: [10, 20, 30, 40, 50, 75]
     member-slots:
       # Each tier adds one member slot (on top of member-slots above).
       max-tier: 5
       costs: [5, 10, 15, 20, 25]
+    generator-boost:
+      # Each tier cuts generator harvest cooldowns on the island by
+      # cooldown-reduction-percent-per-level (floored at 1s).
+      max-tier: 5
+      costs: [100, 200, 350, 550, 800]
+      cooldown-reduction-percent-per-level: 8
+      requires:
+        mining-cube: 3
+    spawner-boost:
+      # Each tier speeds spawner cycles up by
+      # delay-reduction-percent-per-level and adds
+      # extra-spawn-percent-per-level for one extra mob.
+      max-tier: 5
+      costs: [150, 300, 500, 800, 1200]
+      delay-reduction-percent-per-level: 10
+      extra-spawn-percent-per-level: 5
+      requires:
+        border: 2
     # ---- MINING category ----
     mining-cube:
-      # Tier 0 = no cube, tier T = a (T+1)x(T+1)x(T+1) mining cube beside
-      # the island (tier 4 = the spec's 5x5 mining area).
-      max-tier: 4
-      costs: [15, 25, 40, 60]
+      # Tier 0 = no cube; tier T = a min(T+1,5)-edge cube beside the
+      # island (5x5 cap from tier 4). Tiers 5-10 regenerate faster and
+      # restore more per cycle; tiers 11-15 also unlock rich contents.
+      max-tier: 15
+      costs: [15, 25, 40, 60, 90, 130, 180, 250, 330, 430, 550, 700, 900, 1200, 1600]
       # Weighted contents of regenerated cube blocks (material: weight).
       contents:
         STONE: 60
@@ -65,8 +91,19 @@ island:
         GOLD_ORE: 4
         LAPIS_ORE: 3
         DIAMOND_ORE: 1
-      # Seconds between regeneration of one missing cube block per island.
-      regen-seconds: 30
+      # Rich contents merged in once the tier is reached.
+      contents-tier-8:
+        EMERALD_ORE: 2
+        DIAMOND_ORE: 2
+        GOLD_ORE: 3
+      contents-tier-12:
+        ANCIENT_DEBRIS: 1
+        EMERALD_ORE: 3
+        DIAMOND_ORE: 3
+      # Regen cadence: seconds(tier) = max(min, base - (tier-1) * step).
+      regen-base-seconds: 30
+      regen-step-seconds: 2
+      regen-min-seconds: 5
     # ---- FARMING category ----
     crop-regrowth:
       # Spec track: level 0-20. Level L = L*5% chance that a harvested

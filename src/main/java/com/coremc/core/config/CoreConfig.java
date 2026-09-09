@@ -36,6 +36,11 @@ public final class CoreConfig {
     private final java.util.Map<String, Integer> upgradeMaxTiers = new java.util.LinkedHashMap<>();
     /** upgrade id -> per-tier Sky Token costs, read from island.upgrades.<id>.costs. */
     private final java.util.Map<String, java.util.List<Long>> upgradeCosts = new java.util.LinkedHashMap<>();
+    /** Absolute border width per tier (index = tier); empty = legacy step-blocks mode. */
+    private final java.util.List<Integer> upgradeBorderSizes = new java.util.ArrayList<>();
+    /** upgrade id -> (required track -> required tier), read from island.upgrades.<id>.requires. */
+    private final java.util.Map<String, java.util.Map<String, Integer>> upgradeRequires =
+            new java.util.LinkedHashMap<>();
 
     public CoreConfig(final JavaPlugin plugin) {
         this.plugin = plugin;
@@ -90,11 +95,29 @@ public final class CoreConfig {
         this.islandInviteExpirySeconds = Math.max(15L, config.getLong("island.invite-expiry-seconds", 60L));
 
         this.upgradeBorderStepBlocks = Math.max(1, config.getInt("island.upgrades.border.step-blocks", 25));
+        // Absolute per-tier border widths (index = tier). When present they win
+        // over step-blocks; entries past spacing/2 truncate the list (tier
+        // indexes stay aligned: tier T reads sizes[T]).
+        this.upgradeBorderSizes.clear();
+        for (final int size : config.getIntegerList("island.upgrades.border.sizes")) {
+            if (size <= 0) {
+                continue;
+            }
+            final int even = size - (size % 2);
+            if (even > this.islandSpacing / 2) {
+                plugin.getLogger().warning("island.upgrades.border.sizes entry " + size
+                        + " exceeds spacing/2 — truncating larger tiers.");
+                break;
+            }
+            this.upgradeBorderSizes.add(even);
+        }
         // The effective border (base + tiers * step) must stay inside the grid cell,
         // like the base border above — otherwise upgraded protection could extend
         // past the cell even though lookups only check the point's own cell.
         final int roomToGrow = (this.islandSpacing / 2) - this.islandBorderSize;
-        final int maxSafeTier = Math.max(0, roomToGrow / this.upgradeBorderStepBlocks);
+        final int maxSafeTier = this.upgradeBorderSizes.isEmpty()
+                ? Math.max(0, roomToGrow / this.upgradeBorderStepBlocks)
+                : this.upgradeBorderSizes.size() - 1;
 
         // Generic upgrade track table: every island.upgrades.<id> section with a
         // max-tier and a costs list becomes a purchasable track automatically
@@ -102,6 +125,7 @@ public final class CoreConfig {
         // leave the island cell — see above).
         this.upgradeMaxTiers.clear();
         this.upgradeCosts.clear();
+        this.upgradeRequires.clear();
         final org.bukkit.configuration.ConfigurationSection upgradesSection =
                 config.getConfigurationSection("island.upgrades");
         if (upgradesSection != null) {
@@ -124,6 +148,15 @@ public final class CoreConfig {
                 }
                 this.upgradeMaxTiers.put(id, maxTier);
                 this.upgradeCosts.put(id, costs);
+                final java.util.Map<String, Integer> requires = new java.util.LinkedHashMap<>();
+                final org.bukkit.configuration.ConfigurationSection requiresSection =
+                        upgradesSection.getConfigurationSection(id + ".requires");
+                if (requiresSection != null) {
+                    for (final String req : requiresSection.getKeys(false)) {
+                        requires.put(req, Math.max(0, requiresSection.getInt(req, 0)));
+                    }
+                }
+                this.upgradeRequires.put(id, requires);
             }
         }
 
@@ -231,6 +264,17 @@ public final class CoreConfig {
             return java.util.OptionalLong.empty();
         }
         return java.util.OptionalLong.of(costs.get(tier));
+    }
+
+    /** Absolute border widths per tier (index = tier); empty = legacy step-blocks mode. */
+    public java.util.List<Integer> upgradeBorderSizes() {
+        return java.util.Collections.unmodifiableList(upgradeBorderSizes);
+    }
+
+    /** Required (track -> tier) map for an upgrade track (empty = no requirements). */
+    public java.util.Map<String, Integer> upgradeRequires(final String upgradeId) {
+        return java.util.Collections.unmodifiableMap(
+                upgradeRequires.getOrDefault(upgradeId, java.util.Map.of()));
     }
 
     private static java.util.List<Long> longCosts(

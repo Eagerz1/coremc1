@@ -1,30 +1,21 @@
 package com.coremc.core.enchant;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.coremc.core.economy.Currency;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.Test;
 
 /**
  * Pure unit tests for the enchant engine's transient math
  * (combos, cooldowns, temp boosts, damage cap). The engine runs
  * with a null plugin here — granting paths are never touched.
  */
-public final class EnchantEngineTest {
-
-    private EnchantEngineTest() {
-    }
-
-    public static void runAll() {
-        comboStacksGrowAndCap();
-        comboExpiryRestartsChain();
-        cooldownBlocksUntilExpired();
-        zeroCooldownIsAlwaysReady();
-        tempBoostReportsAndExpires();
-        clearPlayerWipesEverything();
-        damageCapBoundsMultipliers();
-        rollHonoursBounds();
-    }
+class EnchantEngineTest {
 
     private static Enchant enchantWithCooldown(final long cooldownSeconds) {
         return new Enchant(
@@ -33,35 +24,39 @@ public final class EnchantEngineTest {
                 0.1, 0.0, 1.0, 1.0, 0.0, cooldownSeconds, 1, Map.of());
     }
 
-    private static void comboStacksGrowAndCap() {
+    @Test
+    void comboStacksGrowAndCap() {
         final EnchantEngine engine = new EnchantEngine(null);
         final UUID player = UUID.randomUUID();
-        assertTrue(engine.recordCombo(player, "combo", 60L, 3) == 1, "first stack is 1");
-        assertTrue(engine.recordCombo(player, "combo", 60L, 3) == 2, "second stack is 2");
-        assertTrue(engine.recordCombo(player, "combo", 60L, 3) == 3, "third stack is 3");
-        assertTrue(engine.recordCombo(player, "combo", 60L, 3) == 3, "stacks cap at max");
-        assertTrue(engine.comboStacks(player, "combo", 60L) == 3, "live stacks read back");
-        assertTrue(engine.comboStacks(player, "other", 60L) == 0, "unknown combo is 0");
+        assertEquals(1, engine.recordCombo(player, "combo", 60L, 3), "first stack is 1");
+        assertEquals(2, engine.recordCombo(player, "combo", 60L, 3), "second stack is 2");
+        assertEquals(3, engine.recordCombo(player, "combo", 60L, 3), "third stack is 3");
+        assertEquals(3, engine.recordCombo(player, "combo", 60L, 3), "stacks cap at max");
+        assertEquals(3, engine.comboStacks(player, "combo", 60L), "live stacks read back");
+        assertEquals(0, engine.comboStacks(player, "other", 60L), "unknown combo is 0");
     }
 
-    private static void comboExpiryRestartsChain() {
+    @Test
+    void comboExpiryRestartsChain() {
         final EnchantEngine engine = new EnchantEngine(null);
         final UUID player = UUID.randomUUID();
-        assertTrue(engine.recordCombo(player, "combo", 0L, 5) == 1, "first record is 1");
-        assertTrue(engine.recordCombo(player, "combo", 0L, 5) == 1, "expired chain restarts at 1");
-        assertTrue(engine.comboStacks(player, "combo", 0L) == 0, "expired stacks read 0");
+        assertEquals(1, engine.recordCombo(player, "combo", 0L, 5), "first record is 1");
+        assertEquals(1, engine.recordCombo(player, "combo", 0L, 5), "expired chain restarts at 1");
+        assertEquals(0, engine.comboStacks(player, "combo", 0L), "expired stacks read 0");
     }
 
-    private static void cooldownBlocksUntilExpired() {
+    @Test
+    void cooldownBlocksUntilExpired() {
         final EnchantEngine engine = new EnchantEngine(null);
         final UUID player = UUID.randomUUID();
         final Enchant enchant = enchantWithCooldown(60L);
         assertTrue(engine.cooldownReady(player, enchant), "fresh cooldown is ready");
         engine.markCooldown(player, enchant.id());
-        assertTrue(!engine.cooldownReady(player, enchant), "marked cooldown blocks");
+        assertFalse(engine.cooldownReady(player, enchant), "marked cooldown blocks");
     }
 
-    private static void zeroCooldownIsAlwaysReady() {
+    @Test
+    void zeroCooldownIsAlwaysReady() {
         final EnchantEngine engine = new EnchantEngine(null);
         final UUID player = UUID.randomUUID();
         final Enchant enchant = enchantWithCooldown(0L);
@@ -69,18 +64,20 @@ public final class EnchantEngineTest {
         assertTrue(engine.cooldownReady(player, enchant), "zero cooldown never blocks");
     }
 
-    private static void tempBoostReportsAndExpires() {
+    @Test
+    void tempBoostReportsAndExpires() {
         final EnchantEngine engine = new EnchantEngine(null);
         final UUID player = UUID.randomUUID();
         engine.setTempBoost(player, 50.0, 25.0, 60_000L);
-        assertTrue(engine.tempXpPct(player) == 50.0, "xp percent reads back");
-        assertTrue(engine.tempDropsPct(player) == 25.0, "drops percent reads back");
+        assertEquals(50.0, engine.tempXpPct(player), "xp percent reads back");
+        assertEquals(25.0, engine.tempDropsPct(player), "drops percent reads back");
         engine.setTempBoost(player, 50.0, 25.0, 0L);
-        assertTrue(engine.tempXpPct(player) == 0.0, "expired xp boost is 0");
-        assertTrue(engine.tempDropsPct(player) == 0.0, "expired drops boost is 0");
+        assertEquals(0.0, engine.tempXpPct(player), "expired xp boost is 0");
+        assertEquals(0.0, engine.tempDropsPct(player), "expired drops boost is 0");
     }
 
-    private static void clearPlayerWipesEverything() {
+    @Test
+    void clearPlayerWipesEverything() {
         final EnchantEngine engine = new EnchantEngine(null);
         final UUID player = UUID.randomUUID();
         final Enchant enchant = enchantWithCooldown(60L);
@@ -88,28 +85,24 @@ public final class EnchantEngineTest {
         engine.markCooldown(player, enchant.id());
         engine.setTempBoost(player, 10.0, 10.0, 60_000L);
         engine.clearPlayer(player);
-        assertTrue(engine.comboStacks(player, "combo", 60L) == 0, "combos cleared");
+        assertEquals(0, engine.comboStacks(player, "combo", 60L), "combos cleared");
         assertTrue(engine.cooldownReady(player, enchant), "cooldowns cleared");
-        assertTrue(engine.tempXpPct(player) == 0.0, "temp boosts cleared");
+        assertEquals(0.0, engine.tempXpPct(player), "temp boosts cleared");
     }
 
-    private static void damageCapBoundsMultipliers() {
-        assertTrue(EnchantEngine.capDamageMult(3.5) == 3.5, "sane mult passes through");
-        assertTrue(EnchantEngine.capDamageMult(100.0) == 10.0, "huge mult caps at 10");
-        assertTrue(EnchantEngine.capDamageMult(-2.0) == 0.0, "negative mult floors at 0");
+    @Test
+    void damageCapBoundsMultipliers() {
+        assertEquals(3.5, EnchantEngine.capDamageMult(3.5), "sane mult passes through");
+        assertEquals(10.0, EnchantEngine.capDamageMult(100.0), "huge mult caps at 10");
+        assertEquals(0.0, EnchantEngine.capDamageMult(-2.0), "negative mult floors at 0");
     }
 
-    private static void rollHonoursBounds() {
+    @Test
+    void rollHonoursBounds() {
         final EnchantEngine engine = new EnchantEngine(null);
         assertTrue(engine.roll(1.0), "chance 1 always hits");
         assertTrue(engine.roll(2.0), "chance above 1 always hits");
-        assertTrue(!engine.roll(0.0), "chance 0 never hits");
-        assertTrue(!engine.roll(-1.0), "negative chance never hits");
-    }
-
-    private static void assertTrue(final boolean condition, final String message) {
-        if (!condition) {
-            throw new AssertionError(message);
-        }
+        assertFalse(engine.roll(0.0), "chance 0 never hits");
+        assertFalse(engine.roll(-1.0), "negative chance never hits");
     }
 }

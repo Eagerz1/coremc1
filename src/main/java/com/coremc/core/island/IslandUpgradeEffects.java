@@ -4,7 +4,10 @@ import com.coremc.core.CoreMCPlugin;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Ageable;
@@ -15,12 +18,14 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 
 /**
- * Live effects of the non-Island upgrade tracks. All of them are
+ * Live effects of the non-size upgrade tracks. Role tracks are
  * island-team scoped and config-balanced:
  *
  *  - Farming / Crop Regrowth: harvesting a fully-grown crop on your
@@ -28,15 +33,26 @@ import org.bukkit.inventory.ItemStack;
  *    seed is consumed from the item drops (no duplication possible),
  *  - Logging / Woodcutter: chopping a log rolls L*10% for a second log,
  *  - Fishing / Fisher's Blessing: a caught fish rolls L*10% for a bonus,
- *  - Slaying / Slayer Force: melee hits on your island deal +L*5%.
+ *  - Slaying / Slayer Force: melee hits on your island deal +L*5%,
+ *  - Island / Generator Boost: generator harvest cooldowns on the
+ *    island shrink by L*8% (see PlaceableListener),
+ *  - Island / Spawner Boost: spawner delays on the island shrink by
+ *    L*10% (place-time + purchase retune) and spawner cycles roll
+ *    L*5% for one extra mob.
  *
  * Also hosts the purchase hook called from
  * {@link IslandService#purchaseUpgrade} so side-effecting tracks
- * (Mining Cube rebuild) act the moment they are bought.
+ * (Mining Cube rebuild, spawner retune) act the moment they are bought.
  */
 public final class IslandUpgradeEffects implements Listener {
 
     private final CoreMCPlugin plugin;
+    /**
+     * Spawner-born marker — the SAME tag the slayer pipeline filters
+     * on (equal NamespacedKey: same plugin namespace + same key), so
+     * boost-spawned extras stay ineligible for kill-economy effects.
+     */
+    private final NamespacedKey spawnerBornKey;
 
     /** crop -> replant material (itself) + the seed material it consumes. */
     private static final Map<Material, Material> SEEDS = Map.of(
@@ -47,13 +63,124 @@ public final class IslandUpgradeEffects implements Listener {
 
     public IslandUpgradeEffects(final CoreMCPlugin plugin) {
         this.plugin = plugin;
+        this.spawnerBornKey = new NamespacedKey(plugin, "spawner-born");
     }
 
     /** Called right after a successful upgrade purchase (same tick). */
     public void onPurchased(final Island island, final String upgradeId, final int newTier) {
         if ("mining-cube".equals(upgradeId)) {
             plugin.miningCube().rebuild(island);
+        } else if ("spawner-boost".equals(upgradeId)) {
+            retuneIslandSpawners(island);
         }
+    }
+
+    // ------------------------------------------------------------------ boost math (pure)
+
+    /** Spawner delay after a boost: base × (1 - pct×tier/100), floored at 20 ticks (1s). */
+    public static int reducedDelayTicks(final int baseTicks, final int tier, final int pctPerLevel) {
+        if (tier <= 0 || pctPerLevel <= 0) {
+            return baseTicks;
+        }
+        return Math.max(20, (int) Math.round(baseTicks * (1.0 - pctPerLevel * tier / 100.0)));
+    }
+
+    /** Generator cooldown after a boost: base × (1 - pct×tier/100), floored at 1s. */
+    public static long reducedCooldownSeconds(final long baseSeconds, final int tier,
+            final int pctPerLevel) {
+        if (tier <= 0 || pctPerLevel <= 0) {
+            return baseSeconds;
+        }
+        return Math.max(1L, Math.round(baseSeconds * (1.0 - pctPerLevel * tier / 100.0)));
+    }
+
+    // ------------------------------------------------------------------ boost lookups
+
+    /** Spawner-boost tier of the island containing (world,x,z), or 0 in the wild. */
+    public int spawnerBoostTierAt(final String world, final int x, final int z) {
+        return boostTierAt(world, x, z, "spawner-boost");
+    }
+
+    /** Generator-boost tier of the island containing (world,x,z), or 0 in the wild. */
+    public int generatorBoostTierAt(final String world, final int x, final int z) {
+        return boostTierAt(world, x, z, "generator-boost");
+    }
+
+    private int boostTierAt(final String world, final int x, final int z, final String track) {
+        return plugin.islands().islandAt(world, x, z)
+                .map(island -> island.upgrades().getOrDefault(track, 0))
+                .orElse(0);
+    }
+
+    // ------------------------------------------------------------------ spawner boost
+
+    /**
+     * Re-applies spawner delays to every spawner placement on the
+     * island (purchase hook; place-time application lives in
+     * PlaceableListener).
+     */
+    public void retuneIslandSpawners(final Island island) {
+        final World world = plugin.getServer().getWorld(island.worldName());
+        if (world == null) {
+            return;
+        }
+        final int tier = island.upgrades().getOrDefault("spawner-boost", 0);
+        if (tier <= 0) {
+            return;
+        }
+        final int pct = configPercent("spawner-boost", "delay-reduction-percent-per-level", 10);
+        for (final Map.Entry<String, com.coremc.core.placeable.PlaceableService.Placement> entry :
+                plugin.placeables().placements().entrySet()) {
+            final String key = entry.getKey();
+            final int split = key.indexOf(':');
+            if (split < 0 || !key.substring(0, split).equals(island.worldName())) {
+                continue;
+            }
+            final var placement = entry.getValue();
+            if (placement.type() != com.coremc.core.placeable.PlaceableService.Type.SPAWNER) {
+                continue;
+            }
+            if (!plugin.islands().containsBlock(island, placement.x(), placement.z())) {
+                continue;
+            }
+            final Block block = world.getBlockAt(placement.x(), placement.y(), placement.z());
+            if (!(block.getState() instanceof org.bukkit.block.CreatureSpawner spawner)) {
+                continue;
+            }
+            plugin.spawners().tierFor(placement.id()).ifPresent(ref -> {
+                final int reduced = reducedDelayTicks(ref.tier().spawnDelayTicks(), tier, pct);
+                spawner.setMinSpawnDelay(reduced);
+                spawner.setMaxSpawnDelay(reduced);
+                spawner.update(true);
+            });
+        }
+    }
+
+    /** Extra-spawn roll for spawner cycles on boosted islands. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onSpawnerSpawn(final CreatureSpawnEvent event) {
+        if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.SPAWNER) {
+            return;
+        }
+        final Location location = event.getLocation();
+        if (location.getWorld() == null) {
+            return;
+        }
+        final int tier = spawnerBoostTierAt(
+                location.getWorld().getName(), location.getBlockX(), location.getBlockZ());
+        if (tier <= 0) {
+            return;
+        }
+        final double chance =
+                tier * configPercent("spawner-boost", "extra-spawn-percent-per-level", 5) / 100.0;
+        if (ThreadLocalRandom.current().nextDouble() >= chance) {
+            return;
+        }
+        // One extra mob of the same kind. Custom-reason spawn (never
+        // re-enters this handler) and tagged spawner-born so the slayer
+        // economy filter keeps excluding it.
+        final Entity extra = location.getWorld().spawnEntity(location, event.getEntityType());
+        extra.getPersistentDataContainer().set(spawnerBornKey, PersistentDataType.BYTE, (byte) 1);
     }
 
     // ------------------------------------------------------------------ crop regrowth + woodcutter
