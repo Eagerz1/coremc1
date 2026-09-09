@@ -1,0 +1,93 @@
+name: sandbox-runtime-build
+on:
+  push:
+    branches: [ "arena/**" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Compile, test and package plugin jar
+        run: |
+          set +e
+          bash ci/build-and-test.sh 2>&1 | tee build-output.log
+          CODE=${PIPESTATUS[0]}
+          if [ "$CODE" -ne 0 ]; then
+            cp build-output.log sandbox/BUILD-FAIL.log
+          else
+            rm -f sandbox/BUILD-FAIL.log
+            echo "build $GITHUB_SHA OK" > sandbox/BUILD-OK
+          fi
+          echo "$CODE" > .ci-exit-code
+      - name: JLink minimal Java runtime
+        if: success()
+        run: |
+          rm -rf sandbox/runtime; JH=$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")
+          "$JH/bin/jlink" --add-modules java.se,jdk.unsupported,jdk.crypto.ec,jdk.zipfs,jdk.security.auth,jdk.management,jdk.management.agent,jdk.naming.dns,jdk.jfr,jdk.xml.dom,jdk.net \
+            --compress zip-9 --strip-debug --no-header-files --no-man-pages \
+            --output sandbox/runtime/linux-x64
+          sandbox/runtime/linux-x64/bin/java -version
+      - name: Fetch Paper 1.21.11 server jar (sandbox has no papermc.io egress; CI does)
+        if: always()
+        continue-on-error: true
+        run: |
+          DIAG=/tmp/paper-diag.log
+          : > "$DIAG"
+          OK=""
+          LIST_URL='https://fill.papermc.io/v3/projects/paper/versions/1.21.11/builds'
+          CODE=$(curl -sSL -o /tmp/builds.json -w '%{http_code}' "$LIST_URL" || true)
+          echo "== $LIST_URL -> $CODE" >> "$DIAG"
+          head -c 400 /tmp/builds.json >> "$DIAG"; echo >> "$DIAG"
+          INFO=$(python3 ci/resolve-paper.py /tmp/builds.json 2>>"$DIAG" || true)
+          echo "resolved: ${INFO:-<empty>}" >> "$DIAG"
+          URL=$(printf '%s' "$INFO" | python3 -c 'import json,sys; print(json.load(sys.stdin)["url"])' 2>/dev/null || true)
+          NAME=$(printf '%s' "$INFO" | python3 -c 'import json,sys; print(json.load(sys.stdin)["name"])' 2>/dev/null || true)
+          SHA=$(printf '%s' "$INFO" | python3 -c 'import json,sys; print(json.load(sys.stdin)["sha256"])' 2>/dev/null || true)
+          if [ -n "$URL" ] && [ -n "$NAME" ]; then
+            CODE=$(curl -sSL -o "sandbox/$NAME" -w '%{http_code}' "$URL" || true)
+            SZ=$(stat -c%s "sandbox/$NAME" 2>/dev/null || echo 0)
+            echo "== $URL -> $CODE ($SZ bytes)" >> "$DIAG"
+            if [ "$CODE" = "200" ] && [ "$SZ" -gt 10000000 ]; then
+              if [ -n "$SHA" ]; then
+                if echo "${SHA}  sandbox/${NAME}" | sha256sum -c - >> "$DIAG" 2>&1; then OK=1; else rm -f "sandbox/$NAME"; fi
+              else
+                OK=1
+              fi
+            else
+              rm -f "sandbox/$NAME"
+            fi
+          fi
+          if [ -z "$OK" ]; then
+            cp "$DIAG" sandbox/PAPER-FAIL.log
+          else
+            cat "$DIAG"
+          fi
+          # Also pin the vanilla server jar: paperclip needs it to patch on first
+          # boot and mojang egress is blocked from the sandbox too.
+          rm -f sandbox/MOJANG-FAIL.log
+          if [ ! -s sandbox/mojang_1.21.11.jar ]; then
+            if ! MOJANG_TARGET=$(python3 ci/resolve-vanilla.py 1.21.11 sandbox 2>&1); then
+              echo "$MOJANG_TARGET" > sandbox/MOJANG-FAIL.log
+            fi
+          fi
+          exit 0
+      - name: Commit artifacts + build status
+        if: always()
+        run: |
+          git config user.name "arena-build"
+          git config user.email "bot@users.noreply.github.com"
+          git add -f sandbox/
+          git commit -m "sandbox artifacts: jre + CoreMC jar + build status + paper" || true
+          git push origin HEAD:${GITHUB_REF_NAME}
+      - name: Propagate exit code
+        if: always()
+        run: exit "$(cat .ci-exit-code 2>/dev/null || echo 0)"

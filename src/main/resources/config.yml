@@ -1,0 +1,658 @@
+# ======================================================
+#  CoreMC — main configuration
+#  Messages and branding live in messages.yml
+# ======================================================
+
+player-data:
+  # How often dirty player profiles are flushed to disk (seconds).
+  # Data is also saved on quit and on server shutdown, so this is
+  # only a safety net against crashes.
+  autosave-seconds: 300
+
+welcome:
+  # Send the branded first-join welcome message (messages.yml -> welcome-first-join)
+  first-join-message: true
+
+island:
+  # World islands live in. CoreMC creates this world automatically when it
+  # does not exist (as empty void terrain — the dedicated island world).
+  # Islands created before the dedicated world existed keep working in
+  # whatever world they were created in (stored per island).
+  world: islands
+  # Distance (blocks) between island centres on the grid. Minimum 64.
+  # Changing this only affects NEW islands; existing islands keep their
+  # absolute centre coordinates.
+  spacing: 256
+  # Y level of the island platform surface (grass layer).
+  # Players spawn one block above this.
+  start-height: 64
+  # Seconds the player has to repeat /island delete to confirm deletion.
+  delete-confirm-seconds: 15
+  # Protected border of a new island (full width). 50 = 50x50 square.
+  # Must not exceed spacing (cell centres are spacing apart) so borders
+  # can never overlap (enforced).
+  border-size: 50
+  # Base number of members (non-owner) an island can hold.
+  member-slots: 3
+  # Seconds an /is invite stays valid.
+  invite-expiry-seconds: 60
+  # Island level (spec: meaningful, configurable calculation).
+  # score = lifetime xp + (sum of purchased upgrade tiers) * xp-per-upgrade-tier
+  # level = 1 + floor(sqrt(score / xp-divisor))
+  # Lifetime xp comes from the weights below (island activity by team members).
+  level:
+    xp-divisor: 100
+    xp-per-upgrade-tier: 10
+    weights:
+      blocks-mined: 1
+      logs-chopped: 1
+      crops-harvested: 2
+      fish-caught: 3
+      mobs-killed: 2
+      generator-harvests: 1
+  # Island upgrades — purchasable with Sky Tokens via /is upgrades.
+  # costs[n] = price of buying tier (n+1). Effects apply immediately.
+  # Every subsection here is a track; the GUI groups them by category
+  # (Mining, Fishing, Farming, Slaying, Logging, Island).
+  # requires: {track: tier} gates the WHOLE track; requires-tiers maps
+  # one exact tier number to extra gates for buying that tier.
+  upgrades:
+    # NOTE: there is deliberately no storage track — CoreMC has no
+    # island storage system, so storage upgrades would scale nothing.
+    # ---- ISLAND category ----
+    border:
+      # Absolute border width per tier (index = tier): 50 -> 200.
+      # When present this list wins; step-blocks below is the legacy
+      # fallback for configs without sizes.
+      sizes: [50, 75, 100, 125, 150, 175, 200]
+      # Each tier widens the protected square by this many blocks
+      # (legacy fallback when sizes: is absent).
+      step-blocks: 25
+      max-tier: 6
+      costs: [10, 20, 30, 40, 50, 75]
+    member-slots:
+      # Each tier adds one member slot (on top of member-slots above).
+      max-tier: 5
+      costs: [5, 10, 15, 20, 25]
+    generator-boost:
+      # Generation speed: each tier cuts generator harvest cooldowns on
+      # the island by cooldown-reduction-percent-per-level (floored at 1s).
+      # Reward multiplier: bonus-yield-percent-per-level chance of +1
+      # product, plus +1 base product every bonus-product-every-n-tiers.
+      # Rare blocks: rare-percent-per-level rolls rare-products (weighted).
+      max-tier: 5
+      costs: [100, 200, 350, 550, 800]
+      cooldown-reduction-percent-per-level: 8
+      bonus-yield-percent-per-level: 10
+      bonus-product-every-n-tiers: 2
+      rare-percent-per-level: 5
+      rare-products:
+        GOLD_INGOT: 3
+        EMERALD: 2
+        DIAMOND: 1
+      requires:
+        mining-cube: 3
+    spawner-boost:
+      # Spawn speed: delay-reduction-percent-per-level per tier, plus
+      # extra-spawn-percent-per-level for one extra mob per cycle.
+      # Island-wide spawner progression for spawner-mob kills:
+      # drop-bonus-percent-per-level (+1 base-drop copy),
+      # xp-percent-per-level (dropped XP), rare-percent-per-level on
+      # rare-rewards. The rare table accepts ITEM/XP entries ONLY —
+      # currency/soul/key entries are rejected at parse so spawner
+      # farms can never print economy (anti-abuse, by design).
+      max-tier: 5
+      costs: [150, 300, 500, 800, 1200]
+      delay-reduction-percent-per-level: 10
+      extra-spawn-percent-per-level: 5
+      drop-bonus-percent-per-level: 10
+      xp-percent-per-level: 10
+      rare-percent-per-level: 5
+      rare-rewards:
+        - { chance: 0.35, type: ITEM, material: BONE, amount: 2 }
+        - { chance: 0.35, type: ITEM, material: ARROW, amount: 2 }
+        - { chance: 0.25, type: ITEM, material: GUNPOWDER, amount: 1 }
+        - { chance: 0.20, type: XP, amount: 10 }
+      requires:
+        border: 2
+      # Stronger spawners need a stronger island (spec: level gates).
+      requires-island-level: 3
+    # ---- MINING category ----
+    mining-cube:
+      # Tier 0 = no cube; tier T = a min(T+1,5)-edge cube beside the
+      # island (5x5 cap from tier 4). Tiers 5-10 regenerate faster and
+      # restore more per cycle; tiers 11-15 also unlock rich contents.
+      max-tier: 15
+      # Progression gate (spec: upgrades may need levels): buying any
+      # mining-cube tier needs role level 5 in any role. 0 disables.
+      requires-role-level: 5
+      # Breaking one cube block at/above this tier mines the whole cube.
+      mine-all-tier: 5
+      costs: [15, 25, 40, 60, 90, 130, 180, 250, 330, 430, 550, 700, 900, 1200, 1600]
+      # Weighted contents of regenerated cube blocks (material: weight).
+      contents:
+        STONE: 60
+        COBBLESTONE: 15
+        COAL_ORE: 10
+        IRON_ORE: 7
+        GOLD_ORE: 4
+        LAPIS_ORE: 3
+        DIAMOND_ORE: 1
+      # Rich contents merged in once the tier is reached.
+      contents-tier-8:
+        EMERALD_ORE: 2
+        DIAMOND_ORE: 2
+        GOLD_ORE: 3
+      contents-tier-12:
+        ANCIENT_DEBRIS: 1
+        EMERALD_ORE: 3
+        DIAMOND_ORE: 3
+      # Regen cadence: seconds(tier) = max(min, base - (tier-1) * step).
+      regen-base-seconds: 30
+      regen-step-seconds: 2
+      regen-min-seconds: 5
+      # A serious cube needs a serious mining operation behind it.
+      requires-tiers:
+        # NOTE: the tier key is quoted so SnakeYAML keeps it a String —
+        # unquoted numbers become Integer keys Bukkit lookups can miss.
+        "5":
+          mining-fortune: 3
+    mining-fortune:
+      # Tier L = L*10% chance of +1 copy of mining drops on the island.
+      max-tier: 5
+      costs: [20, 40, 70, 110, 160]
+      chance-percent-per-level: 10
+    mining-xp:
+      # Tier L = +L*10% mining XP on the island (stacks with enchant XP boosts).
+      max-tier: 5
+      costs: [15, 30, 50, 80, 120]
+      xp-percent-per-level: 10
+    mining-tokens:
+      # Tier L = L*5% chance of bonus Sky Tokens when mining on the island.
+      max-tier: 5
+      costs: [25, 50, 90, 140, 200]
+      chance-percent-per-level: 5
+      amount: 1
+    mining-credits:
+      # Tier L = L*5% chance of bonus Credits when mining on the island.
+      max-tier: 5
+      costs: [25, 50, 90, 140, 200]
+      chance-percent-per-level: 5
+      amount: 2
+    mining-speed:
+      # Haste while mining on the island (I at tiers 1-2, II at 3-4, III at 5).
+      max-tier: 5
+      costs: [20, 40, 70, 110, 160]
+    # ---- FARMING category ----
+    crop-regrowth:
+      # Spec track: level 0-20. Level L = L*5% chance that a harvested
+      # mature crop replants itself (consuming one seed from the drops).
+      max-tier: 20
+      costs: [5, 5, 8, 8, 10, 10, 12, 12, 14, 14, 16, 16, 18, 18, 20, 20, 22, 22, 24, 25]
+      chance-percent-per-level: 5
+    farming-fortune:
+      # Tier L = L*10% chance to double a harvest on the island.
+      max-tier: 5
+      costs: [20, 40, 70, 110, 160]
+      chance-percent-per-level: 10
+    farming-xp:
+      # Tier L = +L*10% farming XP on the island (stacks with enchant XP boosts).
+      max-tier: 5
+      costs: [15, 30, 50, 80, 120]
+      xp-percent-per-level: 10
+    crop-yield:
+      # Guaranteed bonus crop items per mature harvest: +1 at tiers 1-3, +2 at 4-5.
+      max-tier: 5
+      costs: [20, 40, 70, 110, 160]
+      requires:
+        farming-fortune: 2
+    harvest-speed:
+      # Haste while harvesting on the island (I at tiers 1-2, II at 3-4, III at 5).
+      max-tier: 5
+      costs: [20, 40, 70, 110, 160]
+    seed-efficiency:
+      # Tier L = L*15% chance planting a seed does not consume it.
+      max-tier: 5
+      costs: [15, 30, 50, 80, 120]
+      chance-percent-per-level: 15
+    farming-tokens:
+      # Tier L = L*5% chance of bonus Sky Tokens when harvesting on the island.
+      max-tier: 5
+      costs: [25, 50, 90, 140, 200]
+      chance-percent-per-level: 5
+      amount: 1
+    farming-credits:
+      # Tier L = L*5% chance of bonus Credits when harvesting on the island.
+      max-tier: 5
+      costs: [25, 50, 90, 140, 200]
+      chance-percent-per-level: 5
+      amount: 2
+    # ---- FISHING category ----
+    fisher-blessing:
+      # Tier L = L*10% chance of a second catch while fishing on the island.
+      max-tier: 5
+      costs: [10, 20, 30, 40, 50]
+      chance-percent-per-level: 10
+    fishing-fortune:
+      # Tier L = L*10% chance of a bonus catch copy (stacks with Fisher's Blessing).
+      max-tier: 5
+      costs: [20, 40, 70, 110, 160]
+      chance-percent-per-level: 10
+    fishing-xp:
+      # Tier L = +L*10% fishing XP on the island (stacks with enchant XP boosts).
+      max-tier: 5
+      costs: [15, 30, 50, 80, 120]
+      xp-percent-per-level: 10
+    fishing-treasure:
+      # Tier L = L*5% chance to roll the treasure table on a catch.
+      max-tier: 5
+      costs: [30, 60, 100, 150, 220]
+      chance-percent-per-level: 5
+      rewards:
+        - { chance: 0.5, type: TOKENS, amount: 3 }
+        - { chance: 0.3, type: CREDITS, amount: 5 }
+        - { chance: 0.2, type: ITEM, material: GOLD_INGOT, amount: 1 }
+        - { chance: 0.08, type: ITEM, material: DIAMOND, amount: 1 }
+      requires:
+        fishing-fortune: 2
+    fishing-rare:
+      # Tier L = L*5% chance: bonus catch copy + bonus-xp-per-level * tier fishing XP.
+      max-tier: 5
+      costs: [30, 60, 100, 150, 220]
+      chance-percent-per-level: 5
+      bonus-xp-per-level: 5
+      requires:
+        fishing-fortune: 2
+    fishing-speed:
+      # Tier L = L*10% shorter wait for a bite (the hook's wait window shrinks).
+      max-tier: 5
+      costs: [20, 40, 70, 110, 160]
+      reduction-percent-per-level: 10
+    fishing-tokens:
+      # Tier L = L*5% chance of bonus Sky Tokens on a catch.
+      max-tier: 5
+      costs: [25, 50, 90, 140, 200]
+      chance-percent-per-level: 5
+      amount: 1
+    fishing-credits:
+      # Tier L = L*5% chance of bonus Credits on a catch.
+      max-tier: 5
+      costs: [25, 50, 90, 140, 200]
+      chance-percent-per-level: 5
+      amount: 2
+    # ---- SLAYING category ----
+    slayer-force:
+      # Tier L = +L*5% melee damage while on your own island.
+      max-tier: 5
+      costs: [10, 20, 30, 40, 50]
+      damage-percent-per-level: 5
+    slayer-fortune:
+      # Tier L = L*10% chance of bonus mob-drop copies. Wild mobs only —
+      # spawner-born mobs are covered by spawner-boost instead (anti-abuse).
+      max-tier: 5
+      costs: [20, 40, 70, 110, 160]
+      chance-percent-per-level: 10
+    slayer-xp:
+      # Tier L = +L*10% slayer XP on the island (stacks with enchant XP boosts).
+      max-tier: 5
+      costs: [15, 30, 50, 80, 120]
+      xp-percent-per-level: 10
+    mob-rate:
+      # Tier L = L*10% chance a natural island spawn brings a twin (never from spawners).
+      max-tier: 5
+      costs: [30, 60, 100, 150, 220]
+      chance-percent-per-level: 10
+    mob-cap:
+      # Natural-mob cap on the island: base-cap + L*cap-per-level.
+      # Soft cap enforced on natural spawns only — spawners are never capped.
+      max-tier: 5
+      costs: [30, 60, 100, 150, 220]
+      base-cap: 10
+      cap-per-level: 5
+      requires:
+        border: 1
+    slaying-tokens:
+      # Tier L = L*5% chance of bonus Sky Tokens on a wild kill.
+      max-tier: 5
+      costs: [25, 50, 90, 140, 200]
+      chance-percent-per-level: 5
+      amount: 1
+    slaying-credits:
+      # Tier L = L*5% chance of bonus Credits on a wild kill.
+      max-tier: 5
+      costs: [25, 50, 90, 140, 200]
+      chance-percent-per-level: 5
+      amount: 2
+    rare-drops:
+      # Tier L = L*5% chance to roll the rare table on a wild kill.
+      max-tier: 5
+      costs: [30, 60, 100, 150, 220]
+      chance-percent-per-level: 5
+      rewards:
+        - { chance: 0.4, type: ITEM, material: GOLD_INGOT, amount: 1 }
+        - { chance: 0.25, type: TOKENS, amount: 4 }
+        - { chance: 0.15, type: ITEM, material: DIAMOND, amount: 1 }
+        - { chance: 0.10, type: XP, amount: 15 }
+      requires:
+        slayer-fortune: 2
+    boss-damage:
+      # Tier L = +L*10% damage vs boss-types while on your own island.
+      max-tier: 5
+      costs: [30, 60, 100, 150, 220]
+      damage-percent-per-level: 10
+      boss-types: [WITHER, ENDER_DRAGON, ELDER_GUARDIAN, WARDEN]
+      requires:
+        slayer-fortune: 3
+    # ---- LOGGING category ----
+    woodcutter:
+      # Tier L = L*10% chance of double log drops on the island.
+      max-tier: 5
+      costs: [8, 16, 24, 32, 40]
+      chance-percent-per-level: 10
+    logging-fortune:
+      # Tier L = L*10% chance of +1 bonus log per trunk break.
+      max-tier: 5
+      costs: [20, 40, 70, 110, 160]
+      chance-percent-per-level: 10
+    logging-xp:
+      # Tier L = +L*10% logging XP on the island (stacks with enchant XP boosts).
+      max-tier: 5
+      costs: [15, 30, 50, 80, 120]
+      xp-percent-per-level: 10
+    tree-growth:
+      # Tier L = L*15% chance a felled trunk replants + bonemeals itself.
+      max-tier: 5
+      costs: [15, 30, 50, 80, 120]
+      chance-percent-per-level: 15
+    tree-yield:
+      # Tier L = L*10% chance of +2 bonus logs per trunk break.
+      max-tier: 5
+      costs: [20, 40, 70, 110, 160]
+      chance-percent-per-level: 10
+      requires:
+        logging-fortune: 2
+    logging-tokens:
+      # Tier L = L*5% chance of bonus Sky Tokens when logging on the island.
+      max-tier: 5
+      costs: [25, 50, 90, 140, 200]
+      chance-percent-per-level: 5
+      amount: 1
+    logging-credits:
+      # Tier L = L*5% chance of bonus Credits when logging on the island.
+      max-tier: 5
+      costs: [25, 50, 90, 140, 200]
+      chance-percent-per-level: 5
+      amount: 2
+    rare-wood:
+      # Tier L = L*5% chance to roll the rare-wood table when logging.
+      max-tier: 5
+      costs: [30, 60, 100, 150, 220]
+      chance-percent-per-level: 5
+      rewards:
+        - { chance: 0.5, type: ITEM, material: STICK, amount: 4 }
+        - { chance: 0.35, type: ITEM, material: APPLE, amount: 2 }
+        - { chance: 0.2, type: ITEM, material: GOLDEN_APPLE, amount: 1 }
+      requires:
+        logging-fortune: 2
+
+roles:
+  # Global multiplier applied to all role XP gains (1.0 = default).
+  xp-multiplier: 1.0
+  # Fraction of full XP the Universal role earns from ANY category action.
+  universal-share: 0.25
+
+# --------------------------------------------------------------------------
+# OMNITOOL UPGRADES (Omni-Tool panel, shift right-click with the tool)
+# Permanent per-player upgrades bought with Credits. `costs` has one entry
+# per level (index 0 = price of level 1). The Efficiency level is stamped
+# onto the soulbound tool; Fortune multiplies Auto-Smelter ingots.
+# --------------------------------------------------------------------------
+omnitool:
+  upgrades:
+    efficiency:
+      display: "&eOmni Efficient Material"
+      max-level: 5
+      costs: [2500, 7500, 25000, 75000, 200000]
+    fortune:
+      display: "&6Omni Fortune Coating"
+      max-level: 3
+      costs: [10000, 40000, 120000]
+    smelter:
+      display: "&cOmni Auto-Smelter"
+      max-level: 1
+      costs: [50000]
+
+# --------------------------------------------------------------------------
+# ISLAND BUFFS (/is buffs)
+# The 12 permanent island-wide boosts, bought with Sky Tokens. Buffs are
+# flat percentage multipliers (percent-per-level × level) applied in the
+# BUFF stage of the pipeline, for members standing on their own island.
+# max-tier + costs + percent-per-level per buff; identity lives in code.
+# --------------------------------------------------------------------------
+island-buffs:
+  mining-boost:
+    max-tier: 5
+    costs: [100, 200, 400, 700, 1100]
+    percent-per-level: 10
+  farming-boost:
+    max-tier: 5
+    costs: [100, 200, 400, 700, 1100]
+    percent-per-level: 10
+  fishing-boost:
+    max-tier: 5
+    costs: [100, 200, 400, 700, 1100]
+    percent-per-level: 10
+  slaying-boost:
+    max-tier: 5
+    costs: [100, 200, 400, 700, 1100]
+    percent-per-level: 10
+  logging-boost:
+    max-tier: 5
+    costs: [100, 200, 400, 700, 1100]
+    percent-per-level: 10
+  generator-boost:
+    max-tier: 5
+    costs: [150, 300, 500, 800, 1200]
+    percent-per-level: 10
+  spawner-boost:
+    max-tier: 5
+    costs: [150, 300, 500, 800, 1200]
+    percent-per-level: 8
+  token-boost:
+    max-tier: 5
+    costs: [200, 400, 700, 1100, 1600]
+    percent-per-level: 8
+  credit-boost:
+    max-tier: 5
+    costs: [200, 400, 700, 1100, 1600]
+    percent-per-level: 8
+  xp-boost:
+    max-tier: 5
+    costs: [150, 300, 500, 800, 1200]
+    percent-per-level: 10
+  sell-boost:
+    max-tier: 5
+    costs: [200, 400, 700, 1100, 1600]
+    percent-per-level: 5
+  island-luck:
+    max-tier: 5
+    costs: [250, 500, 900, 1400, 2000]
+    percent-per-level: 5
+
+# --------------------------------------------------------------------------
+# GENERATOR MARKET (/gens)
+# Generators are bought with Credits, placed in the world, and right-clicked
+# to harvest their product after a cooldown. All balance lives here.
+# --------------------------------------------------------------------------
+generators:
+  cobble:
+    display: "&fCobblestone Generator"
+    block: OBSERVER
+    product: COBBLESTONE
+    price: 5000
+    cooldown-seconds: 5
+  obsidian:
+    display: "&5Obsidian Generator"
+    block: CRYING_OBSIDIAN
+    product: OBSIDIAN
+    price: 15000
+    cooldown-seconds: 15
+  ice:
+    display: "&bIce Generator"
+    block: BLUE_ICE
+    product: PACKED_ICE
+    price: 25000
+    cooldown-seconds: 20
+  quartz:
+    display: "&eQuartz Generator"
+    block: QUARTZ_BRICKS
+    product: QUARTZ
+    price: 40000
+    cooldown-seconds: 25
+
+# --------------------------------------------------------------------------
+# SPAWNERS (/spawners)
+# Per-mob kill progression unlocks progressively BETTER spawner tiers.
+# Each mob lane has up to 4 tiers; a tier is unlocked once the player has
+# killed <required-kills> of that entity, then bought with Sky Tokens.
+# spawn-count / spawn-delay-ticks are applied to the placed spawner block
+# (fewer ticks = faster cycle, more spawns per cycle = better tier).
+# --------------------------------------------------------------------------
+spawners:
+  # Anti-farming: kills above this per rolling minute do not count.
+  kill-cap-per-minute: 120
+  zombie:
+    display: "&2Zombie"
+    entity: ZOMBIE
+    icon: ZOMBIE_SPAWN_EGG
+    tiers:
+      - { display: "&2Zombie Spawner I",    required-kills: 25,  price: 5,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&2Zombie Spawner II",   required-kills: 60,  price: 15, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&2Zombie Spawner III",  required-kills: 120, price: 30, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&2Zombie Spawner IV",   required-kills: 200, price: 50, spawn-count: 4, spawn-delay-ticks: 160 }
+  skeleton:
+    display: "&7Skeleton"
+    entity: SKELETON
+    icon: SKELETON_SPAWN_EGG
+    tiers:
+      - { display: "&7Skeleton Spawner I",   required-kills: 35,  price: 8,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&7Skeleton Spawner II",  required-kills: 75,  price: 22, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&7Skeleton Spawner III", required-kills: 140, price: 40, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&7Skeleton Spawner IV",  required-kills: 240, price: 65, spawn-count: 4, spawn-delay-ticks: 160 }
+  spider:
+    display: "&cSpider"
+    entity: SPIDER
+    icon: SPIDER_SPAWN_EGG
+    tiers:
+      - { display: "&cSpider Spawner I",   required-kills: 50,  price: 12, spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&cSpider Spawner II",  required-kills: 100, price: 30, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&cSpider Spawner III", required-kills: 180, price: 55, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&cSpider Spawner IV",  required-kills: 300, price: 90, spawn-count: 4, spawn-delay-ticks: 160 }
+  creeper:
+    display: "&aCreeper"
+    entity: CREEPER
+    icon: CREEPER_SPAWN_EGG
+    tiers:
+      - { display: "&aCreeper Spawner I",   required-kills: 75,  price: 20,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&aCreeper Spawner II",  required-kills: 150, price: 50,  spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&aCreeper Spawner III", required-kills: 260, price: 90,  spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&aCreeper Spawner IV",  required-kills: 400, price: 150, spawn-count: 4, spawn-delay-ticks: 160 }
+  cave-spider:
+    display: "&4Cave Spider"
+    entity: CAVE_SPIDER
+    icon: CAVE_SPIDER_SPAWN_EGG
+    tiers:
+      - { display: "&4Cave Spider Spawner I",   required-kills: 90,  price: 25,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&4Cave Spider Spawner II",  required-kills: 180, price: 60,  spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&4Cave Spider Spawner III", required-kills: 300, price: 110, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&4Cave Spider Spawner IV",  required-kills: 450, price: 180, spawn-count: 4, spawn-delay-ticks: 160 }
+  drowned:
+    display: "&3Drowned"
+    entity: DROWNED
+    icon: DROWNED_SPAWN_EGG
+    tiers:
+      - { display: "&3Drowned Spawner I",   required-kills: 100, price: 30,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&3Drowned Spawner II",  required-kills: 200, price: 70,  spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&3Drowned Spawner III", required-kills: 330, price: 130, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&3Drowned Spawner IV",  required-kills: 500, price: 210, spawn-count: 4, spawn-delay-ticks: 160 }
+  slime:
+    display: "&aSlime"
+    entity: SLIME
+    icon: SLIME_SPAWN_EGG
+    tiers:
+      - { display: "&aSlime Spawner I",   required-kills: 110, price: 30,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&aSlime Spawner II",  required-kills: 220, price: 75,  spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&aSlime Spawner III", required-kills: 360, price: 140, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&aSlime Spawner IV",  required-kills: 550, price: 225, spawn-count: 4, spawn-delay-ticks: 160 }
+  witch:
+    display: "&5Witch"
+    entity: WITCH
+    icon: WITCH_SPAWN_EGG
+    tiers:
+      - { display: "&5Witch Spawner I",   required-kills: 130, price: 40,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&5Witch Spawner II",  required-kills: 260, price: 95,  spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&5Witch Spawner III", required-kills: 420, price: 175, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&5Witch Spawner IV",  required-kills: 650, price: 280, spawn-count: 4, spawn-delay-ticks: 160 }
+  enderman:
+    display: "&dEnderman"
+    entity: ENDERMAN
+    icon: ENDERMAN_SPAWN_EGG
+    tiers:
+      - { display: "&dEnderman Spawner I",   required-kills: 150, price: 50,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&dEnderman Spawner II",  required-kills: 300, price: 120, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&dEnderman Spawner III", required-kills: 480, price: 220, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&dEnderman Spawner IV",  required-kills: 750, price: 350, spawn-count: 4, spawn-delay-ticks: 160 }
+  piglin:
+    display: "&6Piglin"
+    entity: PIGLIN
+    icon: PIGLIN_SPAWN_EGG
+    tiers:
+      - { display: "&6Piglin Spawner I",   required-kills: 170, price: 55,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&6Piglin Spawner II",  required-kills: 340, price: 135, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&6Piglin Spawner III", required-kills: 550, price: 250, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&6Piglin Spawner IV",  required-kills: 850, price: 400, spawn-count: 4, spawn-delay-ticks: 160 }
+  guardian:
+    display: "&bGuardian"
+    entity: GUARDIAN
+    icon: GUARDIAN_SPAWN_EGG
+    tiers:
+      - { display: "&bGuardian Spawner I",   required-kills: 200,  price: 65,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&bGuardian Spawner II",  required-kills: 400,  price: 160, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&bGuardian Spawner III", required-kills: 650,  price: 300, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&bGuardian Spawner IV",  required-kills: 1000, price: 475, spawn-count: 4, spawn-delay-ticks: 160 }
+  magma-cube:
+    display: "&cMagma Cube"
+    entity: MAGMA_CUBE
+    icon: MAGMA_CUBE_SPAWN_EGG
+    tiers:
+      - { display: "&cMagma Cube Spawner I",   required-kills: 220,  price: 70,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&cMagma Cube Spawner II",  required-kills: 440,  price: 175, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&cMagma Cube Spawner III", required-kills: 700,  price: 330, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&cMagma Cube Spawner IV",  required-kills: 1100, price: 525, spawn-count: 4, spawn-delay-ticks: 160 }
+  blaze:
+    display: "&eBlaze"
+    entity: BLAZE
+    icon: BLAZE_SPAWN_EGG
+    tiers:
+      - { display: "&eBlaze Spawner I",   required-kills: 250,  price: 80,  spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&eBlaze Spawner II",  required-kills: 500,  price: 200, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&eBlaze Spawner III", required-kills: 800,  price: 380, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&eBlaze Spawner IV",  required-kills: 1250, price: 600, spawn-count: 4, spawn-delay-ticks: 160 }
+  ghast:
+    display: "&fGhast"
+    entity: GHAST
+    icon: GHAST_SPAWN_EGG
+    tiers:
+      - { display: "&fGhast Spawner I",   required-kills: 300,  price: 100, spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&fGhast Spawner II",  required-kills: 600,  price: 250, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&fGhast Spawner III", required-kills: 950,  price: 470, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&fGhast Spawner IV",  required-kills: 1500, price: 750, spawn-count: 4, spawn-delay-ticks: 160 }
+  wither-skeleton:
+    display: "&7Wither Skeleton"
+    entity: WITHER_SKELETON
+    icon: WITHER_SKELETON_SPAWN_EGG
+    tiers:
+      - { display: "&7Wither Skeleton Spawner I",   required-kills: 350,  price: 120, spawn-count: 1, spawn-delay-ticks: 400 }
+      - { display: "&7Wither Skeleton Spawner II",  required-kills: 700,  price: 300, spawn-count: 2, spawn-delay-ticks: 320 }
+      - { display: "&7Wither Skeleton Spawner III", required-kills: 1100, price: 560, spawn-count: 3, spawn-delay-ticks: 240 }
+      - { display: "&7Wither Skeleton Spawner IV",  required-kills: 1750, price: 900, spawn-count: 4, spawn-delay-ticks: 160 }

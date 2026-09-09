@@ -1,0 +1,13 @@
+{
+  "name": "coremc-journey",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Scripted live player journey for CoreMC: two mineflayer bots + RCON drive a Paper server and assert every headliner flow.",
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "mineflayer": "^4.39.0",
+    "rcon-client": "^4.2.3",
+    "vec3": "^0.1.7"
+  }
+}

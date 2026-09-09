@@ -1,0 +1,111 @@
+# ======================================================
+#  CoreMC — crates & keys
+#  `keys:` defines the physical crate-key items (minted by
+#  enchant/vote/playtime rewards, consumed by the crate lineup).
+#  `crates:` is the gacha lineup: weighted pools opened at /crates.
+#
+#  Crate fields: display, icon, key/keys (key ids that open it),
+#    rewards: (weight = share of the pool, rarity = display colour;
+#    a natural legendary resets pity), pity-count + pity-reward
+#    (guaranteed instead of a roll every pity-count opens).
+#  Reward types: CURRENCY {currency,min,max} | KEY {key,amount} |
+#    SPAWNER {ref: tier id} | GENERATOR {ref: gen id} |
+#    ITEM {material,amount}.
+# ======================================================
+
+keys:
+  sky:
+    display: "&bSky Key"
+    icon: TRIPWIRE_HOOK
+  ember:
+    display: "&cEmber Key"
+    icon: BLAZE_POWDER
+  rune:
+    display: "&dRune Key"
+    icon: AMETHYST_SHARD
+  titan:
+    display: "&6Titan Key"
+    icon: NETHERITE_SCRAP
+  mythic:
+    display: "&5&lMythic Key"
+    icon: NETHER_STAR
+  daily:
+    display: "&aDaily Key"
+    icon: CLOCK
+  vote:
+    display: "&eVote Key"
+    icon: PAPER
+
+crates:
+  sky:
+    display: "&bSky Crate"
+    icon: ENDER_CHEST
+    key: sky
+    pity-count: 10
+    pity-reward: { type: CURRENCY, currency: CREDITS, min: 50, max: 50, rarity: rare }
+    rewards:
+      - { type: CURRENCY, currency: MONEY, min: 100, max: 500, weight: 50, rarity: common }
+      - { type: CURRENCY, currency: MONEY, min: 500, max: 1500, weight: 25, rarity: uncommon }
+      - { type: CURRENCY, currency: CREDITS, min: 5, max: 20, weight: 15, rarity: rare }
+      - { type: KEY, key: daily, amount: 2, weight: 8, rarity: epic }
+      - { type: SPAWNER, ref: zombie-2, weight: 2, rarity: legendary }
+  ember:
+    display: "&cEmber Crate"
+    icon: ENDER_CHEST
+    key: ember
+    pity-count: 10
+    pity-reward: { type: GENERATOR, ref: cobble, rarity: uncommon }
+    rewards:
+      - { type: CURRENCY, currency: MONEY, min: 500, max: 2000, weight: 45, rarity: common }
+      - { type: CURRENCY, currency: CREDITS, min: 20, max: 60, weight: 25, rarity: uncommon }
+      - { type: ITEM, material: DIAMOND, amount: 8, weight: 15, rarity: rare }
+      - { type: SPAWNER, ref: skeleton-3, weight: 10, rarity: epic }
+      - { type: GENERATOR, ref: obsidian, weight: 5, rarity: legendary }
+  rune:
+    display: "&dRune Crate"
+    icon: ENDER_CHEST
+    key: rune
+    pity-count: 12
+    pity-reward: { type: CURRENCY, currency: SKY_TOKENS, min: 25, max: 25, rarity: rare }
+    rewards:
+      - { type: CURRENCY, currency: CREDITS, min: 50, max: 150, weight: 40, rarity: common }
+      - { type: CURRENCY, currency: SKY_TOKENS, min: 5, max: 15, weight: 30, rarity: uncommon }
+      - { type: ITEM, material: NETHERITE_SCRAP, amount: 1, weight: 15, rarity: rare }
+      - { type: SPAWNER, ref: spider-3, weight: 10, rarity: epic }
+      - { type: SPAWNER, ref: enderman-2, weight: 5, rarity: legendary }
+  titan:
+    display: "&6Titan Crate"
+    icon: ENDER_CHEST
+    key: titan
+    pity-count: 12
+    pity-reward: { type: CURRENCY, currency: SKY_TOKENS, min: 60, max: 60, rarity: epic }
+    rewards:
+      - { type: CURRENCY, currency: SKY_TOKENS, min: 15, max: 40, weight: 40, rarity: common }
+      - { type: CURRENCY, currency: CREDITS, min: 150, max: 400, weight: 25, rarity: uncommon }
+      - { type: ITEM, material: NETHERITE_SCRAP, amount: 3, weight: 15, rarity: rare }
+      - { type: SPAWNER, ref: blaze-2, weight: 12, rarity: epic }
+      - { type: GENERATOR, ref: quartz, weight: 8, rarity: legendary }
+  mythic:
+    display: "&5&lMythic Crate"
+    icon: ENDER_CHEST
+    key: mythic
+    pity-count: 15
+    pity-reward: { type: CURRENCY, currency: SKY_TOKENS, min: 150, max: 150, rarity: epic }
+    rewards:
+      - { type: CURRENCY, currency: SKY_TOKENS, min: 50, max: 120, weight: 40, rarity: common }
+      - { type: ITEM, material: NETHERITE_INGOT, amount: 1, weight: 25, rarity: uncommon }
+      - { type: ITEM, material: ELYTRA, amount: 1, weight: 15, rarity: rare }
+      - { type: SPAWNER, ref: wither-skeleton-2, weight: 12, rarity: epic }
+      - { type: SPAWNER, ref: ghast-3, weight: 8, rarity: legendary }
+  daily:
+    display: "&aDaily Crate"
+    icon: CHEST
+    keys: [daily, vote]
+    pity-count: 5
+    pity-reward: { type: CURRENCY, currency: CREDITS, min: 25, max: 25, rarity: uncommon }
+    rewards:
+      - { type: CURRENCY, currency: MONEY, min: 50, max: 200, weight: 50, rarity: common }
+      - { type: ITEM, material: BREAD, amount: 16, weight: 25, rarity: uncommon }
+      - { type: ITEM, material: IRON_INGOT, amount: 8, weight: 15, rarity: rare }
+      - { type: CURRENCY, currency: CREDITS, min: 10, max: 25, weight: 8, rarity: epic }
+      - { type: KEY, key: daily, amount: 1, weight: 2, rarity: legendary }

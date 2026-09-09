@@ -1,0 +1,223 @@
+# ======================================================
+#  CoreMC — messages
+#  Uses standard Minecraft '&' colour codes.
+#  The CoreMC brand prefix is applied by *-prefixed sends;
+#  change it here only.
+# ======================================================
+
+prefix: "&b&lCOREMC &8» &f"
+
+no-permission: "&cYou do not have permission to do that."
+player-only: "That command can only be used by players."
+reload-success: "Configuration reloaded."
+unknown-subcommand: "Unknown subcommand. Usage: {usage}"
+player-not-online: "&cNo online player named '&f{player}&c'."
+
+welcome-first-join: "&fWelcome to &b&lCoreMC &fSkyblock, {player}&f! Enjoy your stay."
+
+heal:
+  self: "You have been healed."
+  other: "Healed {player}."
+  by-other: "You have been healed by {sender}."
+
+island:
+  starting: "Islands are still loading — try again in a moment."
+  created-themed: "Your {theme} &7island has been created!"
+  theme-unknown: "&cUnknown island theme. Available themes: &f{themes}"
+  kick-confirm: "&cClick again within 5 seconds to kick &f{player}&c."
+  setting-toggled: "Island setting &f{setting}&7 {state}&7."
+  permission-toggled: "Island permission &f{setting}&7 now {state}&7."
+  permission-blocked: "&cThe island owner has disabled this for members."
+  visitors-blocked: "&cThis island does not allow visitors."
+  upgrade:
+    bought: "&aUpgrade purchased! &7Tier &f{tier}&7/&f{max}&7 for &b{price} Sky Tokens&7."
+    maxed: "&cThis upgrade is already at its maximum tier."
+    insufficient: "&cYou need &b{price} Sky Tokens&c for the next tier."
+    locked: "&cRequires &f{track}&c tier &f{tier}&c first."
+    locked-island: "&cRequires island level &f{level}&c (yours: &f{yours}&c)."
+    locked-role: "&cRequires role level &f{level}&c in any role (yours: &f{yours}&c)."
+  buff:
+    bought: "&a{buff} &7purchased! Level &f{tier}&7/&f{max}&7 for &b{price} Sky Tokens&7."
+    maxed: "&cThis buff is already at its maximum level."
+    insufficient: "&cYou need &b{price} Sky Tokens&c for the next level."
+  world-missing: "&cThe island world is not available. Please contact an administrator."
+  create-failed: "&cFailed to create your island. Please contact an administrator."
+  created: "Your Skyblock island has been created!"
+  teleported: "Teleported to your island."
+  rescued: "&7The void rejects you — back to safety."
+  already-have: "You are already part of an island. Leave it first with &f/is leave&7."
+  none: "You don't have an island yet. Create one with &f/is create&7."
+  deleted: "Your island has been deleted."
+  deleted-member: "&cYour island was deleted by its owner."
+  delete-failed: "&cFailed to delete your island. Please contact an administrator."
+  delete-confirm: "&cThis permanently deletes your island! Repeat &f/is delete&c within {seconds} seconds to confirm."
+  not-owner: "&cOnly the island owner can do that."
+  protected: "&cThis island is protected. Only its owner and members may build here."
+  team-full: "&cThe island team is full."
+  target-offline: "&cPlayer &f{player}&c is not online."
+  target-unknown: "&cUnknown player &f{player}&c."
+  invite-hint: "Invite a friend with &f/is invite <player>&7."
+  invite-usage: "&eUsage: &f/is invite <player>"
+  invite-self: "&cYou cannot invite yourself."
+  kick-usage: "&eUsage: &f/is kick <member>"
+  kick-self: "&cYou cannot kick yourself — delete the island instead."
+  kick-not-member: "&cThat player is not a member of your island."
+  kicked:
+    owner: "Kicked &f{player}&7 from your island."
+    you: "&cYou have been kicked from your island."
+  left: "You left the island."
+  leave-owner: "&cOwners cannot leave — use &f/is delete&c or transfer ownership (coming soon)."
+  joined: "You joined the island! Use &f/is home&7 to visit."
+  member-joined: "&f{player}&7 joined your island."
+  invite:
+    sent: "Invited &f{player}&7 to your island."
+    received: "&f{player}&7 invited you to their island. Accept within {seconds}s with &f/is accept&7."
+    target-busy: "&cThat player is already part of an island."
+    none: "&cYou have no pending island invite."
+    expired: "&cYour invite expired. Ask for a new one."
+    gone: "&cThat island no longer exists."
+  visit-usage: "&eUsage: &f/is visit <player>"
+  visit-none: "&cThat player has no island."
+  visited: "Visiting &f{player}&7's island."
+  info-header: "&b&lISLAND &8— &7your island"
+  info-owner: "&7Owner: &f{owner}"
+  info-location: "&7Location: &f{x}, {y}, {z} &7in &f{world}"
+  info-border: "&7Border: &f{border}"
+  info-level: "&7Island level: &b{level}"
+  info-members: "&7Members &8({current}/{max})&7: &f{members}"
+  info-created: "&7Created: &f{value}"
+  info-stats: "&7Stats: &f{stats}"
+  level-up: "Your island reached &blevel {level}&7!"
+  top-header: "&b&lISLAND TOP &8— &7highest level islands"
+  top-entry: "&8#{rank} &f{owner} &8— &blevel {level} &8(&7{score} score&8)"
+  top-empty: "&cNo islands yet."
+  help-header: "&b&lISLAND &8— &7commands"
+  help-create: "&f/{label} create [theme] &8— &7Create your island (plains, desert, mushroom)"
+  help-home: "&f/{label} home &8— &7Teleport to your island"
+  help-visit: "&f/{label} visit <player> &8— &7Visit an island that allows visitors"
+  help-invite: "&f/{label} invite <player> &8— &7Invite a player to your island"
+  help-team: "&f/{label} accept &8— &7Accept an invite  |  &f/{label} leave &8— &7Leave  |  &f/{label} kick <p>"
+  help-info: "&f/{label} info &8— &7Show your island's details"
+  help-upgrades: "&f/{label} upgrades &8— &7Open the island upgrades panel"
+  help-buffs: "&f/{label} buffs &8— &7Open the island buffs panel"
+  help-top: "&f/{label} top &8— &7Show the highest-level islands"
+  help-delete: "&f/{label} delete &8— &7Delete your island (asks for confirmation)"
+
+economy:
+  unknown-player: "&cUnknown player &f{player}&c (never played here)."
+  error:
+    invalid: "&cInvalid amount. Use a positive whole number, e.g. 100."
+    negative: "&cAmounts cannot be negative."
+    too-large: "&cThat amount is too large. Maximum is 9223372036854775807."
+
+credits:
+  usage: "&eUsage: &f/{label} [give|remove|set] <player> <amount>"
+  balance: "You have &e{amount} Credits&7."
+  given: "Gave &e{amount} Credits&7 to &f{player}&7 (balance: &e{balance}&7)."
+  removed: "Removed &e{amount} Credits&7 from &f{player}&7 (balance: &e{balance}&7)."
+  set-done: "Set &f{player}&7's Credits to &e{balance}&7."
+  insufficient: "&f{player}&c only has &e{balance} Credits&c."
+
+skytokens:
+  usage: "&eUsage: &f/{label} [give|remove|set] <player> <amount>"
+  balance: "You have &b{amount} Sky Tokens&7."
+  given: "Gave &b{amount} Sky Tokens&7 to &f{player}&7 (balance: &b{balance}&7)."
+  removed: "Removed &b{amount} Sky Tokens&7 from &f{player}&7 (balance: &b{balance}&7)."
+  set-done: "Set &f{player}&7's Sky Tokens to &b{balance}&7."
+  insufficient: "&f{player}&c only has &b{balance} Sky Tokens&c."
+
+money:
+  usage: "&eUsage: &f/{label} [give|remove|set] <player> <amount>"
+  balance: "You have &a${amount}&7."
+  given: "Gave &a${amount}&7 to &f{player}&7 (balance: &a${balance}&7)."
+  removed: "Removed &a${amount}&7 from &f{player}&7 (balance: &a${balance}&7)."
+  set-done: "Set &f{player}&7's Money to &a${balance}&7."
+  insufficient: "&f{player}&c only has &a${balance}&c."
+
+role:
+  selected: "You are now a {role}&7! Your Omni-Tool is in your inventory."
+  already: "You are already a {role}&7."
+  unknown: "&cUnknown role &f{role}&c. Use &f/role&c and click a role."
+  level-up: "&e{role} &7level up — you are now level &e{level}&7!"
+  info-header: "&b&lROLES &8— &7your progression"
+  info-line: "{role}{state}&8: &7level &f{level}&8, &7xp &f{xp}&8/&f{next}"
+  info-tool: "&bOmni-Tool&8: &7level &f{level}&8, &7xp &f{xp}&8/&f{next}"
+
+omnitool:
+  soulbound: "&cThe Omni-Tool is soulbound and cannot be dropped or stored."
+  level-up: "&bYour Omni-Tool reached level {level}&7!"
+  upgrade-bought: "{upgrade}&7 upgraded to level &b{level}&7 for &a{price} Credits&7."
+  upgrade-maxed: "&cThat Omni-Tool upgrade is already at its maximum level."
+  upgrade-unknown: "&cUnknown Omni-Tool upgrade."
+  insufficient: "&cYou need &a{price} Credits&c for this Omni-Tool upgrade."
+
+gen:
+  bought: "Purchased {name}&7 for &a{price} Credits&7. Place it anywhere to set it down."
+  bought-enderchest: "&eYour inventory was full — the item went to your ender chest."
+  insufficient: "&cYou need &a{price} Credits&c for this generator."
+  harvest: "&e+{amount} &f{product}"
+  harvest-rare: "&6&lRARE! &e+1 &f{product} &7from your generator"
+  cooldown: "&7This generator needs &f{seconds}s&7 to recharge."
+  broken: "&cThis generator type no longer exists and cannot produce."
+  not-yours: "&cThis belongs to someone else."
+
+spawner:
+  unlocked: "&a&lSPAWNER UNLOCKED! &7You can now buy {name}&7 in &f/spawners&7."
+  locked: "&cLocked &8(&f{kills}&8/&f{needed}&c kills&8). Keep hunting!"
+  insufficient: "&cYou need &b{price} Sky Tokens&c for this spawner."
+  bought: "Purchased {name}&7 for &b{price} Sky Tokens&7. Place it to spawn."
+
+placeable:
+  returned: "&7Picked up your core block."
+
+shop:
+  bought: "Bought {item}&7 for &a{price} {currency}&7."
+  sold: "Sold {amount}x {item}&7 for &a{price} {currency}&7."
+  nothing-to-sell: "&cYou have no sellable {item}&c. (Stock must be unenchanted and undamaged.)"
+  unsellable: "&c{item}&c cannot be sold to the shop."
+  overflowed: "&cThat sale is too large to fit your balance."
+  exchange: "Exchanged &a{price} {currency}&7 for &b{bought}&7."
+  insufficient: "&cYou need &a{price} {currency}&c for this."
+  overflow: "&eYour inventory was full — the item went to your ender chest."
+  unavailable: "&cYour profile isn't ready — try again in a second."
+  unknown-category: "&cUnknown shop category &f{input}&c. Try &f/shop gear|food|end|nether&c."
+
+profile:
+  header: "&b&lPROFILE &8— &f{player}"
+  first-join: "&7First join: &f{value}"
+  total-logins: "&7Total logins: &f{value}"
+  last-seen: "&7Last seen: &f{value}"
+  not-found: "&cNo profile data found for '&f{player}&c'."
+
+info:
+  lines:
+    - "&b&lCOREMC &8— &7version &f{version}"
+    - "&7Server: &f{server}"
+    - "&7Profiles loaded: &f{profiles}"
+    - "&7Tracked tasks: &f{tasks}"
+    - "&7Uptime: &f{uptime}"
+
+# purchase delivery failure (inventory + ender chest full -> refunded)
+purchase:
+  no-space: "&cNo space in your inventory and ender chest — purchase cancelled and refunded."
+
+enchant:
+  bought: "&a&lENCHANT &f{name} &7→ level &b{level} &8(-{cost} {currency})"
+  maxed: "&c{name} &7is already max level."
+  insufficient: "&cNeed &f{cost} {currency} &cfor {name} level {level}."
+  wrong-role: "&cThis enchant needs the {role} &crole. Switch with &f/role&c."
+  no-role: "&cSelect a role first with &f/role&c."
+  locked: "&cRequires {role} &clevel &f{level}&c."
+  ultimate: "&d&lULTIMATE &f{name}&d!"
+  overcharge: "&e&lOVERCHARGE &f{name} &7for &f{seconds}s&7!"
+
+key:
+  received: "&e+{amount} {name}&7."
+
+crate:
+  opened: "{crate} &7opened — you won {reward}&7!"
+  pity: "&d&lPITY! &7{crate} &7grants {reward}&7."
+  no-key: "&cYou need {key}&c to open {crate}&c."
+  dropped: "&eNo space — your reward dropped at your feet."
+  broken: "&cThis crate is misconfigured — contact an administrator."
+  empty: "&cNo crates are available right now."

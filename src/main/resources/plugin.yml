@@ -1,0 +1,164 @@
+name: CoreMC
+version: '@project.version@'
+main: com.coremc.core.CoreMCPlugin
+api-version: '1.21'
+description: CoreMC Skyblock core plugin.
+author: CoreMC Team
+website: https://github.com/Eagerz1/coremc1
+
+commands:
+  coremc:
+    description: CoreMC administration and information command.
+    usage: /coremc [info|reload|help]
+    permission: coremc.command.coremc
+    permission-message: "&cYou do not have permission to use this command."
+  profile:
+    description: View your CoreMC player profile.
+    usage: /profile [player]
+    permission: coremc.command.profile
+    permission-message: "&cYou do not have permission to use this command."
+  heal:
+    description: Restore a player's health, hunger and extinguish fire.
+    usage: /heal [player]
+    permission: coremc.command.heal
+    permission-message: "&cYou do not have permission to use this command."
+  island:
+    description: CoreMC Skyblock island commands.
+    usage: /island [create|home|invite|accept|leave|kick|delete|info|upgrades|help]
+    permission: coremc.command.island
+    permission-message: "&cYou do not have permission to use this command."
+    aliases: [is, isle, block]
+  credits:
+    description: View your Credits or manage them as an admin.
+    usage: /credits [give|remove|set] <player> <amount>
+    permission: coremc.command.credits
+    permission-message: "&cYou do not have permission to use this command."
+  skytokens:
+    description: View your Sky Tokens or manage them as an admin.
+    usage: /skytokens [give|remove|set] <player> <amount>
+    permission: coremc.command.skytokens
+    permission-message: "&cYou do not have permission to use this command."
+  money:
+    description: View your Money or manage it as an admin.
+    usage: /money [give|remove|set] <player> <amount>
+    permission: coremc.command.money
+    permission-message: "&cYou do not have permission to use this command."
+  role:
+    description: Choose your CoreMC role and view progression.
+    usage: /role [miner|logger|fisher|slayer|farmer|universal|info]
+    permission: coremc.command.role
+    permission-message: "&cYou do not have permission to use this command."
+  gens:
+    description: Open the generator market.
+    usage: /gens
+    permission: coremc.command.gens
+    permission-message: "&cYou do not have permission to use this command."
+  spawners:
+    description: View spawner unlock progress and buy spawners.
+    usage: /spawners
+    permission: coremc.command.spawners
+  crates:
+    description: Open the crate lineup.
+    usage: /crates
+    permission: coremc.command.crates
+    permission-message: "&cYou do not have permission to use this command."
+  shop:
+    description: Open the CoreMC shop (optionally straight into a category).
+    usage: /shop [gear|food|end|nether]
+    permission: coremc.command.shop
+    permission-message: "&cYou do not have permission to use this command."
+  tokenshop:
+    description: Open the Sky Token exchange.
+    usage: /tokenshop
+    permission: coremc.command.tokenshop
+    permission-message: "&cYou do not have permission to use this command."
+
+permissions:
+  coremc.*:
+    description: Grants all CoreMC permissions.
+    default: op
+    children:
+      coremc.command.*: true
+  coremc.command.*:
+    description: Grants all CoreMC command permissions.
+    children:
+      coremc.command.coremc: true
+      coremc.command.coremc.reload: true
+      coremc.command.profile: true
+      coremc.command.profile.others: true
+      coremc.command.heal: true
+      coremc.command.heal.others: true
+      coremc.command.island: true
+      coremc.command.credits: true
+      coremc.command.skytokens: true
+      coremc.command.money: true
+      coremc.command.role: true
+      coremc.command.gens: true
+      coremc.command.spawners: true
+      coremc.command.crates: true
+      coremc.command.shop: true
+      coremc.command.tokenshop: true
+      coremc.admin.credits: true
+      coremc.admin.skytokens: true
+      coremc.admin.money: true
+      coremc.island.bypass: true
+  coremc.command.coremc:
+    description: Allows using /coremc.
+    default: true
+  coremc.command.coremc.reload:
+    description: Allows reloading CoreMC configuration.
+    default: op
+  coremc.command.profile:
+    description: Allows viewing your own profile.
+    default: true
+  coremc.command.profile.others:
+    description: Allows viewing other players' profiles.
+    default: op
+  coremc.command.heal:
+    description: Allows healing yourself.
+    default: op
+  coremc.command.heal.others:
+    description: Allows healing other players.
+    default: op
+  coremc.command.island:
+    description: Allows using Skyblock island commands.
+    default: true
+  coremc.command.credits:
+    description: Allows viewing your Credits balance.
+    default: true
+  coremc.command.skytokens:
+    description: Allows viewing your Sky Tokens balance.
+    default: true
+  coremc.command.money:
+    description: Allows viewing your Money balance.
+    default: true
+  coremc.command.role:
+    description: Allows choosing a role and viewing progression.
+    default: true
+  coremc.command.gens:
+    description: Allows opening the generator market.
+    default: true
+  coremc.command.spawners:
+    description: Allows viewing spawner progression and purchasing spawners.
+    default: true
+  coremc.command.crates:
+    description: Allows opening the crate lineup.
+    default: true
+  coremc.command.shop:
+    description: Allows opening the shop.
+    default: true
+  coremc.command.tokenshop:
+    description: Allows opening the Sky Token exchange.
+    default: true
+  coremc.admin.credits:
+    description: Allows giving/removing/setting Credits.
+    default: op
+  coremc.admin.skytokens:
+    description: Allows giving/removing/setting Sky Tokens.
+    default: op
+  coremc.admin.money:
+    description: Allows giving/removing/setting Money.
+    default: op
+  coremc.island.bypass:
+    description: Allows bypassing island border protection.
+    default: op
