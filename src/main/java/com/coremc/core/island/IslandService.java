@@ -245,6 +245,23 @@ public final class IslandService {
         if (profile == null) {
             return false;
         }
+        // Level gates (spec: upgrades may need island/role levels): the
+        // island's own level, and the buyer's best role level (any role).
+        final int needIsland = config.upgradeRequiresIslandLevel(upgradeId);
+        if (needIsland > 0 && island.level() < needIsland) {
+            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.locked-island",
+                    Map.of("level", String.valueOf(needIsland), "yours", String.valueOf(island.level())));
+            return false;
+        }
+        final int needRole = config.upgradeRequiresRoleLevel(upgradeId);
+        if (needRole > 0) {
+            final int haveRole = ((com.coremc.core.CoreMCPlugin) plugin).roles().maxRoleLevel(profile);
+            if (haveRole < needRole) {
+                ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.locked-role",
+                        Map.of("level", String.valueOf(needRole), "yours", String.valueOf(haveRole)));
+                return false;
+            }
+        }
         final long price = cost.getAsLong();
         if (price > 0L
                 && !((com.coremc.core.CoreMCPlugin) plugin).economy()

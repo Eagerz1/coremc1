@@ -64,8 +64,9 @@ import java.util.Optional;
  *       rewards/effects/duration as appropriate.</li>
  *   <li>SOUL — grants souls; amount = floored magnitude (min 1); soul
  *       multipliers apply.</li>
- *   <li>REEL_LUCK — Luck potion while fishing; amplifier = floored
- *       magnitude, {@code values.duration-seconds}.</li>
+ *   <li>REEL_SPEED — shorter waits between bites; magnitude =
+ *       percent off the hook's wait window, capped by
+ *       {@code values.wait-cap-percent}.</li>
  *   <li>GROWTH — {@code values.mode} = STUMP (replant + bonemeal the
  *       stump) or NEIGHBOURS (bonemeal crops in
  *       {@code values.radius}).</li>
@@ -95,7 +96,7 @@ public enum EnchantEffect {
     DAMAGE,
     ULTIMATE,
     SOUL,
-    REEL_LUCK,
+    REEL_SPEED,
     GROWTH,
     RECOVERY,
     TEMP_BOOST;

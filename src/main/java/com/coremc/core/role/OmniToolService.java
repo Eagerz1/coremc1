@@ -230,7 +230,7 @@ public final class OmniToolService {
         }
     }
 
-    /** Removes every OmniTool anywhere in the player's inventory; returns count. */
+    /** Removes every OmniTool in the inventory, on the cursor and in the ender chest; returns count. */
     public int removeAllOmniTools(final Player player) {
         final PlayerInventory inventory = player.getInventory();
         int removed = 0;
@@ -244,6 +244,16 @@ public final class OmniToolService {
         if (isOmniTool(player.getItemOnCursor())) {
             removed += player.getItemOnCursor().getAmount();
             player.setItemOnCursor(null);
+        }
+        // The ender chest is grantFresh's overflow vault: tools can only get
+        // there from our own grants, so a fresh grant reclaims them too
+        // (role switches replace, never stack — everywhere).
+        final ItemStack[] ender = player.getEnderChest().getContents();
+        for (int slot = 0; slot < ender.length; slot++) {
+            if (isOmniTool(ender[slot])) {
+                removed += ender[slot].getAmount();
+                player.getEnderChest().setItem(slot, null);
+            }
         }
         return removed;
     }

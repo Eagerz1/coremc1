@@ -847,21 +847,21 @@ enchants:
   fisher.reel-speed:
     role: fisher
     display: "&f&lREEL SPEED"
-    description: "&7Supernatural luck while your line is cast."
+    description: "&7Shorter waits between bites."
     icon: SUGAR
     max-level: 25
     currency: SKY_TOKENS
     cost-base: 90
     cost-growth: 1.09
-    effect: REEL_LUCK
+    effect: REEL_SPEED
     trigger: FISH
     chance-base: 1.0
     chance-scale: 0.0
-    value-base: 0.0
-    value-scale: 0.1
+    value-base: 2.0
+    value-scale: 2.0
     cooldown-seconds: 0
     values:
-      duration-seconds: 30
+      wait-cap-percent: 80
   fisher.fishers-combo:
     role: fisher
     display: "&b&lFISHER'S COMBO"

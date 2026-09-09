@@ -44,6 +44,10 @@ public final class CoreConfig {
     /** upgrade id -> (exact tier -> (required track -> required tier)), from requires-tiers. */
     private final java.util.Map<String, java.util.Map<Integer, java.util.Map<String, Integer>>>
             upgradeRequiresTiers = new java.util.LinkedHashMap<>();
+    /** upgrade id -> required island level to buy any tier (0 = no gate). */
+    private final java.util.Map<String, Integer> upgradeRequiresIslandLevel = new java.util.LinkedHashMap<>();
+    /** upgrade id -> required best-role level (any role) to buy any tier (0 = no gate). */
+    private final java.util.Map<String, Integer> upgradeRequiresRoleLevel = new java.util.LinkedHashMap<>();
 
     public CoreConfig(final JavaPlugin plugin) {
         this.plugin = plugin;
@@ -81,11 +85,13 @@ public final class CoreConfig {
         this.islandDeleteConfirmSeconds = Math.max(5L, config.getLong("island.delete-confirm-seconds", 15L));
 
         int border = config.getInt("island.border-size", 50);
-        // Border must stay strictly inside the grid cell, otherwise islands
-        // on adjacent cells could overlap. Round down to even.
-        final int maxBorder = this.islandSpacing / 2;
+        // Cell centres sit spacing apart and containment is a half-open
+        // [centre-half, centre+half) square, so a full border width up to
+        // spacing can never touch the neighbour cell (width W overlaps iff
+        // W/2 + W/2 > spacing). Round down to even.
+        final int maxBorder = this.islandSpacing;
         if (border > maxBorder) {
-            plugin.getLogger().warning("island.border-size " + border + " exceeds spacing/2 (" + maxBorder
+            plugin.getLogger().warning("island.border-size " + border + " exceeds spacing (" + maxBorder
                     + "), clamping to prevent overlap.");
             border = maxBorder;
         }
@@ -99,7 +105,7 @@ public final class CoreConfig {
 
         this.upgradeBorderStepBlocks = Math.max(1, config.getInt("island.upgrades.border.step-blocks", 25));
         // Absolute per-tier border widths (index = tier). When present they win
-        // over step-blocks; entries past spacing/2 truncate the list (tier
+        // over step-blocks; entries past spacing truncate the list (tier
         // indexes stay aligned: tier T reads sizes[T]).
         this.upgradeBorderSizes.clear();
         for (final int size : config.getIntegerList("island.upgrades.border.sizes")) {
@@ -107,9 +113,9 @@ public final class CoreConfig {
                 continue;
             }
             final int even = size - (size % 2);
-            if (even > this.islandSpacing / 2) {
+            if (even > this.islandSpacing) {
                 plugin.getLogger().warning("island.upgrades.border.sizes entry " + size
-                        + " exceeds spacing/2 — truncating larger tiers.");
+                        + " exceeds spacing — truncating larger tiers.");
                 break;
             }
             this.upgradeBorderSizes.add(even);
@@ -117,7 +123,7 @@ public final class CoreConfig {
         // The effective border (base + tiers * step) must stay inside the grid cell,
         // like the base border above — otherwise upgraded protection could extend
         // past the cell even though lookups only check the point's own cell.
-        final int roomToGrow = (this.islandSpacing / 2) - this.islandBorderSize;
+        final int roomToGrow = this.islandSpacing - this.islandBorderSize;
         final int maxSafeTier = this.upgradeBorderSizes.isEmpty()
                 ? Math.max(0, roomToGrow / this.upgradeBorderStepBlocks)
                 : this.upgradeBorderSizes.size() - 1;
@@ -130,6 +136,8 @@ public final class CoreConfig {
         this.upgradeCosts.clear();
         this.upgradeRequires.clear();
         this.upgradeRequiresTiers.clear();
+        this.upgradeRequiresIslandLevel.clear();
+        this.upgradeRequiresRoleLevel.clear();
         final org.bukkit.configuration.ConfigurationSection upgradesSection =
                 config.getConfigurationSection("island.upgrades");
         if (upgradesSection != null) {
@@ -140,7 +148,7 @@ public final class CoreConfig {
                 int maxTier = Math.max(0, upgradesSection.getInt(id + ".max-tier", 0));
                 if ("border".equals(id) && maxTier > maxSafeTier) {
                     plugin.getLogger().warning("island.upgrades.border.max-tier " + maxTier
-                            + " would push the effective border past spacing/2; clamping to " + maxSafeTier + ".");
+                            + " would push the effective border past spacing; clamping to " + maxSafeTier + ".");
                     maxTier = maxSafeTier;
                 }
                 final java.util.List<Long> costs = longCosts(
@@ -188,6 +196,11 @@ public final class CoreConfig {
                     }
                 }
                 this.upgradeRequiresTiers.put(id, tierGates);
+                // Level gates (spec: upgrades may need island/role levels).
+                this.upgradeRequiresIslandLevel.put(
+                        id, Math.max(0, upgradesSection.getInt(id + ".requires-island-level", 0)));
+                this.upgradeRequiresRoleLevel.put(
+                        id, Math.max(0, upgradesSection.getInt(id + ".requires-role-level", 0)));
             }
         }
 
@@ -321,6 +334,16 @@ public final class CoreConfig {
             merged.putAll(tiers.get(tier));
         }
         return java.util.Collections.unmodifiableMap(merged);
+    }
+
+    /** Required island level to buy any tier of this track (0 = no gate). */
+    public int upgradeRequiresIslandLevel(final String upgradeId) {
+        return upgradeRequiresIslandLevel.getOrDefault(upgradeId, 0);
+    }
+
+    /** Required best-role level (any role) to buy any tier of this track (0 = no gate). */
+    public int upgradeRequiresRoleLevel(final String upgradeId) {
+        return upgradeRequiresRoleLevel.getOrDefault(upgradeId, 0);
     }
 
     private static java.util.List<Long> longCosts(

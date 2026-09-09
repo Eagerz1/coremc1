@@ -1,6 +1,6 @@
 package com.coremc.core.enchant;
 
-import static com.coremc.core.enchant.EnchantEngine.longValue;
+import static com.coremc.core.enchant.EnchantEngine.doubleValue;
 import static com.coremc.core.enchant.EnchantEngine.stringValue;
 
 import com.coremc.core.CoreMCPlugin;
@@ -14,16 +14,15 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffectType;
 
 /**
  * Fishing-activity enchant pipeline (fisher role + universal). No
  * OmniTool requirement — a pickaxe cannot fish, so the rod in hand
  * is inherent to the event itself and the role gates the magic.
  *
- * Casts apply reel luck; catches run combos → temp boosts →
- * currency → treasure tables → extra catches → magnet → recovery
- * → leviathan → overdrive.
+ * Casts shorten the hook's wait window (reel speed); catches run
+ * combos → temp boosts → currency → treasure tables → extra catches
+ * → magnet → recovery → leviathan → overdrive.
  */
 public final class FishingEnchantHandler implements Listener {
 
@@ -55,26 +54,45 @@ public final class FishingEnchantHandler implements Listener {
             return;
         }
         switch (event.getState()) {
-            case FISHING -> reelLuck(player, active);
+            case FISHING -> reelSpeed(player, event, active);
             case CAUGHT_FISH -> onCatch(player, profile, role, event, active);
             default -> {
             }
         }
     }
 
-    /** Luck while the line is out (cast-paced, so no cooldown needed). */
-    private void reelLuck(final Player player, final List<EnchantService.EnchantLevel> active) {
+    /**
+     * Reel speed: shrinks the hook's wait window on cast, so bites
+     * come faster (cast-paced, so no cooldown needed). Reduction =
+     * {@code valueAt} percent, capped by
+     * {@code values.wait-cap-percent}; scales the hook's CURRENT
+     * window so Lure keeps working underneath.
+     */
+    private void reelSpeed(final Player player, final PlayerFishEvent event,
+            final List<EnchantService.EnchantLevel> active) {
+        if (event.getHook() == null) {
+            return;
+        }
         for (final EnchantService.EnchantLevel owned : active) {
             final Enchant enchant = owned.enchant();
-            if (enchant.effect() != EnchantEffect.REEL_LUCK) {
+            if (enchant.effect() != EnchantEffect.REEL_SPEED) {
                 continue;
             }
             if (!engine.roll(enchant.chanceAt(owned.level()))) {
                 continue;
             }
-            engine.applyPotion(player, PotionEffectType.LUCK,
-                    (int) Math.floor(enchant.valueAt(owned.level())),
-                    (int) longValue(enchant.values(), "duration-seconds", 30L) * 20);
+            final double cap = Math.min(95.0,
+                    Math.max(0.0, doubleValue(enchant.values(), "wait-cap-percent", 80.0)));
+            final double reduction =
+                    Math.min(cap, Math.max(0.0, enchant.valueAt(owned.level()))) / 100.0;
+            if (reduction <= 0.0) {
+                continue;
+            }
+            final int min = Math.max(1, (int) Math.round(event.getHook().getMinWaitTime() * (1.0 - reduction)));
+            final int max = Math.max(min + 1,
+                    (int) Math.round(event.getHook().getMaxWaitTime() * (1.0 - reduction)));
+            event.getHook().setMinWaitTime(min);
+            event.getHook().setMaxWaitTime(max);
         }
     }
 

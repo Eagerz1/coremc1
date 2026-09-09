@@ -18,9 +18,9 @@ import org.bukkit.inventory.Inventory;
  * centred 5-column grid; left-click buys the next level, right-click
  * shows the full stat block in chat.
  *
- * Other roles' tracks stay visible-but-locked by design: a footer
- * pane explains they unlock via {@code /role}, and the universal
- * track is one click away.
+ * A role-switcher row previews every track: the player's own track
+ * and universal are live, other roles' tracks are visible-but-locked
+ * (buying there explains the role requirement instead of charging).
  */
 public final class EnchantGui implements Gui {
 
@@ -35,6 +35,9 @@ public final class EnchantGui implements Gui {
     private static final int SLOT_BACK = 47;
     private static final int SLOT_SWITCH = 49;
     private static final int SLOT_CLOSE = 53;
+    /** Role-switcher row (row 5): miner logger fisher slayer | farmer universal. */
+    private static final int[] ROLE_SLOTS = {36, 37, 38, 39, 41, 42};
+    private static final String[] ROLE_KEYS = {"miner", "logger", "fisher", "slayer", "farmer", "universal"};
     // ----------------------------------------------------
 
     private final CoreMCPlugin plugin;
@@ -109,6 +112,10 @@ public final class EnchantGui implements Gui {
                             List.of("&7Universal enchants: click below.")));
         }
 
+        for (int index = 0; index < ROLE_SLOTS.length; index++) {
+            inventory.setItem(ROLE_SLOTS[index], roleSwitcherItem(profile, ROLE_KEYS[index]));
+        }
+
         inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&cBack", List.of("&7Omni-Tool panel.")));
         if (roleKey.equals("universal")) {
             inventory.setItem(
@@ -127,6 +134,20 @@ public final class EnchantGui implements Gui {
         }
         inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&cClose", List.of()));
         GuiService.fillGaps(inventory);
+    }
+
+    /** One role-switcher icon: viewing-state, own-role and locked flavours. */
+    private org.bukkit.inventory.ItemStack roleSwitcherItem(final PlayerProfile profile, final String key) {
+        final Role role = Role.byKey(key).orElse(null);
+        final Material icon = role == null ? Material.ENCHANTED_BOOK : role.icon();
+        final String label = plugin.enchants().roleLabel(key);
+        if (key.equals(roleKey)) {
+            return GuiService.item(icon, "&a▶ " + label, List.of("&7Currently viewing."));
+        }
+        if (key.equals(profile.roleId()) || "universal".equals(key)) {
+            return GuiService.item(icon, "&e" + label, List.of("&7Click to view."));
+        }
+        return GuiService.item(Material.GRAY_DYE, "&8" + label, List.of("&7Click to preview.", "&8Locked — switch via /role to buy."));
     }
 
     @Override
@@ -152,6 +173,12 @@ public final class EnchantGui implements Gui {
                 plugin.gui().open(viewer, new EnchantGui(plugin, "universal"));
             }
             return false;
+        }
+        for (int index = 0; index < ROLE_SLOTS.length; index++) {
+            if (slot == ROLE_SLOTS[index] && !ROLE_KEYS[index].equals(roleKey)) {
+                plugin.gui().open(viewer, new EnchantGui(plugin, ROLE_KEYS[index]));
+                return false;
+            }
         }
         final Enchant enchant = gridEnchant(slot);
         if (enchant == null) {

@@ -24,6 +24,7 @@ import org.bukkit.entity.Player;
  *   (no args)         open the island GUI panel
  *   create            create your island and teleport to it
  *   home/tp           teleport to your island (owner or member)
+ *   visit <player>    visit another player's island (when they allow visitors)
  *   invite <player>   invite a player to join your island (owner)
  *   accept            accept a pending invite
  *   leave             leave the island you belong to (members)
@@ -72,6 +73,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         switch (sub) {
             case "create" -> create(player, args);
             case "home", "tp", "teleport", "go" -> home(player);
+            case "visit" -> visit(player, args);
             case "invite" -> invite(player, args);
             case "accept", "join" -> accept(player);
             case "leave" -> leave(player);
@@ -127,6 +129,40 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         try {
             islands.teleportHome(player, island.get());
             messages.sendPrefixed(player, "island.teleported", Map.of());
+        } catch (final IllegalStateException exception) {
+            messages.sendPrefixed(player, "island.world-missing", Map.of());
+        }
+    }
+
+    /**
+     * Visits the island a player belongs to. Members always land on
+     * their own island; everyone else needs the island's visitors
+     * setting on. Protection still denies visitors any building.
+     */
+    private void visit(final Player player, final String[] args) {
+        if (args.length < 2) {
+            messages.sendPrefixed(player, "island.visit-usage", Map.of());
+            return;
+        }
+        final Optional<UUID> target = plugin.playerData().resolveUuid(args[1]);
+        if (target.isEmpty()) {
+            messages.sendPrefixed(player, "island.target-unknown", Map.of("player", args[1]));
+            return;
+        }
+        final Optional<Island> island = islands.islandOf(target.get());
+        if (island.isEmpty()) {
+            messages.sendPrefixed(player, "island.visit-none", Map.of());
+            return;
+        }
+        final Island value = island.get();
+        final boolean ownIsland = value.roleOf(player.getUniqueId()) != null;
+        if (!ownIsland && !value.setting(Island.Setting.VISITORS)) {
+            messages.sendPrefixed(player, "island.visitors-blocked", Map.of());
+            return;
+        }
+        try {
+            islands.teleportHome(player, value);
+            messages.sendPrefixed(player, "island.visited", Map.of("player", resolveName(target.get())));
         } catch (final IllegalStateException exception) {
             messages.sendPrefixed(player, "island.world-missing", Map.of());
         }
@@ -348,6 +384,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(messages.get("island.help-header", Map.of()));
         player.sendMessage(messages.get("island.help-create", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-home", Map.of("label", label)));
+        player.sendMessage(messages.get("island.help-visit", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-invite", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-team", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-info", Map.of("label", label)));
@@ -366,7 +403,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             final String partial = args[0].toLowerCase();
             for (final String sub : List.of(
-                    "create", "home", "invite", "accept", "leave", "kick", "delete", "info", "upgrades",
+                    "create", "home", "visit", "invite", "accept", "leave", "kick", "delete", "info", "upgrades",
                     "top", "help")) {
                 if (sub.startsWith(partial)) {
                     completions.add(sub);
@@ -374,7 +411,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             }
             return completions;
         }
-        if (args.length == 2 && args[0].equalsIgnoreCase("invite")) {
+        if (args.length == 2 && (args[0].equalsIgnoreCase("invite") || args[0].equalsIgnoreCase("visit"))) {
             final String partial = args[1].toLowerCase();
             for (final Player online : Bukkit.getOnlinePlayers()) {
                 if (!online.equals(player) && online.getName().toLowerCase().startsWith(partial)) {

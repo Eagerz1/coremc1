@@ -29,7 +29,8 @@ island:
   # Seconds the player has to repeat /island delete to confirm deletion.
   delete-confirm-seconds: 15
   # Protected border of a new island (full width). 50 = 50x50 square.
-  # Must stay below spacing/2 so borders can never overlap (enforced).
+  # Must not exceed spacing (cell centres are spacing apart) so borders
+  # can never overlap (enforced).
   border-size: 50
   # Base number of members (non-owner) an island can hold.
   member-slots: 3
@@ -114,12 +115,19 @@ island:
         - { chance: 0.20, type: XP, amount: 10 }
       requires:
         border: 2
+      # Stronger spawners need a stronger island (spec: level gates).
+      requires-island-level: 3
     # ---- MINING category ----
     mining-cube:
       # Tier 0 = no cube; tier T = a min(T+1,5)-edge cube beside the
       # island (5x5 cap from tier 4). Tiers 5-10 regenerate faster and
       # restore more per cycle; tiers 11-15 also unlock rich contents.
       max-tier: 15
+      # Progression gate (spec: upgrades may need levels): buying any
+      # mining-cube tier needs role level 5 in any role. 0 disables.
+      requires-role-level: 5
+      # Breaking one cube block at/above this tier mines the whole cube.
+      mine-all-tier: 5
       costs: [15, 25, 40, 60, 90, 130, 180, 250, 330, 430, 550, 700, 900, 1200, 1600]
       # Weighted contents of regenerated cube blocks (material: weight).
       contents:

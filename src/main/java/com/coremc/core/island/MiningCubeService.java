@@ -13,7 +13,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 /**
  * The Mining Cube upgrade effect (tiers 1–15).
@@ -23,7 +26,8 @@ import org.bukkit.configuration.ConfigurationSection;
  * (tier 4 = the spec's 5x5 mining area, tiers 5+ keep that size);
  * higher tiers instead regenerate faster, restore more blocks per
  * cycle, and unlock rich contents (emerald/diamond at 8, ancient
- * debris at 12).
+ * debris at 12). At mine-all-tier+ (default 5) breaking one cube
+ * block mines the entire cube with the held tool.
  *
  * Existing tiers 0–4 keep their exact meaning on the 0–15 scale
  * (size identity), so no migration is needed.
@@ -46,6 +50,7 @@ public final class MiningCubeService {
     private int regenBaseSeconds = 30;
     private int regenStepSeconds = 2;
     private int regenMinSeconds = 5;
+    private int mineAllTier = 5;
     /** island id -> last regen millis (pruned against the live registry every tick). */
     private final Map<UUID, Long> lastRegen = new ConcurrentHashMap<>();
 
@@ -129,6 +134,8 @@ public final class MiningCubeService {
                 .getInt("island.upgrades.mining-cube.regen-step-seconds", 2));
         this.regenMinSeconds = Math.max((int) REGEN_TICK_SECONDS, plugin.getConfig()
                 .getInt("island.upgrades.mining-cube.regen-min-seconds", 5));
+        this.mineAllTier = Math.max(1, plugin.getConfig()
+                .getInt("island.upgrades.mining-cube.mine-all-tier", 5));
     }
 
     private void addWeight(final List<Map.Entry<Material, Integer>> target, final String id,
@@ -142,6 +149,29 @@ public final class MiningCubeService {
     /** Cube edge length for a purchased tier (clamped to the configured max). */
     public int sizeFor(final int tier) {
         return sizeForTier(Math.max(0, Math.min(tier, plugin.coreConfig().upgradeMaxTier("mining-cube"))));
+    }
+
+    /** Tier at/above which breaking one cube block mines the whole cube. */
+    public int mineAllTier() {
+        return mineAllTier;
+    }
+
+    /** True when the block sits inside the island's current cube volume. */
+    public boolean isCubeBlock(final Island island, final Block block) {
+        if (block.getWorld() == null || !block.getWorld().getName().equals(island.worldName())) {
+            return false;
+        }
+        final int size = sizeFor(island.upgrades().getOrDefault("mining-cube", 0));
+        if (size <= 0) {
+            return false;
+        }
+        final int x0 = island.centerX() + PLATFORM_RADIUS + GAP;
+        final int y0 = island.centerY() + 1;
+        final int z0 = island.centerZ() - (size / 2);
+        final int x = block.getX();
+        final int y = block.getY();
+        final int z = block.getZ();
+        return x >= x0 && x < x0 + size && y >= y0 && y < y0 + size && z >= z0 && z < z0 + size;
     }
 
     /** Fills (or enlarges) the island's cube; no-op when the tier is 0 or the world is missing. */
@@ -162,6 +192,36 @@ public final class MiningCubeService {
                     final int by = island.centerY() + 1 + y;
                     final int bz = island.centerZ() - (size / 2) + z;
                     world.getBlockAt(bx, by, bz).setType(rollMaterial(tier));
+                }
+            }
+        }
+    }
+
+    /**
+     * Breaks every remaining cube block with the player's held tool, so
+     * fortune applies per block and each nested break pays its XP and
+     * procs. The caller guards re-entry (breaks re-fire listeners).
+     */
+    public void mineAll(final Island island, final Player player) {
+        final int size = sizeFor(island.upgrades().getOrDefault("mining-cube", 0));
+        if (size <= 0) {
+            return;
+        }
+        final World world = Bukkit.getWorld(island.worldName());
+        if (world == null) {
+            return;
+        }
+        final ItemStack held = player.getInventory().getItemInMainHand();
+        final int x0 = island.centerX() + PLATFORM_RADIUS + GAP;
+        final int y0 = island.centerY() + 1;
+        final int z0 = island.centerZ() - (size / 2);
+        for (int x = 0; x < size; x++) {
+            for (int y = 0; y < size; y++) {
+                for (int z = 0; z < size; z++) {
+                    final Block cell = world.getBlockAt(x0 + x, y0 + y, z0 + z);
+                    if (!cell.getType().isAir()) {
+                        cell.breakNaturally(held);
+                    }
                 }
             }
         }

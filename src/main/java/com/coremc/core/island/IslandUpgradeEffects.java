@@ -61,6 +61,8 @@ public final class IslandUpgradeEffects implements Listener {
      * boost-spawned extras stay ineligible for kill-economy effects.
      */
     private final NamespacedKey spawnerBornKey;
+    /** Re-entry guard: the mine-all sweep re-fires onBlockBreak per block. */
+    private boolean cubeMineAllActive;
 
     /** crop -> replant material (itself) + the seed material it consumes. */
     private static final Map<Material, Material> SEEDS = Map.of(
@@ -274,6 +276,33 @@ public final class IslandUpgradeEffects implements Listener {
         final Island value = island.get();
         tryWoodcutter(event, value, block);
         tryCropRegrowth(event, value, block);
+        tryCubeMineAll(event, value, block);
+    }
+
+    /**
+     * Mining Cube "mine all": at mine-all-tier+ (default 5) breaking
+     * one cube block breaks the whole cube with the held tool, so
+     * fortune applies per block. The sweep re-fires this listener per
+     * block (guarded against re-sweeping), so every block still pays
+     * its XP and procs exactly once.
+     */
+    private void tryCubeMineAll(final BlockBreakEvent event, final Island island, final Block block) {
+        if (cubeMineAllActive) {
+            return; // nested break from our own sweep — procs still pay, no re-sweep
+        }
+        final int tier = island.upgrades().getOrDefault("mining-cube", 0);
+        if (tier < plugin.miningCube().mineAllTier()) {
+            return;
+        }
+        if (!plugin.miningCube().isCubeBlock(island, block)) {
+            return;
+        }
+        cubeMineAllActive = true;
+        try {
+            plugin.miningCube().mineAll(island, event.getPlayer());
+        } finally {
+            cubeMineAllActive = false;
+        }
     }
 
     private void tryWoodcutter(final BlockBreakEvent event, final Island island, final Block block) {

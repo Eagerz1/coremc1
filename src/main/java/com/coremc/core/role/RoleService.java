@@ -142,4 +142,16 @@ public final class RoleService {
         }
         return awarded;
     }
+
+    /**
+     * Highest role level across all six roles (universal included):
+     * the "role level" island-upgrade gates measure the buyer against.
+     */
+    public int maxRoleLevel(final PlayerProfile profile) {
+        int best = 0;
+        for (final Role role : Role.values()) {
+            best = Math.max(best, roleView(profile, role).level());
+        }
+        return best;
+    }
 }

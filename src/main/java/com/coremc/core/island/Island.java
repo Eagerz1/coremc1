@@ -18,7 +18,7 @@ import java.util.UUID;
  * configured spacing (stored absolutely so spacing changes never
  * corrupt islands). The BORDER is the protected square centred on the
  * island: new islands start at 50x50 and upgrades can grow it (never
- * beyond {@code spacing/2}, enforced by config validation, so islands
+ * beyond {@code spacing}, enforced by config validation, so islands
  * on adjacent cells can never overlap).
  *
  * Levels & upgrades: {@link #level} is the island level, recomputed by

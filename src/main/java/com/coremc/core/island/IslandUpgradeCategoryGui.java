@@ -19,7 +19,8 @@ import org.bukkit.inventory.Inventory;
  *
  * Tracks whose requirements are unmet render locked (redstone block)
  * with the missing prerequisite named; clicking one explains the
- * requirement instead of charging anything.
+ * requirement instead of charging anything. Level gates (island
+ * level, buyer role level) render locked the same way.
  */
 public final class IslandUpgradeCategoryGui implements Gui {
 
@@ -59,15 +60,14 @@ public final class IslandUpgradeCategoryGui implements Gui {
         }
         final Island value = island.get();
         final List<UpgradeCatalog.Track> tracks = UpgradeCatalog.ofCategory(category);
+        final com.coremc.core.player.PlayerProfile viewerProfile =
+                plugin.playerData().profileOf(viewer.getUniqueId()).orElse(null);
 
         for (int i = 0; i < tracks.size() && i < TRACK_SLOTS.length; i++) {
-            inventory.setItem(TRACK_SLOTS[i], render(tracks.get(i), value));
+            inventory.setItem(TRACK_SLOTS[i], render(tracks.get(i), value, viewerProfile));
         }
 
-        final long tokens = plugin.playerData()
-                .profileOf(viewer.getUniqueId())
-                .map(com.coremc.core.player.PlayerProfile::skyTokens)
-                .orElse(0L);
+        final long tokens = viewerProfile == null ? 0L : viewerProfile.skyTokens();
         inventory.setItem(SLOT_BALANCE, GuiService.item(
                 Material.NETHER_STAR,
                 "&bYour balance",
@@ -77,7 +77,8 @@ public final class IslandUpgradeCategoryGui implements Gui {
         GuiService.fillGaps(inventory);
     }
 
-    private org.bukkit.inventory.ItemStack render(final UpgradeCatalog.Track track, final Island island) {
+    private org.bukkit.inventory.ItemStack render(final UpgradeCatalog.Track track, final Island island,
+            final com.coremc.core.player.PlayerProfile viewerProfile) {
         final int tier = island.upgrades().getOrDefault(track.id(), 0);
         final int max = plugin.coreConfig().upgradeMaxTier(track.id());
         final var cost = plugin.coreConfig().upgradeCost(track.id(), tier);
@@ -100,6 +101,31 @@ public final class IslandUpgradeCategoryGui implements Gui {
             lore.add("&c&lLOCKED");
             lore.add("&7Requires: &f" + UpgradeCatalog.displayOf(locked.getKey())
                     + " tier " + locked.getValue() + " &8(yours: " + have + "&8)");
+            if (tier < max && cost.isPresent()) {
+                lore.add("&8Next: tier " + (tier + 1) + " — " + cost.getAsLong() + " Sky Tokens");
+            }
+            return GuiService.item(
+                    Material.REDSTONE_BLOCK,
+                    "&c" + track.display() + " &8[LOCKED]",
+                    lore);
+        }
+        final int needIsland = plugin.coreConfig().upgradeRequiresIslandLevel(track.id());
+        if (needIsland > 0 && island.level() < needIsland) {
+            lore.add("&c&lLOCKED");
+            lore.add("&7Requires island level &f" + needIsland + " &8(yours: " + island.level() + "&8)");
+            if (tier < max && cost.isPresent()) {
+                lore.add("&8Next: tier " + (tier + 1) + " — " + cost.getAsLong() + " Sky Tokens");
+            }
+            return GuiService.item(
+                    Material.REDSTONE_BLOCK,
+                    "&c" + track.display() + " &8[LOCKED]",
+                    lore);
+        }
+        final int needRole = plugin.coreConfig().upgradeRequiresRoleLevel(track.id());
+        final int haveRole = viewerProfile == null ? 0 : plugin.roles().maxRoleLevel(viewerProfile);
+        if (needRole > 0 && haveRole < needRole) {
+            lore.add("&c&lLOCKED");
+            lore.add("&7Requires role level &f" + needRole + " &8(any role, yours: " + haveRole + "&8)");
             if (tier < max && cost.isPresent()) {
                 lore.add("&8Next: tier " + (tier + 1) + " — " + cost.getAsLong() + " Sky Tokens");
             }
