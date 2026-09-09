@@ -12,15 +12,20 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 /**
- * {@code /tokenshop} — the Sky Token exchange (27-slot single chest).
+ * {@code /tokenshop} — the Sky Token exchange (54-slot double chest).
  * Entries come from {@code shop.yml tokens:}; slot positions are constants.
+ *
+ *   20/22/24  exchange entries
+ *   40        balance
+ *   45        back to the shop hub
+ *   53        close
  */
 public final class TokenShopGui implements Gui {
 
-    private static final int[] ITEM_SLOTS = {11, 13, 15};
-    private static final int SLOT_BALANCE = 22;
-    private static final int SLOT_BACK = 24;
-    private static final int SLOT_CLOSE = 26;
+    private static final int[] ITEM_SLOTS = {20, 22, 24};
+    private static final int SLOT_BALANCE = 40;
+    private static final int SLOT_BACK = 45;
+    private static final int SLOT_CLOSE = 53;
 
     private final CoreMCPlugin plugin;
 
@@ -35,7 +40,7 @@ public final class TokenShopGui implements Gui {
 
     @Override
     public int size() {
-        return 27;
+        return 54;
     }
 
     @Override

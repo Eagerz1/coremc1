@@ -13,14 +13,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 /**
- * The main island menu opened by bare {@code /is}.
+ * The main island menu opened by bare {@code /is} — 54-slot double chest.
  *
- * Full section layout (27 slots, every position a named constant):
+ * Full section layout (every position a named constant):
  * <pre>
  *   10 Home / Create     11 Members      12 Info      13 Upgrades
  *   14 Settings          15 Permissions  16 Invite    22 Delete
  *   19 Gens              20 Spawners     21 Border    23 Visit
- *   24 Leave             25 Buffs
+ *   24 Leave             25 Buffs        53 Close
  * </pre>
  * Actions route through the chat commands (single source of behaviour)
  * except the panel-to-panel opens (theme select / members / upgrades /
@@ -42,10 +42,11 @@ public final class IslandMainGui implements Gui {
     private static final int SLOT_VISIT = 23;
     private static final int SLOT_LEAVE = 24;
     private static final int SLOT_BUFFS = 25;
+    private static final int SLOT_CLOSE = 53;
 
     /** All actionable slots — exported so audits and tests never duplicate the layout. */
     public static final java.util.Set<Integer> ACTION_SLOTS =
-            java.util.Set.of(10, 11, 12, 13, 14, 15, 16, 22, 19, 20, 21, 23, 24, 25);
+            java.util.Set.of(10, 11, 12, 13, 14, 15, 16, 22, 19, 20, 21, 23, 24, 25, 53);
 
     private final CoreMCPlugin plugin;
 
@@ -60,7 +61,7 @@ public final class IslandMainGui implements Gui {
 
     @Override
     public int size() {
-        return 27;
+        return 54;
     }
 
     @Override
@@ -173,6 +174,7 @@ public final class IslandMainGui implements Gui {
                 hasIsland
                         ? List.of("&7Island-wide multipliers: drops,", "&7currency, XP, gens, spawners.", "", "&eClick to open buffs.")
                         : List.of("&8Create an island first.")));
+        inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
 
         GuiService.fillGaps(inventory);
     }
@@ -245,6 +247,7 @@ public final class IslandMainGui implements Gui {
                     plugin.gui().open(viewer, new IslandBuffsGui(plugin));
                 }
             }
+            case SLOT_CLOSE -> viewer.closeInventory();
             default -> {
             }
         }

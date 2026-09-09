@@ -13,18 +13,18 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 /**
- * {@code /gens} — the generator market (27-slot, single chest).
+ * {@code /gens} — the generator market (54-slot double chest).
  *
  * Layout (all positions named constants, no arithmetic):
- *   10/12/14/16  generator entries (max 4 — matches config catalogue)
- *   22           your Credits balance display
- *   26           close
+ *   20/21/23/24  generator entries (max 4 — matches config catalogue)
+ *   40           your Credits balance display
+ *   53           close
  */
 public final class GensGui implements Gui {
 
-    private static final int[] SLOTS_GENS = {10, 12, 14, 16};
-    private static final int SLOT_BALANCE = 22;
-    private static final int SLOT_CLOSE = 26;
+    private static final int[] SLOTS_GENS = {20, 21, 23, 24};
+    private static final int SLOT_BALANCE = 40;
+    private static final int SLOT_CLOSE = 53;
 
     private final CoreMCPlugin plugin;
 
@@ -39,7 +39,7 @@ public final class GensGui implements Gui {
 
     @Override
     public int size() {
-        return 27;
+        return 54;
     }
 
     @Override

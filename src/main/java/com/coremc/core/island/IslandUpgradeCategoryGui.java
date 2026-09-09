@@ -15,7 +15,8 @@ import org.bukkit.inventory.Inventory;
  *
  *   rows 2-3 (14 slots)  upgrade tracks (click = buy next tier)
  *   40                   Sky Token balance
- *   44                   back to the category hub
+ *   45                   back to the category hub
+ *   53                   close
  *
  * Tracks whose requirements are unmet render locked (redstone block)
  * with the missing prerequisite named; clicking one explains the
@@ -27,7 +28,8 @@ public final class IslandUpgradeCategoryGui implements Gui {
     private static final int[] TRACK_SLOTS =
             {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25};
     private static final int SLOT_BALANCE = 40;
-    private static final int SLOT_BACK = 44;
+    private static final int SLOT_BACK = 45;
+    private static final int SLOT_CLOSE = 53;
 
     private final CoreMCPlugin plugin;
     private final UpgradeCatalog.Category category;
@@ -72,7 +74,8 @@ public final class IslandUpgradeCategoryGui implements Gui {
                 Material.NETHER_STAR,
                 "&bYour balance",
                 List.of("&b" + tokens + " Sky Tokens")));
-        inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&eBack", List.of()));
+        inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&e&lBack", List.of("&7Return to the category hub.")));
+        inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
 
         GuiService.fillGaps(inventory);
     }
@@ -162,6 +165,10 @@ public final class IslandUpgradeCategoryGui implements Gui {
 
     @Override
     public boolean onClick(final Player viewer, final int slot) {
+        if (slot == SLOT_CLOSE) {
+            viewer.closeInventory();
+            return false;
+        }
         if (slot == SLOT_BACK) {
             plugin.gui().open(viewer, new IslandUpgradesGui(plugin));
             return false;

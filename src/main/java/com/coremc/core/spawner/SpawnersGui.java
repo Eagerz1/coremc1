@@ -11,21 +11,21 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 /**
- * {@code /spawners} — per-mob progression overview (27-slot single chest).
+ * {@code /spawners} — per-mob progression overview (54-slot double chest).
  *
  * Each mob lane shows the player's kill count for the entity, how many
  * spawner tiers are unlocked, and the next unlockable tier. Clicking a
- * lane opens its {@link SpawnerTierGui} (the small-chest submenu with the
- * mob's four spawners).
+ * lane opens its {@link SpawnerTierGui} (the submenu with the mob's
+ * four spawners).
  *
  * Layout (all positions named constants):
- *   10/12/14/16  mob lanes (zombie / skeleton / spider / creeper)
- *   26           close
+ *   20/21/23/24  mob lanes (zombie / skeleton / spider / creeper)
+ *   53           close
  */
 public final class SpawnersGui implements Gui {
 
-    private static final int[] SLOTS_LANES = {10, 12, 14, 16};
-    private static final int SLOT_CLOSE = 26;
+    private static final int[] SLOTS_LANES = {20, 21, 23, 24};
+    private static final int SLOT_CLOSE = 53;
 
     private final CoreMCPlugin plugin;
 
@@ -40,7 +40,7 @@ public final class SpawnersGui implements Gui {
 
     @Override
     public int size() {
-        return 27;
+        return 54;
     }
 
     @Override

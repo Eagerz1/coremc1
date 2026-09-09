@@ -32,7 +32,7 @@ public final class EnchantGui implements Gui {
         29, 30, 31, 32, 33,
     };
     private static final int SLOT_NOTE = 40;
-    private static final int SLOT_BACK = 47;
+    private static final int SLOT_BACK = 45;
     private static final int SLOT_SWITCH = 49;
     private static final int SLOT_CLOSE = 53;
     /** Role-switcher row (row 5): miner logger fisher slayer | farmer universal. */

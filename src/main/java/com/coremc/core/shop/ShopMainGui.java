@@ -12,20 +12,20 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 /**
- * {@code /shop} — 27-slot hub.
+ * {@code /shop} — 54-slot hub.
  *
- *   11 Gear &nbsp; 12 Food &nbsp; 14 Tokens &nbsp; 15 End &nbsp; 16 Nether
- *   22 balances &nbsp; 26 close
+ *   20 Gear &nbsp; 21 Food &nbsp; 22 Tokens &nbsp; 23 End &nbsp; 24 Nether
+ *   40 balances &nbsp; 53 close
  */
 public final class ShopMainGui implements Gui {
 
-    private static final int SLOT_GEAR = 11;
-    private static final int SLOT_FOOD = 12;
-    private static final int SLOT_TOKENS = 14;
-    private static final int SLOT_END = 15;
-    private static final int SLOT_NETHER = 16;
-    private static final int SLOT_BALANCE = 22;
-    private static final int SLOT_CLOSE = 26;
+    private static final int SLOT_GEAR = 20;
+    private static final int SLOT_FOOD = 21;
+    private static final int SLOT_TOKENS = 22;
+    private static final int SLOT_END = 23;
+    private static final int SLOT_NETHER = 24;
+    private static final int SLOT_BALANCE = 40;
+    private static final int SLOT_CLOSE = 53;
 
     private final CoreMCPlugin plugin;
 
@@ -40,7 +40,7 @@ public final class ShopMainGui implements Gui {
 
     @Override
     public int size() {
-        return 27;
+        return 54;
     }
 
     @Override

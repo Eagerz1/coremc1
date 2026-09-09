@@ -20,7 +20,8 @@ import org.bukkit.inventory.Inventory;
  *   28..33,37..42 member heads (capacity 12 — effectively unbounded next to
  *                the configured member cap)
  *   49           invite hint
- *   53           back to the main menu
+ *   45           back to the main menu
+ *   53           close
  *
  * Owner clicks on a member head KICK that member — a two-click confirm
  * arm (5s window) guards against accidental kicks.
@@ -30,7 +31,8 @@ public final class IslandMembersGui implements Gui {
     private static final int SLOT_OWNER = 13;
     private static final int[] MEMBER_SLOTS = {28, 29, 30, 31, 32, 33, 37, 38, 39, 40, 41, 42};
     private static final int SLOT_INVITE = 49;
-    private static final int SLOT_BACK = 53;
+    private static final int SLOT_BACK = 45;
+    private static final int SLOT_CLOSE = 53;
     private static final long CONFIRM_MILLIS = 5000L;
 
     private final CoreMCPlugin plugin;
@@ -95,12 +97,17 @@ public final class IslandMembersGui implements Gui {
                 List.of(
                         "&7Team: &f" + value.members().size() + "&7/&f" + capacity,
                         "&7/is invite <player>")));
-        inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&eBack", List.of()));
+        inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&e&lBack", List.of("&7Return to the island menu.")));
+        inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
         GuiService.fillGaps(inventory);
     }
 
     @Override
     public boolean onClick(final Player viewer, final int slot) {
+        if (slot == SLOT_CLOSE) {
+            viewer.closeInventory();
+            return false;
+        }
         if (slot == SLOT_BACK) {
             plugin.gui().open(viewer, new IslandMainGui(plugin));
             return false;

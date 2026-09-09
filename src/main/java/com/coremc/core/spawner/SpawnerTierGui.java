@@ -12,12 +12,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 /**
- * Per-mob spawner submenu — SMALL single chest (9 slots), the mob's
- * spawner tiers visually separated by air columns:
+ * Per-mob spawner submenu — 54-slot double chest, the mob's spawner
+ * tiers centred on the middle row:
  *
- *   1 / 3 / 5 / 7  spawner tiers I–IV (locked = barrier + kill goal,
- *                  unlocked = spawner item + price, buy on click)
- *   8              back to the mob lanes
+ *   20 / 21 / 23 / 24  spawner tiers I–IV (locked = barrier + kill goal,
+ *                     unlocked = spawner item + price, buy on click)
+ *   45                 back to the mob lanes
+ *   53                 close
  *
  * All positions are named constants — no arithmetic, no off-by-one risk.
  * The tier list is captured from the catalogue at open-time and rebound
@@ -25,8 +26,9 @@ import org.bukkit.inventory.Inventory;
  */
 public final class SpawnerTierGui implements Gui {
 
-    private static final int[] SLOTS_TIERS = {1, 3, 5, 7};
-    private static final int SLOT_BACK = 8;
+    private static final int[] SLOTS_TIERS = {20, 21, 23, 24};
+    private static final int SLOT_BACK = 45;
+    private static final int SLOT_CLOSE = 53;
 
     private final CoreMCPlugin plugin;
     private final SpawnerDefinition mob;
@@ -43,7 +45,7 @@ public final class SpawnerTierGui implements Gui {
 
     @Override
     public int size() {
-        return 9;
+        return 54;
     }
 
     @Override
@@ -78,10 +80,17 @@ public final class SpawnerTierGui implements Gui {
         }
         inventory.setItem(SLOT_BACK, GuiService.item(
                 Material.ARROW, "&e&lBack", List.of("&7Return to the mob lanes.")));
+        inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
+
+        GuiService.fillGaps(inventory);
     }
 
     @Override
     public boolean onClick(final Player viewer, final int slot) {
+        if (slot == SLOT_CLOSE) {
+            viewer.closeInventory();
+            return false;
+        }
         if (slot == SLOT_BACK) {
             plugin.gui().open(viewer, new SpawnersGui(plugin));
             return false;

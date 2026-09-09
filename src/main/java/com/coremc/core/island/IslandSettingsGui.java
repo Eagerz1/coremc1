@@ -10,20 +10,21 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 /**
- * Island settings panel ({@code /is} → Settings).
+ * Island settings panel ({@code /is} → Settings) — 54-slot double chest.
  *
  * Real, enforced toggles persisted on the island file:
- *   11  Mob spawning   — natural mob spawns inside the border
- *   15  Visitors       — non-team players may enter & interact
+ *   20  Mob spawning   — natural mob spawns inside the border
+ *   24  Visitors       — non-team players may enter & interact
  *
  * Members can VIEW the settings; only the owner toggles them.
- *   22  back
+ *   45  back   53  close
  */
 public final class IslandSettingsGui implements Gui {
 
-    private static final int SLOT_MOB_SPAWNING = 11;
-    private static final int SLOT_VISITORS = 15;
-    private static final int SLOT_BACK = 22;
+    private static final int SLOT_MOB_SPAWNING = 20;
+    private static final int SLOT_VISITORS = 24;
+    private static final int SLOT_BACK = 45;
+    private static final int SLOT_CLOSE = 53;
 
     private final CoreMCPlugin plugin;
 
@@ -38,7 +39,7 @@ public final class IslandSettingsGui implements Gui {
 
     @Override
     public int size() {
-        return 27;
+        return 54;
     }
 
     @Override
@@ -59,7 +60,8 @@ public final class IslandSettingsGui implements Gui {
         toggle(inventory, SLOT_VISITORS, value, Island.Setting.VISITORS,
                 Material.OAK_DOOR, "&eVisitors",
                 List.of("&7Allow players outside your team", "&7to enter and interact."), suffix);
-        inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&eBack", List.of()));
+        inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&e&lBack", List.of("&7Return to the island menu.")));
+        inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
         GuiService.fillGaps(inventory);
     }
 
@@ -81,6 +83,10 @@ public final class IslandSettingsGui implements Gui {
 
     @Override
     public boolean onClick(final Player viewer, final int slot) {
+        if (slot == SLOT_CLOSE) {
+            viewer.closeInventory();
+            return false;
+        }
         if (slot == SLOT_BACK) {
             plugin.gui().open(viewer, new IslandMainGui(plugin));
             return false;

@@ -12,7 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 /**
- * Role selection panel (/role). 45 slots; every position is a named
+ * Role selection panel (/role). 54 slots; every position is a named
  * constant — no hard-coded slot arithmetic anywhere in the GUI layer.
  *
  * Layout:
@@ -20,6 +20,7 @@ import org.bukkit.inventory.Inventory;
  *   - five category roles in a row (slots 11-15)
  *   - Universal centred beneath them
  *   - explainer book: bottom centre
+ *   - close: 53
  */
 public final class RoleSelectGui implements Gui {
 
@@ -32,6 +33,7 @@ public final class RoleSelectGui implements Gui {
     private static final int SLOT_FARMER = 15;
     private static final int SLOT_UNIVERSAL = 22;
     private static final int SLOT_FOOTER = 40;
+    private static final int SLOT_CLOSE = 53;
     // ----------------------------------------------------
 
     private final CoreMCPlugin plugin;
@@ -42,12 +44,12 @@ public final class RoleSelectGui implements Gui {
 
     @Override
     public String title() {
-        return "&b&lCoreMC &8— &7Choose your Role";
+        return "&b&lCOREMC &8» &7Choose your Role";
     }
 
     @Override
     public int size() {
-        return 45;
+        return 54;
     }
 
     @Override
@@ -80,6 +82,7 @@ public final class RoleSelectGui implements Gui {
                                 "&7Selecting a role gives you the Omni-Tool.",
                                 "&7Relevant actions earn role XP + Omni-Tool XP.",
                                 "&7Switching roles never wipes other roles' levels.")));
+        inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
 
         GuiService.fillGaps(inventory);
     }
@@ -106,6 +109,10 @@ public final class RoleSelectGui implements Gui {
 
     @Override
     public boolean onClick(final Player viewer, final int slot) {
+        if (slot == SLOT_CLOSE) {
+            viewer.closeInventory();
+            return false;
+        }
         final Role role = switch (slot) {
             case SLOT_MINER -> Role.MINER;
             case SLOT_LOGGER -> Role.LOGGER;

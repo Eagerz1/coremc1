@@ -10,23 +10,26 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 /**
- * Island permissions panel ({@code /is} → Permissions).
+ * Island permissions panel ({@code /is} → Permissions) — 54-slot double chest.
  *
  * Top: the role summary (what owners vs members may do).
  * Toggles persisted on the island; enforced live by
  * {@link IslandProtectionListener}:
- *   20 Members Build      — break/place blocks
- *   24 Members Containers — open chests, use doors/buttons
+ *   13 Role summary
+ *   29 Members Build      — break/place blocks
+ *   33 Members Containers — open chests, use doors/buttons
  *
- * Members may view; only the owner toggles. 22 explains the own role.
- *   26  back
+ * Members may view; only the owner toggles.
+ *   45 back   53 close
  */
 public final class IslandPermissionsGui implements Gui {
 
-    private static final int SLOT_ROLE_SUMMARY = 4;
-    private static final int SLOT_MEMBER_BUILD = 20;
-    private static final int SLOT_MEMBER_CONTAINERS = 24;
-    private static final int SLOT_BACK = 26;
+    private static final int SLOT_ROLE_SUMMARY = 13;
+    private static final int SLOT_MEMBER_BUILD = 29;
+    private static final int SLOT_MEMBER_CONTAINERS = 33;
+    private static final int SLOT_BACK = 45;
+    private static final int SLOT_CLOSE = 53;
+    private static final int SLOT_GATE = 22;
 
     private final CoreMCPlugin plugin;
 
@@ -41,14 +44,14 @@ public final class IslandPermissionsGui implements Gui {
 
     @Override
     public int size() {
-        return 27;
+        return 54;
     }
 
     @Override
     public void build(final Player viewer, final Inventory inventory) {
         final var island = plugin.islands().islandOf(viewer.getUniqueId());
         if (island.isEmpty()) {
-            inventory.setItem(13, GuiService.item(
+            inventory.setItem(SLOT_GATE, GuiService.item(
                     Material.BARRIER, "&cNo island", List.of("&7Create one with &f/is create")));
             return;
         }
@@ -60,7 +63,9 @@ public final class IslandPermissionsGui implements Gui {
                 Material.SHIELD,
                 "&9Your role: &f" + (role == null ? "visitor" : role.name().toLowerCase()),
                 role == IslandRole.OWNER
-                        ? List.of("&7Everything: build, containers,", "&7settings, permissions, invites,", "&7kicks and deletion.")
+                        ? List.of("&7Everything: build, containers,",
+                                "&7settings, permissions, invites,",
+                                "&7kicks and deletion.")
                         : role == IslandRole.MEMBER
                                 ? List.of(
                                         "&7Build: " + state(value.setting(Island.Setting.MEMBERS_BUILD)),
@@ -76,7 +81,8 @@ public final class IslandPermissionsGui implements Gui {
         toggle(inventory, SLOT_MEMBER_CONTAINERS, value, Island.Setting.MEMBERS_CONTAINERS,
                 Material.CHEST, "&9Members Containers", owner,
                 List.of("&7May members open chests and use", "&7doors, buttons and levers?"));
-        inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&eBack", List.of()));
+        inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&e&lBack", List.of("&7Return to the island menu.")));
+        inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
         GuiService.fillGaps(inventory);
     }
 
@@ -102,6 +108,10 @@ public final class IslandPermissionsGui implements Gui {
 
     @Override
     public boolean onClick(final Player viewer, final int slot) {
+        if (slot == SLOT_CLOSE) {
+            viewer.closeInventory();
+            return false;
+        }
         if (slot == SLOT_BACK) {
             plugin.gui().open(viewer, new IslandMainGui(plugin));
             return false;

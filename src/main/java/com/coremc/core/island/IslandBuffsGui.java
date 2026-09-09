@@ -14,7 +14,8 @@ import org.bukkit.inventory.Inventory;
  *
  *   rows 2-3 (12 slots)  buffs, click = buy next level
  *   40                   Sky Token balance
- *   44                   back to the island menu
+ *   45                   back to the island menu
+ *   53                   close
  *
  * Owner-only (members see the gate message); purchases refresh the
  * panel so tiers and balances update immediately.
@@ -24,7 +25,8 @@ public final class IslandBuffsGui implements Gui {
     private static final int[] BUFF_SLOTS =
             {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23};
     private static final int SLOT_BALANCE = 40;
-    private static final int SLOT_BACK = 44;
+    private static final int SLOT_BACK = 45;
+    private static final int SLOT_CLOSE = 53;
 
     private final CoreMCPlugin plugin;
 
@@ -69,7 +71,8 @@ public final class IslandBuffsGui implements Gui {
                 "&bYour balance",
                 List.of("&b" + tokens + " Sky Tokens",
                         "&8Buffs apply to members on the island.")));
-        inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&eBack", List.of()));
+        inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&e&lBack", List.of("&7Return to the island menu.")));
+        inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
 
         GuiService.fillGaps(inventory);
     }
@@ -102,6 +105,10 @@ public final class IslandBuffsGui implements Gui {
 
     @Override
     public boolean onClick(final Player viewer, final int slot) {
+        if (slot == SLOT_CLOSE) {
+            viewer.closeInventory();
+            return false;
+        }
         if (slot == SLOT_BACK) {
             plugin.gui().open(viewer, new IslandMainGui(plugin));
             return false;

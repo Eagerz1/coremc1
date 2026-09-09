@@ -13,18 +13,25 @@ import org.bukkit.inventory.Inventory;
 
 /**
  * Theme selection shown when a player without an island clicks
- * "Create your island". One button per theme from themes.yml —
- * future themes appear here automatically.
+ * "Create your island" — 54-slot double chest. One button per theme
+ * from themes.yml, centred on the middle row — future themes appear
+ * here automatically.
+ *
+ *   20, 22, 24 ...  theme buttons (start 20, step 2)
+ *   45              back to the island menu
+ *   53              close
  *
  * Clicking a theme creates the island and teleports the player there
  * (same code path as {@code /is create <theme>}).
  */
 public final class ThemeSelectGui implements Gui {
 
-    /** Theme buttons start at slot 10 and step by 2 (clear spacing). */
-    private static final int SLOT_START = 10;
+    /** Theme buttons start at slot 20 and step by 2 (clear spacing). */
+    private static final int SLOT_START = 20;
     private static final int SLOT_STEP = 2;
-    private static final int SLOT_BACK = 22;
+    private static final int SLOT_BACK = 45;
+    private static final int SLOT_CLOSE = 53;
+    private static final int SLOT_GATE = 22;
 
     private final CoreMCPlugin plugin;
 
@@ -39,7 +46,7 @@ public final class ThemeSelectGui implements Gui {
 
     @Override
     public int size() {
-        return 27;
+        return 54;
     }
 
     @Override
@@ -53,17 +60,22 @@ public final class ThemeSelectGui implements Gui {
             inventory.setItem(SLOT_START + i * SLOT_STEP, GuiService.item(theme.icon(), theme.display(), lore));
         }
         if (themes.isEmpty()) {
-            inventory.setItem(13, GuiService.item(
+            inventory.setItem(SLOT_GATE, GuiService.item(
                     Material.BARRIER,
                     "&cNo themes configured",
                     List.of("&7Ask an administrator to check themes.yml.")));
         }
-        inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&eBack", List.of()));
+        inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&e&lBack", List.of("&7Return to the island menu.")));
+        inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
         GuiService.fillGaps(inventory);
     }
 
     @Override
     public boolean onClick(final Player viewer, final int slot) {
+        if (slot == SLOT_CLOSE) {
+            viewer.closeInventory();
+            return false;
+        }
         if (slot == SLOT_BACK) {
             plugin.gui().open(viewer, new IslandMainGui(plugin));
             return false;
