@@ -53,7 +53,10 @@ public final class GuiService implements Listener {
         if (event.getClickedInventory() == null || !event.getClickedInventory().equals(event.getInventory())) {
             return; // click in the player inventory below — ignore
         }
-        if (holder.gui().onClick(player, event.getRawSlot())) {
+        final boolean refresh = event.isRightClick()
+                ? holder.gui().onRightClick(player, event.getRawSlot())
+                : holder.gui().onClick(player, event.getRawSlot());
+        if (refresh) {
             // re-render same inventory
             final Inventory inventory = event.getInventory();
             inventory.clear();

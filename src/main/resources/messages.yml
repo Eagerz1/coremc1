@@ -175,3 +175,14 @@ info:
 # purchase delivery failure (inventory + ender chest full -> refunded)
 purchase:
   no-space: "&cNo space in your inventory and ender chest — purchase cancelled and refunded."
+
+enchant:
+  bought: "&a&lENCHANT &f{name} &7→ level &b{level} &8(-{cost} {currency})"
+  maxed: "&c{name} &7is already max level."
+  insufficient: "&cNeed &f{cost} {currency} &cfor {name} level {level}."
+  wrong-role: "&cThis enchant needs the {role} &crole. Switch with &f/role&c."
+  no-role: "&cSelect a role first with &f/role&c."
+  locked: "&cRequires {role} &clevel &f{level}&c."
+
+key:
+  received: "&e+{amount} {name}&7."

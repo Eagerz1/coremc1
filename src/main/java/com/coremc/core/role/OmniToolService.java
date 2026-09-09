@@ -132,6 +132,16 @@ public final class OmniToolService {
                         + " &8→ &b" + level + "&7/&b" + entry.getValue().maxLevel()));
             }
         }
+        // Custom-enchant summary (owned track levels — detail lives in the enchant GUI).
+        final Map<String, Integer> enchants = profile.enchantLevels();
+        if (!enchants.isEmpty()) {
+            int levels = 0;
+            for (final int owned : enchants.values()) {
+                levels += owned;
+            }
+            lore.add(ColorUtil.colorize(
+                    "&7Custom enchants: &d" + enchants.size() + " &8(&d" + levels + " levels&8)"));
+        }
     }
 
     /** Stamps the enchantments implied by purchased upgrades (Efficiency/Fortune);

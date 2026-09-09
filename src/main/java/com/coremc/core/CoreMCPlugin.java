@@ -6,8 +6,10 @@ import com.coremc.core.command.HealCommand;
 import com.coremc.core.command.ProfileCommand;
 import com.coremc.core.config.CoreConfig;
 import com.coremc.core.config.MessageService;
+import com.coremc.core.crate.KeyService;
 import com.coremc.core.economy.Currency;
 import com.coremc.core.economy.EconomyService;
+import com.coremc.core.enchant.EnchantService;
 import com.coremc.core.gui.GuiService;
 import com.coremc.core.island.IslandCommand;
 import com.coremc.core.island.IslandProtectionListener;
@@ -63,6 +65,8 @@ public final class CoreMCPlugin extends JavaPlugin {
     private GeneratorService generatorService;
     private SpawnerService spawnerService;
     private ShopService shopService;
+    private EnchantService enchantService;
+    private KeyService keyService;
     private com.coremc.core.island.ThemeService themeService;
     private com.coremc.core.island.MiningCubeService miningCubeService;
     private com.coremc.core.island.IslandUpgradeEffects islandUpgradeEffects;
@@ -166,8 +170,13 @@ public final class CoreMCPlugin extends JavaPlugin {
         final int spawners = spawnerService.load();
         this.shopService = new ShopService(this);
         final int shopEntries = shopService.loadCatalogue();
+        this.enchantService = new EnchantService(this);
+        final int enchantCount = enchantService.load();
+        this.keyService = new KeyService(this);
+        final int keyCount = keyService.load();
         getLogger().info("Loaded " + gens + " generator(s), " + spawners + " spawner type(s), "
-                + shopEntries + " shop entr(y/ies), " + omniUpgrades + " omni upgrade(s).");
+                + shopEntries + " shop entr(y/ies), " + omniUpgrades + " omni upgrade(s), "
+                + enchantCount + " enchant(s), " + keyCount + " crate key(s).");
 
         // 4. Listeners.
         final PluginManager pluginManager = getServer().getPluginManager();
@@ -242,6 +251,8 @@ public final class CoreMCPlugin extends JavaPlugin {
         generatorService.load();
         shopService.loadCatalogue();
         omniToolService.load();
+        enchantService.load();
+        keyService.load();
     }
 
     private void registerCommands() {
@@ -400,5 +411,15 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Shop catalogue and purchases. */
     public ShopService shop() {
         return shopService;
+    }
+
+    /** Custom-enchant catalogue, purchases and boost queries. */
+    public EnchantService enchants() {
+        return enchantService;
+    }
+
+    /** Crate-key minting and identification. */
+    public KeyService keys() {
+        return keyService;
     }
 }

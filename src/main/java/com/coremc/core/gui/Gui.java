@@ -30,4 +30,13 @@ public interface Gui {
     default boolean onClick(final Player viewer, final int slot) {
         return false;
     }
+
+    /**
+     * Handles a RIGHT-click in {@code slot}. Defaults to the normal
+     * click handler so existing GUIs behave exactly as before; panels
+     * with a secondary action (enchant details) override this.
+     */
+    default boolean onRightClick(final Player viewer, final int slot) {
+        return onClick(viewer, slot);
+    }
 }

@@ -1,0 +1,33 @@
+# ======================================================
+#  CoreMC — crates & keys
+#  `keys:` defines the physical crate-key items (minted by
+#  enchant/vote/playtime rewards, consumed by the crate lineup).
+#  The crate lineup itself lives in the `crates:` section below.
+# ======================================================
+
+keys:
+  sky:
+    display: "&bSky Key"
+    icon: TRIPWIRE_HOOK
+  ember:
+    display: "&cEmber Key"
+    icon: BLAZE_POWDER
+  rune:
+    display: "&dRune Key"
+    icon: AMETHYST_SHARD
+  titan:
+    display: "&6Titan Key"
+    icon: NETHERITE_SCRAP
+  mythic:
+    display: "&5&lMythic Key"
+    icon: NETHER_STAR
+  daily:
+    display: "&aDaily Key"
+    icon: CLOCK
+  vote:
+    display: "&eVote Key"
+    icon: PAPER
+
+# The gacha crate lineup (contents, weights, pity) is defined here
+# in a later phase; KeyService only reads the `keys:` section above.
+crates: {}

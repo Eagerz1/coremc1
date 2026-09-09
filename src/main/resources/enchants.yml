@@ -1,0 +1,1872 @@
+# ======================================================
+#  CoreMC — custom enchant catalogue (90 enchants)
+#  15 per track: miner / logger / fisher / slayer /
+#  farmer / universal. Every entry:
+#
+#    role:            owner track (universal = every role)
+#    display:         GUI/chat name (colour codes)
+#    description:     one-line grey lore
+#    icon:            GUI material (fallback: ENCHANTED_BOOK)
+#    max-level:       highest purchasable level (hard cap 1000)
+#    currency:        MONEY | CREDITS | SKY_TOKENS
+#    cost-base / cost-growth:
+#                     price(level) = base * growth^(level-1), OR an
+#                     explicit `costs:` list with exactly max-level
+#                     entries (list wins when present)
+#    effect:          behaviour kind (see EnchantEffect javadoc)
+#    trigger:         MINE | LOG | FISH | KILL | FARM | ANY | PASSIVE
+#    chance-base / chance-scale / chance-cap:
+#                     activation chance = min(cap, base+scale*(lvl-1))
+#    value-base / value-scale:
+#                     magnitude = base+scale*(lvl-1) (meaning depends
+#                     on the effect — see EnchantEffect javadoc)
+#    cooldown-seconds: per-player trigger cooldown (0 = none)
+#    min-role-level:  role level required before buying (default 1)
+#    values:          behaviour-specific tuning (rewards tables,
+#                     targets, modes — all documented in EnchantEffect)
+#
+#  Malformed entries are skipped with a console warning — a typo
+#  never bricks the catalogue. Reload with /coremc reload.
+# ======================================================
+
+enchants:
+  # ---------------- MINER (15) ----------------
+  miner.excavator:
+    role: miner
+    display: "&b&lEXCAVATOR"
+    description: "&7Mining speed surge while breaking blocks."
+    icon: GOLDEN_PICKAXE
+    max-level: 100
+    currency: SKY_TOKENS
+    cost-base: 50
+    cost-growth: 1.06
+    effect: HASTE
+    trigger: MINE
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 0.0
+    value-scale: 0.05
+    cooldown-seconds: 0
+    values:
+      duration-seconds: 6
+  miner.fortune-core:
+    role: miner
+    display: "&b&lFORTUNE CORE"
+    description: "&7Chance for extra drops from anything you mine."
+    icon: AMETHYST_CLUSTER
+    max-level: 50
+    currency: SKY_TOKENS
+    cost-base: 100
+    cost-growth: 1.07
+    effect: DROP_BONUS
+    trigger: MINE
+    chance-base: 0.03
+    chance-scale: 0.011
+    chance-cap: 0.55
+    value-base: 1.0
+    value-scale: 0.04
+    cooldown-seconds: 0
+  miner.explosive:
+    role: miner
+    display: "&c&lEXPLOSIVE"
+    description: "&7Chance to blast-mine a cube around the block."
+    icon: TNT
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 250
+    cost-growth: 1.10
+    effect: AOE_BREAK
+    trigger: MINE
+    chance-base: 0.04
+    chance-scale: 0.008
+    chance-cap: 0.25
+    value-base: 1.0
+    value-scale: 0.1
+    cooldown-seconds: 4
+    values:
+      max-blocks: 25
+      break-containers: false
+  miner.token-finder:
+    role: miner
+    display: "&b&lTOKEN FINDER"
+    description: "&7Chance to find Sky Tokens while mining."
+    icon: PRISMARINE_SHARD
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 75
+    cost-growth: 1.08
+    effect: CURRENCY
+    trigger: MINE
+    chance-base: 0.03
+    chance-scale: 0.009
+    chance-cap: 0.25
+    value-base: 1.0
+    value-scale: 0.25
+    cooldown-seconds: 0
+  miner.credit-finder:
+    role: miner
+    display: "&e&lCREDIT FINDER"
+    description: "&7Chance to find Credits while mining."
+    icon: GOLD_NUGGET
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 120
+    cost-growth: 1.08
+    effect: CURRENCY
+    trigger: MINE
+    chance-base: 0.02
+    chance-scale: 0.007
+    chance-cap: 0.2
+    value-base: 1.0
+    value-scale: 0.2
+    cooldown-seconds: 0
+    values:
+      currency: CREDITS
+  miner.gem-hunter:
+    role: miner
+    display: "&d&lGEM HUNTER"
+    description: "&7Chance to unearth precious gems."
+    icon: DIAMOND
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 400
+    cost-growth: 1.15
+    effect: REWARD_TABLE
+    trigger: MINE
+    chance-base: 0.02
+    chance-scale: 0.008
+    chance-cap: 0.12
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 2
+    values:
+      rewards:
+        - {chance: 0.45, type: ITEM, material: LAPIS_LAZULI, amount: "2-6"}
+        - {chance: 0.35, type: ITEM, material: GOLD_INGOT, amount: "1-3"}
+        - {chance: 0.25, type: ITEM, material: DIAMOND, amount: "1-2"}
+        - {chance: 0.12, type: ITEM, material: EMERALD, amount: "1-2"}
+        - {chance: 0.08, type: ITEM, material: AMETHYST_SHARD, amount: "1-4"}
+        - {chance: 0.2, type: TOKENS, amount: "3-8"}
+  miner.ore-magnet:
+    role: miner
+    display: "&9&lORE MAGNET"
+    description: "&7Mined drops fly straight into your inventory."
+    icon: IRON_BLOCK
+    max-level: 5
+    currency: SKY_TOKENS
+    cost-base: 300
+    cost-growth: 1.25
+    effect: MAGNET
+    trigger: MINE
+    chance-base: 0.25
+    chance-scale: 0.15
+    chance-cap: 0.95
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 0
+    values:
+      fallback: DROP
+  miner.auto-smelt:
+    role: miner
+    display: "&6&lAUTO SMELT"
+    description: "&7Chance to smelt ores the instant they drop."
+    icon: FURNACE
+    max-level: 5
+    currency: SKY_TOKENS
+    cost-base: 350
+    cost-growth: 1.25
+    effect: SMELT
+    trigger: MINE
+    chance-base: 0.25
+    chance-scale: 0.15
+    chance-cap: 1.0
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 0
+  miner.vein-miner:
+    role: miner
+    display: "&3&lVEIN MINER"
+    description: "&7Chance to mine a whole ore vein at once."
+    icon: IRON_ORE
+    max-level: 15
+    currency: SKY_TOKENS
+    cost-base: 300
+    cost-growth: 1.12
+    effect: VEIN
+    trigger: MINE
+    chance-base: 0.1
+    chance-scale: 0.02
+    chance-cap: 0.4
+    value-base: 8.0
+    value-scale: 1.5
+    cooldown-seconds: 3
+    values:
+      match: ORE
+  miner.deep-miner:
+    role: miner
+    display: "&8&lDEEP MINER"
+    description: "&7Bonus drops when mining deep underground."
+    icon: DEEPSLATE
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 150
+    cost-growth: 1.09
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.05
+    chance-scale: 0.01
+    chance-cap: 0.3
+    value-base: 1.0
+    value-scale: 0.08
+    cooldown-seconds: 0
+    values:
+      target: DROPS
+      max-y: 40
+  miner.block-breaker:
+    role: miner
+    display: "&7&lBLOCK BREAKER"
+    description: "&7Every block counts extra towards progression."
+    icon: STONE_PICKAXE
+    max-level: 50
+    currency: SKY_TOKENS
+    cost-base: 80
+    cost-growth: 1.07
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.0
+    chance-scale: 0.0
+    value-base: 1.0
+    value-scale: 0.2
+    cooldown-seconds: 0
+    values:
+      target: XP
+  miner.mining-momentum:
+    role: miner
+    display: "&a&lMINING MOMENTUM"
+    description: "&7Chained mining builds bonus XP per stack."
+    icon: FEATHER
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 200
+    cost-growth: 1.12
+    effect: COMBO
+    trigger: MINE
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 2.0
+    value-scale: 0.5
+    cooldown-seconds: 0
+    values:
+      window-seconds: 5
+      max-stacks: 20
+      target: XP
+  miner.treasure-miner:
+    role: miner
+    display: "&6&lTREASURE MINER"
+    description: "&7Chance to dig up buried treasure — even keys."
+    icon: CHEST
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 600
+    cost-growth: 1.16
+    effect: REWARD_TABLE
+    trigger: MINE
+    chance-base: 0.012
+    chance-scale: 0.004
+    chance-cap: 0.06
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 5
+    min-role-level: 5
+    values:
+      rewards:
+        - {chance: 0.4, type: ITEM, material: GOLD_INGOT, amount: "2-5"}
+        - {chance: 0.25, type: ITEM, material: GOLDEN_APPLE, amount: 1}
+        - {chance: 0.2, type: CREDITS, amount: "5-15"}
+        - {chance: 0.1, type: XP, amount: "10-25"}
+        - {chance: 0.04, type: KEY, key: sky, amount: 1}
+        - {chance: 0.01, type: KEY, key: ember, amount: 1}
+  miner.mining-mastery:
+    role: miner
+    display: "&b&lMINING MASTERY"
+    description: "&7Permanently boosts all mining XP."
+    icon: EXPERIENCE_BOTTLE
+    max-level: 50
+    currency: SKY_TOKENS
+    cost-base: 120
+    cost-growth: 1.08
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.0
+    chance-scale: 0.0
+    value-base: 1.0
+    value-scale: 0.3
+    cooldown-seconds: 0
+    values:
+      target: XP
+  miner.cataclysm:
+    role: miner
+    display: "&4&lCATACLYSM"
+    description: "&7Rare: a devastating but controlled mining burst."
+    icon: END_CRYSTAL
+    max-level: 5
+    currency: SKY_TOKENS
+    cost-base: 5000
+    cost-growth: 1.4
+    effect: ULTIMATE
+    trigger: MINE
+    chance-base: 0.002
+    chance-scale: 0.001
+    chance-cap: 0.01
+    value-base: 2.0
+    value-scale: 0.25
+    cooldown-seconds: 120
+    min-role-level: 10
+    values:
+      mode: MINE_BURST
+      max-blocks: 40
+      break-containers: false
+      rewards:
+        - {chance: 0.5, type: ITEM, material: DIAMOND, amount: "1-3"}
+        - {chance: 0.25, type: ITEM, material: EMERALD, amount: "1-2"}
+        - {chance: 0.3, type: TOKENS, amount: "10-25"}
+
+  # ---------------- LOGGER (15) ----------------
+  logger.lumberjack:
+    role: logger
+    display: "&a&lLUMBERJACK"
+    description: "&7Chopping speed surge while breaking logs."
+    icon: GOLDEN_AXE
+    max-level: 100
+    currency: SKY_TOKENS
+    cost-base: 50
+    cost-growth: 1.06
+    effect: HASTE
+    trigger: LOG
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 0.0
+    value-scale: 0.05
+    cooldown-seconds: 0
+    values:
+      duration-seconds: 6
+  logger.wood-fortune:
+    role: logger
+    display: "&a&lWOOD FORTUNE"
+    description: "&7Chance for extra wood from every log."
+    icon: OAK_PLANKS
+    max-level: 50
+    currency: SKY_TOKENS
+    cost-base: 100
+    cost-growth: 1.07
+    effect: DROP_BONUS
+    trigger: LOG
+    chance-base: 0.03
+    chance-scale: 0.011
+    chance-cap: 0.55
+    value-base: 1.0
+    value-scale: 0.04
+    cooldown-seconds: 0
+  logger.tree-feller:
+    role: logger
+    display: "&2&lTREE FELLER"
+    description: "&7Chance to fell a whole tree at once."
+    icon: OAK_LOG
+    max-level: 15
+    currency: SKY_TOKENS
+    cost-base: 300
+    cost-growth: 1.12
+    effect: VEIN
+    trigger: LOG
+    chance-base: 0.12
+    chance-scale: 0.02
+    chance-cap: 0.45
+    value-base: 12.0
+    value-scale: 3.0
+    cooldown-seconds: 3
+    values:
+      match: LOG
+  logger.sapling-finder:
+    role: logger
+    display: "&a&lSAPLING FINDER"
+    description: "&7Chance for bonus saplings from leaves and logs."
+    icon: OAK_SAPLING
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 60
+    cost-growth: 1.08
+    effect: DROP_BONUS
+    trigger: LOG
+    chance-base: 0.05
+    chance-scale: 0.015
+    chance-cap: 0.4
+    value-base: 1.0
+    value-scale: 0.08
+    cooldown-seconds: 0
+    values:
+      only-materials:
+        - OAK_SAPLING
+        - SPRUCE_SAPLING
+        - BIRCH_SAPLING
+        - JUNGLE_SAPLING
+        - ACACIA_SAPLING
+        - DARK_OAK_SAPLING
+        - MANGROVE_PROPAGULE
+        - CHERRY_SAPLING
+  logger.token-lumber:
+    role: logger
+    display: "&b&lTOKEN LUMBER"
+    description: "&7Chance to find Sky Tokens while logging."
+    icon: PRISMARINE_SHARD
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 75
+    cost-growth: 1.08
+    effect: CURRENCY
+    trigger: LOG
+    chance-base: 0.03
+    chance-scale: 0.009
+    chance-cap: 0.25
+    value-base: 1.0
+    value-scale: 0.25
+    cooldown-seconds: 0
+  logger.credit-lumber:
+    role: logger
+    display: "&e&lCREDIT LUMBER"
+    description: "&7Chance to find Credits while logging."
+    icon: GOLD_NUGGET
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 120
+    cost-growth: 1.08
+    effect: CURRENCY
+    trigger: LOG
+    chance-base: 0.02
+    chance-scale: 0.007
+    chance-cap: 0.2
+    value-base: 1.0
+    value-scale: 0.2
+    cooldown-seconds: 0
+    values:
+      currency: CREDITS
+  logger.timber-magnet:
+    role: logger
+    display: "&9&lTIMBER MAGNET"
+    description: "&7Logged drops fly straight into your inventory."
+    icon: LEAD
+    max-level: 5
+    currency: SKY_TOKENS
+    cost-base: 300
+    cost-growth: 1.25
+    effect: MAGNET
+    trigger: LOG
+    chance-base: 0.25
+    chance-scale: 0.15
+    chance-cap: 0.95
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 0
+    values:
+      fallback: DROP
+  logger.bark-collector:
+    role: logger
+    display: "&6&lBARK COLLECTOR"
+    description: "&7Chance to gather bark, vines and forest scraps."
+    icon: STICK
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 250
+    cost-growth: 1.14
+    effect: REWARD_TABLE
+    trigger: LOG
+    chance-base: 0.03
+    chance-scale: 0.008
+    chance-cap: 0.12
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 2
+    values:
+      rewards:
+        - {chance: 0.5, type: ITEM, material: STICK, amount: "2-6"}
+        - {chance: 0.3, type: ITEM, material: VINE, amount: "1-4"}
+        - {chance: 0.25, type: ITEM, material: MOSS_BLOCK, amount: "1-2"}
+        - {chance: 0.2, type: ITEM, material: COCOA_BEANS, amount: "1-3"}
+        - {chance: 0.15, type: TOKENS, amount: "2-6"}
+  logger.forest-mastery:
+    role: logger
+    display: "&a&lFOREST MASTERY"
+    description: "&7Permanently boosts all logging XP."
+    icon: EXPERIENCE_BOTTLE
+    max-level: 50
+    currency: SKY_TOKENS
+    cost-base: 120
+    cost-growth: 1.08
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.0
+    chance-scale: 0.0
+    value-base: 1.0
+    value-scale: 0.3
+    cooldown-seconds: 0
+    values:
+      target: XP
+  logger.growth-catalyst:
+    role: logger
+    display: "&a&lGROWTH CATALYST"
+    description: "&7Felled trees replant and regrow themselves."
+    icon: BONE_MEAL
+    max-level: 15
+    currency: SKY_TOKENS
+    cost-base: 200
+    cost-growth: 1.11
+    effect: GROWTH
+    trigger: LOG
+    chance-base: 0.08
+    chance-scale: 0.02
+    chance-cap: 0.4
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 1
+    values:
+      mode: STUMP
+  logger.ancient-wood:
+    role: logger
+    display: "&6&lANCIENT WOOD"
+    description: "&7Chance to find ancient, valuable timber."
+    icon: DARK_OAK_LOG
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 600
+    cost-growth: 1.16
+    effect: REWARD_TABLE
+    trigger: LOG
+    chance-base: 0.012
+    chance-scale: 0.004
+    chance-cap: 0.06
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 5
+    min-role-level: 5
+    values:
+      rewards:
+        - {chance: 0.45, type: ITEM, material: DARK_OAK_LOG, amount: "4-12"}
+        - {chance: 0.35, type: ITEM, material: JUNGLE_LOG, amount: "4-12"}
+        - {chance: 0.3, type: ITEM, material: COCOA_BEANS, amount: "2-6"}
+        - {chance: 0.25, type: ITEM, material: APPLE, amount: "1-3"}
+        - {chance: 0.05, type: ITEM, material: GOLDEN_APPLE, amount: 1}
+        - {chance: 0.02, type: KEY, key: sky, amount: 1}
+  logger.combo-chopper:
+    role: logger
+    display: "&a&lCOMBO CHOPPER"
+    description: "&7Chained chopping builds bonus drops per stack."
+    icon: IRON_AXE
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 200
+    cost-growth: 1.12
+    effect: COMBO
+    trigger: LOG
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 2.0
+    value-scale: 0.5
+    cooldown-seconds: 0
+    values:
+      window-seconds: 5
+      max-stacks: 20
+      target: DROPS
+  logger.lumber-surge:
+    role: logger
+    display: "&2&lLUMBER SURGE"
+    description: "&7Surges of instant multi-log processing."
+    icon: STRIPPED_OAK_LOG
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 500
+    cost-growth: 1.15
+    effect: VEIN
+    trigger: LOG
+    chance-base: 0.05
+    chance-scale: 0.012
+    chance-cap: 0.2
+    value-base: 20.0
+    value-scale: 4.0
+    cooldown-seconds: 6
+    values:
+      match: LOG
+  logger.timber-hoarder:
+    role: logger
+    display: "&e&lTIMBER HOARDER"
+    description: "&7Massive bonus wood hauls from every tree."
+    icon: BARREL
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 250
+    cost-growth: 1.1
+    effect: DROP_BONUS
+    trigger: LOG
+    chance-base: 0.08
+    chance-scale: 0.012
+    chance-cap: 0.4
+    value-base: 2.0
+    value-scale: 0.15
+    cooldown-seconds: 1
+  logger.world-tree:
+    role: logger
+    display: "&a&lWORLD TREE"
+    description: "&7Rare: the forest itself answers your call."
+    icon: MANGROVE_LOG
+    max-level: 5
+    currency: SKY_TOKENS
+    cost-base: 5000
+    cost-growth: 1.4
+    effect: ULTIMATE
+    trigger: LOG
+    chance-base: 0.002
+    chance-scale: 0.001
+    chance-cap: 0.01
+    value-base: 24.0
+    value-scale: 6.0
+    cooldown-seconds: 120
+    min-role-level: 10
+    values:
+      mode: TREE_BLESSING
+      rewards:
+        - {chance: 0.5, type: ITEM, material: GOLDEN_APPLE, amount: "1-2"}
+        - {chance: 0.4, type: ITEM, material: OAK_SAPLING, amount: "4-8"}
+        - {chance: 0.3, type: TOKENS, amount: "10-25"}
+        - {chance: 0.05, type: KEY, key: ember, amount: 1}
+
+  # ---------------- FISHER (15) ----------------
+  fisher.lucky-catch:
+    role: fisher
+    display: "&b&lLUCKY CATCH"
+    description: "&7Chance to reel in a bonus copy of your catch."
+    icon: COD
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 100
+    cost-growth: 1.09
+    effect: FISH_BONUS
+    trigger: FISH
+    chance-base: 0.06
+    chance-scale: 0.012
+    chance-cap: 0.35
+    value-base: 1.0
+    value-scale: 0.04
+    cooldown-seconds: 0
+    values:
+      mode: EXTRA_CATCH
+  fisher.fishers-fortune:
+    role: fisher
+    display: "&b&lFISHER'S FORTUNE"
+    description: "&7Greatly improves the rewards of every catch."
+    icon: PUFFERFISH
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 200
+    cost-growth: 1.1
+    effect: FISH_BONUS
+    trigger: FISH
+    chance-base: 0.08
+    chance-scale: 0.012
+    chance-cap: 0.4
+    value-base: 1.0
+    value-scale: 0.08
+    cooldown-seconds: 0
+    values:
+      mode: EXTRA_CATCH
+  fisher.token-catcher:
+    role: fisher
+    display: "&b&lTOKEN CATCHER"
+    description: "&7Chance to fish up Sky Tokens."
+    icon: PRISMARINE_SHARD
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 75
+    cost-growth: 1.08
+    effect: CURRENCY
+    trigger: FISH
+    chance-base: 0.03
+    chance-scale: 0.009
+    chance-cap: 0.25
+    value-base: 1.0
+    value-scale: 0.25
+    cooldown-seconds: 0
+  fisher.credit-catcher:
+    role: fisher
+    display: "&e&lCREDIT CATCHER"
+    description: "&7Chance to fish up Credits."
+    icon: GOLD_NUGGET
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 120
+    cost-growth: 1.08
+    effect: CURRENCY
+    trigger: FISH
+    chance-base: 0.02
+    chance-scale: 0.007
+    chance-cap: 0.2
+    value-base: 1.0
+    value-scale: 0.2
+    cooldown-seconds: 0
+    values:
+      currency: CREDITS
+  fisher.treasure-hunter:
+    role: fisher
+    display: "&6&lTREASURE HUNTER"
+    description: "&7Chance to hook sunken treasure."
+    icon: CHEST
+    max-level: 15
+    currency: SKY_TOKENS
+    cost-base: 250
+    cost-growth: 1.12
+    effect: FISH_BONUS
+    trigger: FISH
+    chance-base: 0.03
+    chance-scale: 0.008
+    chance-cap: 0.15
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 3
+    values:
+      mode: TREASURE
+      rewards:
+        - {chance: 0.4, type: ITEM, material: IRON_INGOT, amount: "1-3"}
+        - {chance: 0.3, type: ITEM, material: LEATHER, amount: "1-3"}
+        - {chance: 0.25, type: ITEM, material: STRING, amount: "1-4"}
+        - {chance: 0.06, type: ITEM, material: NAME_TAG, amount: 1}
+        - {chance: 0.04, type: ITEM, material: SADDLE, amount: 1}
+        - {chance: 0.2, type: XP, amount: "5-15"}
+  fisher.deep-waters:
+    role: fisher
+    display: "&9&lDEEP WATERS"
+    description: "&7Chance to pull riches from the deep."
+    icon: PRISMARINE_CRYSTALS
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 500
+    cost-growth: 1.15
+    effect: FISH_BONUS
+    trigger: FISH
+    chance-base: 0.02
+    chance-scale: 0.006
+    chance-cap: 0.1
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 5
+    min-role-level: 5
+    values:
+      mode: TREASURE
+      rewards:
+        - {chance: 0.4, type: ITEM, material: PRISMARINE_CRYSTALS, amount: "2-6"}
+        - {chance: 0.35, type: ITEM, material: GOLD_INGOT, amount: "1-4"}
+        - {chance: 0.08, type: ITEM, material: DIAMOND, amount: "1-2"}
+        - {chance: 0.2, type: TOKENS, amount: "5-15"}
+        - {chance: 0.03, type: KEY, key: sky, amount: 1}
+  fisher.sea-mastery:
+    role: fisher
+    display: "&b&lSEA MASTERY"
+    description: "&7Permanently boosts all fishing XP."
+    icon: EXPERIENCE_BOTTLE
+    max-level: 50
+    currency: SKY_TOKENS
+    cost-base: 120
+    cost-growth: 1.08
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.0
+    chance-scale: 0.0
+    value-base: 1.0
+    value-scale: 0.3
+    cooldown-seconds: 0
+    values:
+      target: XP
+  fisher.double-catch:
+    role: fisher
+    display: "&3&lDOUBLE CATCH"
+    description: "&7High chance to double every catch."
+    icon: SALMON
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 300
+    cost-growth: 1.1
+    effect: FISH_BONUS
+    trigger: FISH
+    chance-base: 0.1
+    chance-scale: 0.014
+    chance-cap: 0.45
+    value-base: 1.0
+    value-scale: 0.04
+    cooldown-seconds: 0
+    values:
+      mode: EXTRA_CATCH
+  fisher.golden-hook:
+    role: fisher
+    display: "&6&lGOLDEN HOOK"
+    description: "&7Chance to hook golden valuables."
+    icon: GOLD_INGOT
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 400
+    cost-growth: 1.15
+    effect: REWARD_TABLE
+    trigger: FISH
+    chance-base: 0.02
+    chance-scale: 0.008
+    chance-cap: 0.12
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 3
+    values:
+      rewards:
+        - {chance: 0.45, type: ITEM, material: GOLD_INGOT, amount: "1-4"}
+        - {chance: 0.15, type: ITEM, material: NAME_TAG, amount: 1}
+        - {chance: 0.1, type: ITEM, material: SADDLE, amount: 1}
+        - {chance: 0.12, type: ITEM, material: NAUTILUS_SHELL, amount: 1}
+        - {chance: 0.2, type: TOKENS, amount: "3-10"}
+  fisher.aquatic-magnet:
+    role: fisher
+    display: "&9&lAQUATIC MAGNET"
+    description: "&7Catches fly straight into your inventory."
+    icon: FISHING_ROD
+    max-level: 5
+    currency: SKY_TOKENS
+    cost-base: 300
+    cost-growth: 1.25
+    effect: MAGNET
+    trigger: FISH
+    chance-base: 0.25
+    chance-scale: 0.15
+    chance-cap: 0.95
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 0
+    values:
+      fallback: DROP
+  fisher.reel-speed:
+    role: fisher
+    display: "&f&lREEL SPEED"
+    description: "&7Supernatural luck while your line is cast."
+    icon: SUGAR
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 90
+    cost-growth: 1.09
+    effect: REEL_LUCK
+    trigger: FISH
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 0.0
+    value-scale: 0.1
+    cooldown-seconds: 0
+    values:
+      duration-seconds: 30
+  fisher.fishers-combo:
+    role: fisher
+    display: "&b&lFISHER'S COMBO"
+    description: "&7Chained catches build bonus rewards per stack."
+    icon: TROPICAL_FISH
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 200
+    cost-growth: 1.12
+    effect: COMBO
+    trigger: FISH
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 2.0
+    value-scale: 0.5
+    cooldown-seconds: 0
+    values:
+      window-seconds: 20
+      max-stacks: 15
+      target: REWARDS
+  fisher.ocean-fortune:
+    role: fisher
+    display: "&3&lOCEAN FORTUNE"
+    description: "&7The ocean shares its greatest treasures."
+    icon: HEART_OF_THE_SEA
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 700
+    cost-growth: 1.16
+    effect: FISH_BONUS
+    trigger: FISH
+    chance-base: 0.015
+    chance-scale: 0.005
+    chance-cap: 0.08
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 8
+    min-role-level: 5
+    values:
+      mode: TREASURE
+      rewards:
+        - {chance: 0.4, type: ITEM, material: PRISMARINE, amount: "4-10"}
+        - {chance: 0.3, type: ITEM, material: NAUTILUS_SHELL, amount: "1-2"}
+        - {chance: 0.15, type: ITEM, material: DIAMOND, amount: "1-3"}
+        - {chance: 0.02, type: ITEM, material: HEART_OF_THE_SEA, amount: 1}
+        - {chance: 0.25, type: TOKENS, amount: "8-20"}
+        - {chance: 0.04, type: KEY, key: ember, amount: 1}
+  fisher.abyssal-catch:
+    role: fisher
+    display: "&5&lABYSSAL CATCH"
+    description: "&7Chance to haul up abyssal rarities."
+    icon: ECHO_SHARD
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 800
+    cost-growth: 1.17
+    effect: REWARD_TABLE
+    trigger: FISH
+    chance-base: 0.01
+    chance-scale: 0.004
+    chance-cap: 0.06
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 8
+    min-role-level: 5
+    values:
+      rewards:
+        - {chance: 0.35, type: ITEM, material: ECHO_SHARD, amount: "1-2"}
+        - {chance: 0.3, type: ITEM, material: AMETHYST_SHARD, amount: "2-5"}
+        - {chance: 0.03, type: ITEM, material: HEART_OF_THE_SEA, amount: 1}
+        - {chance: 0.02, type: ITEM, material: NETHERITE_SCRAP, amount: 1}
+        - {chance: 0.25, type: TOKENS, amount: "8-20"}
+  fisher.leviathan:
+    role: fisher
+    display: "&9&lLEVIATHAN"
+    description: "&7Rare: something enormous takes the bait."
+    icon: NETHER_STAR
+    max-level: 5
+    currency: SKY_TOKENS
+    cost-base: 8000
+    cost-growth: 1.45
+    effect: ULTIMATE
+    trigger: FISH
+    chance-base: 0.002
+    chance-scale: 0.001
+    chance-cap: 0.01
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 180
+    min-role-level: 15
+    values:
+      mode: FISH_BOUNTY
+      rewards:
+        - {chance: 0.5, type: ITEM, material: DIAMOND, amount: "2-5"}
+        - {chance: 0.3, type: ITEM, material: HEART_OF_THE_SEA, amount: 1}
+        - {chance: 0.1, type: ITEM, material: NETHERITE_SCRAP, amount: 1}
+        - {chance: 0.4, type: TOKENS, amount: "20-50"}
+        - {chance: 0.5, type: XP, amount: "25-60"}
+        - {chance: 0.06, type: KEY, key: rune, amount: 1}
+
+  # ---------------- SLAYER (15) ----------------
+  slayer.slayer-fortune:
+    role: slayer
+    display: "&c&lSLAYER FORTUNE"
+    description: "&7Chance for extra drops from slain foes."
+    icon: BONE
+    max-level: 50
+    currency: SKY_TOKENS
+    cost-base: 100
+    cost-growth: 1.07
+    effect: DROP_BONUS
+    trigger: KILL
+    chance-base: 0.03
+    chance-scale: 0.011
+    chance-cap: 0.55
+    value-base: 1.0
+    value-scale: 0.04
+    cooldown-seconds: 0
+  slayer.token-hunter:
+    role: slayer
+    display: "&b&lTOKEN HUNTER"
+    description: "&7Chance for slain foes to drop Sky Tokens."
+    icon: PRISMARINE_SHARD
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 75
+    cost-growth: 1.08
+    effect: CURRENCY
+    trigger: KILL
+    chance-base: 0.03
+    chance-scale: 0.009
+    chance-cap: 0.25
+    value-base: 1.0
+    value-scale: 0.25
+    cooldown-seconds: 0
+  slayer.credit-hunter:
+    role: slayer
+    display: "&e&lCREDIT HUNTER"
+    description: "&7Chance for slain foes to drop Credits."
+    icon: GOLD_NUGGET
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 120
+    cost-growth: 1.08
+    effect: CURRENCY
+    trigger: KILL
+    chance-base: 0.02
+    chance-scale: 0.007
+    chance-cap: 0.2
+    value-base: 1.0
+    value-scale: 0.2
+    cooldown-seconds: 0
+    values:
+      currency: CREDITS
+  slayer.mob-mastery:
+    role: slayer
+    display: "&c&lMOB MASTERY"
+    description: "&7Permanently boosts all slayer XP."
+    icon: EXPERIENCE_BOTTLE
+    max-level: 50
+    currency: SKY_TOKENS
+    cost-base: 120
+    cost-growth: 1.08
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.0
+    chance-scale: 0.0
+    value-base: 1.0
+    value-scale: 0.3
+    cooldown-seconds: 0
+    values:
+      target: XP
+  slayer.soul-collector:
+    role: slayer
+    display: "&5&lSOUL COLLECTOR"
+    description: "&7Harvest souls from slain foes."
+    icon: SOUL_LANTERN
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 90
+    cost-growth: 1.09
+    effect: SOUL
+    trigger: KILL
+    chance-base: 0.15
+    chance-scale: 0.02
+    chance-cap: 0.7
+    value-base: 1.0
+    value-scale: 0.1
+    cooldown-seconds: 0
+  slayer.executioner:
+    role: slayer
+    display: "&4&lEXECUTIONER"
+    description: "&7Bonus damage against weakened foes."
+    icon: IRON_SWORD
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 200
+    cost-growth: 1.1
+    effect: DAMAGE
+    trigger: KILL
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 1.2
+    value-scale: 0.03
+    cooldown-seconds: 0
+    values:
+      mode: EXECUTE
+      threshold: 0.3
+  slayer.critical-hunter:
+    role: slayer
+    display: "&c&lCRITICAL HUNTER"
+    description: "&7Chance to land devastating critical strikes."
+    icon: CROSSBOW
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 220
+    cost-growth: 1.1
+    effect: DAMAGE
+    trigger: KILL
+    chance-base: 0.06
+    chance-scale: 0.012
+    chance-cap: 0.4
+    value-base: 1.5
+    value-scale: 0.04
+    cooldown-seconds: 0
+    values:
+      mode: CRIT
+  slayer.bloodlust:
+    role: slayer
+    display: "&4&lBLOODLUST"
+    description: "&7Chained kills build bonus damage per stack."
+    icon: REDSTONE
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 250
+    cost-growth: 1.13
+    effect: COMBO
+    trigger: KILL
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 2.0
+    value-scale: 0.5
+    cooldown-seconds: 0
+    values:
+      window-seconds: 8
+      max-stacks: 20
+      target: DAMAGE
+  slayer.mob-magnet:
+    role: slayer
+    display: "&9&lMOB MAGNET"
+    description: "&7Slain foes' drops fly into your inventory."
+    icon: HOPPER
+    max-level: 5
+    currency: SKY_TOKENS
+    cost-base: 300
+    cost-growth: 1.25
+    effect: MAGNET
+    trigger: KILL
+    chance-base: 0.25
+    chance-scale: 0.15
+    chance-cap: 0.95
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 0
+    values:
+      fallback: DROP
+  slayer.rare-hunter:
+    role: slayer
+    display: "&d&lRARE HUNTER"
+    description: "&7Chance for rare trophies from slain foes."
+    icon: ENDER_PEARL
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 500
+    cost-growth: 1.15
+    effect: REWARD_TABLE
+    trigger: KILL
+    chance-base: 0.015
+    chance-scale: 0.005
+    chance-cap: 0.08
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 5
+    min-role-level: 5
+    values:
+      rewards:
+        - {chance: 0.4, type: ITEM, material: ENDER_PEARL, amount: "1-3"}
+        - {chance: 0.3, type: ITEM, material: BLAZE_ROD, amount: "1-2"}
+        - {chance: 0.1, type: ITEM, material: GHAST_TEAR, amount: 1}
+        - {chance: 0.02, type: ITEM, material: WITHER_SKELETON_SKULL, amount: 1}
+        - {chance: 0.25, type: XP, amount: "10-30"}
+        - {chance: 0.03, type: KEY, key: sky, amount: 1}
+  slayer.boss-hunter:
+    role: slayer
+    display: "&6&lBOSS HUNTER"
+    description: "&7Bonus damage against boss monsters."
+    icon: DRAGON_HEAD
+    max-level: 15
+    currency: SKY_TOKENS
+    cost-base: 400
+    cost-growth: 1.13
+    effect: DAMAGE
+    trigger: KILL
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 1.25
+    value-scale: 0.05
+    cooldown-seconds: 0
+    values:
+      mode: BOSS
+      bosses:
+        - ENDER_DRAGON
+        - WITHER
+        - WARDEN
+        - ELDER_GUARDIAN
+  slayer.soul-surge:
+    role: slayer
+    display: "&5&lSOUL SURGE"
+    description: "&7Permanently boosts all soul harvesting."
+    icon: SOUL_CAMPFIRE
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 150
+    cost-growth: 1.1
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.0
+    chance-scale: 0.0
+    value-base: 2.0
+    value-scale: 0.5
+    cooldown-seconds: 0
+    values:
+      target: SOULS
+  slayer.kill-streak:
+    role: slayer
+    display: "&e&lKILL STREAK"
+    description: "&7Kill streaks multiply all combat rewards."
+    icon: GOLDEN_SWORD
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 300
+    cost-growth: 1.13
+    effect: COMBO
+    trigger: KILL
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 3.0
+    value-scale: 0.7
+    cooldown-seconds: 0
+    values:
+      window-seconds: 30
+      max-stacks: 25
+      target: REWARDS
+  slayer.predator:
+    role: slayer
+    display: "&c&lPREDATOR"
+    description: "&7Bonus damage against common monsters."
+    icon: SPIDER_EYE
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 180
+    cost-growth: 1.09
+    effect: DAMAGE
+    trigger: KILL
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 1.15
+    value-scale: 0.02
+    cooldown-seconds: 0
+    values:
+      mode: MOBS
+      mobs:
+        - ZOMBIE
+        - SKELETON
+        - SPIDER
+        - CREEPER
+        - ENDERMAN
+        - WITCH
+        - SLIME
+        - HUSK
+        - DROWNED
+        - PILLAGER
+  slayer.reaper:
+    role: slayer
+    display: "&0&lREAPER"
+    description: "&7Rare: reap a foe's soul in one strike."
+    icon: NETHERITE_SWORD
+    max-level: 5
+    currency: SKY_TOKENS
+    cost-base: 8000
+    cost-growth: 1.45
+    effect: ULTIMATE
+    trigger: KILL
+    chance-base: 0.002
+    chance-scale: 0.001
+    chance-cap: 0.01
+    value-base: 40.0
+    value-scale: 10.0
+    cooldown-seconds: 180
+    min-role-level: 15
+    values:
+      mode: EXECUTE_BURST
+      rewards:
+        - {chance: 0.4, type: ITEM, material: WITHER_SKELETON_SKULL, amount: 1}
+        - {chance: 0.02, type: ITEM, material: NETHER_STAR, amount: 1}
+        - {chance: 0.4, type: TOKENS, amount: "20-50"}
+        - {chance: 0.5, type: XP, amount: "25-60"}
+
+  # ---------------- FARMER (15) ----------------
+  farmer.harvest-fortune:
+    role: farmer
+    display: "&e&lHARVEST FORTUNE"
+    description: "&7Chance for extra crops from every harvest."
+    icon: WHEAT
+    max-level: 50
+    currency: SKY_TOKENS
+    cost-base: 100
+    cost-growth: 1.07
+    effect: DROP_BONUS
+    trigger: FARM
+    chance-base: 0.03
+    chance-scale: 0.011
+    chance-cap: 0.55
+    value-base: 1.0
+    value-scale: 0.04
+    cooldown-seconds: 0
+  farmer.crop-mastery:
+    role: farmer
+    display: "&e&lCROP MASTERY"
+    description: "&7Permanently boosts all farming XP."
+    icon: EXPERIENCE_BOTTLE
+    max-level: 50
+    currency: SKY_TOKENS
+    cost-base: 120
+    cost-growth: 1.08
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.0
+    chance-scale: 0.0
+    value-base: 1.0
+    value-scale: 0.3
+    cooldown-seconds: 0
+    values:
+      target: XP
+  farmer.token-farmer:
+    role: farmer
+    display: "&b&lTOKEN FARMER"
+    description: "&7Chance to find Sky Tokens while harvesting."
+    icon: PRISMARINE_SHARD
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 75
+    cost-growth: 1.08
+    effect: CURRENCY
+    trigger: FARM
+    chance-base: 0.03
+    chance-scale: 0.009
+    chance-cap: 0.25
+    value-base: 1.0
+    value-scale: 0.25
+    cooldown-seconds: 0
+  farmer.credit-farmer:
+    role: farmer
+    display: "&e&lCREDIT FARMER"
+    description: "&7Chance to find Credits while harvesting."
+    icon: GOLD_NUGGET
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 120
+    cost-growth: 1.08
+    effect: CURRENCY
+    trigger: FARM
+    chance-base: 0.02
+    chance-scale: 0.007
+    chance-cap: 0.2
+    value-base: 1.0
+    value-scale: 0.2
+    cooldown-seconds: 0
+    values:
+      currency: CREDITS
+  farmer.auto-replant:
+    role: farmer
+    display: "&a&lAUTO REPLANT"
+    description: "&7Harvested crops replant themselves."
+    icon: WHEAT_SEEDS
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 200
+    cost-growth: 1.13
+    effect: REPLANT
+    trigger: FARM
+    chance-base: 0.35
+    chance-scale: 0.06
+    chance-cap: 0.95
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 0
+    values:
+      delay-ticks: 2
+  farmer.mega-harvest:
+    role: farmer
+    display: "&6&lMEGA HARVEST"
+    description: "&7Chance for an enormous bonus harvest."
+    icon: HAY_BLOCK
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 250
+    cost-growth: 1.1
+    effect: DROP_BONUS
+    trigger: FARM
+    chance-base: 0.06
+    chance-scale: 0.01
+    chance-cap: 0.35
+    value-base: 2.0
+    value-scale: 0.12
+    cooldown-seconds: 1
+  farmer.growth-boost:
+    role: farmer
+    display: "&a&lGROWTH BOOST"
+    description: "&7Harvesting feeds the crops around you."
+    icon: GREEN_DYE
+    max-level: 15
+    currency: SKY_TOKENS
+    cost-base: 200
+    cost-growth: 1.11
+    effect: GROWTH
+    trigger: FARM
+    chance-base: 0.08
+    chance-scale: 0.02
+    chance-cap: 0.4
+    value-base: 3.0
+    value-scale: 0.15
+    cooldown-seconds: 2
+    values:
+      mode: NEIGHBOURS
+  farmer.harvest-magnet:
+    role: farmer
+    display: "&9&lHARVEST MAGNET"
+    description: "&7Harvested crops fly into your inventory."
+    icon: HOPPER
+    max-level: 5
+    currency: SKY_TOKENS
+    cost-base: 300
+    cost-growth: 1.25
+    effect: MAGNET
+    trigger: FARM
+    chance-base: 0.25
+    chance-scale: 0.15
+    chance-cap: 0.95
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 0
+    values:
+      fallback: DROP
+  farmer.farmers-fortune:
+    role: farmer
+    display: "&6&lFARMER'S FORTUNE"
+    description: "&7High-tier bonus harvests from every crop."
+    icon: GOLDEN_CARROT
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 350
+    cost-growth: 1.11
+    effect: DROP_BONUS
+    trigger: FARM
+    chance-base: 0.1
+    chance-scale: 0.012
+    chance-cap: 0.45
+    value-base: 2.0
+    value-scale: 0.1
+    cooldown-seconds: 0
+  farmer.golden-harvest:
+    role: farmer
+    display: "&6&lGOLDEN HARVEST"
+    description: "&7Chance to reap golden produce."
+    icon: GOLDEN_APPLE
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 500
+    cost-growth: 1.15
+    effect: REWARD_TABLE
+    trigger: FARM
+    chance-base: 0.015
+    chance-scale: 0.005
+    chance-cap: 0.08
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 5
+    min-role-level: 5
+    values:
+      rewards:
+        - {chance: 0.45, type: ITEM, material: GOLDEN_CARROT, amount: "1-3"}
+        - {chance: 0.35, type: ITEM, material: APPLE, amount: "2-5"}
+        - {chance: 0.08, type: ITEM, material: GOLDEN_APPLE, amount: 1}
+        - {chance: 0.15, type: ITEM, material: HONEY_BOTTLE, amount: "1-2"}
+        - {chance: 0.2, type: TOKENS, amount: "4-12"}
+  farmer.crop-combo:
+    role: farmer
+    display: "&e&lCROP COMBO"
+    description: "&7Chained harvests build bonus XP per stack."
+    icon: CARROT
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 200
+    cost-growth: 1.12
+    effect: COMBO
+    trigger: FARM
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 2.0
+    value-scale: 0.5
+    cooldown-seconds: 0
+    values:
+      window-seconds: 8
+      max-stacks: 20
+      target: XP
+  farmer.seed-master:
+    role: farmer
+    display: "&a&lSEED MASTER"
+    description: "&7Replants crops without consuming seeds."
+    icon: BEETROOT_SEEDS
+    max-level: 15
+    currency: SKY_TOKENS
+    cost-base: 250
+    cost-growth: 1.12
+    effect: REPLANT
+    trigger: FARM
+    chance-base: 0.4
+    chance-scale: 0.04
+    chance-cap: 1.0
+    value-base: 20.0
+    value-scale: 5.0
+    cooldown-seconds: 0
+    values:
+      delay-ticks: 2
+  farmer.bountiful-fields:
+    role: farmer
+    display: "&e&lBOUNTIFUL FIELDS"
+    description: "&7Chance for rich bonus yields."
+    icon: PUMPKIN
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 150
+    cost-growth: 1.09
+    effect: DROP_BONUS
+    trigger: FARM
+    chance-base: 0.05
+    chance-scale: 0.012
+    chance-cap: 0.4
+    value-base: 1.0
+    value-scale: 0.1
+    cooldown-seconds: 0
+  farmer.agricultural-mastery:
+    role: farmer
+    display: "&6&lAGRICULTURAL MASTERY"
+    description: "&7Massively boosts all farming XP."
+    icon: NETHERITE_HOE
+    max-level: 50
+    currency: SKY_TOKENS
+    cost-base: 200
+    cost-growth: 1.09
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.0
+    chance-scale: 0.0
+    value-base: 1.5
+    value-scale: 0.4
+    cooldown-seconds: 0
+    values:
+      target: XP
+  farmer.natures-blessing:
+    role: farmer
+    display: "&a&lNATURE'S BLESSING"
+    description: "&7Rare: nature blesses your entire field."
+    icon: FLOWERING_AZALEA
+    max-level: 5
+    currency: SKY_TOKENS
+    cost-base: 5000
+    cost-growth: 1.4
+    effect: ULTIMATE
+    trigger: FARM
+    chance-base: 0.002
+    chance-scale: 0.001
+    chance-cap: 0.01
+    value-base: 4.0
+    value-scale: 0.5
+    cooldown-seconds: 120
+    min-role-level: 10
+    values:
+      mode: HARVEST_BLESSING
+      rewards:
+        - {chance: 0.5, type: ITEM, material: GOLDEN_CARROT, amount: "2-6"}
+        - {chance: 0.3, type: ITEM, material: GOLDEN_APPLE, amount: "1-2"}
+        - {chance: 0.35, type: TOKENS, amount: "10-25"}
+        - {chance: 0.5, type: XP, amount: "20-50"}
+
+  # ---------------- UNIVERSAL (15) ----------------
+  universal.token-boost:
+    role: universal
+    display: "&b&lTOKEN BOOST"
+    description: "&7Boosts ALL Sky Token gains, everywhere."
+    icon: PRISMARINE_SHARD
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 400
+    cost-growth: 1.12
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.0
+    chance-scale: 0.0
+    value-base: 2.0
+    value-scale: 0.5
+    cooldown-seconds: 0
+    values:
+      target: TOKENS
+  universal.credit-boost:
+    role: universal
+    display: "&e&lCREDIT BOOST"
+    description: "&7Boosts ALL Credit gains, everywhere."
+    icon: GOLD_NUGGET
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 400
+    cost-growth: 1.12
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.0
+    chance-scale: 0.0
+    value-base: 2.0
+    value-scale: 0.5
+    cooldown-seconds: 0
+    values:
+      target: CREDITS
+  universal.xp-boost:
+    role: universal
+    display: "&a&lXP BOOST"
+    description: "&7Boosts ALL role XP gains, everywhere."
+    icon: EXPERIENCE_BOTTLE
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 400
+    cost-growth: 1.12
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.0
+    chance-scale: 0.0
+    value-base: 2.0
+    value-scale: 0.5
+    cooldown-seconds: 0
+    values:
+      target: XP
+  universal.lucky:
+    role: universal
+    display: "&e&lLUCKY"
+    description: "&7Chance for lucky finds on any activity."
+    icon: RABBIT_FOOT
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 150
+    cost-growth: 1.09
+    effect: REWARD_TABLE
+    trigger: ANY
+    chance-base: 0.008
+    chance-scale: 0.003
+    chance-cap: 0.1
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 5
+    values:
+      rewards:
+        - {chance: 0.5, type: TOKENS, amount: "2-8"}
+        - {chance: 0.2, type: CREDITS, amount: "1-4"}
+        - {chance: 0.3, type: ITEM, material: BREAD, amount: "1-3"}
+        - {chance: 0.4, type: XP, amount: "3-10"}
+  universal.scavenger:
+    role: universal
+    display: "&7&lSCAVENGER"
+    description: "&7Chance to scavenge scraps from any activity."
+    icon: BONE
+    max-level: 15
+    currency: SKY_TOKENS
+    cost-base: 100
+    cost-growth: 1.1
+    effect: REWARD_TABLE
+    trigger: ANY
+    chance-base: 0.015
+    chance-scale: 0.005
+    chance-cap: 0.12
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 3
+    values:
+      rewards:
+        - {chance: 0.4, type: ITEM, material: BONE, amount: "1-3"}
+        - {chance: 0.4, type: ITEM, material: STRING, amount: "1-3"}
+        - {chance: 0.3, type: ITEM, material: LEATHER, amount: "1-2"}
+        - {chance: 0.3, type: ITEM, material: IRON_NUGGET, amount: "1-4"}
+  universal.magnet:
+    role: universal
+    display: "&9&lMAGNET"
+    description: "&7Drops from any activity fly to your inventory."
+    icon: MAGNETITE
+    max-level: 5
+    currency: SKY_TOKENS
+    cost-base: 600
+    cost-growth: 1.3
+    effect: MAGNET
+    trigger: ANY
+    chance-base: 0.2
+    chance-scale: 0.15
+    chance-cap: 0.9
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 0
+    values:
+      fallback: DROP
+  universal.efficiency-core:
+    role: universal
+    display: "&b&lEFFICIENCY CORE"
+    description: "&7Work-speed surge on any block activity."
+    icon: BEACON
+    max-level: 50
+    currency: SKY_TOKENS
+    cost-base: 150
+    cost-growth: 1.08
+    effect: HASTE
+    trigger: ANY
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 0.0
+    value-scale: 0.04
+    cooldown-seconds: 0
+    values:
+      duration-seconds: 6
+  universal.momentum:
+    role: universal
+    display: "&f&lMOMENTUM"
+    description: "&7Any chained activity builds bonus XP per stack."
+    icon: FEATHER
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 300
+    cost-growth: 1.13
+    effect: COMBO
+    trigger: ANY
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 1.5
+    value-scale: 0.4
+    cooldown-seconds: 0
+    values:
+      window-seconds: 6
+      max-stacks: 20
+      target: XP
+  universal.jackpot:
+    role: universal
+    display: "&6&lJACKPOT"
+    description: "&7A tiny chance at an enormous prize. Anything."
+    icon: EMERALD_BLOCK
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 1000
+    cost-growth: 1.2
+    effect: REWARD_TABLE
+    trigger: ANY
+    chance-base: 0.001
+    chance-scale: 0.0008
+    chance-cap: 0.01
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 30
+    min-role-level: 5
+    values:
+      rewards:
+        - {chance: 0.5, type: ITEM, material: DIAMOND_BLOCK, amount: 1}
+        - {chance: 0.2, type: ITEM, material: NETHERITE_INGOT, amount: 1}
+        - {chance: 0.4, type: CREDITS, amount: "25-75"}
+        - {chance: 0.4, type: TOKENS, amount: "50-150"}
+        - {chance: 0.08, type: KEY, key: mythic, amount: 1}
+        - {chance: 0.15, type: KEY, key: titan, amount: 1}
+  universal.recovery:
+    role: universal
+    display: "&c&lRECOVERY"
+    description: "&7Work restores your health and hunger."
+    icon: APPLE
+    max-level: 15
+    currency: SKY_TOKENS
+    cost-base: 150
+    cost-growth: 1.1
+    effect: RECOVERY
+    trigger: ANY
+    chance-base: 0.04
+    chance-scale: 0.008
+    chance-cap: 0.2
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 10
+    values:
+      hearts: 4
+      food: 4
+      extinguish: true
+  universal.fortune-core:
+    role: universal
+    display: "&d&lFORTUNE CORE"
+    description: "&7Small bonus-drop chance on every activity."
+    icon: AMETHYST_CLUSTER
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 300
+    cost-growth: 1.11
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.02
+    chance-scale: 0.004
+    chance-cap: 0.12
+    value-base: 1.0
+    value-scale: 0.04
+    cooldown-seconds: 0
+    values:
+      target: DROPS
+  universal.mastery:
+    role: universal
+    display: "&a&lMASTERY"
+    description: "&7Boosts ALL role XP on top of everything."
+    icon: NETHER_STAR
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 500
+    cost-growth: 1.12
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.0
+    chance-scale: 0.0
+    value-base: 1.5
+    value-scale: 0.4
+    cooldown-seconds: 0
+    values:
+      target: XP
+  universal.prosperity:
+    role: universal
+    display: "&6&lPROSPERITY"
+    description: "&7Boosts ALL Token and Credit gains."
+    icon: GOLD_BLOCK
+    max-level: 25
+    currency: SKY_TOKENS
+    cost-base: 500
+    cost-growth: 1.12
+    effect: MULTIPLIER
+    trigger: PASSIVE
+    chance-base: 0.0
+    chance-scale: 0.0
+    value-base: 1.5
+    value-scale: 0.4
+    cooldown-seconds: 0
+    values:
+      target: ECONOMY
+  universal.overcharge:
+    role: universal
+    display: "&e&lOVERCHARGE"
+    description: "&7Big combos trigger a temporary overdrive."
+    icon: END_ROD
+    max-level: 10
+    currency: SKY_TOKENS
+    cost-base: 600
+    cost-growth: 1.15
+    effect: TEMP_BOOST
+    trigger: ANY
+    chance-base: 1.0
+    chance-scale: 0.0
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 60
+    min-role-level: 5
+    values:
+      trigger-count: 10
+      duration-seconds: 15
+      mult-xp: 50
+      mult-drops: 50
+      effects:
+        - "SPEED:0:15"
+        - "HASTE:0:15"
+  universal.core-energy:
+    role: universal
+    display: "&d&lCORE ENERGY"
+    description: "&7Rare: channel the island core itself."
+    icon: END_CRYSTAL
+    max-level: 5
+    currency: SKY_TOKENS
+    cost-base: 10000
+    cost-growth: 1.5
+    effect: ULTIMATE
+    trigger: ANY
+    chance-base: 0.001
+    chance-scale: 0.0008
+    chance-cap: 0.006
+    value-base: 0.0
+    value-scale: 0.0
+    cooldown-seconds: 300
+    min-role-level: 20
+    values:
+      mode: OVERDRIVE
+      duration-seconds: 30
+      mult-xp: 100
+      mult-drops: 100
+      effects:
+        - "SPEED:1:30"
+        - "HASTE:1:30"
+        - "LUCK:1:30"

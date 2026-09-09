@@ -98,11 +98,14 @@ public final class RoleService {
             return 0L;
         }
         final double multiplier = Math.max(0.0, plugin.coreConfig().roleXpMultiplier());
+        // Custom-enchant XP boosts (role track + universal) multiply every award exactly once.
+        final double enchantBoost = plugin.enchants().passiveMultiplier(profile, role.get().key(), "XP");
         long awarded = 0L;
         if (role.get().category() == category) {
-            awarded = Math.round(baseAmount * multiplier);
+            awarded = Math.round(baseAmount * multiplier * enchantBoost);
         } else if (role.get() == Role.UNIVERSAL) {
-            awarded = Math.round(baseAmount * multiplier * plugin.coreConfig().roleUniversalShare());
+            awarded = Math.round(
+                    baseAmount * multiplier * plugin.coreConfig().roleUniversalShare() * enchantBoost);
         }
         if (awarded <= 0L) {
             return 0L;

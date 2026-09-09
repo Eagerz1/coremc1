@@ -1,6 +1,7 @@
 package com.coremc.core.role;
 
 import com.coremc.core.CoreMCPlugin;
+import com.coremc.core.enchant.EnchantGui;
 import com.coremc.core.gui.Gui;
 import com.coremc.core.gui.GuiService;
 import com.coremc.core.player.PlayerProfile;
@@ -14,6 +15,7 @@ import org.bukkit.inventory.Inventory;
  * The OmniTool panel (shift right-click with the Omni-Tool). Double
  * chest (54) as specified. Every slot is a named constant:
  *
+ *   top-centre:  custom enchantments entry (role track)
  *   top-left:    selected role + role level progress
  *   top-right:   OmniTool level progress
  *   middle row:  per-role level overview (6 panes)
@@ -24,6 +26,7 @@ import org.bukkit.inventory.Inventory;
 public final class OmniToolGui implements Gui {
 
     // ---------------- layout constants ----------------
+    private static final int SLOT_ENCHANTS = 4;
     private static final int SLOT_ROLE = 19;
     private static final int SLOT_TOOL = 25;
     private static final int SLOT_PROGRESS_MINER = 29;
@@ -61,6 +64,17 @@ public final class OmniToolGui implements Gui {
             return;
         }
         final Role current = plugin.roles().roleOf(profile).orElse(null);
+
+        inventory.setItem(
+                SLOT_ENCHANTS,
+                GuiService.item(
+                        Material.ENCHANTED_BOOK,
+                        "&d&lENCHANTMENTS",
+                        List.of(
+                                "&7Upgrade your role's custom enchants",
+                                "&7with Sky Tokens.",
+                                "&7Owned levels: &d" + plugin.enchants().ownedLevels(profile),
+                                "&eClick to open.")));
 
         inventory.setItem(
                 SLOT_ROLE,
@@ -176,6 +190,17 @@ public final class OmniToolGui implements Gui {
     public boolean onClick(final Player viewer, final int slot) {
         if (slot == SLOT_CLOSE) {
             viewer.closeInventory();
+            return false;
+        }
+        if (slot == SLOT_ENCHANTS) {
+            final String track = plugin.playerData().profileOf(viewer.getUniqueId())
+                    .map(PlayerProfile::roleId).orElse("none");
+            // No role yet: role selection first (enchants need a track).
+            if (Role.byKey(track).isEmpty()) {
+                plugin.gui().open(viewer, new RoleSelectGui(plugin));
+            } else {
+                plugin.gui().open(viewer, new EnchantGui(plugin, track));
+            }
             return false;
         }
         final String upgradeId = switch (slot) {
