@@ -796,13 +796,3 @@ public final class IslandService {
         block.setType(material);
     }
 }
-}
-            chest.update(true);
-        }
-    }
-
-    private void setBlock(final World world, final int x, final int y, final int z, final Material material) {
-        final Block block = world.getBlockAt(x, y, z);
-        block.setType(material);
-    }
-}
