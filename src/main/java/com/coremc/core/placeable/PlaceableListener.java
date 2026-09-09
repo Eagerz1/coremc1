@@ -169,7 +169,7 @@ public final class PlaceableListener implements Listener {
         final Location loc = event.getClickedBlock().getLocation();
         // Island generator-boost shrinks the harvest cooldown.
         final int boost = plugin.upgradeEffects().generatorBoostTierAt(
-                loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+                loc.getWorld().getName(), loc.getBlockX(), loc.getBlockZ());
         final int pct = Math.max(0, plugin.getConfig().getInt(
                 "island.upgrades.generator-boost.cooldown-reduction-percent-per-level", 8));
         final long effectiveCooldown = com.coremc.core.island.IslandUpgradeEffects
