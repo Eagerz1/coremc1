@@ -74,3 +74,21 @@ jobs:
             journey-server/server.log
             journey-server/journey.log
             journey-server/plugins/CoreMC/
+      - name: Commit journey logs to sandbox (artifact/log APIs unreachable from sandbox)
+        if: always()
+        run: |
+          git config user.name "arena-journey"
+          git config user.email "bot@users.noreply.github.com"
+          mkdir -p sandbox/journey
+          cp journey-server/journey.log sandbox/journey/journey.log 2>/dev/null \
+            || echo "NO journey.log produced" > sandbox/journey/journey.log
+          tail -c 400000 journey-server/server.log > sandbox/journey/server-tail.log 2>/dev/null || true
+          ls -laR journey-server/plugins/CoreMC/ > sandbox/journey/data-files.txt 2>/dev/null || true
+          git add -f sandbox/journey/
+          git commit -m "journey evidence: run $GITHUB_RUN_ID" || true
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" || true
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then break; fi
+            sleep 10
+          done
+          true
