@@ -232,7 +232,8 @@ public final class IslandService {
             ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.maxed", Map.of());
             return false;
         }
-        for (final Map.Entry<String, Integer> requirement : config.upgradeRequires(upgradeId).entrySet()) {
+        for (final Map.Entry<String, Integer> requirement
+                : config.upgradeRequiresAt(upgradeId, tier + 1).entrySet()) {
             if (island.upgrades().getOrDefault(requirement.getKey(), 0) < requirement.getValue()) {
                 ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.locked",
                         Map.of("track", UpgradeCatalog.displayOf(requirement.getKey()),
@@ -476,6 +477,23 @@ public final class IslandService {
 
     // ------------------------------------------------------------------ persistence & associations
 
+    /** Marks an island's progression dirty (batched flush, not immediate disk I/O). */
+    public void markDirty(final Island island) {
+        dirtyIslands.add(island.islandId());
+    }
+
+    /** Flushes every progression-dirty island (progress timer + shutdown). */
+    public void flushDirty() {
+        final List<UUID> pending = new ArrayList<>(dirtyIslands);
+        dirtyIslands.removeAll(pending);
+        for (final UUID islandId : pending) {
+            final Island island = islandsById.get(islandId);
+            if (island != null) {
+                flush(island);
+            }
+        }
+    }
+
     /** Saves an island asynchronously (structure changes flush eagerly). */
     public void flush(final Island island) {
         io.execute(() -> {
@@ -521,6 +539,7 @@ public final class IslandService {
 
     /** Stops the I/O executor. Called on disable. */
     public void shutdown() {
+        flushDirty(); // queued ahead of the executor stop, so saves land before termination
         io.shutdown();
         try {
             if (!io.awaitTermination(10, TimeUnit.SECONDS)) {

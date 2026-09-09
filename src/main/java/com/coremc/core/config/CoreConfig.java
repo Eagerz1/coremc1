@@ -129,6 +129,7 @@ public final class CoreConfig {
         this.upgradeMaxTiers.clear();
         this.upgradeCosts.clear();
         this.upgradeRequires.clear();
+        this.upgradeRequiresTiers.clear();
         final org.bukkit.configuration.ConfigurationSection upgradesSection =
                 config.getConfigurationSection("island.upgrades");
         if (upgradesSection != null) {
@@ -160,6 +161,33 @@ public final class CoreConfig {
                     }
                 }
                 this.upgradeRequires.put(id, requires);
+                final java.util.Map<Integer, java.util.Map<String, Integer>> tierGates =
+                        new java.util.LinkedHashMap<>();
+                final org.bukkit.configuration.ConfigurationSection tiersSection =
+                        upgradesSection.getConfigurationSection(id + ".requires-tiers");
+                if (tiersSection != null) {
+                    for (final String tierKey : tiersSection.getKeys(false)) {
+                        final int gatedTier;
+                        try {
+                            gatedTier = Integer.parseInt(tierKey.trim());
+                        } catch (final NumberFormatException notANumber) {
+                            plugin.getLogger().warning("island.upgrades." + id
+                                    + ".requires-tiers key '" + tierKey + "' is not a tier number — ignored.");
+                            continue;
+                        }
+                        final org.bukkit.configuration.ConfigurationSection gate =
+                                tiersSection.getConfigurationSection(tierKey);
+                        if (gate == null) {
+                            continue;
+                        }
+                        final java.util.Map<String, Integer> gateRequires = new java.util.LinkedHashMap<>();
+                        for (final String req : gate.getKeys(false)) {
+                            gateRequires.put(req, Math.max(0, gate.getInt(req, 0)));
+                        }
+                        tierGates.put(gatedTier, gateRequires);
+                    }
+                }
+                this.upgradeRequiresTiers.put(id, tierGates);
             }
         }
 
@@ -278,6 +306,21 @@ public final class CoreConfig {
     public java.util.Map<String, Integer> upgradeRequires(final String upgradeId) {
         return java.util.Collections.unmodifiableMap(
                 upgradeRequires.getOrDefault(upgradeId, java.util.Map.of()));
+    }
+
+    /**
+     * Merged purchase gates for buying exactly {@code tier}: the
+     * track-level requires plus any requires-tiers entry for it.
+     */
+    public java.util.Map<String, Integer> upgradeRequiresAt(final String upgradeId, final int tier) {
+        final java.util.Map<String, Integer> merged =
+                new java.util.LinkedHashMap<>(upgradeRequires(upgradeId));
+        final java.util.Map<Integer, java.util.Map<String, Integer>> tiers =
+                upgradeRequiresTiers.get(upgradeId);
+        if (tiers != null && tiers.containsKey(tier)) {
+            merged.putAll(tiers.get(tier));
+        }
+        return java.util.Collections.unmodifiableMap(merged);
     }
 
     private static java.util.List<Long> longCosts(

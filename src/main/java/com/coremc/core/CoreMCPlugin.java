@@ -77,6 +77,8 @@ public final class CoreMCPlugin extends JavaPlugin {
     private com.coremc.core.island.ThemeService themeService;
     private com.coremc.core.island.MiningCubeService miningCubeService;
     private com.coremc.core.island.IslandUpgradeEffects islandUpgradeEffects;
+    private com.coremc.core.island.IslandActivityEffects islandActivityEffects;
+    private com.coremc.core.island.IslandProgressService islandProgressService;
 
     /**
      * Creates (or attaches to) the dedicated island world. Islands live in
@@ -153,6 +155,9 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.miningCubeService.load();
         this.miningCubeService.startRegeneration(taskService);
         this.islandUpgradeEffects = new com.coremc.core.island.IslandUpgradeEffects(this);
+        this.islandActivityEffects = new com.coremc.core.island.IslandActivityEffects(this);
+        this.islandProgressService = new com.coremc.core.island.IslandProgressService(this);
+        this.islandProgressService.start(taskService);
         if (this.islandService.islandWorld().isEmpty()) {
             getLogger().warning("Island world '" + coreConfig.islandWorldName()
                     + "' does not exist — /island commands will report it as unavailable.");
@@ -192,6 +197,8 @@ public final class CoreMCPlugin extends JavaPlugin {
                 new PlayerListener(playerDataService, messageService, coreConfig, islandService), this);
         pluginManager.registerEvents(new IslandProtectionListener(this), this);
         pluginManager.registerEvents(islandUpgradeEffects, this);
+        pluginManager.registerEvents(islandActivityEffects, this);
+        pluginManager.registerEvents(islandProgressService, this);
         pluginManager.registerEvents(guiService, this);
         pluginManager.registerEvents(new OmniToolListener(this), this);
         pluginManager.registerEvents(new MiningXpListener(this), this);
@@ -247,6 +254,8 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.spawnerService = null;
         this.shopService = null;
         this.islandService = null;
+        this.islandActivityEffects = null;
+        this.islandProgressService = null;
         this.guiService = null;
         this.omniToolService = null;
         this.roleService = null;
@@ -391,6 +400,16 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Live effects of island upgrade tracks (purchase hook + listeners). */
     public com.coremc.core.island.IslandUpgradeEffects upgradeEffects() {
         return islandUpgradeEffects;
+    }
+
+    /** Live effects of the per-activity island upgrade tracks. */
+    public com.coremc.core.island.IslandActivityEffects islandActivity() {
+        return islandActivityEffects;
+    }
+
+    /** Island stats, XP and level progression. */
+    public com.coremc.core.island.IslandProgressService islandProgress() {
+        return islandProgressService;
     }
 
     /** GUI runtime. */

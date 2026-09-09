@@ -79,6 +79,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             case "delete" -> delete(player);
             case "info" -> info(player);
             case "upgrades" -> plugin.gui().open(player, new IslandUpgradesGui(plugin));
+            case "top" -> top(player);
             default -> help(player, label);
         }
         return true;
@@ -275,6 +276,47 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(messages.get("island.info-created", Map.of("value", created)));
     }
 
+    private void top(final Player player) {
+        final List<Island> ranked = new ArrayList<>(islands.allIslands());
+        ranked.sort((left, right) -> {
+            final int byLevel = Integer.compare(right.level(), left.level());
+            return byLevel != 0 ? byLevel : Long.compare(right.xp(), left.xp());
+        });
+        if (ranked.isEmpty()) {
+            messages.sendPrefixed(player, "island.top-empty", Map.of());
+            return;
+        }
+        player.sendMessage(messages.get("island.top-header", Map.of()));
+        for (int rank = 0; rank < Math.min(10, ranked.size()); rank++) {
+            final Island island = ranked.get(rank);
+            player.sendMessage(messages.get("island.top-entry", Map.of(
+                    "rank", String.valueOf(rank + 1),
+                    "owner", resolveName(island.owner()),
+                    "level", String.valueOf(island.level()),
+                    "score", String.valueOf(island.xp()))));
+        }
+    }
+
+    /** "12 mined · 34 crops" summary of nonzero lifetime stats (or "-"). */
+    private static String formatStats(final Island island) {
+        final List<String> parts = new ArrayList<>();
+        statPart(parts, island, "blocks-mined", "mined");
+        statPart(parts, island, "logs-chopped", "logs");
+        statPart(parts, island, "crops-harvested", "crops");
+        statPart(parts, island, "fish-caught", "fish");
+        statPart(parts, island, "mobs-killed", "kills");
+        statPart(parts, island, "generator-harvests", "harvests");
+        return parts.isEmpty() ? "-" : String.join(" · ", parts);
+    }
+
+    private static void statPart(
+            final List<String> parts, final Island island, final String key, final String label) {
+        final long value = island.statOf(key);
+        if (value > 0L) {
+            parts.add(value + " " + label);
+        }
+    }
+
     private String memberNames(final Island island) {
         if (island.members().isEmpty()) {
             return "-";
@@ -310,6 +352,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(messages.get("island.help-team", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-info", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-upgrades", Map.of("label", label)));
+        player.sendMessage(messages.get("island.help-top", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-delete", Map.of("label", label)));
     }
 
@@ -323,7 +366,8 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             final String partial = args[0].toLowerCase();
             for (final String sub : List.of(
-                    "create", "home", "invite", "accept", "leave", "kick", "delete", "info", "upgrades", "help")) {
+                    "create", "home", "invite", "accept", "leave", "kick", "delete", "info", "upgrades",
+                    "top", "help")) {
                 if (sub.startsWith(partial)) {
                     completions.add(sub);
                 }
