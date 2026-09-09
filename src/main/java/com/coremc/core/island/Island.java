@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * A CoreMC Skyblock island (schema version 3).
+ * A CoreMC Skyblock island (schema version 4).
  *
  * Ownership & membership: exactly one owner plus a bounded member set.
  * The island FILE is authoritative for membership; player profiles only
@@ -21,15 +21,21 @@ import java.util.UUID;
  * beyond {@code spacing/2}, enforced by config validation, so islands
  * on adjacent cells can never overlap).
  *
- * Levels & upgrades: {@link #level} is the island prestige level;
- * {@link #upgrades} is a map of upgrade-id -&gt; purchased tier that
- * future CoreMC upgrade systems extend without schema changes.
+ * Levels & upgrades: {@link #level} is the island level, recomputed by
+ * the island level service from {@link #xp}; {@link #upgrades} is a map
+ * of upgrade-id -&gt; purchased tier that future CoreMC upgrade systems
+ * extend without schema changes.
  *
  * Theme & settings (schema v3): the {@link #theme} key records which
  * theme the island was generated with (defaults to "plains" for
  * islands created before themes existed); {@link #settings} holds
  * owner-controlled switches (Settings/Permissions GUI) as
  * boolean-by-string keys that enums guard on read.
+ *
+ * Progression (schema v4): {@link #xp} is the island's lifetime
+ * progression score and {@link #stats} its lifetime counters
+ * (blocks-mined, crops-harvested, ...). Both feed the island level
+ * calculation and the island leaderboard.
  */
 public final class Island {
 
@@ -85,6 +91,8 @@ public final class Island {
     private final Map<String, Integer> upgrades = new LinkedHashMap<>();
     private String theme = DEFAULT_THEME;
     private final Map<String, Boolean> settings = new LinkedHashMap<>();
+    private long xp;
+    private final Map<String, Long> stats = new LinkedHashMap<>();
 
     public Island(
             final UUID islandId,
@@ -166,6 +174,8 @@ public final class Island {
         map.put("center-z", centerZ);
         map.put("border-size", borderSize);
         map.put("level", level);
+        map.put("xp", xp);
+        map.put("stats", new LinkedHashMap<>(stats));
         map.put("upgrades", new LinkedHashMap<>(upgrades));
         map.put("theme", theme);
         map.put("settings", new LinkedHashMap<>(settings));
@@ -187,6 +197,17 @@ public final class Island {
                 asLong(map.get("created-millis")));
         if (map.get("level") instanceof Number level) {
             island.level = Math.max(1, level.intValue());
+        }
+        if (map.get("xp") instanceof Number xp) {
+            island.xp = Math.max(0L, xp.longValue());
+        }
+        final Object statsObject = map.get("stats");
+        if (statsObject instanceof Map<?, ?> rawStats) {
+            for (final Map.Entry<?, ?> entry : rawStats.entrySet()) {
+                if (entry.getValue() instanceof Number amount) {
+                    island.stats.put(String.valueOf(entry.getKey()), Math.max(0L, amount.longValue()));
+                }
+            }
         }
         final Object memberObject = map.get("members");
         if (memberObject instanceof java.util.List<?> list) {
@@ -259,6 +280,34 @@ public final class Island {
 
     public void level(final int level) {
         this.level = Math.max(1, level);
+    }
+
+    /** Lifetime island progression score (feeds the level calculation). */
+    public long xp() {
+        return xp;
+    }
+
+    /** Adds island XP (non-positive amounts are ignored). */
+    public void addXp(final long amount) {
+        if (amount > 0L) {
+            xp += amount;
+        }
+    }
+
+    /** Lifetime island counter for {@code statKey} (0 when never tracked). */
+    public long statOf(final String statKey) {
+        return stats.getOrDefault(statKey, 0L);
+    }
+
+    /** Adds to a lifetime island counter (non-positive amounts are ignored). */
+    public void addStat(final String statKey, final long amount) {
+        if (amount > 0L) {
+            stats.merge(statKey, amount, Long::sum);
+        }
+    }
+
+    public Map<String, Long> stats() {
+        return java.util.Collections.unmodifiableMap(stats);
     }
 
     public Map<String, Integer> upgrades() {
