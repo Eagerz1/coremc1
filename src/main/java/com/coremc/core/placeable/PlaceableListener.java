@@ -188,15 +188,40 @@ public final class PlaceableListener implements Listener {
             final long threshold = now - (effectiveCooldown * 1000L + 60_000L);
             lastHarvest.entrySet().removeIf(e -> e.getValue() < threshold);
         }
+        final com.coremc.core.island.IslandUpgradeEffects boosts = plugin.upgradeEffects();
+        final int everyN = Math.max(0, plugin.getConfig()
+                .getInt("island.upgrades.generator-boost.bonus-product-every-n-tiers", 2));
+        int amount = 1 + com.coremc.core.island.IslandUpgradeEffects.bonusBaseProducts(boost, everyN);
+        if (boost > 0 && java.util.concurrent.ThreadLocalRandom.current().nextDouble()
+                < boosts.generatorBonusYieldChance(boost)) {
+            amount++;
+        }
         final boolean delivered =
-                com.coremc.core.util.ItemDelivery.deliver(player, new ItemStack(def.product()));
+                com.coremc.core.util.ItemDelivery.deliver(player, new ItemStack(def.product(), amount));
         if (!delivered) {
             lastHarvest.remove(rateKey); // don't burn the cooldown for a product the player never got
             plugin.messages().sendPrefixed(player, "purchase.no-space", Map.of());
             return;
         }
+        // Island progression + the rare-product roll (post-delivery: the base yield is safe).
+        plugin.islands().islandAt(loc.getWorld().getName(), loc.getBlockX(), loc.getBlockZ())
+                .filter(island -> island.roleOf(player.getUniqueId()) != null)
+                .ifPresent(island -> plugin.islandProgress().recordGeneratorHarvest(island, player));
+        if (boost > 0 && java.util.concurrent.ThreadLocalRandom.current().nextDouble()
+                < boosts.generatorRareChance(boost)) {
+            boosts.rollGeneratorRare().ifPresent(rare -> {
+                final boolean rareDelivered = com.coremc.core.util.ItemDelivery.deliver(
+                        player, new ItemStack(rare));
+                if (!rareDelivered) {
+                    loc.getWorld().dropItemNaturally(loc, new ItemStack(rare));
+                }
+                plugin.messages().sendPrefixed(player, "gen.harvest-rare",
+                        Map.of("product",
+                                com.coremc.core.island.IslandUpgradeEffects.prettyName(rare)));
+            });
+        }
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.6f, 1.5f);
-        plugin.messages().sendPrefixed(
-                player, "gen.harvest", Map.of("product", def.productName()));
+        plugin.messages().sendPrefixed(player, "gen.harvest",
+                Map.of("amount", String.valueOf(amount), "product", def.productName()));
     }
 }

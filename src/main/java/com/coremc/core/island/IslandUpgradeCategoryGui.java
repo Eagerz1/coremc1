@@ -11,13 +11,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 /**
- * One upgrade category page (27 slots) listing that category's tracks.
+ * One upgrade category page (54 slots) listing that category's tracks.
  *
- * Tracks sit in the middle row stepping by 2 (clear spacing, max 4
- * tracks per category):
- *   10 / 12 / 14 / 16  upgrade tracks (click = buy next tier)
- *   22                 Sky Token balance
- *   26                 back to the category hub
+ *   rows 2-3 (14 slots)  upgrade tracks (click = buy next tier)
+ *   40                   Sky Token balance
+ *   44                   back to the category hub
  *
  * Tracks whose requirements are unmet render locked (redstone block)
  * with the missing prerequisite named; clicking one explains the
@@ -25,9 +23,10 @@ import org.bukkit.inventory.Inventory;
  */
 public final class IslandUpgradeCategoryGui implements Gui {
 
-    private static final int[] TRACK_SLOTS = {10, 12, 14, 16};
-    private static final int SLOT_BALANCE = 22;
-    private static final int SLOT_BACK = 26;
+    private static final int[] TRACK_SLOTS =
+            {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25};
+    private static final int SLOT_BALANCE = 40;
+    private static final int SLOT_BACK = 44;
 
     private final CoreMCPlugin plugin;
     private final UpgradeCatalog.Category category;
@@ -44,14 +43,14 @@ public final class IslandUpgradeCategoryGui implements Gui {
 
     @Override
     public int size() {
-        return 27;
+        return 54;
     }
 
     @Override
     public void build(final Player viewer, final Inventory inventory) {
         final var island = plugin.islands().ownedIsland(viewer.getUniqueId());
         if (island.isEmpty()) {
-            inventory.setItem(13, GuiService.item(
+            inventory.setItem(22, GuiService.item(
                     Material.BARRIER,
                     "&cNot available",
                     List.of("&7Only the island owner can upgrade.")));
@@ -82,7 +81,7 @@ public final class IslandUpgradeCategoryGui implements Gui {
         final int tier = island.upgrades().getOrDefault(track.id(), 0);
         final int max = plugin.coreConfig().upgradeMaxTier(track.id());
         final var cost = plugin.coreConfig().upgradeCost(track.id(), tier);
-        final Map.Entry<String, Integer> locked = unmetRequirement(island, track.id());
+        final Map.Entry<String, Integer> locked = unmetRequirement(island, track.id(), tier + 1);
 
         final List<String> lore = new ArrayList<>(track.summary());
         lore.add("");
@@ -123,10 +122,11 @@ public final class IslandUpgradeCategoryGui implements Gui {
                 lore);
     }
 
-    /** First unmet purchase requirement, or null when the track can be bought. */
-    private Map.Entry<String, Integer> unmetRequirement(final Island island, final String trackId) {
+    /** First unmet gate for buying exactly {@code nextTier}, or null when buyable. */
+    private Map.Entry<String, Integer> unmetRequirement(
+            final Island island, final String trackId, final int nextTier) {
         for (final Map.Entry<String, Integer> requirement :
-                plugin.coreConfig().upgradeRequires(trackId).entrySet()) {
+                plugin.coreConfig().upgradeRequiresAt(trackId, nextTier).entrySet()) {
             if (island.upgrades().getOrDefault(requirement.getKey(), 0) < requirement.getValue()) {
                 return requirement;
             }

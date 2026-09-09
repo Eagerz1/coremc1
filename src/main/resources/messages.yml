@@ -75,6 +75,11 @@ island:
   info-level: "&7Island level: &b{level}"
   info-members: "&7Members &8({current}/{max})&7: &f{members}"
   info-created: "&7Created: &f{value}"
+  info-stats: "&7Stats: &f{stats}"
+  level-up: "Your island reached &blevel {level}&7!"
+  top-header: "&b&lISLAND TOP &8— &7highest level islands"
+  top-entry: "&8#{rank} &f{owner} &8— &blevel {level} &8(&7{score} score&8)"
+  top-empty: "&cNo islands yet."
   help-header: "&b&lISLAND &8— &7commands"
   help-create: "&f/{label} create [theme] &8— &7Create your island (plains, desert, mushroom)"
   help-home: "&f/{label} home &8— &7Teleport to your island"
@@ -82,6 +87,7 @@ island:
   help-team: "&f/{label} accept &8— &7Accept an invite  |  &f/{label} leave &8— &7Leave  |  &f/{label} kick <p>"
   help-info: "&f/{label} info &8— &7Show your island's details"
   help-upgrades: "&f/{label} upgrades &8— &7Open the island upgrades panel"
+  help-top: "&f/{label} top &8— &7Show the highest-level islands"
   help-delete: "&f/{label} delete &8— &7Delete your island (asks for confirmation)"
 
 economy:

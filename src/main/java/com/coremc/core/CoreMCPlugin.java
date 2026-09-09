@@ -267,6 +267,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         omniToolService.load();
         enchantService.load();
         keyService.load();
+        islandActivityEffects.clearCaches();
     }
 
     private void registerCommands() {

@@ -67,6 +67,12 @@ public final class IslandService {
     private final Set<String> retiredCells = ConcurrentHashMap.newKeySet();
     private final java.nio.file.Path retiredCellsFile;
     private final MemberInviteLedger invites = new MemberInviteLedger();
+    /**
+     * Islands with unflushed progression (xp/stats/level). Drained every
+     * minute by the progress timer and on shutdown — per-action disk
+     * writes would be a performance disaster.
+     */
+    private final Set<UUID> dirtyIslands = ConcurrentHashMap.newKeySet();
 
     private final ExecutorService io = Executors.newSingleThreadExecutor(runnable -> {
         final Thread thread = new Thread(runnable, "CoreMC-Islands");
@@ -355,6 +361,7 @@ public final class IslandService {
         }
         unregisterIndexes(removed);
         invites.purgeIsland(removed.islandId());
+        ((com.coremc.core.CoreMCPlugin) plugin).islandActivity().purgeIsland(removed.islandId());
         final int spacing = config.islandSpacing();
         final int[] cell = removed.gridCell(spacing);
         retiredCells.add(GridAssigner.key(cell[0], cell[1], removed.worldName()));

@@ -41,6 +41,9 @@ public final class CoreConfig {
     /** upgrade id -> (required track -> required tier), read from island.upgrades.<id>.requires. */
     private final java.util.Map<String, java.util.Map<String, Integer>> upgradeRequires =
             new java.util.LinkedHashMap<>();
+    /** upgrade id -> (exact tier -> (required track -> required tier)), from requires-tiers. */
+    private final java.util.Map<String, java.util.Map<Integer, java.util.Map<String, Integer>>>
+            upgradeRequiresTiers = new java.util.LinkedHashMap<>();
 
     public CoreConfig(final JavaPlugin plugin) {
         this.plugin = plugin;

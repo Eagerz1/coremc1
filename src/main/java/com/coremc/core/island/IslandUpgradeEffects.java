@@ -1,8 +1,10 @@
 package com.coremc.core.island;
 
 import com.coremc.core.CoreMCPlugin;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -11,6 +13,7 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Ageable;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -25,8 +28,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
 /**
- * Live effects of the non-size upgrade tracks. Role tracks are
- * island-team scoped and config-balanced:
+ * Live effects of the island-category upgrade tracks plus the four
+ * original role tracks. Per-activity tracks (fortune/XP/economy/
+ * speed/rare/mob-cap/...) live in {@link IslandActivityEffects};
+ * island XP/level progression lives in {@link IslandProgressService}.
  *
  *  - Farming / Crop Regrowth: harvesting a fully-grown crop on your
  *    island rolls L*5% — on success the crop replants itself and one
@@ -35,10 +40,13 @@ import org.bukkit.persistence.PersistentDataType;
  *  - Fishing / Fisher's Blessing: a caught fish rolls L*10% for a bonus,
  *  - Slaying / Slayer Force: melee hits on your island deal +L*5%,
  *  - Island / Generator Boost: generator harvest cooldowns on the
- *    island shrink by L*8% (see PlaceableListener),
+ *    island shrink by L*8%, harvests roll L*10% for +1 product, gain
+ *    +1 base product every 2 tiers, and roll L*5% on the rare table
+ *    (see PlaceableListener),
  *  - Island / Spawner Boost: spawner delays on the island shrink by
- *    L*10% (place-time + purchase retune) and spawner cycles roll
- *    L*5% for one extra mob.
+ *    L*10% (place-time + purchase retune), spawner cycles roll L*5%
+ *    for one extra mob, and spawner-mob kills gain drop/XP/rare
+ *    bonuses (see IslandActivityEffects).
  *
  * Also hosts the purchase hook called from
  * {@link IslandService#purchaseUpgrade} so side-effecting tracks
@@ -94,22 +102,92 @@ public final class IslandUpgradeEffects implements Listener {
         return Math.max(1L, Math.round(baseSeconds * (1.0 - pctPerLevel * tier / 100.0)));
     }
 
+    /** +1 base generator product every N boost tiers (non-positive N disables). Pure. */
+    public static int bonusBaseProducts(final int tier, final int everyNTiers) {
+        if (tier <= 0 || everyNTiers <= 0) {
+            return 0;
+        }
+        return tier / everyNTiers;
+    }
+
+    /** Human-readable material name (title-cased) for harvest messages. Pure. */
+    public static String prettyName(final Material material) {
+        final String[] words = material.name().toLowerCase(java.util.Locale.ROOT).split("_");
+        final StringBuilder out = new StringBuilder();
+        for (final String word : words) {
+            if (!out.isEmpty()) {
+                out.append(' ');
+            }
+            out.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+        }
+        return out.toString();
+    }
+
     // ------------------------------------------------------------------ boost lookups
 
     /** Spawner-boost tier of the island containing (world,x,z), or 0 in the wild. */
     public int spawnerBoostTierAt(final String world, final int x, final int z) {
-        return boostTierAt(world, x, z, "spawner-boost");
+        return trackTierAt(world, x, z, "spawner-boost");
     }
 
     /** Generator-boost tier of the island containing (world,x,z), or 0 in the wild. */
     public int generatorBoostTierAt(final String world, final int x, final int z) {
-        return boostTierAt(world, x, z, "generator-boost");
+        return trackTierAt(world, x, z, "generator-boost");
     }
 
-    private int boostTierAt(final String world, final int x, final int z, final String track) {
+    /** Tier of any track on the island containing (world,x,z), or 0 in the wild. */
+    public int trackTierAt(final String world, final int x, final int z, final String track) {
         return plugin.islands().islandAt(world, x, z)
                 .map(island -> island.upgrades().getOrDefault(track, 0))
                 .orElse(0);
+    }
+
+    // ------------------------------------------------------------------ generator boost
+
+    /** Bonus-yield (+1 product) chance for a generator-boost tier. */
+    public double generatorBonusYieldChance(final int tier) {
+        if (tier <= 0) {
+            return 0.0;
+        }
+        return tier * configPercent("generator-boost", "bonus-yield-percent-per-level", 10) / 100.0;
+    }
+
+    /** Rare-product chance for a generator-boost tier. */
+    public double generatorRareChance(final int tier) {
+        if (tier <= 0) {
+            return 0.0;
+        }
+        return tier * configPercent("generator-boost", "rare-percent-per-level", 5) / 100.0;
+    }
+
+    /** Weighted roll on the generator rare-products table (empty when unusable). */
+    public Optional<Material> rollGeneratorRare() {
+        final ConfigurationSection section = plugin.getConfig()
+                .getConfigurationSection("island.upgrades.generator-boost.rare-products");
+        if (section == null) {
+            return Optional.empty();
+        }
+        final List<Map.Entry<Material, Integer>> entries = new ArrayList<>();
+        int total = 0;
+        for (final String key : section.getKeys(false)) {
+            final int weight = Math.max(0, section.getInt(key, 0));
+            final Material material = Material.matchMaterial(key);
+            if (weight > 0 && material != null && material.isItem()) {
+                entries.add(Map.entry(material, weight));
+                total += weight;
+            }
+        }
+        if (entries.isEmpty()) {
+            return Optional.empty();
+        }
+        int pick = ThreadLocalRandom.current().nextInt(total);
+        for (final Map.Entry<Material, Integer> entry : entries) {
+            pick -= entry.getValue();
+            if (pick < 0) {
+                return Optional.of(entry.getKey());
+            }
+        }
+        return Optional.of(entries.get(entries.size() - 1).getKey());
     }
 
     // ------------------------------------------------------------------ spawner boost

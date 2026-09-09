@@ -265,6 +265,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
                         plugin.islands().effectiveBorder(island) + "x"
                                 + plugin.islands().effectiveBorder(island))));
         player.sendMessage(messages.get("island.info-level", Map.of("level", String.valueOf(island.level()))));
+        player.sendMessage(messages.get("island.info-stats", Map.of("stats", formatStats(island))));
         player.sendMessage(messages.get(
                 "island.info-members",
                 Map.of(
