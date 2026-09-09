@@ -6,8 +6,8 @@ import org.bukkit.Material;
 /**
  * One buyable shop row from {@code shop.yml}.
  *
- * All balance data (price, currency, amount) comes from the config file —
- * no prices are ever hard-coded in Java.
+ * All balance data (price, currency, amount, sell price) comes from the
+ * config file — no prices are ever hard-coded in Java.
  */
 public record ShopEntry(
         String id,
@@ -15,4 +15,9 @@ public record ShopEntry(
         String display,
         Currency currency,
         long price,
-        int amount) {}
+        int amount,
+        /**
+         * Pay per item when selling this entry back (right-click). Zero
+         * means the entry cannot be sold.
+         */
+        long sellPrice) {}

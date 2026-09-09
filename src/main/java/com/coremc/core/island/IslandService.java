@@ -279,6 +279,44 @@ public final class IslandService {
         return true;
     }
 
+    /**
+     * Attempts to buy the next level of a buff with Sky Tokens.
+     * Mirrors purchaseUpgrade (maxed / insufficient, immediate flush)
+     * but has no prerequisite gates — buffs are standalone by design.
+     */
+    public boolean purchaseBuff(final org.bukkit.entity.Player player, final Island island, final String buffId) {
+        final int tier = island.buffs().getOrDefault(buffId, 0);
+        final int maxTier = config.buffMaxTier(buffId);
+        if (tier >= maxTier) {
+            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.buff.maxed", Map.of());
+            return false;
+        }
+        final var cost = config.buffCost(buffId, tier);
+        if (cost.isEmpty()) {
+            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.buff.maxed", Map.of());
+            return false;
+        }
+        final var profile = playerData.profileOf(player.getUniqueId()).orElse(null);
+        if (profile == null) {
+            return false;
+        }
+        final long price = cost.getAsLong();
+        if (price > 0L
+                && !((com.coremc.core.CoreMCPlugin) plugin).economy()
+                        .withdraw(profile, com.coremc.core.economy.Currency.SKY_TOKENS, price)) {
+            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.buff.insufficient",
+                    Map.of("price", String.valueOf(price)));
+            return false;
+        }
+        island.setBuffTier(buffId, tier + 1);
+        flush(island);
+        ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.buff.bought",
+                Map.of("buff", BuffCatalog.displayOf(buffId),
+                        "tier", String.valueOf(tier + 1), "max", String.valueOf(maxTier),
+                        "price", String.valueOf(price)));
+        return true;
+    }
+
     /** Island level placeholders (for future PlaceholderAPI binding; /is info uses them today). */
     public Map<String, String> placeholdersOf(final UUID player) {
         final Optional<Island> island = islandOf(player);

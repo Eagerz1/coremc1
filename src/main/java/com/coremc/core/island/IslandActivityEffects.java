@@ -45,13 +45,16 @@ import org.bukkit.potion.PotionEffectType;
  * the actor's team owns. All chances/amounts come from
  * {@code island.upgrades.<track>} (code fallbacks mirror the defaults).
  *
- * Stacking (intentional, never accidental):
+ * Stacking (intentional, never accidental — the pipeline is BASE →
+ * UPGRADE → BUFF → ROLE → ENCHANT → TEMP):
  *  - island currency grants ride the enchant currency funnel, so role
- *    MULTIPLIERs apply on top — enchant × island, one code path;
+ *    MULTIPLIERs and token/credit buffs apply on top — enchant ×
+ *    island × buff, one code path;
  *  - island reward tables grant through the same funnels (currency,
- *    XP, souls, keys);
+ *    XP, souls, keys); ITEM amounts scale with the activity buff here;
  *  - island XP tracks multiply inside the single XP funnel
- *    (RoleService), after enchant/combo boosts.
+ *    (RoleService), after enchant/combo boosts, beside the xp-boost;
+ *  - rare/treasure chances multiply with island-luck here (capped).
  *
  * Anti-abuse: spawner-born mobs are excluded from the wild-kill
  * tracks (slayer-fortune, slaying-tokens/credits, rare-drops) and get
@@ -135,6 +138,33 @@ public final class IslandActivityEffects implements Listener {
     }
 
     /**
+     * Scales an island grant by the player's buff (BUFF stage, applied
+     * exactly once per grant; probabilistic rounding keeps fractions fair).
+     */
+    private int scaleFor(final Player player, final String buffId, final int base) {
+        return IslandBuffService.scaleCount(base, plugin.islandBuffs().mult(player, buffId));
+    }
+
+    /** Rare/treasure chance with island-luck applied (capped at 95%). */
+    private boolean luckRoll(final Player player, final double chance) {
+        return roll(Math.min(0.95, chance * plugin.islandBuffs().luckMult(player)));
+    }
+
+    /** Activity buff id for a role category (null never matches a buff). */
+    private static String buffForCategory(final RoleCategory category) {
+        if (category == null) {
+            return null;
+        }
+        return switch (category) {
+            case MINING -> "mining-boost";
+            case FARMING -> "farming-boost";
+            case FISHING -> "fishing-boost";
+            case SLAYING -> "slaying-boost";
+            case LOGGING -> "logging-boost";
+        };
+    }
+
+    /**
      * Haste amplifier for a speed track: -1 (no effect) at tier 0,
      * 0 (Haste I) at 1-2, 1 (Haste II) at 3-4, 2 (Haste III) at 5+.
      */
@@ -178,7 +208,7 @@ public final class IslandActivityEffects implements Listener {
         final int fortune = tierOf(island, "mining-fortune");
         if (fortune > 0 && roll(fortune
                 * cfgPercent("mining-fortune", "chance-percent-per-level", 10) / 100.0)) {
-            bonusCopies(block, 1);
+            bonusCopies(block, scaleFor(player, "mining-boost", 1));
         }
         tryCurrency(player, island, "mining-tokens", Currency.SKY_TOKENS);
         tryCurrency(player, island, "mining-credits", Currency.CREDITS);
@@ -192,14 +222,15 @@ public final class IslandActivityEffects implements Listener {
         final int fortune = tierOf(island, "farming-fortune");
         if (fortune > 0 && roll(fortune
                 * cfgPercent("farming-fortune", "chance-percent-per-level", 10) / 100.0)) {
-            bonusCopies(block, 1);
+            bonusCopies(block, scaleFor(player, "farming-boost", 1));
         }
         final int yieldTier = tierOf(island, "crop-yield");
         if (yieldTier > 0) {
             final Material crop = CROP_ITEMS.get(block.getType());
             if (crop != null) {
                 block.getWorld().dropItemNaturally(
-                        block.getLocation(), new ItemStack(crop, Math.max(1, yieldTier / 2)));
+                        block.getLocation(),
+                        new ItemStack(crop, scaleFor(player, "farming-boost", Math.max(1, yieldTier / 2))));
             }
         }
         tryCurrency(player, island, "farming-tokens", Currency.SKY_TOKENS);
@@ -214,17 +245,19 @@ public final class IslandActivityEffects implements Listener {
         final int fortune = tierOf(island, "logging-fortune");
         if (fortune > 0 && roll(fortune
                 * cfgPercent("logging-fortune", "chance-percent-per-level", 10) / 100.0)) {
-            block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(block.getType()));
+            block.getWorld().dropItemNaturally(block.getLocation(),
+                    new ItemStack(block.getType(), scaleFor(player, "logging-boost", 1)));
         }
         final int treeYield = tierOf(island, "tree-yield");
         if (treeYield > 0 && roll(treeYield
                 * cfgPercent("tree-yield", "chance-percent-per-level", 10) / 100.0)) {
-            block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(block.getType(), 2));
+            block.getWorld().dropItemNaturally(block.getLocation(),
+                    new ItemStack(block.getType(), scaleFor(player, "logging-boost", 2)));
         }
         tryCurrency(player, island, "logging-tokens", Currency.SKY_TOKENS);
         tryCurrency(player, island, "logging-credits", Currency.CREDITS);
         final int rare = tierOf(island, "rare-wood");
-        if (rare > 0 && roll(rare * cfgPercent("rare-wood", "chance-percent-per-level", 5) / 100.0)) {
+        if (rare > 0 && luckRoll(player, rare * cfgPercent("rare-wood", "chance-percent-per-level", 5) / 100.0)) {
             grantTable(player, "rare-wood", "rewards", RoleCategory.LOGGING, false);
         }
         final int growth = tierOf(island, "tree-growth");
@@ -361,15 +394,18 @@ public final class IslandActivityEffects implements Listener {
         final int fortune = tierOf(value, "fishing-fortune");
         if (fortune > 0 && roll(fortune
                 * cfgPercent("fishing-fortune", "chance-percent-per-level", 10) / 100.0)) {
-            at.getWorld().dropItemNaturally(hooked.getLocation(), hooked.getItemStack().clone());
+            final int copies = scaleFor(player, "fishing-boost", 1);
+            for (int copy = 0; copy < copies; copy++) {
+                at.getWorld().dropItemNaturally(hooked.getLocation(), hooked.getItemStack().clone());
+            }
         }
         final int treasure = tierOf(value, "fishing-treasure");
         if (treasure > 0
-                && roll(treasure * cfgPercent("fishing-treasure", "chance-percent-per-level", 5) / 100.0)) {
+                && luckRoll(player, treasure * cfgPercent("fishing-treasure", "chance-percent-per-level", 5) / 100.0)) {
             grantTable(player, "fishing-treasure", "rewards", RoleCategory.FISHING, false);
         }
         final int rare = tierOf(value, "fishing-rare");
-        if (rare > 0 && roll(rare * cfgPercent("fishing-rare", "chance-percent-per-level", 5) / 100.0)) {
+        if (rare > 0 && luckRoll(player, rare * cfgPercent("fishing-rare", "chance-percent-per-level", 5) / 100.0)) {
             at.getWorld().dropItemNaturally(hooked.getLocation(), hooked.getItemStack().clone());
             plugin.playerData().profileOf(player.getUniqueId()).ifPresent(profile -> plugin.roles()
                     .awardCategoryXp(player, profile, RoleCategory.FISHING,
@@ -410,18 +446,25 @@ public final class IslandActivityEffects implements Listener {
         final int fortune = tierOf(island.get(), "slayer-fortune");
         if (fortune > 0 && roll(fortune
                 * cfgPercent("slayer-fortune", "chance-percent-per-level", 10) / 100.0)) {
-            final List<ItemStack> extras = new ArrayList<>();
+            // Snapshot first (adding while iterating would corrupt the drop list),
+            // then repeat the snapshot for every buff-scaled bonus round.
+            final List<ItemStack> base = new ArrayList<>();
             for (final ItemStack stack : event.getDrops()) {
                 if (stack != null && !stack.getType().isAir() && stack.getAmount() > 0) {
-                    extras.add(stack.clone());
+                    base.add(stack.clone());
                 }
             }
-            event.getDrops().addAll(extras);
+            final int rounds = scaleFor(killer, "slaying-boost", 1);
+            for (int round = 0; round < rounds; round++) {
+                for (final ItemStack stack : base) {
+                    event.getDrops().add(stack.clone());
+                }
+            }
         }
         tryCurrency(killer, island.get(), "slaying-tokens", Currency.SKY_TOKENS);
         tryCurrency(killer, island.get(), "slaying-credits", Currency.CREDITS);
         final int rare = tierOf(island.get(), "rare-drops");
-        if (rare > 0 && roll(rare * cfgPercent("rare-drops", "chance-percent-per-level", 5) / 100.0)) {
+        if (rare > 0 && luckRoll(killer, rare * cfgPercent("rare-drops", "chance-percent-per-level", 5) / 100.0)) {
             grantTable(killer, "rare-drops", "rewards", RoleCategory.SLAYING, false);
         }
     }
@@ -447,7 +490,7 @@ public final class IslandActivityEffects implements Listener {
                     * cfgPercent("spawner-boost", "xp-percent-per-level", 10) / 100.0;
             event.setDroppedExp(Math.max(dropped, (int) Math.round(dropped * mult)));
         }
-        if (roll(tier * cfgPercent("spawner-boost", "rare-percent-per-level", 5) / 100.0)) {
+        if (luckRoll(killer, tier * cfgPercent("spawner-boost", "rare-percent-per-level", 5) / 100.0)) {
             grantTable(killer, "spawner-boost", "rare-rewards", RoleCategory.SLAYING, true);
         }
     }
@@ -573,6 +616,7 @@ public final class IslandActivityEffects implements Listener {
         if (profile == null) {
             return;
         }
+        final String categoryBuff = buffForCategory(category);
         for (final RewardRoll roll : rewardTable(track, tableKey, spawnerSafe)) {
             if (spawnerSafe
                     && roll.type() != RewardRoll.RewardType.ITEM
@@ -589,7 +633,10 @@ public final class IslandActivityEffects implements Listener {
                     if (material == null || !material.isItem()) {
                         continue;
                     }
-                    plugin.enchantEngine().giveOrDrop(player, new ItemStack(material, amount));
+                    final int granted = categoryBuff == null
+                            ? amount
+                            : scaleFor(player, categoryBuff, amount);
+                    plugin.enchantEngine().giveOrDrop(player, new ItemStack(material, granted));
                 }
                 case TOKENS -> plugin.enchantEngine().grantCurrency(
                         player, profile, Currency.SKY_TOKENS, amount, profile.roleId(), true);

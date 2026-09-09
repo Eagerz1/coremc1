@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * A CoreMC Skyblock island (schema version 4).
+ * A CoreMC Skyblock island (schema version 5).
  *
  * Ownership & membership: exactly one owner plus a bounded member set.
  * The island FILE is authoritative for membership; player profiles only
@@ -27,7 +27,7 @@ import java.util.UUID;
  * extend without schema changes.
  *
  * Theme & settings (schema v3): the {@link #theme} key records which
- * theme the island was generated with (defaults to "plains" for
+ * theme the island was generated with (defaults to \"plains\" for
  * islands created before themes existed); {@link #settings} holds
  * owner-controlled switches (Settings/Permissions GUI) as
  * boolean-by-string keys that enums guard on read.
@@ -36,6 +36,10 @@ import java.util.UUID;
  * progression score and {@link #stats} its lifetime counters
  * (blocks-mined, crops-harvested, ...). Both feed the island level
  * calculation and the island leaderboard.
+ *
+ * Buffs (schema v5): {@link #buffs} maps buff-id -&gt; purchased level
+ * for the 12 island buffs. Older files simply have no {@code buffs}
+ * key and load with every buff at 0 — no migration step needed.
  */
 public final class Island {
 
@@ -89,6 +93,7 @@ public final class Island {
 
     private int level = DEFAULT_LEVEL;
     private final Map<String, Integer> upgrades = new LinkedHashMap<>();
+    private final Map<String, Integer> buffs = new LinkedHashMap<>();
     private String theme = DEFAULT_THEME;
     private final Map<String, Boolean> settings = new LinkedHashMap<>();
     private long xp;
@@ -177,6 +182,7 @@ public final class Island {
         map.put("xp", xp);
         map.put("stats", new LinkedHashMap<>(stats));
         map.put("upgrades", new LinkedHashMap<>(upgrades));
+        map.put("buffs", new LinkedHashMap<>(buffs));
         map.put("theme", theme);
         map.put("settings", new LinkedHashMap<>(settings));
         map.put("created-millis", createdMillis);
@@ -220,6 +226,14 @@ public final class Island {
             for (final Map.Entry<?, ?> entry : raw.entrySet()) {
                 if (entry.getValue() instanceof Number tier) {
                     island.upgrades.put(String.valueOf(entry.getKey()), tier.intValue());
+                }
+            }
+        }
+        final Object buffObject = map.get("buffs");
+        if (buffObject instanceof Map<?, ?> rawBuffs) {
+            for (final Map.Entry<?, ?> entry : rawBuffs.entrySet()) {
+                if (entry.getValue() instanceof Number tier) {
+                    island.buffs.put(String.valueOf(entry.getKey()), Math.max(0, tier.intValue()));
                 }
             }
         }
@@ -316,6 +330,15 @@ public final class Island {
 
     public void setUpgradeTier(final String upgradeId, final int tier) {
         upgrades.put(Objects.requireNonNull(upgradeId, "upgradeId"), Math.max(0, tier));
+    }
+
+    /** Buff-id -&gt; purchased level for the 12 island buffs (missing = 0). */
+    public Map<String, Integer> buffs() {
+        return java.util.Collections.unmodifiableMap(buffs);
+    }
+
+    public void setBuffTier(final String buffId, final int tier) {
+        buffs.put(Objects.requireNonNull(buffId, "buffId"), Math.max(0, tier));
     }
 
     /** The theme key this island was generated with (never null). */

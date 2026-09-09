@@ -32,6 +32,10 @@ import org.bukkit.inventory.ItemStack;
  *  - explosions disarm placed blocks (registry cleared; item destroyed),
  *  - right-clicking a placed generator harvests its product with a
  *    per-block cooldown so farms tick without redstone exploits.
+ *
+ * Buff pipeline: spawner delays multiply with the island spawner-boost
+ * at place time, harvest amounts scale with the generator-boost, and
+ * the rare-product chance rolls with island-luck — each exactly once.
  */
 public final class PlaceableListener implements Listener {
 
@@ -69,8 +73,11 @@ public final class PlaceableListener implements Listener {
                             block.getWorld().getName(), block.getX(), block.getZ());
                     final int pct = Math.max(0, plugin.getConfig().getInt(
                             "island.upgrades.spawner-boost.delay-reduction-percent-per-level", 10));
-                    final int delay = com.coremc.core.island.IslandUpgradeEffects
+                    final int tuned = com.coremc.core.island.IslandUpgradeEffects
                             .reducedDelayTicks(ref.tier().spawnDelayTicks(), boost, pct);
+                    // BUFF stage: the island spawner-boost multiplies the tuned delay.
+                    final int delay = Math.max(20, (int) Math.round(
+                            tuned * plugin.islandBuffs().spawnerDelayMult(event.getPlayer())));
                     spawnerState.setMinSpawnDelay(delay);
                     spawnerState.setMaxSpawnDelay(delay);
                     spawnerState.update(true);
@@ -196,6 +203,9 @@ public final class PlaceableListener implements Listener {
                 < boosts.generatorBonusYieldChance(boost)) {
             amount++;
         }
+        // BUFF stage: the island generator-boost scales the harvest (once).
+        amount = com.coremc.core.island.IslandBuffService.scaleCount(
+                amount, plugin.islandBuffs().generatorMult(player));
         final boolean delivered =
                 com.coremc.core.util.ItemDelivery.deliver(player, new ItemStack(def.product(), amount));
         if (!delivered) {
@@ -207,8 +217,9 @@ public final class PlaceableListener implements Listener {
         plugin.islands().islandAt(loc.getWorld().getName(), loc.getBlockX(), loc.getBlockZ())
                 .filter(island -> island.roleOf(player.getUniqueId()) != null)
                 .ifPresent(island -> plugin.islandProgress().recordGeneratorHarvest(island, player));
-        if (boost > 0 && java.util.concurrent.ThreadLocalRandom.current().nextDouble()
-                < boosts.generatorRareChance(boost)) {
+        final double rareChance = Math.min(0.95,
+                boosts.generatorRareChance(boost) * plugin.islandBuffs().luckMult(player));
+        if (boost > 0 && java.util.concurrent.ThreadLocalRandom.current().nextDouble() < rareChance) {
             boosts.rollGeneratorRare().ifPresent(rare -> {
                 final boolean rareDelivered = com.coremc.core.util.ItemDelivery.deliver(
                         player, new ItemStack(rare));

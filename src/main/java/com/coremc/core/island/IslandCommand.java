@@ -32,6 +32,7 @@ import org.bukkit.entity.Player;
  *   delete            permanently delete your island (two-step confirm)
  *   info              island position, border, level, members, creation
  *   upgrades          open the island upgrades panel
+ *   buffs             open the island buffs panel
  *   help              this summary
  *
  * All island state lives in {@link IslandService}; this class only
@@ -81,6 +82,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             case "delete" -> delete(player);
             case "info" -> info(player);
             case "upgrades" -> plugin.gui().open(player, new IslandUpgradesGui(plugin));
+            case "buffs" -> plugin.gui().open(player, new IslandBuffsGui(plugin));
             case "top" -> top(player);
             default -> help(player, label);
         }
@@ -389,6 +391,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(messages.get("island.help-team", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-info", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-upgrades", Map.of("label", label)));
+        player.sendMessage(messages.get("island.help-buffs", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-top", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-delete", Map.of("label", label)));
     }
@@ -404,7 +407,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             final String partial = args[0].toLowerCase();
             for (final String sub : List.of(
                     "create", "home", "visit", "invite", "accept", "leave", "kick", "delete", "info", "upgrades",
-                    "top", "help")) {
+                    "buffs", "top", "help")) {
                 if (sub.startsWith(partial)) {
                     completions.add(sub);
                 }

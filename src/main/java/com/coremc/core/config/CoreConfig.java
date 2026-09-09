@@ -48,6 +48,12 @@ public final class CoreConfig {
     private final java.util.Map<String, Integer> upgradeRequiresIslandLevel = new java.util.LinkedHashMap<>();
     /** upgrade id -> required best-role level (any role) to buy any tier (0 = no gate). */
     private final java.util.Map<String, Integer> upgradeRequiresRoleLevel = new java.util.LinkedHashMap<>();
+    /** buff id -> max level, read from island-buffs.<id>.max-tier. */
+    private final java.util.Map<String, Integer> buffMaxTiers = new java.util.LinkedHashMap<>();
+    /** buff id -> per-level Sky Token costs, read from island-buffs.<id>.costs. */
+    private final java.util.Map<String, java.util.List<Long>> buffCosts = new java.util.LinkedHashMap<>();
+    /** buff id -> percent per level, read from island-buffs.<id>.percent-per-level. */
+    private final java.util.Map<String, Integer> buffPercents = new java.util.LinkedHashMap<>();
 
     public CoreConfig(final JavaPlugin plugin) {
         this.plugin = plugin;
@@ -204,6 +210,33 @@ public final class CoreConfig {
             }
         }
 
+        // Island buff table: every island-buffs.<id> section with max-tier,
+        // costs and percent-per-level becomes a purchasable buff. Buffs are
+        // standalone (no prerequisite gates) by design.
+        this.buffMaxTiers.clear();
+        this.buffCosts.clear();
+        this.buffPercents.clear();
+        final org.bukkit.configuration.ConfigurationSection buffsSection =
+                config.getConfigurationSection("island-buffs");
+        if (buffsSection != null) {
+            for (final String id : buffsSection.getKeys(false)) {
+                if (!buffsSection.isConfigurationSection(id)) {
+                    continue;
+                }
+                final int maxTier = Math.max(0, buffsSection.getInt(id + ".max-tier", 0));
+                final java.util.List<Long> costs = longCosts(
+                        config, "island-buffs." + id + ".costs", java.util.List.of());
+                if (costs.size() < maxTier) {
+                    plugin.getLogger().warning("island-buffs." + id + ".costs has only " + costs.size()
+                            + " entr(y/ies) for max-tier " + maxTier + "; buff capped at " + costs.size()
+                            + " purchasable levels.");
+                }
+                this.buffMaxTiers.put(id, maxTier);
+                this.buffCosts.put(id, costs);
+                this.buffPercents.put(id, Math.max(0, buffsSection.getInt(id + ".percent-per-level", 0)));
+            }
+        }
+
         this.roleXpMultiplier = Math.max(0.0, config.getDouble("roles.xp-multiplier", 1.0));
         final double share = config.getDouble("roles.universal-share", 0.25);
         this.roleUniversalShare = share < 0 ? 0.25 : Math.min(1.0, share);
@@ -344,6 +377,25 @@ public final class CoreConfig {
     /** Required best-role level (any role) to buy any tier of this track (0 = no gate). */
     public int upgradeRequiresRoleLevel(final String upgradeId) {
         return upgradeRequiresRoleLevel.getOrDefault(upgradeId, 0);
+    }
+
+    /** Max level of a buff (0 if the buff is not configured). */
+    public int buffMaxTier(final String buffId) {
+        return buffMaxTiers.getOrDefault(buffId, 0);
+    }
+
+    /** Price (Sky Tokens) for buying buff level {@code tier+1}, or empty past the configured list. */
+    public java.util.OptionalLong buffCost(final String buffId, final int tier) {
+        final java.util.List<Long> costs = buffCosts.get(buffId);
+        if (costs == null || tier < 0 || tier >= costs.size()) {
+            return java.util.OptionalLong.empty();
+        }
+        return java.util.OptionalLong.of(costs.get(tier));
+    }
+
+    /** Percent per level of a buff (0 when unconfigured). */
+    public int buffPercent(final String buffId) {
+        return buffPercents.getOrDefault(buffId, 0);
     }
 
     private static java.util.List<Long> longCosts(

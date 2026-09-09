@@ -79,6 +79,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private com.coremc.core.island.IslandUpgradeEffects islandUpgradeEffects;
     private com.coremc.core.island.IslandActivityEffects islandActivityEffects;
     private com.coremc.core.island.IslandProgressService islandProgressService;
+    private com.coremc.core.island.IslandBuffService islandBuffService;
 
     /**
      * Creates (or attaches to) the dedicated island world. Islands live in
@@ -158,6 +159,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.islandActivityEffects = new com.coremc.core.island.IslandActivityEffects(this);
         this.islandProgressService = new com.coremc.core.island.IslandProgressService(this);
         this.islandProgressService.start(taskService);
+        this.islandBuffService = new com.coremc.core.island.IslandBuffService(this);
         if (this.islandService.islandWorld().isEmpty()) {
             getLogger().warning("Island world '" + coreConfig.islandWorldName()
                     + "' does not exist — /island commands will report it as unavailable.");
@@ -410,6 +412,11 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Island stats, XP and level progression. */
     public com.coremc.core.island.IslandProgressService islandProgress() {
         return islandProgressService;
+    }
+
+    /** Island buff multipliers (the BUFF pipeline stage). */
+    public com.coremc.core.island.IslandBuffService islandBuffs() {
+        return islandBuffService;
     }
 
     /** GUI runtime. */

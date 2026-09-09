@@ -23,12 +23,17 @@ import org.bukkit.inventory.ItemStack;
 /**
  * The shop catalogue: loads {@code plugins/CoreMC/shop.yml} (all prices and
  * items live in that file), serves category/lookup queries and executes
- * purchases.
+ * purchases and sales.
  *
  * Purchase flow is atomic-by-construction: withdraw first (the economy
  * service rolls back nothing and returns false when funds are short), then
  * deliver; inventory overflow spills into the ender chest with a notice —
  * items are never dropped on the ground, never silently deleted.
+ *
+ * Sale flow is atomic the other way round: the deposit lands FIRST (a
+ * failed/overflowing deposit leaves the inventory untouched), then the
+ * counted stock is removed. Only plain stock sells: enchanted, damaged
+ * or CoreMC-tagged items are never accepted.
  */
 public final class ShopService {
 
@@ -83,8 +88,9 @@ public final class ShopService {
         }
         final long price = Math.max(0L, def.getLong("price", 0L));
         final int amount = Math.max(1, def.getInt("amount", 1));
+        final long sellPrice = Math.max(0L, def.getLong("sell-price", 0L));
         final String display = def.getString("display", "&f" + material.name());
-        return Optional.of(new ShopEntry(id, material, display, currency, price, amount));
+        return Optional.of(new ShopEntry(id, material, display, currency, price, amount, sellPrice));
     }
 
     /** Same upgrade-safety as config.yml: new jar keys flow into the disk file. */
@@ -151,5 +157,84 @@ public final class ShopService {
                 "price", price,
                 "currency", currencyName));
         return true;
+    }
+
+    /**
+     * Sells every matching item in the player's inventory back to the
+     * shop at the entry's per-item sell price. Proceeds ride the
+     * sell-boost multiplier for members on their own island.
+     *
+     * @return true when at least one item sold
+     */
+    public boolean sell(final Player player, final ShopEntry entry) {
+        final PlayerProfile profile = plugin.playerData().profileOf(player.getUniqueId()).orElse(null);
+        if (profile == null) {
+            plugin.messages().sendPrefixed(player, "shop.unavailable", Map.of());
+            return false;
+        }
+        final String itemName = ColorUtil.colorize(entry.display());
+        if (entry.sellPrice() <= 0L) {
+            plugin.messages().sendPrefixed(player, "shop.unsellable", Map.of("item", itemName));
+            return false;
+        }
+        int count = 0;
+        for (final ItemStack item : player.getInventory().getContents()) {
+            if (item != null && item.getType() == entry.material() && sellable(item)) {
+                count += item.getAmount();
+            }
+        }
+        if (count <= 0) {
+            plugin.messages().sendPrefixed(player, "shop.nothing-to-sell", Map.of("item", itemName));
+            return false;
+        }
+        final double mult = plugin.islandBuffs().sellMult(player);
+        final double raw = count * (double) entry.sellPrice() * mult;
+        final long total = raw >= (double) Long.MAX_VALUE ? Long.MAX_VALUE : Math.max(1L, Math.round(raw));
+        try {
+            plugin.economy().deposit(profile, entry.currency(), total);
+        } catch (final IllegalArgumentException overflow) {
+            // Balance cannot hold the proceeds: inventory untouched, nothing sold.
+            plugin.messages().sendPrefixed(player, "shop.overflowed", Map.of());
+            return false;
+        }
+        int remaining = count;
+        final var inventory = player.getInventory();
+        final ItemStack[] contents = inventory.getContents();
+        for (int slot = 0; slot < contents.length && remaining > 0; slot++) {
+            final ItemStack item = contents[slot];
+            if (item == null || item.getType() != entry.material() || !sellable(item)) {
+                continue;
+            }
+            final int take = Math.min(remaining, item.getAmount());
+            item.setAmount(item.getAmount() - take);
+            remaining -= take;
+            inventory.setItem(slot, item.getAmount() <= 0 ? null : item);
+        }
+        plugin.messages().sendPrefixed(player, "shop.sold", Map.of(
+                "amount", String.valueOf(count - remaining),
+                "item", itemName,
+                "price", String.format(Locale.ROOT, "%,d", total),
+                "currency", entry.currency().displayName()));
+        return true;
+    }
+
+    /**
+     * Plain stock only: matching material (checked by the caller),
+     * unenchanted, undamaged, and carrying no CoreMC persistent data
+     * (OmniTools, keys, placeables and soulbound gear never sell —
+     * even if a matching shop entry is ever added).
+     */
+    private static boolean sellable(final ItemStack item) {
+        if (!item.getEnchantments().isEmpty()) {
+            return false;
+        }
+        final var meta = item.getItemMeta();
+        if (meta == null) {
+            return true;
+        }
+        if (meta instanceof org.bukkit.inventory.meta.Damageable damageable && damageable.hasDamage()) {
+            return false;
+        }
+        return meta.getPersistentDataContainer().isEmpty();
     }
 }

@@ -377,6 +377,10 @@ public final class EnchantEngine implements Listener {
         if (applyCombo) {
             mult *= comboMultiplier(profile, roleKey, "CURRENCY");
         }
+        // BUFF stage of the pipeline: token/credit boosts multiply here,
+        // exactly once in this single currency funnel, for members
+        // standing on their own island (1.0 everywhere else).
+        mult *= plugin.islandBuffs().currencyMult(player, currency);
         final long total = Math.max(1L, Math.round(base * mult));
         try {
             plugin.economy().deposit(profile, currency, total);

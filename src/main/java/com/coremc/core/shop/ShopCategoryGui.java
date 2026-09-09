@@ -15,6 +15,10 @@ import org.bukkit.inventory.Inventory;
  * One 54-slot category page (double chest). Slot positions are hard
  * constants — the grid walks 5 rows of 9, entries sit at 10..16 / 19..25 /
  * 28..34 / 37..43 (4×7 = 28 max items), navigation at 45 (back) and 53 (close).
+ *
+ * Left-click buys, right-click sells matching inventory stock back at
+ * the entry's sell price (when sellable; members on their own island
+ * earn the sell-boost on top).
  */
 public final class ShopCategoryGui implements Gui {
 
@@ -61,6 +65,10 @@ public final class ShopCategoryGui implements Gui {
                     + " &7" + entry.currency().displayName());
             lore.add("");
             lore.add("&eClick to purchase.");
+            if (entry.sellPrice() > 0L) {
+                lore.add("&eRight-click to sell: &a" + String.format(Locale.ROOT, "%,d", entry.sellPrice())
+                        + " &7" + entry.currency().displayName() + " &7each.");
+            }
             inventory.setItem(ITEM_SLOTS[i], GuiService.item(entry.material(), entry.display(), lore));
         }
         inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&e&lBack", List.of("&7Return to the shop.")));
@@ -89,6 +97,24 @@ public final class ShopCategoryGui implements Gui {
                 return true; // success re-render (balance surfaces elsewhere stay fresh)
             }
             return false; // refused: keep panel, message was sent
+        }
+        return false;
+    }
+
+    @Override
+    public boolean onRightClick(final Player viewer, final int slot) {
+        if (slot == SLOT_CLOSE || slot == SLOT_BACK) {
+            return onClick(viewer, slot);
+        }
+        for (int i = 0; i < ITEM_SLOTS.length; i++) {
+            if (slot != ITEM_SLOTS[i]) {
+                continue;
+            }
+            final List<ShopEntry> entries = plugin.shop().entriesOf(category);
+            if (i >= entries.size()) {
+                return false;
+            }
+            return plugin.shop().sell(viewer, entries.get(i));
         }
         return false;
     }

@@ -423,6 +423,63 @@ omnitool:
       costs: [50000]
 
 # --------------------------------------------------------------------------
+# ISLAND BUFFS (/is buffs)
+# The 12 permanent island-wide boosts, bought with Sky Tokens. Buffs are
+# flat percentage multipliers (percent-per-level × level) applied in the
+# BUFF stage of the pipeline, for members standing on their own island.
+# max-tier + costs + percent-per-level per buff; identity lives in code.
+# --------------------------------------------------------------------------
+island-buffs:
+  mining-boost:
+    max-tier: 5
+    costs: [100, 200, 400, 700, 1100]
+    percent-per-level: 10
+  farming-boost:
+    max-tier: 5
+    costs: [100, 200, 400, 700, 1100]
+    percent-per-level: 10
+  fishing-boost:
+    max-tier: 5
+    costs: [100, 200, 400, 700, 1100]
+    percent-per-level: 10
+  slaying-boost:
+    max-tier: 5
+    costs: [100, 200, 400, 700, 1100]
+    percent-per-level: 10
+  logging-boost:
+    max-tier: 5
+    costs: [100, 200, 400, 700, 1100]
+    percent-per-level: 10
+  generator-boost:
+    max-tier: 5
+    costs: [150, 300, 500, 800, 1200]
+    percent-per-level: 10
+  spawner-boost:
+    max-tier: 5
+    costs: [150, 300, 500, 800, 1200]
+    percent-per-level: 8
+  token-boost:
+    max-tier: 5
+    costs: [200, 400, 700, 1100, 1600]
+    percent-per-level: 8
+  credit-boost:
+    max-tier: 5
+    costs: [200, 400, 700, 1100, 1600]
+    percent-per-level: 8
+  xp-boost:
+    max-tier: 5
+    costs: [150, 300, 500, 800, 1200]
+    percent-per-level: 10
+  sell-boost:
+    max-tier: 5
+    costs: [200, 400, 700, 1100, 1600]
+    percent-per-level: 5
+  island-luck:
+    max-tier: 5
+    costs: [250, 500, 900, 1400, 2000]
+    percent-per-level: 5
+
+# --------------------------------------------------------------------------
 # GENERATOR MARKET (/gens)
 # Generators are bought with Credits, placed in the world, and right-clicked
 # to harvest their product after a cooldown. All balance lives here.

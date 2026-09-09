@@ -20,11 +20,11 @@ import org.bukkit.inventory.Inventory;
  *   10 Home / Create     11 Members      12 Info      13 Upgrades
  *   14 Settings          15 Permissions  16 Invite    22 Delete
  *   19 Gens              20 Spawners     21 Border    23 Visit
- *   24 Leave
+ *   24 Leave             25 Buffs
  * </pre>
  * Actions route through the chat commands (single source of behaviour)
  * except the panel-to-panel opens (theme select / members / upgrades /
- * settings / permissions / gens / spawners).
+ * buffs / settings / permissions / gens / spawners).
  */
 public final class IslandMainGui implements Gui {
 
@@ -41,10 +41,11 @@ public final class IslandMainGui implements Gui {
     private static final int SLOT_BORDER = 21;
     private static final int SLOT_VISIT = 23;
     private static final int SLOT_LEAVE = 24;
+    private static final int SLOT_BUFFS = 25;
 
     /** All actionable slots — exported so audits and tests never duplicate the layout. */
     public static final java.util.Set<Integer> ACTION_SLOTS =
-            java.util.Set.of(10, 11, 12, 13, 14, 15, 16, 22, 19, 20, 21, 23, 24);
+            java.util.Set.of(10, 11, 12, 13, 14, 15, 16, 22, 19, 20, 21, 23, 24, 25);
 
     private final CoreMCPlugin plugin;
 
@@ -166,6 +167,12 @@ public final class IslandMainGui implements Gui {
                         : (owner
                                 ? List.of("&8Owners cannot leave —", "&8delete the island instead.")
                                 : List.of("&7Leave this island.", "", "&eClick to leave."))));
+        inventory.setItem(SLOT_BUFFS, GuiService.item(
+                Material.POTION,
+                "&bBuffs",
+                hasIsland
+                        ? List.of("&7Island-wide multipliers: drops,", "&7currency, XP, gens, spawners.", "", "&eClick to open buffs.")
+                        : List.of("&8Create an island first.")));
 
         GuiService.fillGaps(inventory);
     }
@@ -231,6 +238,11 @@ public final class IslandMainGui implements Gui {
                 if (hasIsland) {
                     viewer.closeInventory();
                     viewer.performCommand("is leave");
+                }
+            }
+            case SLOT_BUFFS -> {
+                if (hasIsland) {
+                    plugin.gui().open(viewer, new IslandBuffsGui(plugin));
                 }
             }
             default -> {

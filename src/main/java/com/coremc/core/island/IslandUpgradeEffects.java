@@ -228,7 +228,10 @@ public final class IslandUpgradeEffects implements Listener {
                 continue;
             }
             plugin.spawners().tierFor(placement.id()).ifPresent(ref -> {
-                final int reduced = reducedDelayTicks(ref.tier().spawnDelayTicks(), tier, pct);
+                int reduced = reducedDelayTicks(ref.tier().spawnDelayTicks(), tier, pct);
+                // BUFF stage: the island spawner-boost multiplies the tuned delay.
+                reduced = Math.max(20, (int) Math.round(
+                        reduced * plugin.islandBuffs().islandSpawnerDelayMult(island)));
                 spawner.setMinSpawnDelay(reduced);
                 spawner.setMaxSpawnDelay(reduced);
                 spawner.update(true);

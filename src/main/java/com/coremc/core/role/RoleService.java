@@ -106,12 +106,15 @@ public final class RoleService {
         // Island *-xp tracks multiply inside this single funnel (1.0 in the
         // wild): island × enchant × combo, stacked intentionally, applied once.
         final double islandBoost = plugin.islandProgress().xpMultiplier(player, category);
+        // BUFF stage of the pipeline: the island xp-boost multiplies here,
+        // exactly once, for members standing on their own island.
+        final double buffBoost = plugin.islandBuffs().xpMult(player);
         long awarded = 0L;
         if (role.get().category() == category) {
-            awarded = Math.round(baseAmount * multiplier * enchantBoost * engineBoost * islandBoost);
+            awarded = Math.round(baseAmount * multiplier * enchantBoost * engineBoost * islandBoost * buffBoost);
         } else if (role.get() == Role.UNIVERSAL) {
             awarded = Math.round(baseAmount * multiplier * plugin.coreConfig().roleUniversalShare()
-                    * enchantBoost * engineBoost * islandBoost);
+                    * enchantBoost * engineBoost * islandBoost * buffBoost);
         }
         if (awarded <= 0L) {
             return 0L;

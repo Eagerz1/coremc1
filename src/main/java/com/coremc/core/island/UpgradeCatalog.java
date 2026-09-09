@@ -257,11 +257,11 @@ public final class UpgradeCatalog {
                     "Member Slots",
                     List.of("&7Adds one team slot", "&7per tier.")),
             new Track("generator-boost", Category.ISLAND, Material.OBSERVER,
-                    "Generator Boost",
+                    "Generator Mastery",
                     List.of("&7Generators on your island", "&7recharge faster, yield more,",
                             "&7and rarely drop riches.")),
             new Track("spawner-boost", Category.ISLAND, Material.SPAWNER,
-                    "Spawner Boost",
+                    "Spawner Mastery",
                     List.of("&7Spawners on your island run", "&7faster, with extra spawns,",
                             "&7better drops and XP.")));
 
