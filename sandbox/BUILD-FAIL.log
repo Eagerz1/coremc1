@@ -1,0 +1,38 @@
+Cloning into 'zg'...
+==> compile main sources
+src/main/java/com/coremc/core/crate/CrateService.java:114: error: incompatible types: String cannot be converted to CAP#1
+        final String typeName = String.valueOf(raw.getOrDefault("type", "")).toUpperCase(Locale.ROOT);
+                                                                        ^
+  where CAP#1 is a fresh type-variable:
+    CAP#1 extends Object from capture of ?
+src/main/java/com/coremc/core/crate/CrateService.java:124: error: incompatible types: String cannot be converted to CAP#1
+        final String rarity = String.valueOf(raw.getOrDefault("rarity", "common"));
+                                                                        ^
+  where CAP#1 is a fresh type-variable:
+    CAP#1 extends Object from capture of ?
+src/main/java/com/coremc/core/crate/CrateService.java:125: error: incompatible types: String cannot be converted to CAP#1
+        final String currency = String.valueOf(raw.getOrDefault("currency", "MONEY")).toUpperCase(Locale.ROOT);
+                                                                            ^
+  where CAP#1 is a fresh type-variable:
+    CAP#1 extends Object from capture of ?
+src/main/java/com/coremc/core/crate/CrateService.java:128: error: incompatible types: String cannot be converted to CAP#1
+        final String key = String.valueOf(raw.getOrDefault("key", ""));
+                                                                  ^
+  where CAP#1 is a fresh type-variable:
+    CAP#1 extends Object from capture of ?
+src/main/java/com/coremc/core/crate/CrateService.java:130: error: incompatible types: String cannot be converted to CAP#1
+        final String refId = String.valueOf(raw.getOrDefault("ref", ""));
+                                                                    ^
+  where CAP#1 is a fresh type-variable:
+    CAP#1 extends Object from capture of ?
+src/main/java/com/coremc/core/crate/CrateService.java:131: error: incompatible types: String cannot be converted to CAP#1
+        final String material = String.valueOf(raw.getOrDefault("material", "")).toUpperCase(Locale.ROOT);
+                                                                            ^
+  where CAP#1 is a fresh type-variable:
+    CAP#1 extends Object from capture of ?
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use or override a deprecated API that is marked for removal.
+Note: Recompile with -Xlint:removal for details.
+Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
+6 errors
