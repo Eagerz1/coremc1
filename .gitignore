@@ -1,0 +1,18 @@
+# Maven build output
+target/
+
+# Local paper jars / runtimes (never vendored; CI downloads Paper)
+sandbox/
+
+# Local test server assembled by journey/run.mjs (Paper jar, worlds, logs)
+journey-server/
+
+# Node (journey harness dependencies only; lockfiles stay tracked)
+node_modules/
+
+# Editor / OS noise
+*.class
+.idea/
+*.iml
+.vscode/
+.DS_Store

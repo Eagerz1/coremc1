@@ -1,0 +1,95 @@
+name: journey-live-player-journey
+
+on:
+  push:
+    branches:
+      - "arena/**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  journey:
+    name: Paper 1.21.11 live player journey (mineflayer + RCON)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: journey/package.json
+
+      - name: Build plugin from this HEAD (Maven + JUnit)
+        run: mvn -B package
+
+      - name: Fetch Paper 1.21.11 (paperclip bootstrap)
+        run: |
+          set -euo pipefail
+          mkdir -p journey-server
+          LIST_URL='https://fill.papermc.io/v3/projects/paper/versions/1.21.11/builds'
+          curl -fsSL -o /tmp/builds.json "$LIST_URL"
+          INFO=$(python3 ci/resolve-paper.py /tmp/builds.json)
+          URL=$(printf '%s' "$INFO" | python3 -c 'import json,sys; print(json.load(sys.stdin)["url"])')
+          NAME=$(printf '%s' "$INFO" | python3 -c 'import json,sys; print(json.load(sys.stdin)["name"])')
+          SHA=$(printf '%s' "$INFO" | python3 -c 'import json,sys; print(json.load(sys.stdin)["sha256"])')
+          curl -fsSL -o "journey-server/$NAME" "$URL"
+          echo "${SHA}  journey-server/${NAME}" | sha256sum -c -
+          ls -la journey-server/
+
+      - name: Assemble server + deterministic overlays
+        run: |
+          set -euo pipefail
+          mkdir -p journey-server/plugins
+          JAR=$(ls target/CoreMC-[0-9]*.jar | head -1)
+          echo "plugin under test: $JAR ($(stat -c%s "$JAR") bytes)"
+          cp "$JAR" journey-server/plugins/CoreMC.jar
+          printf 'eula=true\n' > journey-server/eula.txt
+          cat > journey-server/server.properties <<'EOF'
+          server-port=25565
+          online-mode=false
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password=journey123
+          difficulty=normal
+          spawn-monsters=true
+          max-tick-time=-1
+          view-distance=5
+          simulation-distance=5
+          level-name=world
+          white-list=false
+          motd=CoreMC journey
+          EOF
+          npm --prefix journey install --no-audit --no-fund
+          node journey/make-overlays.mjs
+          ls -la journey-server/plugins/CoreMC/
+
+      - name: Run live player journey
+        working-directory: journey-server
+        run: node ../journey/run.mjs
+        timeout-minutes: 35
+
+      - name: Upload journey evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: journey-evidence
+          path: |
+            journey-server/journey.log
+            journey-server/server.log
+            journey-server/logs/
+            journey-server/plugins/CoreMC/
+          if-no-files-found: warn
+          retention-days: 30

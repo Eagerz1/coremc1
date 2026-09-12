@@ -1,0 +1,74 @@
+# ======================================================
+#  CoreMC — island themes
+#
+#  The selection players get when creating an island.
+#  Future themes can be added by copying a block below
+#  and restarting — no code changes required.
+#
+#  top/under:    platform surface + filler materials
+#  decorations:  "dx,dy,dz=MATERIAL" entries relative to
+#                the island centre (dy 0 = surface layer).
+#                Inserting a *_SAPLING material lets the
+#                generator attempt a tree there.
+#  chest-contents: starter items "MATERIAL:count"
+# ======================================================
+
+themes:
+  plains:
+    display: "&aPlains"
+    icon: GRASS_BLOCK
+    description:
+      - "&7A calm green meadow."
+      - "&7The classic way to start."
+    top: GRASS_BLOCK
+    under: DIRT
+    tree: true
+    decorations:
+      - "2,1,2=OAK_SAPLING"
+      - "-2,0,-2=WATER"
+      - "-1,0,-2=WATER"
+    chest-contents:
+      - "ICE:2"
+      - "LAVA_BUCKET:1"
+      - "BREAD:4"
+      - "BONE_MEAL:3"
+
+  desert:
+    display: "&eDesert"
+    icon: SAND
+    description:
+      - "&7Hot sand and sandstone."
+      - "&7For sun-loving settlers."
+    top: SAND
+    under: SANDSTONE
+    tree: false
+    decorations:
+      - "2,1,2=DEAD_BUSH"
+      - "-2,1,-2=CACTUS"
+      - "-2,2,-2=CACTUS"
+    chest-contents:
+      - "ICE:2"
+      - "LAVA_BUCKET:1"
+      - "BREAD:4"
+      - "CACTUS:2"
+
+  mushroom:
+    display: "&dMushroom"
+    icon: RED_MUSHROOM_BLOCK
+    description:
+      - "&7A strange fungal forest."
+      - "&7Mycelium as far as you can see."
+    top: MYCELIUM
+    under: DIRT
+    tree: false
+    decorations:
+      - "2,1,2=RED_MUSHROOM"
+      - "-2,1,-2=BROWN_MUSHROOM"
+      - "0,1,-3=RED_MUSHROOM_BLOCK"
+      - "0,2,-3=RED_MUSHROOM_BLOCK"
+    chest-contents:
+      - "ICE:2"
+      - "LAVA_BUCKET:1"
+      - "BREAD:4"
+      - "RED_MUSHROOM:2"
+      - "BROWN_MUSHROOM:2"
