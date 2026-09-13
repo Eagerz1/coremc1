@@ -10,9 +10,10 @@ import static org.junit.platform.engine.discovery.DiscoverySelectors.selectPacka
 import static org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder.request;
 
 /**
- * Minimal JUnit Platform runner used by the offline sandbox build
+ * Minimal JUnit Platform runner used by the offline sandbox/CI builds
  * (no Maven Surefire available without network). It discovers and runs
  * every test under {@code com.coremc} and exits non-zero on failure.
+ * With no tests present it reports 0 tests and exits 0.
  */
 public final class TestRunner {
 
