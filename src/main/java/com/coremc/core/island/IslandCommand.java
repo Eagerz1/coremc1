@@ -15,7 +15,8 @@ import org.bukkit.entity.Player;
  * in {@link IslandService}.
  *
  * Subcommands: create, go, leave, delete [confirm], invite <player>,
- * join, help.
+ * join, help. Unknown subcommands get a branded "does not exist" line
+ * followed by the help overview.
  */
 public final class IslandCommand implements CommandExecutor, TabCompleter {
 
@@ -50,7 +51,10 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             case "delete" -> islands.delete(player, args.length > 1 && "confirm".equalsIgnoreCase(args[1]));
             case "invite" -> islands.invite(player, args);
             case "join", "accept" -> islands.join(player);
-            default -> messages.sendList(player, "island.help");
+            default -> {
+                messages.sendPrefixed(player, "island.unknown-subcommand");
+                messages.sendList(player, "island.help");
+            }
         }
         return true;
     }

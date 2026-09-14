@@ -38,7 +38,10 @@ Aliases: `/island`, `/isle`, `/block`. Everyone may use `/is` (`coremc.command.i
   visibility, schematic name, delete-confirm and invite-expiry windows,
   starter chest contents.
 - `messages.yml` — every user-facing string, `&` colour codes, with the
-  bundled defaults as fallback for missing keys.
+  bundled defaults as fallback for missing keys. Every message goes out
+  prefixed with cyan-bold `COREMC >>>` (the `prefix` key); unknown
+  subcommands answer `This command does not exist.` followed by the help
+  list. New commands and features must reuse the same prefix.
 - `schematics/default.yml` — the island layout (copied out on first run).
 
 ## Building

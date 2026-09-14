@@ -125,7 +125,11 @@ public final class SchematicService {
                 chests.add(block);
             }
         }
-        fillChests(chests, chestItems);
+        // Fill the chests one tick later: setType() has just created the
+        // tile entities, and the chest state semantics settle within a tick.
+        if (!chests.isEmpty() && !chestItems.isEmpty()) {
+            plugin.getServer().getScheduler().runTask(plugin, () -> fillChests(chests, chestItems));
+        }
         return placed;
     }
 
@@ -143,18 +147,80 @@ public final class SchematicService {
     }
 
     private void fillChests(final List<Block> chests, final List<CoreConfig.ChestItem> chestItems) {
-        if (chests.isEmpty() || chestItems.isEmpty()) {
+        for (final Block chestBlock : chests) {
+            if (chestBlock.getType() != Material.CHEST) {
+                plugin.getLogger().warning("Starter chest at " + chestBlock.getLocation()
+                        + " is no longer a chest; skipped filling.");
+                continue;
+            }
+            fillOneChest(chestBlock, chestItems);
+        }
+    }
+
+    private void fillOneChest(final Block chestBlock, final List<CoreConfig.ChestItem> chestItems) {
+        // Attempt 1 — snapshot semantics: edit the state inventory, then
+        // force the state back onto the world.
+        final BlockState state = chestBlock.getState();
+        if (!(state instanceof Chest chest)) {
+            plugin.getLogger().warning("Starter chest at " + chestBlock.getLocation()
+                    + " has no chest state (got " + (state == null ? "null" : state.getClass().getName())
+                    + "); skipped filling.");
             return;
         }
-        for (final Block chestBlock : chests) {
-            final BlockState state = chestBlock.getState();
-            if (state instanceof Chest chest) {
-                final Inventory inventory = chest.getInventory();
-                inventory.clear();
+        final Inventory snapshotInventory = chest.getInventory();
+        snapshotInventory.clear();
+        for (final CoreConfig.ChestItem item : chestItems) {
+            snapshotInventory.addItem(new ItemStack(item.material(), item.amount()));
+        }
+        final boolean applied = chest.update(true, true);
+
+        // Attempt 2 — live semantics: some implementations back getInventory()
+        // with the real tile entity instead of the snapshot. If attempt 1 was
+        // wiped by the update (or never applied), a fresh state's inventory
+        // write goes straight through — and update() is NOT called, so it
+        // cannot be overwritten by a stale snapshot.
+        int afterFirst = -1;
+        if (chestBlock.getState() instanceof Chest afterChest) {
+            final Inventory after = afterChest.getInventory();
+            afterFirst = countStacks(after);
+            if (afterFirst < chestItems.size()) {
+                after.clear();
                 for (final CoreConfig.ChestItem item : chestItems) {
-                    inventory.addItem(new ItemStack(item.material(), item.amount()));
+                    after.addItem(new ItemStack(item.material(), item.amount()));
                 }
             }
         }
+
+        final int finalCount = countStacks(freshInventory(chestBlock));
+        if (finalCount >= chestItems.size()) {
+            plugin.getLogger().info("Starter chest at " + chestBlock.getLocation() + " filled with "
+                    + finalCount + " item stack(s)" + (applied ? "" : " (state update refused, live fill used)")
+                    + " [state=" + state.getClass().getSimpleName() + ", inv="
+                    + snapshotInventory.getClass().getSimpleName() + ", afterFirst=" + afterFirst + "]");
+        } else {
+            plugin.getLogger().warning("Starter chest at " + chestBlock.getLocation() + " holds "
+                    + finalCount + " item stack(s), expected " + chestItems.size()
+                    + " [state=" + state.getClass().getSimpleName() + ", inv="
+                    + snapshotInventory.getClass().getSimpleName() + ", applied=" + applied
+                    + ", afterFirst=" + afterFirst + "]");
+        }
+    }
+
+    private Inventory freshInventory(final Block chestBlock) {
+        final BlockState state = chestBlock.getState();
+        return state instanceof Chest chest ? chest.getInventory() : null;
+    }
+
+    private int countStacks(final Inventory inventory) {
+        if (inventory == null) {
+            return -1;
+        }
+        int count = 0;
+        for (final ItemStack item : inventory.getContents()) {
+            if (item != null && !item.getType().isAir()) {
+                count++;
+            }
+        }
+        return count;
     }
 }

@@ -104,4 +104,17 @@ class YamlIslandDataStoreTest {
         final YamlIslandDataStore store = new YamlIslandDataStore(directory, Logger.getLogger("test"));
         assertTrue(store.loadAll().isEmpty());
     }
+
+    @Test
+    void slotCounterRoundTripsAndSurvivesIslandDeletes() throws IOException {
+        final YamlIslandDataStore store = new YamlIslandDataStore(directory, Logger.getLogger("test"));
+        assertEquals(0L, store.loadNextSlot(), "no counter file means zero");
+        store.saveNextSlot(7L);
+        assertEquals(7L, store.loadNextSlot());
+        // deleting islands must not touch the counter
+        final Island island = sampleIsland();
+        store.save(island);
+        store.delete(island.owner());
+        assertEquals(7L, store.loadNextSlot());
+    }
 }

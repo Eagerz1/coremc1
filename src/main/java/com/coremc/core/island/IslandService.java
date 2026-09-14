@@ -35,6 +35,8 @@ public final class IslandService {
     private final Map<UUID, Island> byOwner = new HashMap<>();
     private final Map<UUID, Island> byMember = new HashMap<>();
     private final Map<UUID, Long> pendingDeletes = new HashMap<>();
+    /** Slot high-water mark — slots are never reused, so this only grows. */
+    private long nextSlot;
 
     public IslandService(final JavaPlugin plugin, final CoreConfig config, final MessageService messages,
                          final IslandWorldService worlds, final SchematicService schematics) {
@@ -49,18 +51,19 @@ public final class IslandService {
 
     /** Loads every stored island at startup. */
     public void load() {
-        final int loaded;
+        int highestStoredSlot = -1;
         try {
-            int count = 0;
             for (final Island island : store.loadAll()) {
                 register(island);
-                count++;
+                highestStoredSlot = Math.max(highestStoredSlot, island.slot());
             }
-            loaded = count;
         } catch (final IOException exception) {
             throw new IllegalStateException("Failed to load islands: " + exception.getMessage(), exception);
         }
-        plugin.getLogger().info("Loaded " + loaded + " island(s).");
+        // A persisted counter survives deletions; the highest stored island
+        // slot is the floor in case the counter file was lost.
+        this.nextSlot = Math.max(store.loadNextSlot(), highestStoredSlot + 1L);
+        plugin.getLogger().info("Loaded " + count() + " island(s), next slot " + nextSlot + ".");
     }
 
     // ------------------------------------------------------------------
@@ -109,7 +112,9 @@ public final class IslandService {
             return;
         }
 
-        final int slot = nextSlot();
+        final int slot = (int) nextSlot;
+        nextSlot++;
+        store.saveNextSlot(nextSlot);
         final int[] center = GridAssigner.centerForSlot(slot, config.islandSpacing());
         final World world = worlds.islandWorld();
         final int centerX = center[0];
@@ -358,18 +363,6 @@ public final class IslandService {
     private void teleportHome(final Player player, final Island island) {
         player.teleport(island.home(worlds.islandWorld()));
         applyBorder(player, island);
-    }
-
-    /**
-     * The next free slot. Slots are never reused: a deleted island's
-     * blocks stay in the world, so a fresh island must not paste on top.
-     */
-    private int nextSlot() {
-        int max = -1;
-        for (final Island island : byOwner.values()) {
-            max = Math.max(max, island.slot());
-        }
-        return max + 1;
     }
 
     private void register(final Island island) {

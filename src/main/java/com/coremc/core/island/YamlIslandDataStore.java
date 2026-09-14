@@ -21,6 +21,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
  */
 public final class YamlIslandDataStore implements IslandDataStore {
 
+    private static final String SLOT_COUNTER_FILE = ".next-slot";
+
     private final Path directory;
     private final Logger logger;
 
@@ -103,5 +105,30 @@ public final class YamlIslandDataStore implements IslandDataStore {
 
     private Path fileFor(final UUID owner) {
         return directory.resolve(owner.toString() + ".yml");
+    }
+
+    @Override
+    public long loadNextSlot() {
+        final Path file = directory.resolve(SLOT_COUNTER_FILE);
+        if (!Files.exists(file)) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(Files.readString(file).trim());
+        } catch (final IOException | NumberFormatException exception) {
+            logger.warning("Corrupt slot counter " + file + " (" + exception.getMessage()
+                    + "), falling back to the highest stored island slot.");
+            return 0L;
+        }
+    }
+
+    @Override
+    public void saveNextSlot(final long nextSlot) {
+        try {
+            Files.createDirectories(directory);
+            Files.writeString(directory.resolve(SLOT_COUNTER_FILE), String.valueOf(nextSlot));
+        } catch (final IOException exception) {
+            logger.severe("Failed to persist the island slot counter: " + exception.getMessage());
+        }
     }
 }

@@ -6,10 +6,11 @@
 #  lines you have not customised.
 # ============================================================
 
-prefix: "&b&lCOREMC &8» &f"
+prefix: "&b&lCOREMC >>> &f"
 
 island:
   only-players: "&cOnly players can use this command."
+  unknown-subcommand: "&cThis command does not exist."
   help:
     - "&b&lIsland commands"
     - "&b/is create &8- &fclaim your own island in the void"
