@@ -39,11 +39,13 @@ if grep -q "ERROR" target/compile-main.log; then
 fi
 
 echo "==> Copying resources (version substitution)"
-# copy EVERY resource (config, messages, shop, future files) — the explicit
-# list previously shipped a jar missing new files (v0.7.0 shop.yml bug)
-find src/main/resources -maxdepth 1 -type f | while read -r res; do
-    f="$(basename "$res")"
-    sed "s/@project.version@/$VERSION/g" "$res" > "target/classes/$f"
+# copy EVERY resource recursively (config, messages, schematics, future
+# files) — the explicit list previously shipped a jar missing new files
+# (v0.7.0 shop.yml bug), and maxdepth 1 later missed schematics/*.yml
+find src/main/resources -type f | while read -r res; do
+    rel="${res#src/main/resources/}"
+    mkdir -p "target/classes/$(dirname "$rel")"
+    sed "s/@project.version@/$VERSION/g" "$res" > "target/classes/$rel"
 done
 
 echo "==> Packaging target/CoreMC-$VERSION.jar"

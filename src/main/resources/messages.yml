@@ -1,0 +1,49 @@
+# ============================================================
+#  CoreMC — messages
+#  Standard Minecraft & colour codes. {placeholders} are filled by
+#  the plugin. The bundled defaults in the jar act as a fallback:
+#  keys missing from this file fall back to them, so you can delete
+#  lines you have not customised.
+# ============================================================
+
+prefix: "&b&lCOREMC &8» &f"
+
+island:
+  only-players: "&cOnly players can use this command."
+  help:
+    - "&b&lIsland commands"
+    - "&b/is create &8- &fclaim your own island in the void"
+    - "&b/is go &8- &fteleport to your island"
+    - "&b/is invite <player> &8- &finvite a player to your island"
+    - "&b/is join &8- &faccept a pending island invite"
+    - "&b/is leave &8- &fleave the island you are a member of"
+    - "&b/is delete &8- &fpermanently delete your island"
+
+  created: "&aIsland created — this piece of the void is yours."
+  teleported: "&aWelcome home."
+  no-island: "&cYou don't have an island. Create one with &b/is create&c."
+  already-have: "&cYou already have an island."
+
+  not-owner: "&cOnly the island owner can do that."
+  owner-cannot-leave: "&cYou own this island. Use &b/is delete &cif you want to get rid of it."
+  left: "&aYou left &f{owner}&a's island."
+
+  delete-confirm: "&cThis will permanently delete your island and evict its members. Run &b/is delete confirm &cwithin &f{seconds}s&c to proceed."
+  deleted: "&aIsland deleted. The claim is free — the blocks remain in the void."
+  island-deleted-member: "&cThe island you were part of has been deleted by &f{owner}&c."
+
+  invite-usage: "&cUsage: &b/is invite <player>"
+  player-not-online: "&cThat player is not online."
+  cannot-invite-self: "&cYou cannot invite yourself."
+  target-has-island: "&c{player} already has an island."
+  invite-sent: "&aInvite sent to &f{player}&a. It expires in &f{seconds}s&a."
+  invite-received: "&b{player} &finvited you to their island. Join with &b/is join&f."
+  no-invite: "&cYou have no pending island invite."
+  invite-expired: "&cThat invite expired or the island no longer exists."
+  joined: "&aYou joined &f{owner}&a's island."
+  member-joined: "&f{player} &ajoined your island."
+
+  protected-block: "&cYou can't do that here — this island belongs to &f{owner}&c."
+  protected-wilderness: "&cYou can only build inside your own island's border."
+
+  schematic-failed: "&cIsland generation failed: &f{error}"

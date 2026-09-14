@@ -1,0 +1,179 @@
+# ============================================================
+#  CoreMC default island schematic
+#
+#  Hand-editable char-grid format:
+#    palette : single character -> block type (' ' = air/skip)
+#    origin  : paste corner, relative to the island centre (x/z)
+#              and the island's base Y level (y)
+#    spawn   : where the player lands after /is create or /is go,
+#              relative to the island centre (x/z) and base Y (y)
+#    layers  : bottom -> top; each layer is a list of equally long
+#              rows (z direction); each character is one block
+#              (x direction). Keep every row the same length and
+#              every layer the same shape — rows are quoted so
+#              leading/trailing spaces are preserved.
+# ============================================================
+
+name: default
+
+origin:
+  x: -6
+  y: 0
+  z: -6
+
+spawn:
+  x: 0.5
+  y: 4.0
+  z: 2.5
+
+palette:
+  b: BEDROCK
+  c: COBBLESTONE
+  d: DIRT
+  g: GRASS_BLOCK
+  L: OAK_LOG
+  V: OAK_LEAVES
+  C: CHEST
+  T: TORCH
+
+layers:
+  # y+0 — bedrock & cobble core
+  - ["             ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "     ccc     ",
+     "     cbc     ",
+     "     ccc     ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "             "]
+  # y+1 — 5x5 dirt with cobble corners
+  - ["             ",
+     "             ",
+     "             ",
+     "             ",
+     "    cdddc    ",
+     "    ddddd    ",
+     "    ddddd    ",
+     "    ddddd    ",
+     "    cdddc    ",
+     "             ",
+     "             ",
+     "             ",
+     "             "]
+  # y+2 — 7x7 dirt
+  - ["             ",
+     "             ",
+     "             ",
+     "   ddddddd   ",
+     "   ddddddd   ",
+     "   ddddddd   ",
+     "   ddddddd   ",
+     "   ddddddd   ",
+     "   ddddddd   ",
+     "   ddddddd   ",
+     "   ddddddd   ",
+     "             ",
+     "             "]
+  # y+3 — 9x9 grass surface
+  - ["             ",
+     "             ",
+     "  ggggggggg  ",
+     "  ggggggggg  ",
+     "  ggggggggg  ",
+     "  ggggggggg  ",
+     "  ggggggggg  ",
+     "  ggggggggg  ",
+     "  ggggggggg  ",
+     "  ggggggggg  ",
+     "  ggggggggg  ",
+     "             ",
+     "             "]
+  # y+4 — tree base, starter chest, torches
+  - ["             ",
+     "             ",
+     "             ",
+     "             ",
+     "        T    ",
+     "     L       ",
+     "             ",
+     "       C     ",
+     "    T        ",
+     "             ",
+     "             ",
+     "             ",
+     "             "]
+  # y+5 — trunk
+  - ["             ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "     L       ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "             "]
+  # y+6 — trunk + leaf ring
+  - ["             ",
+     "             ",
+     "             ",
+     "             ",
+     "    VVV      ",
+     "    VLV      ",
+     "    VVV      ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "             "]
+  # y+7 — trunk top + wide leaf ring
+  - ["             ",
+     "             ",
+     "             ",
+     "    VVV      ",
+     "   VVVVV     ",
+     "   VVLVV     ",
+     "   VVVVV     ",
+     "    VVV      ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "             "]
+  # y+8 — cap leaves
+  - ["             ",
+     "             ",
+     "             ",
+     "             ",
+     "     V       ",
+     "    VVV      ",
+     "     V       ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "             "]
+  # y+9 — top leaf
+  - ["             ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "     V       ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "             ",
+     "             "]

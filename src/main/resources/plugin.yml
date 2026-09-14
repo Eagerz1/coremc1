@@ -2,6 +2,28 @@ name: CoreMC
 version: '@project.version@'
 main: com.coremc.core.CoreMCPlugin
 api-version: '1.21'
-description: CoreMC core plugin.
+description: CoreMC Skyblock core plugin.
 author: CoreMC Team
 website: https://github.com/Eagerz1/coremc1
+
+commands:
+  island:
+    description: CoreMC Skyblock island commands.
+    usage: /is [create|go|leave|delete|invite|join|help]
+    permission: coremc.command.island
+    permission-message: You do not have permission to use this command.
+    aliases: [is, isle, block]
+
+permissions:
+  coremc.*:
+    description: Grants all CoreMC permissions.
+    default: op
+    children:
+      coremc.command.island: true
+      coremc.island.bypass: true
+  coremc.command.island:
+    description: Allows using /is.
+    default: true
+  coremc.island.bypass:
+    description: Allows building anywhere in the island world, bypassing island protection.
+    default: op

@@ -1,0 +1,45 @@
+# ============================================================
+#  CoreMC — configuration
+#  Everything that may need balancing lives here; restart the
+#  server (or edit + restart) to apply changes.
+# ============================================================
+
+island:
+  # Name of the void world islands live in. The plugin creates it on
+  # first boot (worlds/coremc_islands); islands persist inside it.
+  world: coremc_islands
+
+  # Y level island bases (the first schematic layer) are pasted at.
+  y-level: 64
+
+  # Distance in blocks between island centres on the grid.
+  # Must be >= island.border-size or islands would overlap.
+  spacing: 200
+
+  # Claimed square around each island centre (full edge length).
+  # This is both the protection area and the visible border size.
+  border-size: 100
+
+  # Whether players see their island's border (a per-player vanilla
+  # world border centred on their island).
+  border-visual: true
+
+  # Schematic pasted on /is create. Loaded from
+  # plugins/CoreMC/schematics/<name>.yml (falling back to the copy
+  # bundled in the jar).
+  schematic: default
+
+  # Seconds a /is delete confirmation stays armed.
+  delete-confirm-seconds: 30
+
+  # Seconds an /is invite stays valid.
+  invite-expiry-seconds: 300
+
+  # Starter chest contents pasted into the schematic's chest(s):
+  # "MATERIAL:AMOUNT" lines.
+  chest-items:
+    - "LAVA_BUCKET:1"
+    - "ICE:2"
+    - "OAK_SAPLING:2"
+    - "SEEDS:4"
+    - "BREAD:5"
