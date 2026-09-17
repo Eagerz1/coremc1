@@ -6,7 +6,14 @@ import com.coremc.core.island.IslandCommand;
 import com.coremc.core.island.IslandListener;
 import com.coremc.core.island.IslandService;
 import com.coremc.core.island.SchematicService;
+import com.coremc.core.shop.EconomyService;
+import com.coremc.core.shop.ShopCommand;
+import com.coremc.core.shop.ShopConfig;
+import com.coremc.core.shop.ShopGui;
+import com.coremc.core.shop.ShopListener;
+import com.coremc.core.shop.YamlEconomyStore;
 import com.coremc.core.world.IslandWorldService;
+import java.nio.file.Path;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -25,6 +32,9 @@ public final class CoreMCPlugin extends JavaPlugin {
     private IslandWorldService worlds;
     private SchematicService schematics;
     private IslandService islands;
+    private ShopConfig shopConfig;
+    private EconomyService economy;
+    private ShopGui shopGui;
 
     @Override
     public void onEnable() {
@@ -61,12 +71,43 @@ public final class CoreMCPlugin extends JavaPlugin {
         final PluginManager pluginManager = getServer().getPluginManager();
         pluginManager.registerEvents(new IslandListener(islands, messages, worlds), this);
 
+        // Shop: catalogue (shop.yml) + coin balances (balances.yml). A broken
+        // catalogue or unreadable balance file disables /shop with a loud log
+        // line but never the plugin itself.
+        this.shopConfig = new ShopConfig(this);
+        this.economy = null;
+        try {
+            shopConfig.load();
+            this.economy = new EconomyService(
+                    new YamlEconomyStore(Path.of(getDataFolder().getPath(), "balances.yml"), getLogger()),
+                    shopConfig.startingBalance(),
+                    getLogger());
+        } catch (final RuntimeException | java.io.IOException exception) {
+            getLogger().severe("Shop disabled — " + exception.getMessage());
+            this.shopConfig = new ShopConfig(this);
+            this.economy = null;
+        }
+        this.shopGui = new ShopGui(shopConfig, economy);
+        final PluginCommand shopCommand = getCommand("shop");
+        if (shopCommand != null) {
+            shopCommand.setExecutor(new ShopCommand(shopConfig, shopGui, messages));
+        } else {
+            getLogger().severe("Command 'shop' missing from plugin.yml — /shop will not work.");
+        }
+        if (economy != null) {
+            pluginManager.registerEvents(
+                    new ShopListener(shopConfig, economy, shopGui, messages), this);
+        }
+
         getLogger().info("CoreMC enabled: " + islands.count() + " island(s), world '"
                 + worlds.islandWorld().getName() + "'.");
     }
 
     @Override
     public void onDisable() {
+        if (economy != null) {
+            economy.shutdown();
+        }
         getLogger().info("CoreMC disabled.");
     }
 

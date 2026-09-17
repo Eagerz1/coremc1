@@ -48,3 +48,14 @@ island:
   protected-wilderness: "&cYou can only build inside your own island's border."
 
   schematic-failed: "&cIsland generation failed: &f{error}"
+
+shop:
+  only-players: "&cOnly players can use the shop."
+  disabled: "&cThe shop is not available right now."
+  bought: "&aBought &f{amount} x {item} &afor &e{cost}&a. Balance: &e{balance}."
+  sold: "&aSold &f{amount} x {item} &afor &e{credit}&a. Balance: &e{balance}."
+  need-coins: "&cThat costs &e{cost} &cbut you only have &e{balance}&c."
+  nothing-to-sell: "&cYou have no &f{item} &cto sell."
+  not-buyable: "&cThat item cannot be bought."
+  not-sellable: "&cThat item cannot be sold."
+  dropped: "&e{amount} x {item} &edidn't fit and were dropped at your feet."
