@@ -5,9 +5,12 @@ import com.coremc.core.config.MessageService;
 import com.coremc.core.world.IslandWorldService;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -37,6 +40,8 @@ public final class IslandService {
     private final Map<UUID, Long> pendingDeletes = new HashMap<>();
     /** Slot high-water mark — slots are never reused, so this only grows. */
     private long nextSlot;
+    /** Systems that keep per-island state (e.g. spawners) and must clean up on delete. */
+    private final List<Consumer<Island>> deleteListeners = new ArrayList<>();
 
     public IslandService(final JavaPlugin plugin, final CoreConfig config, final MessageService messages,
                          final IslandWorldService worlds, final SchematicService schematics) {
@@ -87,6 +92,21 @@ public final class IslandService {
             }
         }
         return null;
+    }
+
+    /** The island with this id, or null. */
+    public Island islandById(final UUID id) {
+        for (final Island island : byOwner.values()) {
+            if (island.id().equals(id)) {
+                return island;
+            }
+        }
+        return null;
+    }
+
+    /** Registers a callback that runs after an island is deleted. */
+    public void onDelete(final Consumer<Island> listener) {
+        deleteListeners.add(listener);
     }
 
     public int count() {
@@ -227,6 +247,9 @@ public final class IslandService {
                     + ": " + exception.getMessage());
         }
         unregister(island);
+        for (final Consumer<Island> listener : deleteListeners) {
+            listener.accept(island);
+        }
         plugin.getLogger().info(island.ownerName() + " deleted island slot " + island.slot() + ".");
         messages.sendPrefixed(player, "island.deleted");
     }

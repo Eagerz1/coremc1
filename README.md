@@ -1,9 +1,11 @@
 # CoreMC
 
 CoreMC is a Paper plugin (Java 21, Paper 1.21.x): the Skyblock core for the
-CoreMC server. This is a ground-up rebuild — the current scope is the island
-foundation: islands in a dedicated void world, schematic-based generation,
-borders and the core island commands.
+CoreMC server. This is a ground-up rebuild — islands in a dedicated void
+world, schematic-based generation, borders and the core island commands,
+a coin economy with a chest-GUI shop, and the mob-spawner progression
+system (essences, unique drops, relics, four spawner variants, island
+luck).
 
 ## Feature set (v1.0.0)
 
@@ -17,6 +19,11 @@ borders and the core island commands.
 | Protection | Only the owner and members can build/interact inside a claim (blocks, containers, doors, buckets, fire, hanging entities, passive mobs). The void between islands is wilderness — nobody builds there. `coremc.island.bypass` (op) overrides. |
 | Persistence | One YAML file per island under `plugins/CoreMC/islands/`, atomic writes, corrupt files are skipped with a warning instead of breaking the plugin. |
 | One island per player | A player either owns an island or is a member of (at most) one. |
+| Shop | 7-section chest GUI (`/shop`): buy/sell with coins, shift-click for stacks/all, paged sections, balance display, inventory-injection protection. Coin balances persist (`balances.yml`). |
+| Spawner progression | 5 mob groups (Organic, Undead, Infernal, Ender, Corrupted), 3 mobs each. Every group shares an Essence and a rare Relic; every mob has a unique drop. `/spawner buy` costs coins plus unlock materials. |
+| Spawner variants | normal → advanced → ancient → mythic. Each variant spawns faster and in bigger bursts (rate 1–4×, count 2–6, nearby cap 8–24); Mythic spawners auto-kill their spawns and credit the drops to the island owner. Upgrades cost essence + the mob's own drops (+ a relic for Mythic). |
+| Spawner items | Spawners are real items (BlockStateMeta + PDC): recoverable by breaking, re-placeable, variant preserved. Custom items match by PDC tag with a display-name fallback, and are never sellable in the shop as raw materials. |
+| Island luck | `/spawner luck upgrade` buys island-wide luck levels (coins): the unique-drop chance rises from 10% to 50%. Survives restarts; removed with the island. |
 
 ## Commands
 
@@ -29,8 +36,20 @@ borders and the core island commands.
 | `/is leave` | Members leave the island they joined. Owners must `/is delete` instead. |
 | `/is delete` | Owner-only, two-step: the first call arms a 30 s confirmation, `/is delete confirm` deletes the claim, evicts everyone to the main world spawn and frees the slot. Pasted blocks remain in the void. |
 | `/is help` | Command overview. |
+| `/shop` | Opens the shop GUI (root: section picker + your balance). |
+| `/spawner list` | Every group, mob and spawner price. |
+| `/spawner buy <mob>` | Buys a Normal spawner — coins plus the mob's unlock materials (essence + earlier mobs' drops). |
+| `/spawner info` | Describes the spawner you look at: variant, spawn stats, next upgrade cost. |
+| `/spawner upgrade` | Upgrades the spawner you look at (owner/member of its island only). |
+| `/spawner luck` | Shows your island's luck level and unique-drop chance. |
+| `/spawner luck upgrade` | Buys the next luck level with coins. |
+| `/spawner give <player> <mob> [variant]` | Admin: hand out a spawner item. |
+| `/spawner giveitem <player> essence\|drop\|relic <id> [amount]` | Admin: hand out progression materials. |
+| `/spawner setluck <player> <level>` | Admin: set a player's island luck. |
 
-Aliases: `/island`, `/isle`, `/block`. Everyone may use `/is` (`coremc.command.island`).
+Aliases: `/island`, `/isle`, `/block`; `/store` for `/shop`; `/sp` for `/spawner`.
+Everyone may use `/is`, `/shop` and `/spawner` (`coremc.command.*`); the
+spawner admin tools need `coremc.spawner.admin` (op).
 
 ## Configuration
 
@@ -43,6 +62,15 @@ Aliases: `/island`, `/isle`, `/block`. Everyone may use `/is` (`coremc.command.i
   subcommands answer `This command does not exist.` followed by the help
   list. New commands and features must reuse the same prefix.
 - `schematics/default.yml` — the island layout (copied out on first run).
+- `shop.yml` — coin economy: starting balance, currency symbol, buy/sell
+  prices per section (validates against infinite-money loops).
+- `spawners.yml` — the whole spawner progression: groups, mobs, drop
+  items, spawner and upgrade costs, variant behaviour (rate/count/
+  nearby-limit/auto-kill), kill chances and island-luck maths. Broken
+  entries refuse to load the system (every problem listed in the log)
+  rather than half-work.
+- `spawners-data.yml` — placed spawners + island luck (written atomically
+  on every change).
 
 ## Building
 
@@ -66,6 +94,8 @@ development sandbox; it is not a second build system.
 |---|---|
 | `src/main/java/com/coremc/core/island` | Islands: model, grid, store, schematics, service, command, protection |
 | `src/main/java/com/coremc/core/world` | Void world generator + island world service |
+| `src/main/java/com/coremc/core/shop` | Coin economy + chest-GUI shop |
+| `src/main/java/com/coremc/core/spawner` | Spawner progression: config, service, command, listener, store |
 | `src/main/java/com/coremc/core/config` | Typed config + message service |
 | `src/test/java` | JUnit tests + the offline `TestRunner` harness |
 | `ci/` | CI build script and Paper/vanilla server-jar resolvers |

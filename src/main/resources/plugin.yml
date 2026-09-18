@@ -19,6 +19,12 @@ commands:
     permission: coremc.command.shop
     permission-message: You do not have permission to use this command.
     aliases: [store]
+  spawner:
+    description: "CoreMC spawner progression - list, buy, upgrade, luck."
+    usage: /spawner [list|buy <mob>|info|upgrade|luck [upgrade]]
+    permission: coremc.command.spawner
+    permission-message: You do not have permission to use this command.
+    aliases: [sp]
 
 permissions:
   coremc.*:
@@ -27,13 +33,21 @@ permissions:
     children:
       coremc.command.island: true
       coremc.command.shop: true
+      coremc.command.spawner: true
       coremc.island.bypass: true
+      coremc.spawner.admin: true
   coremc.command.island:
     description: Allows using /is.
     default: true
   coremc.command.shop:
     description: Allows using /shop.
     default: true
+  coremc.command.spawner:
+    description: Allows using /spawner.
+    default: true
+  coremc.spawner.admin:
+    description: Allows the admin tools /spawner give, giveitem and setluck.
+    default: op
   coremc.island.bypass:
     description: Allows building anywhere in the island world, bypassing island protection.
     default: op

@@ -7,6 +7,11 @@ import com.coremc.core.island.IslandListener;
 import com.coremc.core.island.IslandService;
 import com.coremc.core.island.SchematicService;
 import com.coremc.core.shop.EconomyService;
+import com.coremc.core.spawner.SpawnerCommand;
+import com.coremc.core.spawner.SpawnerConfig;
+import com.coremc.core.spawner.SpawnerListener;
+import com.coremc.core.spawner.SpawnerService;
+import com.coremc.core.spawner.YamlSpawnerDataStore;
 import com.coremc.core.shop.ShopCommand;
 import com.coremc.core.shop.ShopConfig;
 import com.coremc.core.shop.ShopGui;
@@ -35,6 +40,8 @@ public final class CoreMCPlugin extends JavaPlugin {
     private ShopConfig shopConfig;
     private EconomyService economy;
     private ShopGui shopGui;
+    private SpawnerConfig spawnerConfig;
+    private SpawnerService spawnerService;
 
     @Override
     public void onEnable() {
@@ -99,6 +106,38 @@ public final class CoreMCPlugin extends JavaPlugin {
                     new ShopListener(shopConfig, economy, shopGui, messages), this);
         }
 
+        // Spawners: progression config (spawners.yml) + placed spawner
+        // registry (spawners-data.yml). A broken config disables the
+        // spawner system with a loud log line, never the plugin.
+        this.spawnerConfig = new SpawnerConfig(this);
+        this.spawnerService = null;
+        try {
+            spawnerConfig.load();
+            if (economy == null) {
+                getLogger().severe("Spawners disabled — no economy (the shop failed to load).");
+            } else {
+                this.spawnerService = new SpawnerService(
+                        this, spawnerConfig,
+                        new YamlSpawnerDataStore(
+                                Path.of(getDataFolder().getPath(), "spawners-data.yml"), getLogger()),
+                        economy, messages, islands);
+                spawnerService.load();
+                pluginManager.registerEvents(new SpawnerListener(spawnerService), this);
+                islands.onDelete(spawnerService::onIslandDeleted);
+                final PluginCommand spawnerCommand = getCommand("spawner");
+                if (spawnerCommand != null) {
+                    final SpawnerCommand executor = new SpawnerCommand(spawnerConfig, spawnerService, messages);
+                    spawnerCommand.setExecutor(executor);
+                    spawnerCommand.setTabCompleter(executor);
+                } else {
+                    getLogger().severe("Command 'spawner' missing from plugin.yml — /spawner will not work.");
+                }
+            }
+        } catch (final RuntimeException exception) {
+            getLogger().severe("Spawners disabled — " + exception.getMessage());
+            this.spawnerService = null;
+        }
+
         getLogger().info("CoreMC enabled: " + islands.count() + " island(s), world '"
                 + worlds.islandWorld().getName() + "'.");
     }
@@ -125,6 +164,10 @@ public final class CoreMCPlugin extends JavaPlugin {
 
     public SchematicService schematics() {
         return schematics;
+    }
+
+    public SpawnerService spawners() {
+        return spawnerService;
     }
 
     public IslandService islands() {

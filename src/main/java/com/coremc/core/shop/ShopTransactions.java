@@ -19,11 +19,21 @@ public final class ShopTransactions {
     public static int countSellable(final ItemStack[] contents, final Material material) {
         int total = 0;
         for (final ItemStack stack : contents) {
-            if (stack != null && stack.getType() == material) {
+            if (stack != null && stack.getType() == material && !isCustom(stack)) {
                 total += stack.getAmount();
             }
         }
         return total;
+    }
+
+    /**
+     * True for items with a custom display name (spawner essences, drops,
+     * relics...). Those are progression items, never raw shop goods, so
+     * they must not be sellable as their base material.
+     */
+    private static boolean isCustom(final ItemStack stack) {
+        return stack.hasItemMeta() && stack.getItemMeta() != null
+                && stack.getItemMeta().hasDisplayName();
     }
 
     /**

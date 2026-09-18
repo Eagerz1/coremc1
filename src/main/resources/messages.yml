@@ -59,3 +59,53 @@ shop:
   not-buyable: "&cThat item cannot be bought."
   not-sellable: "&cThat item cannot be sold."
   dropped: "&e{amount} x {item} &edidn't fit and were dropped at your feet."
+
+spawner:
+  only-players: "&cOnly players can use that."
+  no-permission: "&cYou do not have permission to use that."
+  player-not-found: "&c{player} is not online."
+  unknown-mob: "&cUnknown mob or group: &f{id}&c. Try &b/spawner list&c."
+
+  help:
+    - "&b&lSpawner commands"
+    - "&b/sp list &8- &fevery mob and spawner price"
+    - "&b/sp buy <mob> &8- &fbuy a Normal spawner (coins + materials)"
+    - "&b/sp info &8- &finspect the spawner you look at"
+    - "&b/sp upgrade &8- &fupgrade the spawner you look at"
+    - "&b/sp luck &8- &fyour island's unique-drop luck"
+    - "&b/sp luck upgrade &8- &fbuy the next luck level"
+  help-admin:
+    - "&b&lSpawner admin"
+    - "&b/sp give <player> <mob> [variant] &8- &fhand out a spawner"
+    - "&b/sp giveitem <player> essence|drop|relic <id> [amount] &8- &fhand out materials"
+    - "&b/sp setluck <player> <level> &8- &fset island luck"
+
+  list-header: "&b&lSpawner progression &8- mobs and prices"
+  usage-buy: "&cUsage: &b/spawner buy <mob>"
+  usage-give: "&cUsage: &b/spawner give <player> <mob> [normal|advanced|ancient|mythic]"
+  usage-giveitem: "&cUsage: &b/spawner giveitem <player> essence|drop|relic <id> [amount]"
+  usage-setluck: "&cUsage: &b/spawner setluck <player> <level>"
+
+  no-island: "&cYou don't have an island. Create one with &b/is create&c."
+  cannot-afford: "&cThat costs &e{cost} &cbut you only have &e{balance}&c."
+  missing-items: "&cYou still need: &f{missing}&c."
+
+  bought: "&aBought a &f{mob} Spawner &afor &e{cost}&a. Place it on your island!"
+  spawner-given: "&aGiven: &f{mob} Spawner &8[&f{variant}&8]&a."
+  given: "&aGiven &f{amount} x {item}&a."
+
+  placed: "&a{mob} Spawner &8[&f{variant}&8] &aplaced and active."
+  upgrade-look: "&cLook at a spawner (within 6 blocks) to do that."
+  not-your-spawner: "&cThat spawner is not on your island."
+  already-mythic: "&cThat spawner is already &dMythic&c."
+  upgraded: "&aUpgraded to {variant}&a! &7({benefit}&7)"
+
+  luck: "&7Island luck: &f{level}&7/&f{max} &8- &7unique drop chance &f{chance}&7."
+  luck-maxed: "&7Your island luck is maxed: &f{chance} &7unique drop chance."
+  luck-upgraded: "&aIsland luck upgraded to &f{level}&a! Unique drop chance is now &f{chance}&a."
+  set-luck: "&d(admin) &7Island luck set to &f{level} &7(&f{chance} &7unique drop chance)."
+  set-luck-admin: "&a{player}'s island luck set to &f{level}&a."
+
+  found-essence: "&b+1 {essence}"
+  found-drop: "&eLucky! +1 {drop}"
+  found-relic: "&dA rare relic! +1 {relic}"
