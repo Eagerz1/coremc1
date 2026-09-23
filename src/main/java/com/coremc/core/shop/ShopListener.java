@@ -19,8 +19,13 @@ import org.bukkit.inventory.ItemStack;
  *
  * <ul>
  *   <li>Root menu: section slots open the section, close closes.</li>
- *   <li>Section: left-click buys 1, shift-left buys 16, right-click
- *       sells 1, shift-right sells all; nav slots page/close.</li>
+ *   <li>Flat section: left-click buys 1, shift-left buys 16,
+ *       right-click sells 1, shift-right sells all; nav slots
+ *       page/close.</li>
+ *   <li>Group picker: group slots open the group's pages; back
+ *       returns to the root menu.</li>
+ *   <li>Group pages: like a flat section, but back returns to the
+ *       section's group picker.</li>
  * </ul>
  *
  * All player feedback goes through MessageService and therefore
@@ -82,10 +87,11 @@ public final class ShopListener implements Listener {
     }
 
     private void handleClick(final ShopMenu menu, final InventoryClickEvent event, final Player player) {
-        if (menu.kind() == ShopMenu.Kind.ROOT) {
-            handleRootClick(menu, event, player);
-        } else {
-            handleSectionClick(menu, event, player);
+        switch (menu.kind()) {
+            case ROOT -> handleRootClick(menu, event, player);
+            case SECTION -> handleSectionClick(menu, event, player);
+            case PICKER -> handlePickerClick(menu, event, player);
+            case GROUP -> handleGroupClick(menu, event, player);
         }
     }
 
@@ -135,12 +141,82 @@ public final class ShopListener implements Listener {
 
         final int index = ShopLayout.itemIndexForSlot(section.itemCount(), menu.page(), slot);
         if (index >= 0) {
-            final ShopItem item = section.item(index);
-            if (event.getClick().isLeftClick()) {
-                buy(player, item, event.getClick().isShiftClick() ? BUY_SHIFT_AMOUNT : 1);
-            } else if (event.getClick().isRightClick()) {
-                sell(player, item, event.getClick().isShiftClick());
-            }
+            trade(player, section.item(index), event);
+        }
+    }
+
+    private void handlePickerClick(final ShopMenu menu, final InventoryClickEvent event, final Player player) {
+        final int slot = event.getSlot();
+        final ShopSection section = config.section(menu.sectionId());
+        if (section == null) {
+            player.closeInventory();
+            return;
+        }
+
+        if (slot == ShopLayout.SLOT_BACK) {
+            clickSound(player);
+            gui.openRoot(player);
+            return;
+        }
+        if (slot == ShopLayout.SLOT_CLOSE) {
+            player.closeInventory();
+            clickSound(player);
+            return;
+        }
+        final int ordinal = ShopLayout.groupOrdinalForSlot(slot);
+        if (ordinal >= 0 && ordinal < section.groups().size()) {
+            clickSound(player);
+            gui.openGroup(player, section, section.groups().get(ordinal), 0);
+        }
+    }
+
+    private void handleGroupClick(final ShopMenu menu, final InventoryClickEvent event, final Player player) {
+        final int slot = event.getSlot();
+        final ShopSection section = config.section(menu.sectionId());
+        if (section == null) {
+            player.closeInventory();
+            return;
+        }
+        final ShopGroup group = section.group(menu.groupId());
+        if (group == null) {
+            player.closeInventory();
+            return;
+        }
+
+        if (slot == ShopLayout.SLOT_BACK) {
+            clickSound(player);
+            gui.openPicker(player, section);
+            return;
+        }
+        if (slot == ShopLayout.SLOT_CLOSE) {
+            player.closeInventory();
+            clickSound(player);
+            return;
+        }
+        if (slot == ShopLayout.SLOT_PREVIOUS && menu.page() > 0) {
+            clickSound(player);
+            gui.openGroup(player, section, group, menu.page() - 1);
+            return;
+        }
+        if (slot == ShopLayout.SLOT_NEXT
+                && menu.page() < ShopLayout.pageCount(group.itemCount()) - 1) {
+            clickSound(player);
+            gui.openGroup(player, section, group, menu.page() + 1);
+            return;
+        }
+
+        final int index = ShopLayout.itemIndexForSlot(group.itemCount(), menu.page(), slot);
+        if (index >= 0) {
+            trade(player, group.item(index), event);
+        }
+    }
+
+    /** Shared item-click behaviour: left buys (shift = 16), right sells (shift = all). */
+    private void trade(final Player player, final ShopItem item, final InventoryClickEvent event) {
+        if (event.getClick().isLeftClick()) {
+            buy(player, item, event.getClick().isShiftClick() ? BUY_SHIFT_AMOUNT : 1);
+        } else if (event.getClick().isRightClick()) {
+            sell(player, item, event.getClick().isShiftClick());
         }
     }
 

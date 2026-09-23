@@ -1,6 +1,7 @@
 package com.coremc.core.shop;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -148,9 +149,20 @@ class ShopConfigTest {
                 config.section("minerals").items().stream()
                         .filter(item -> item.material() == Material.DIAMOND).findFirst().orElseThrow()
                         .material());
-        // At least one section needs a second page so pagination is exercised.
-        assertTrue(ShopLayout.pageCount(config.section("building").itemCount()) > 1,
-                "building section spans multiple pages");
+        // Building is the grouped catalogue: subcategories in picker
+        // order, one page for the small ones, several for the big ones.
+        final ShopSection building = config.section("building");
+        assertTrue(building.grouped(), "building is grouped");
+        assertTrue(building.groups().size() > 1, "building has subcategories");
+        assertEquals("stone", building.groups().get(0).id());
+        assertEquals(Material.COBBLESTONE, building.groups().get(0).item(0).material());
+        assertEquals(1, ShopLayout.pageCount(building.groups().get(0).itemCount()),
+                "stone group fits one page");
+        assertTrue(building.groups().stream().anyMatch(group -> group.itemCount() > ShopLayout.ITEMS_PER_PAGE),
+                "at least one group spans multiple pages so pagination is exercised");
+        // Flat sections still paginate the classic way.
+        assertTrue(config.sections().stream().anyMatch(section -> !section.grouped()),
+                "flat sections still exist");
 
         // /sell valuation: catalogue prices, the default for everything else.
         assertEquals(0.25, config.defaultSellPrice());
@@ -205,6 +217,142 @@ class ShopConfigTest {
                                 + "      - \"COBBLESTONE:2:0.5\"\n"));
         assertTrue(error.getMessage().contains("'one'"), error.getMessage());
         assertTrue(error.getMessage().contains("'two'"), error.getMessage());
+    }
+
+    // --------------------------------------------------------------
+    // Grouped sections (subcategories)
+    // --------------------------------------------------------------
+
+    private static final String GROUPED = """
+            sections:
+              building:
+                name: "Building"
+                icon: BRICKS
+                groups:
+                  stone:
+                    name: "Stone & Granite"
+                    icon: STONE
+                    items:
+                      - "COBBLESTONE:1:0.25"
+                      - "STONE:1.5:0.4"
+                  wood:
+                    name: "Wood"
+                    icon: OAK_PLANKS
+                    items:
+                      - "OAK_PLANKS:2:0.5"
+              crops:
+                name: "Farming"
+                icon: WHEAT
+                items:
+                  - "WHEAT_SEEDS:1:0.25"
+            """;
+
+    @Test
+    void groupedSectionsParseGroupsInOrder() {
+        final ShopConfig config = parse(GROUPED);
+        final ShopSection building = config.section("building");
+        assertTrue(building.grouped(), "building is grouped");
+        assertEquals(2, building.groups().size());
+        assertEquals("stone", building.groups().get(0).id());
+        assertEquals("Stone & Granite", building.groups().get(0).name());
+        assertEquals(Material.STONE, building.groups().get(0).icon());
+        assertEquals(2, building.groups().get(0).itemCount());
+        assertEquals(1, building.groups().get(1).itemCount());
+        // flat sections are not grouped
+        assertFalse(config.section("crops").grouped());
+        assertEquals(0, config.section("crops").groups().size());
+    }
+
+    @Test
+    void groupedSectionItemsAreFlattenedInGroupOrder() {
+        final ShopConfig config = parse(GROUPED);
+        final ShopSection building = config.section("building");
+        assertEquals(3, building.itemCount());
+        assertEquals(Material.COBBLESTONE, building.item(0).material());
+        assertEquals(Material.STONE, building.item(1).material());
+        assertEquals(Material.OAK_PLANKS, building.item(2).material());
+        // group lookup by id, case-insensitive
+        assertEquals("wood", building.group("Wood").id());
+        assertNull(building.group("nope"));
+    }
+
+    @Test
+    void groupedItemsArePricedForSellLikeFlatOnes() {
+        final ShopConfig config = parse(GROUPED);
+        assertEquals(0.25, config.sellPrice(Material.COBBLESTONE));
+        assertEquals(0.5, config.sellPrice(Material.OAK_PLANKS));
+        assertEquals(0.25, config.sellPrice(Material.OAK_FENCE), "unlisted -> default");
+    }
+
+    @Test
+    void groupIconDefaultsToTheFirstItemWhenOmitted() {
+        final ShopConfig config = parse(GROUPED.replace("        icon: STONE\n", ""));
+        assertEquals(Material.COBBLESTONE, config.section("building").groups().get(0).icon());
+    }
+
+    @Test
+    void groupNameDefaultsToItsId() {
+        final ShopConfig config = parse(GROUPED
+                .replace("        name: \"Wood\"\n", "")
+                .replace("        icon: OAK_PLANKS\n", ""));
+        assertEquals("wood", config.section("building").group("wood").name());
+        assertEquals(Material.OAK_PLANKS, config.section("building").group("wood").icon());
+    }
+
+    @Test
+    void duplicateMaterialAcrossGroupsIsRejected() {
+        final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> parse("""
+                        sections:
+                          building:
+                            name: "Building"
+                            icon: BRICKS
+                            groups:
+                              stone:
+                                items:
+                                  - "COBBLESTONE:1:0.25"
+                              extra:
+                                items:
+                                  - "COBBLESTONE:2:0.5"
+                        """));
+        // the duplicate must name the group it happened in
+        assertTrue(error.getMessage().contains("duplicate material"), error.getMessage());
+        assertTrue(error.getMessage().contains("group 'extra'"), error.getMessage());
+    }
+
+    @Test
+    void itemsAndGroupsInOneSectionIsRejected() {
+        final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> parse(GROUPED.replace("    icon: BRICKS\n",
+                        "    icon: BRICKS\n    items:\n      - \"DIRT:1:0.25\"\n")));
+        assertTrue(error.getMessage().contains("both 'items' and 'groups'"), error.getMessage());
+    }
+
+    @Test
+    void emptyGroupIsRejected() {
+        final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> parse(GROUPED.replace("          - \"OAK_PLANKS:2:0.5\"\n", "")));
+        assertTrue(error.getMessage().contains("group 'wood': no valid items"), error.getMessage());
+    }
+
+    @Test
+    void unknownGroupIconIsRejected() {
+        final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> parse(GROUPED.replace("icon: STONE", "icon: NOT_A_BLOCK")));
+        assertTrue(error.getMessage().contains("group 'stone'"), error.getMessage());
+        assertTrue(error.getMessage().contains("NOT_A_BLOCK"), error.getMessage());
+    }
+
+    @Test
+    void moreThanFourteenGroupsIsRejected() {
+        final StringBuilder yaml = new StringBuilder("sections:\n  building:\n    name: \"B\"\n    icon: BRICKS\n    groups:\n");
+        for (int i = 0; i < 15; i++) {
+            yaml.append("      g").append(i).append(":\n        name: \"G").append(i)
+                    .append("\"\n        items:\n          - \"DIRT:1:0.25\"\n");
+        }
+        final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> parse(yaml.toString()));
+        assertTrue(error.getMessage().contains("more than 14 groups"), error.getMessage());
     }
 
     private ShopConfig parse(final String yamlText) {

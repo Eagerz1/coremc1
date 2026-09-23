@@ -46,28 +46,73 @@ public final class ShopGui {
         player.openInventory(inventory);
     }
 
-    /** Opens a section's {@code page} (0-based, clamped to the last page). */
-    public void openSection(final Player player, final ShopSection section, int page) {
-        final int pages = ShopLayout.pageCount(section.itemCount());
-        page = Math.max(0, Math.min(page, pages - 1));
-        final ShopMenu menu = ShopMenu.section(section.id(), page);
+    /**
+     * Opens a section for browsing. Flat sections show their paginated
+     * item list directly; grouped sections show the subcategory picker
+     * (each group then opens its own paginated pages).
+     */
+    public void openSection(final Player player, final ShopSection section, final int page) {
+        if (section.grouped()) {
+            openPicker(player, section);
+            return;
+        }
+        openItemPage(player, ShopMenu.section(section.id(), page),
+                "&3&lShop &8— &b" + section.name(),
+                section.items(), "this section");
+    }
+
+    /** Opens a grouped section's subcategory picker. */
+    public void openPicker(final Player player, final ShopSection section) {
+        final ShopMenu menu = ShopMenu.picker(section.id());
         final Inventory inventory = Bukkit.createInventory(menu, ShopLayout.SECTION_SIZE,
-                ColorUtil.colorize("&3&lShop &8— &b" + section.name() + " &7(" + (page + 1) + "/" + pages + ")"));
+                ColorUtil.colorize("&3&lShop &8— &b" + section.name()));
         menu.inventory(inventory);
 
-        final List<ShopItem> pageItems = ShopLayout.pageItems(section.items(), page);
+        final List<ShopGroup> groups = section.groups();
+        for (int i = 0; i < groups.size(); i++) {
+            inventory.setItem(ShopLayout.groupSlot(i), groupIcon(groups.get(i)));
+        }
+
+        inventory.setItem(ShopLayout.SLOT_BACK,
+                navItem(Material.ARROW, "&c&lBack", "&7Return to the shop menu."));
+        inventory.setItem(ShopLayout.SLOT_CLOSE, closeItem());
+        fillEmpty(inventory);
+
+        player.openInventory(inventory);
+    }
+
+    /** Opens one page of a subcategory of a grouped section. */
+    public void openGroup(final Player player, final ShopSection section,
+                          final ShopGroup group, int page) {
+        openItemPage(player, ShopMenu.group(section.id(), group.id(), page),
+                "&3&lShop &8— &b" + section.name() + " &8· &b" + group.name(),
+                group.items(), group.name());
+    }
+
+    /** Renders a paginated item window (used by flat sections and groups alike). */
+    private void openItemPage(final Player player, final ShopMenu menu, final String title,
+                              final List<ShopItem> items, final String context) {
+        final int pages = ShopLayout.pageCount(items.size());
+        final int page = Math.max(0, Math.min(menu.page(), pages - 1));
+        final Inventory inventory = Bukkit.createInventory(menu, ShopLayout.SECTION_SIZE,
+                ColorUtil.colorize(title + " &7(" + (page + 1) + "/" + pages + ")"));
+        menu.inventory(inventory);
+
+        final List<ShopItem> pageItems = ShopLayout.pageItems(items, page);
         for (int i = 0; i < pageItems.size(); i++) {
             inventory.setItem(i, shopItem(pageItems.get(i)));
         }
 
-        inventory.setItem(ShopLayout.SLOT_BACK, navItem(Material.ARROW, "&c&lBack", "&7Return to the shop menu."));
+        final String backLore = menu.kind() == ShopMenu.Kind.GROUP
+                ? "&7Return to the categories." : "&7Return to the shop menu.";
+        inventory.setItem(ShopLayout.SLOT_BACK, navItem(Material.ARROW, "&c&lBack", backLore));
         if (page > 0) {
             inventory.setItem(ShopLayout.SLOT_PREVIOUS,
                     navItem(Material.ARROW, "&e&lPrevious page", "&7Go to page " + page + "/" + pages + "."));
         }
         inventory.setItem(ShopLayout.SLOT_PAGE,
                 navItem(Material.BOOK, "&fPage " + (page + 1) + " &7of " + pages,
-                        "&7" + section.itemCount() + " items in this section."));
+                        "&7" + items.size() + " items in " + context + "."));
         if (page < pages - 1) {
             inventory.setItem(ShopLayout.SLOT_NEXT,
                     navItem(Material.ARROW, "&e&lNext page", "&7Go to page " + (page + 2) + "/" + pages + "."));
@@ -95,9 +140,23 @@ public final class ShopGui {
         final ItemStack stack = new ItemStack(section.icon());
         final ItemMeta meta = stack.getItemMeta();
         if (meta != null) {
+            final String hint = section.grouped()
+                    ? "&7" + section.groups().size() + " categories, " + section.itemCount() + " items"
+                    : "&7" + section.itemCount() + " items";
             meta.setDisplayName(ColorUtil.colorize("&b&l" + section.name()));
+            meta.setLore(List.of(ColorUtil.colorize(hint + " &8— &eclick to browse")));
+            stack.setItemMeta(meta);
+        }
+        return stack;
+    }
+
+    private ItemStack groupIcon(final ShopGroup group) {
+        final ItemStack stack = new ItemStack(group.icon());
+        final ItemMeta meta = stack.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(ColorUtil.colorize("&b&l" + group.name()));
             meta.setLore(List.of(ColorUtil.colorize(
-                    "&7" + section.itemCount() + " items &8— &eclick to browse")));
+                    "&7" + group.itemCount() + " items &8— &eclick to browse")));
             stack.setItemMeta(meta);
         }
         return stack;

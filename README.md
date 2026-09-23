@@ -21,7 +21,7 @@ Core / Core+ / Core++ rank ladder.
 | Protection | Only the owner and members can build/interact inside a claim (blocks, containers, doors, buckets, fire, hanging entities, passive mobs). The void between islands is wilderness — nobody builds there. `coremc.island.bypass` (op) overrides. |
 | Persistence | One YAML file per island under `plugins/CoreMC/islands/`, atomic writes, corrupt files are skipped with a warning instead of breaking the plugin. |
 | One island per player | A player either owns an island or is a member of (at most) one. |
-| Shop | 7-section chest GUI (`/shop`): buy/sell with coins, shift-click for stacks/all, paged sections, balance display, inventory-injection protection. Coin balances persist (`balances.yml`). |
+| Shop | 7-section chest GUI (`/shop`): Building, Farming, Mob Drops, Minerals, Food, Redstone, Nether & End — ~550 priced vanilla materials (gear is never sold; you craft it). Buy/sell with coins, shift-click for stacks/all, balance display, inventory-injection protection. Sections are either flat paginated pages, or grouped — Building is a category picker (Stone, Deepslate & Tuff, Dirt/Sand/Mud, Bricks/Quartz/Amethyst, Copper, Wood, Glass, Wool & Carpets, Terracotta & Concrete, Ocean & End, Nether Stone, Lights & Decor — up to 14 groups, two rows of seven) with each category paginating on its own. Coin balances persist (`balances.yml`). |
 | Island top | `/is top` opens a category picker (small chest) with the three leaderboards — Solos, Duos and Teams (by team size) — each opening a 54-slot board with the top ten islands as owner heads (rank, points, team size and the season reward in the lore). Points: blocks broken or placed on your island 0.2 each, 1 per 5 minutes of play time, +500 per island upgrade, +5,000 per island core level (the core arrives soon). Points persist (`island-points.yml`) and die with the island. Each season change pays the leaders in webstore gift cards (GC) — see Island top rewards. |
 | Tebex giftcards | With a Tebex webstore configured (`tebex.yml`, Plugin API secret key), `/giftcard` (`/gc`) links a webstore gift card and shows its number — click it to copy — with its live balance beside it, straight from the Tebex API. Island top season rewards arrive as freshly created gift cards through the same API. |
 | Island top rewards | When a new season starts (`/season set <n>`), the island top leaders are paid in webstore gift cards — always to the island owner. Teams pay five places (100 / 75 / 50 / 35 / 25 GC), Duos three (100 / 75 / 50 GC), Solos five (100 / 75 / 50 / 30 / 25 GC). Each card is created through the Tebex Plugin API, linked to the owner (`/gc` shows it) and messaged to online owners immediately; a season is only ever paid once (`island-rewards.yml` remembers the last paid season), and an unconfigured Tebex leaves the season unpaid with a loud log line instead of eating the rewards. |
@@ -57,6 +57,7 @@ Core / Core+ / Core++ rank ladder.
 | `/is kick <player>` | Owner-only: removes a member from your island and evicts them to the main world. |
 | `/is help` | Command overview. |
 | `/shop` | Opens the shop GUI (root: section picker + your balance). |
+| `/shop <section> [group]` | Jumps straight into a section (by id or name, e.g. `/shop building stone`); grouped sections open their category picker, adding a group opens that category. |
 | `/sell` | Opens the sell window — drop items in, close to get paid. |
 | `/giftcard` `/gc` | Your webstore giftcard: number (click to copy) + balance; `link <code>` links one. |
 | `/is top` | The island top category picker: Solos / Duos / Teams, each opening its top-ten leaderboard board. |
@@ -108,10 +109,13 @@ admin `coremc.season.admin` (op).
   (guards `/season set` against double-paying a season).
 - `shop.yml` — coin economy: starting balance, currency symbol, the
   default sell price paid by `/sell` for unlisted blocks, and buy/sell
-  prices per section (validates against infinite-money loops and the
-  same material appearing twice). Section pages are double chests: 36
-  items per page with back / previous / page / next / close controls;
-  the Building Blocks section ships 112 blocks across four pages.
+  prices per section (validates against infinite-money loops, the same
+  material appearing twice anywhere, mixed shapes, and bad group icons).
+  Section pages are double chests: 36 items per page with back /
+  previous / page / next / close controls. A section is either flat
+  (`items:`) or grouped (`groups:` of up to 14 subcategories — the
+  picker shows two rows of seven, each category paginates like a
+  section); Building ships ~425 blocks across twelve categories.
 - `spawners.yml` — the whole spawner progression: groups, mobs, drop
   items, spawner and upgrade costs (essence + the mob's own drop per
   tier, via `upgrade-defaults` with optional per-group/per-mob

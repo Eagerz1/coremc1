@@ -13,6 +13,9 @@ import java.util.List;
  * Section (double chest, 54): [0..35] = items (36 per page),
  *             [45] back, [46] previous page, [49] page indicator,
  *             [52] next page, [53] close, everything else filler.
+ * Group picker (double chest, 54): [10..16] and [19..25] = up to
+ *             fourteen subcategory icons, [45] back, [53] close.
+ * Group pages use the exact same item/nav layout as sections.
  * </pre>
  */
 public final class ShopLayout {
@@ -35,6 +38,10 @@ public final class ShopLayout {
     public static final int SLOT_PAGE = 49;
     public static final int SLOT_NEXT = 52;
     public static final int SLOT_CLOSE = 53;
+
+    /** Group picker rows: two rows of seven subcategory slots. */
+    public static final int PICKER_FIRST_ROW = 10;   // 10..16
+    public static final int PICKER_SECOND_ROW = 19;  // 19..25
 
     private ShopLayout() {
     }
@@ -82,5 +89,24 @@ public final class ShopLayout {
     public static int sectionOrdinalForSlot(final int slot) {
         final int ordinal = slot - ROOT_FIRST_SECTION_SLOT;
         return (ordinal >= 0 && ordinal < ShopConfig.MAX_SECTIONS) ? ordinal : -1;
+    }
+
+    /** Picker slot for the group at {@code ordinal}, or -1 when it has no slot. */
+    public static int groupSlot(final int ordinal) {
+        if (ordinal < 0 || ordinal >= ShopConfig.MAX_GROUPS) {
+            return -1;
+        }
+        return ordinal < 7 ? PICKER_FIRST_ROW + ordinal : PICKER_SECOND_ROW + (ordinal - 7);
+    }
+
+    /** Group ordinal for a picker slot, or -1 when the slot is not a group slot. */
+    public static int groupOrdinalForSlot(final int slot) {
+        if (slot >= PICKER_FIRST_ROW && slot < PICKER_FIRST_ROW + 7) {
+            return slot - PICKER_FIRST_ROW;
+        }
+        if (slot >= PICKER_SECOND_ROW && slot < PICKER_SECOND_ROW + 7) {
+            return slot - PICKER_SECOND_ROW + 7;
+        }
+        return -1;
     }
 }

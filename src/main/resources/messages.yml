@@ -125,6 +125,8 @@ shop:
   not-buyable: "&cThat item cannot be bought."
   not-sellable: "&cThat item cannot be sold."
   dropped: "&e{amount} x {item} &edidn't fit and were dropped at your feet."
+  unknown-section: "&cThere is no shop section called &f{section}&c."
+  unknown-group: "&cThere is no category called &f{group} &cin &f{section}&c."
 
 sell:
   gui-open: "&7Drop items into the window — closing it sells them."

@@ -83,4 +83,28 @@ class ShopLayoutTest {
         assertEquals(27, ShopLayout.SIZE);
         assertEquals(36, ShopLayout.ITEMS_PER_PAGE);
     }
+
+    @Test
+    void groupSlotsRoundTripAcrossTwoRowsOfSeven() {
+        for (int ordinal = 0; ordinal < 14; ordinal++) {
+            assertEquals(ordinal, ShopLayout.groupOrdinalForSlot(ShopLayout.groupSlot(ordinal)));
+        }
+        // Two rows of seven, skipping the row edges.
+        assertEquals(10, ShopLayout.groupSlot(0));
+        assertEquals(16, ShopLayout.groupSlot(6));
+        assertEquals(19, ShopLayout.groupSlot(7));
+        assertEquals(25, ShopLayout.groupSlot(13));
+        // There is no fifteenth picker slot.
+        assertEquals(-1, ShopLayout.groupSlot(14));
+        assertEquals(-1, ShopLayout.groupSlot(-1));
+    }
+
+    @Test
+    void pickerGroupSlotsNeverCollideWithNavOrRootSlots() {
+        // Picker slots live in rows two and three; the nav row and the
+        // root-menu slots must never map to a group.
+        for (final int slot : new int[]{45, 46, 49, 52, 53, 0, 9, 17, 18, 26, 27, 53}) {
+            assertEquals(-1, ShopLayout.groupOrdinalForSlot(slot), "slot " + slot);
+        }
+    }
 }
