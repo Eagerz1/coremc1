@@ -1,94 +1,169 @@
 # CoreMC
 
-CoreMC is the core plugin for the CoreMC Skyblock server. This repository
-contains the complete from-scratch rebuild of the plugin.
+CoreMC is a Paper plugin (Java 21, Paper 1.21.x): the Skyblock core for the
+CoreMC server. This is a ground-up rebuild — islands in a dedicated void
+world, schematic-based generation, borders and the core island commands,
+a coin economy with a chest-GUI shop, the mob-spawner progression system
+(essences, unique drops, relics, four spawner variants, island luck), and
+chest-GUI menus for it all — the double-chest island menu with upgrades,
+buffs, members and invites, plus the double-chest spawner menu, and the
+Core / Core+ / Core++ rank ladder.
 
-- **Platform:** Paper (currently targeting Paper 1.21.x — built and tested against Paper 1.21.11)
-- **Language:** Java 21
-- **Build:** Maven (`mvn package`) — one consistent build system for the project
-
-## Current feature set (v0.3.0)
+## Feature set (v1.0.0)
 
 | Area | Details |
 |---|---|
-| Plugin lifecycle | Service-based bootstrap: task registry, config, messages, player data. Clean enable/disable ordering, safe shutdown. |
-| Persistent player profiles | One YAML file per player (`plugins/CoreMC/profiles/<uuid>.yml`). Loaded asynchronously at pre-login, saved on quit, on a scheduled autosave, and on shutdown. Atomic writes (temp file + move). Survives restarts. |
-| First-join welcome | Branded welcome message on a player's first ever join (messages.yml). |
-| `/coremc` | `info` (default): version, server, loaded profiles, tracked tasks, uptime. `reload`: reloads config + messages and re-applies the autosave interval without leaking tasks. `help`. |
-| `/profile [player]` | Shows your own profile; `coremc.command.profile.others` for viewing an online player's profile. |
-| `/heal [player]` | Restores health, hunger and saturation, extinguishes fire. Self-heal: `coremc.command.heal`; targeted (incl. console): `coremc.command.heal.others`. |
-| Skyblock islands (`/island`, aliases `/is`, `/isle`, `/block`) | One island per player on a spiral grid around `(0, 64, 0)` in the configured world. `create`: 5×5 grass platform + bedrock core + oak tree, then teleports you home. `teleport`/`home`: back to your island. `info`: centre + age. `delete`: two-step timed confirmation; frees the grid cell for reuse (blocks stay, documented). Registry loads async at startup (dedicated `CoreMC-Islands` worker); per-owner YAML under `plugins/CoreMC/islands/`, atomic writes, survives restarts. Config: `island.world` (default `world`), `island.spacing` (default 256, min 64), `island.start-height` (64), `island.delete-confirm-seconds` (15). Centres are stored absolutely, so changing spacing later never corrupts existing islands. |
-| Branding | Messages use standard Minecraft `&` colour codes (MiniMessage is intentionally not used). Brand prefix: `&b&lCOREMC &8» &f`, configurable in messages.yml. messages.yml merges bundled defaults, so upgrades never show "missing message" for your old config file. |
+| Island world | Plugin-created void world (`coremc_islands`) — every chunk is empty void, islands are pasted block-by-block at grid positions. Persists across restarts. |
+| Island grid | Islands spiral around the origin on a 200-block grid, each claiming a 100×100 square centred on its position. Slots are never reused, so a deleted island's leftovers never get pasted over. |
+| Schematics | Hand-editable char-grid format (`plugins/CoreMC/schematics/<name>.yml`) — palette + layered rows. Ships a default starter island (pedestal, oak tree, torches, starter chest). Broken schematics fail validation loudly at load time, never half-paste. |
+| Starter chest | Configurable `MATERIAL:AMOUNT` list, filled into the schematic's chest on creation. |
+| Borders | Per-player vanilla world border centred on the island, sized to the claim; re-applied on join/world-change, cleared when leaving the island world. |
+| Protection | Only the owner and members can build/interact inside a claim (blocks, containers, doors, buckets, fire, hanging entities, passive mobs). The void between islands is wilderness — nobody builds there. `coremc.island.bypass` (op) overrides. |
+| Persistence | One YAML file per island under `plugins/CoreMC/islands/`, atomic writes, corrupt files are skipped with a warning instead of breaking the plugin. |
+| One island per player | A player either owns an island or is a member of (at most) one. |
+| Shop | 7-section chest GUI (`/shop`): buy/sell with coins, shift-click for stacks/all, paged sections, balance display, inventory-injection protection. Coin balances persist (`balances.yml`). |
+| Island top | `/is top` opens a category picker (small chest) with the three leaderboards — Solos, Duos and Teams (by team size) — each opening a 54-slot board with the top ten islands as owner heads (rank, points, team size and the season reward in the lore). Points: blocks broken or placed on your island 0.2 each, 1 per 5 minutes of play time, +500 per island upgrade, +5,000 per island core level (the core arrives soon). Points persist (`island-points.yml`) and die with the island. Each season change pays the leaders in webstore gift cards (GC) — see Island top rewards. |
+| Tebex giftcards | With a Tebex webstore configured (`tebex.yml`, Plugin API secret key), `/giftcard` (`/gc`) links a webstore gift card and shows its number — click it to copy — with its live balance beside it, straight from the Tebex API. Island top season rewards arrive as freshly created gift cards through the same API. |
+| Island top rewards | When a new season starts (`/season set <n>`), the island top leaders are paid in webstore gift cards — always to the island owner. Teams pay five places (100 / 75 / 50 / 35 / 25 GC), Duos three (100 / 75 / 50 GC), Solos five (100 / 75 / 50 / 30 / 25 GC). Each card is created through the Tebex Plugin API, linked to the owner (`/gc` shows it) and messaged to online owners immediately; a season is only ever paid once (`island-rewards.yml` remembers the last paid season), and an unconfigured Tebex leaves the season unpaid with a loud log line instead of eating the rewards. |
+| Sell window | `/sell` opens an empty double chest: drop anything in and close it to get paid. Every listed item pays its shop sell price (times the rank multiplier), any other ordinary block pays `default-sell-price`, and custom progression items (essences, drops, spawner items) are returned untouched. A restart settles open windows, so items are never lost. |
+| Vault economy | With [Vault](https://github.com/MilkBowl/VaultAPI) installed, CoreMC registers its coins as a Vault economy provider: any Vault-aware plugin (placeholders, shops, scoreboards, …) reads and spends the same `balances.yml` coins through the standard ServicesManager. Without Vault everything works unchanged (soft-depend; graceful no-op with a log line). |
+| Spawner progression | 5 mob groups (Organic, Undead, Infernal, Ender, Corrupted), 3 mobs each. Every group shares an Essence and a rare Relic; every mob has a unique drop. `/spawner buy` costs coins plus unlock materials. The `/spawner` menu shows every mob as a real spawner block with the mob rendered inside the cage, flowing down three columns. |
+| Spawner variants | normal → advanced → ancient → mythic. Each variant spawns faster and in bigger bursts (rate 1–4×, count 2–6, nearby cap 8–24); Mythic spawners auto-kill their spawns and credit the drops to the island owner. Upgrades cost essence + the mob's own unique drop only — no coins, no relics. Costs come straight from `spawners.yml` (`upgrade-defaults`, optional per-group and per-mob overrides) and scale per spawner in the stack, so a 2x stack pays twice. |
+| Spawner items | Spawners are real items (BlockStateMeta + PDC): recoverable by breaking, re-placeable, variant preserved. Custom items match by PDC tag with a display-name fallback, and are never sellable in the shop as raw materials. |
+| Spawner stacking | Identical spawners stack on one block: sneak-click a held spawner onto a placed one (same mob + variant, island members only, up to `settings.spawner.max-stack` = 64). The stack label floats above the cage as a persistent text-display hologram ("32x Pig Spawner [Normal]"), the spawn count and upgrade cost scale with the stack, and `/spawner info` shows the stack line. Sneak-break takes the whole stack as one "N x" item; a normal break takes exactly one spawner out and leaves the rest placed. Placing an "N x" item registers an N-stack in one go. Spawners only place on your own island (a clear message says so otherwise). |
+| Mob stacking | Spawner spawns merge into counted entities — "4x Pig" — so big farms stay light on entities (`settings.mob-stack`: radius 5, max 1024). Killing a stack drops and credits the whole count: loot, XP and kill-reward rolls all multiply, and a count-1 replacement appears an instant later. Mythic auto-kill fodder dies as a whole stack with no replacement. |
+| Island luck | `/spawner luck upgrade` buys island-wide luck levels (coins): the unique-drop chance rises from 10% to 50%. Survives restarts; removed with the island. |
+| Island menu | `/is` opens the island menu — a double chest (54 slots) for island holders only (everyone else gets the deny line + help). Buttons: island info, go home, invite, members, border toggle, upgrades, buffs, spawner progression, delete (two-click confirm), close. |
+| Sub-menus | Every island sub-menu is a small chest (27 slots): upgrades, buffs, members and invites. Purchases re-use the exact command flows, so rules and messages never fork. |
+| Island upgrades | Permanent, owner-only, paid with coins (`upgrades.yml`): Island Expansion grows the claim 10 blocks per level (3 levels, $2,500/$10,000/$30,000 — a fully grown claim never reaches the grid spacing); Member Slots starts at 3 island-mates and adds one per level (3 levels, $2,000/$8,000/$25,000). Levels persist in the island file. |
+| Island buffs | Timed island-wide boosts, owner-only (`upgrades.yml`): Green Thumb (crops grow ×2), Spawner Overdrive (spawner delays ÷2 — re-tunes placed spawners the moment it starts) and XP Surge (kill XP ×2), 30 min each for $1,500/$2,500/$1,000. Active buffs persist with their remaining time; expiry reverts lasting effects. |
+| Member caps + kick | The member limit counts everyone on the island (owner included). A full island keeps pending invites alive, so a rejected joiner can join once a slot frees up. `/is kick <player>` and the members menu's two-click kick evict the member to the main world. |
+| Spawner menu | `/spawner` opens a double chest (54 slots): the guide book, the island's luck upgrade, and all 15 mob spawners laid out by group. Clicking a mob buys it through the same flow as `/spawner buy`. |
+| Rank ladder | Core → Core+ → Core++ (`ranks.yml`, order = worst to best, the ladder is validated to only improve as it climbs). Bought with coins via `/rank buy` — you always pay only the upgrade step. |
+| Rank perks | Any rank: `/fly` (survival flight toggle) and `/echest` (your real ender chest, anywhere). Shop sells pay the rank multiplier. Every new season pays out the rank's season money — online players immediately, offline players on their next join (`/season`, admins start a season with `/season set <n>`). River keys (for the upcoming crates) are granted on first acquiring each rank and tracked per player. The chat-colour perks (dye colours, gradients, bold) are declared per rank and arrive with the upcoming chat system; skytokens (for island upgrades) build on this later. |
+| Rank pricing | Core $75k (x1.05 sells, $100k/season, 2 keys), Core+ $250k (x1.2, $250k/season, 5 keys), Core++ $750k (x1.5, $500k/season, 12 keys) — each rank pays for itself within a season or two. Admins grant/clear with `/rank set <player> <rank\|none>`. |
 
-Note on command permissions: on Paper, commands whose permission you lack
-(e.g. `/heal` for non-ops) are removed from the client command tree and
-report as "Unknown or incomplete command" — standard EssentialsX-style
-behaviour; Spigot instead sends the configured permission message.
+## Commands
+
+| Command | Details |
+|---|---|
+| `/is` | Opens the island menu GUI (double chest). Requires an island — otherwise the deny line plus the help list. |
+| `/is create` | Claims the next grid slot, pastes the schematic, fills the starter chest and teleports you home. Fails if you already own or share an island. |
+| `/is go` | Teleports you to your island (own, or the one you are a member of). |
+| `/is invite <player>` | Owner-only. Invites an online player who doesn't already have an island. |
+| `/is join` | Accepts your pending invite (expires after 5 min) and teleports you to the island. |
+| `/is leave` | Members leave the island they joined. Owners must `/is delete` instead. |
+| `/is delete` | Owner-only, two-step: the first call arms a 30 s confirmation, `/is delete confirm` deletes the claim, evicts everyone to the main world spawn and frees the slot. Pasted blocks remain in the void. |
+| `/is kick <player>` | Owner-only: removes a member from your island and evicts them to the main world. |
+| `/is help` | Command overview. |
+| `/shop` | Opens the shop GUI (root: section picker + your balance). |
+| `/sell` | Opens the sell window — drop items in, close to get paid. |
+| `/giftcard` `/gc` | Your webstore giftcard: number (click to copy) + balance; `link <code>` links one. |
+| `/is top` | The island top category picker: Solos / Duos / Teams, each opening its top-ten leaderboard board. |
+| `/spawner` | Opens the spawner menu GUI (double chest): guide, luck upgrade, every mob by group. |
+| `/spawner list` | Every group, mob and spawner price. |
+| `/spawner buy <mob>` | Buys a Normal spawner — coins plus the mob's unlock materials (essence + earlier mobs' drops). |
+| `/spawner info` | Describes the spawner you look at: variant, spawn stats, stack size, next upgrade cost. |
+| `/spawner upgrade` | Upgrades the spawner you look at (owner/member of its island only). Costs essence + the mob's own unique drop, data-driven per tier and scaled by the stack size; a missing-materials line says exactly what is still needed. |
+| `/spawner luck` | Shows your island's luck level and unique-drop chance. |
+| `/spawner luck upgrade` | Buys the next luck level with coins. |
+| `/rank` | Shows your rank: multiplier, season payout, River keys, perks, and the next rank with its price. |
+| `/rank list` | The whole ladder with prices and perks. |
+| `/rank buy` | Buys the next rank with coins (upgrade steps only), granting its River keys and perks. |
+| `/rank set <player> <rank\|none>` | Admin: grant or clear a player's rank (clearing also strips flight). |
+| `/fly` | Toggles flight (any rank). |
+| `/echest` | Opens your ender chest anywhere (any rank). Aliases `/ec`, `/enderchest`. |
+| `/season` | Shows the current season. |
+| `/season set <number>` | Admin: starts a new season — pays out ranked players and sends the island top gift card rewards. |
+| `/spawner give <player> <mob> [variant]` | Admin: hand out a spawner item. |
+| `/spawner giveitem <player> essence\|drop\|relic <id> [amount]` | Admin: hand out progression materials. |
+| `/spawner setluck <player> <level>` | Admin: set a player's island luck. |
+
+Aliases: `/island`, `/isle`, `/block`; `/store` for `/shop`; `/sp` for
+`/spawner`; `/ranks` and `/tier` for `/rank`; `/ec` and `/enderchest` for
+`/gc` for `/giftcard`. Everyone may use `/is`, `/shop`, `/sell`, `/giftcard`,
+`/spawner`, `/rank`, `/fly`,
+`/echest`.
+`/echest` and `/season` (`coremc.command.*`); the spawner admin tools need
+`coremc.spawner.admin` (op), rank admin `coremc.rank.admin` (op) and season
+admin `coremc.season.admin` (op).
+
+## Configuration
+
+- `config.yml` — island world name, Y level, spacing, border size, border
+  visibility, schematic name, delete-confirm and invite-expiry windows,
+  starter chest contents.
+- `messages.yml` — every user-facing string, `&` colour codes, with the
+  bundled defaults as fallback for missing keys. Every message goes out
+  prefixed with cyan-bold `COREMC >>>` (the `prefix` key); unknown
+  subcommands answer `This command does not exist.` followed by the help
+  list. New commands and features must reuse the same prefix.
+- `schematics/default.yml` — the island layout (copied out on first run).
+- `tebex.yml` — Tebex webstore integration: the Plugin API secret key
+  (creator panel: Integrations > Plugin API) turns `/giftcard` on; an
+  overridable API base covers proxies and tests.
+- `island-points.yml` — the island top points ledger (written at most
+  once a minute).
+- `island-rewards.yml` — the last island-top season that was paid out
+  (guards `/season set` against double-paying a season).
+- `shop.yml` — coin economy: starting balance, currency symbol, the
+  default sell price paid by `/sell` for unlisted blocks, and buy/sell
+  prices per section (validates against infinite-money loops and the
+  same material appearing twice). Section pages are double chests: 36
+  items per page with back / previous / page / next / close controls;
+  the Building Blocks section ships 112 blocks across four pages.
+- `spawners.yml` — the whole spawner progression: groups, mobs, drop
+  items, spawner and upgrade costs (essence + the mob's own drop per
+  tier, via `upgrade-defaults` with optional per-group/per-mob
+  overrides), variant behaviour (rate/count/
+  nearby-limit/auto-kill), kill chances and island-luck maths. Broken
+  entries refuse to load the system (every problem listed in the log)
+  rather than half-work.
+- `spawners-data.yml` — placed spawners + island luck (written atomically
+  on every change).
+- `upgrades.yml` — island upgrades (claim size, member slots) and timed
+  buffs (crop growth, spawner boost, XP boost): icons, level prices,
+  durations and multipliers. The whole file is validated at startup —
+  unknown materials, bad prices, multipliers below 1, or a fully grown
+  claim reaching the grid spacing disable the upgrade system with one
+  loud log line (menus show "unavailable", member caps lift to the old
+  uncapped behaviour) rather than half-working.
+- `buffs.yml` — active island buffs and their expiries (written atomically
+  on every change).
+- `ranks.yml` — the rank ladder (order, prices, multipliers, season money,
+  River keys, coming-soon chat perk flags). Validated as a whole at
+  startup: a broken file disables ranks loudly (no perks, x1.0 sells) with
+  every problem listed.
+- `ranks-data.yml` — the current season plus every ranked player's rank,
+  River keys and last payout season (written atomically on every change).
 
 ## Building
+
+The canonical build is Maven (single source of truth):
 
 ```bash
 mvn package          # produces target/CoreMC-<version>.jar
 ```
 
-`paper-api` is a `provided` dependency; tests run via JUnit 5 + Surefire.
+`paper-api` is a `provided` dependency; tests run via JUnit 5 (Surefire on
+Maven, or the curated `TestRunner` used by the offline/CI builds).
 
-### Sandbox/CI note
+CI (`.github/workflows/build.yml`) compiles, tests and packages on every
+push to `arena/**` branches, then commits build status and artifacts back
+to `sandbox/`. `build.sh` mirrors the Maven build offline for the
+development sandbox; it is not a second build system.
 
-The development sandbox used for this rebuild has no Maven Central access,
-so `build.sh` reproduces the Maven build offline (Eclipse batch compiler +
-locally mirrored dependencies) and runs the same JUnit tests. It is not a
-second build system — `pom.xml` remains the single source of truth and
-`build.sh` only mirrors it. See `TESTING.md`.
+## Layout
 
-## Configuration
-
-- `config.yml` — values that may need balancing (autosave interval, welcome toggle).
-- `messages.yml` — every user-facing string and the brand prefix, `&` codes.
-
-## Permissions
-
-| Permission | Default | Grants |
-|---|---|---|
-| `coremc.command.coremc` | everyone | `/coremc [info\|help]` |
-| `coremc.command.coremc.reload` | op | `/coremc reload` |
-| `coremc.command.profile` | everyone | `/profile` |
-| `coremc.command.profile.others` | op | `/profile <player>` |
-| `coremc.command.heal` | op | `/heal` |
-| `coremc.command.heal.others` | op | `/heal <player>` |
-| `coremc.command.island` | everyone | `/island [create\|teleport\|info\|delete\|help]` |
-| `coremc.*` / `coremc.command.*` | op / children | parent nodes |
-
-## Architecture
-
-```
-com.coremc.core          CoreMCPlugin — bootstrap & service wiring (no static access)
-com.coremc.core.config   CoreConfig (typed config.yml), MessageService (messages.yml + branding)
-com.coremc.core.player   PlayerProfile model, PlayerDataStore (interface),
-                         YamlPlayerDataStore, PlayerDataService (lifecycle/cache/dirty
-                         tracking/executor), PlayerListener
-com.coremc.core.command  CoreMCCommand, ProfileCommand (executors + tab completers)
-com.coremc.core.scheduler TaskService — every repeating task tracked and cancelled on disable
-com.coremc.core.util     ColorUtil, DateTimeUtil
-```
-
-Design rules enforced from day one: single-responsibility services,
-constructor injection, no static state, disk I/O off the main thread,
-player-scoped state evicted after quit-save, all tasks tracked and
-cancelled on disable, data flushed synchronously in `onDisable`.
-
-## Testing
-
-See `TESTING.md` for the full verification story. Summary:
-
-- 17/17 unit tests pass (profiles model, YAML store round-trip incl.
-  corrupt-file handling, colour/message utilities, time formatting).
-- End-to-end tested on a **live Paper 1.21.11 server** with real players
-  (offline-mode protocol bots): join → branded welcome → `/profile` →
-  quit-save → rejoin persistence → full server restart persistence →
-  permission denial paths → triple-reload leak check → clean shutdown.
-
-## Roadmap
-
-Skyblock gameplay (islands, teams, upgrades, economy) builds on top of
-this core in the next iterations.
+| Path | Purpose |
+|---|---|
+| `src/main/java/com/coremc/core/island` | Islands: model, grid, store, schematics, service, command, protection |
+| `src/main/java/com/coremc/core/world` | Void world generator + island world service |
+| `src/main/java/com/coremc/core/shop` | Coin economy + chest-GUI shop |
+| `src/main/java/com/coremc/core/spawner` | Spawner progression: config, service, command, listener, store, menu GUI |
+| `src/main/java/com/coremc/core/rank` | Rank ladder: config, store, service, commands, join listener |
+| `src/main/java/com/coremc/core/island` (menus) | Island menu GUI, upgrade + buff services, buff listener, buff store |
+| `src/main/java/com/coremc/core/config` | Typed config + message service |
+| `src/test/java` | JUnit tests + the offline `TestRunner` harness |
+| `ci/` | CI build script and Paper/vanilla server-jar resolvers |
+| `sandbox/` | CI-committed build status, packaged jars, and Paper test-server bits |

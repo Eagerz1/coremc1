@@ -2,8 +2,11 @@ package com.coremc.core.config;
 
 import com.coremc.core.util.ColorUtil;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.bukkit.command.CommandSender;
@@ -13,16 +16,17 @@ import org.bukkit.plugin.java.JavaPlugin;
 /**
  * Loads and serves CoreMC messages from messages.yml.
  *
- * All user-facing strings are '&amp;' colour-coded, standard Minecraft
- * formatting. The branded prefix lives under the {@code prefix} key and
- * is applied by the {@code prefixed*} methods.
+ * All user-facing strings are {@code &} colour-coded, standard Minecraft
+ * formatting. The branded prefix lives under the {@code prefix} key and is
+ * applied by {@link #sendPrefixed}. Bundled defaults act as a fallback
+ * chain, so plugin updates that add message keys work on installs with an
+ * older, customised messages.yml.
  */
 public final class MessageService {
 
     private static final String FILE_NAME = "messages.yml";
 
     private final JavaPlugin plugin;
-
     private final File file;
     private YamlConfiguration yaml;
     private String prefix = "";
@@ -39,18 +43,15 @@ public final class MessageService {
         }
         this.yaml = YamlConfiguration.loadConfiguration(file);
 
-        // Merge the bundled defaults as a fallback chain so that new message
-        // keys shipped in plugin updates work on older installs without the
-        // admin having to delete their customised messages.yml.
-        try (java.io.InputStream stream = plugin.getResource(FILE_NAME)) {
+        try (InputStream stream = plugin.getResource(FILE_NAME)) {
             if (stream != null) {
                 final YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
-                        new java.io.InputStreamReader(stream, java.nio.charset.StandardCharsets.UTF_8));
+                        new InputStreamReader(stream, StandardCharsets.UTF_8));
                 this.yaml.setDefaults(defaults);
             } else {
                 plugin.getLogger().warning("Bundled messages.yml resource missing from jar.");
             }
-        } catch (final java.io.IOException exception) {
+        } catch (final IOException exception) {
             plugin.getLogger().warning("Failed to load bundled messages.yml defaults: " + exception.getMessage());
         }
 
@@ -78,31 +79,28 @@ public final class MessageService {
         return get(key, Map.of());
     }
 
-    /** Sends an unbranded message line to a sender. */
-    public void send(final CommandSender sender, final String key, final Map<String, String> placeholders) {
-        sender.sendMessage(get(key, placeholders));
-    }
-
-    /** Sends a branded message ("prefix + message") to a sender. */
+    /** Sends a branded message (prefix + message) to a sender. */
     public void sendPrefixed(final CommandSender sender, final String key, final Map<String, String> placeholders) {
         sender.sendMessage(prefix + get(key, placeholders));
     }
 
-    /** Colourised list of lines for {@code key} with placeholder substitution. */
-    public List<String> getList(final String key, final Map<String, String> placeholders) {
+    public void sendPrefixed(final CommandSender sender, final String key) {
+        sendPrefixed(sender, key, Map.of());
+    }
+
+    /** Sends a colourised list of lines (e.g. help text) to a sender. */
+    public void sendList(final CommandSender sender, final String key) {
+        sendList(sender, key, Map.of());
+    }
+
+    /** Sends a colourised list of lines (e.g. help text) to a sender. */
+    public void sendList(final CommandSender sender, final String key, final Map<String, String> placeholders) {
         final List<String> raw = yaml.getStringList(key);
         final List<String> lines = new ArrayList<>(raw.size());
         for (final String line : raw) {
             lines.add(ColorUtil.colorize(applyPlaceholders(line, placeholders)));
         }
-        return lines;
-    }
-
-    /** Sends a list of message to a sender. */
-    public void sendList(final CommandSender sender, final String key, final Map<String, String> placeholders) {
-        for (final String line : getList(key, placeholders)) {
-            sender.sendMessage(line);
-        }
+        sender.sendMessage(lines.toArray(new String[0]));
     }
 
     private String applyPlaceholders(final String raw, final Map<String, String> placeholders) {
@@ -111,17 +109,5 @@ public final class MessageService {
             result = result.replace("{" + entry.getKey() + "}", entry.getValue());
         }
         return result;
-    }
-
-    /** Convenience for building placeholder maps fluently. */
-    public static Map<String, String> placeholders(final String... keyValues) {
-        if (keyValues.length % 2 != 0) {
-            throw new IllegalArgumentException("placeholders must be given as key/value pairs");
-        }
-        final Map<String, String> map = new HashMap<>();
-        for (int i = 0; i < keyValues.length; i += 2) {
-            map.put(keyValues[i], keyValues[i + 1]);
-        }
-        return map;
     }
 }

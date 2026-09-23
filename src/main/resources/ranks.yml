@@ -1,0 +1,55 @@
+# ============================================================
+#  CoreMC — ranks.yml
+#
+#  The donor-style rank ladder, worst to best (order matters —
+#  /rank buy always buys the next rank in this list).
+#
+#  Per rank:
+#    price            coins to acquire THIS rank (paid when you
+#                     upgrade to it; the first rank is bought from
+#                     nothing). Upgrades only ever pay the step.
+#    money-multiplier shop sell earnings are multiplied by this.
+#    season-money     coins paid out when a new season starts
+#                     (online players immediately, offline players
+#                     on their next join).
+#    river-keys       River keys granted when this rank is first
+#                     acquired (crates open them later — the keys
+#                     are tracked from day one).
+#    perks            coming-soon perk flags the chat system will
+#                     read: chat-color (dye colours in /chatcolor),
+#                     gradients (/gradients), bold chat.
+# ============================================================
+
+ranks:
+  core:
+    name: "Core"
+    price: 75000
+    money-multiplier: 1.05
+    season-money: 100000
+    river-keys: 2
+    perks:
+      chat-color: true
+      gradients: false
+      bold: false
+
+  core-plus:
+    name: "Core+"
+    price: 250000
+    money-multiplier: 1.20
+    season-money: 250000
+    river-keys: 5
+    perks:
+      chat-color: true
+      gradients: true
+      bold: false
+
+  core-plus-plus:
+    name: "Core++"
+    price: 750000
+    money-multiplier: 1.50
+    season-money: 500000
+    river-keys: 12
+    perks:
+      chat-color: true
+      gradients: true
+      bold: true

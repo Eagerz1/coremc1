@@ -1,64 +1,40 @@
 package com.coremc.core.shop;
 
-import com.coremc.core.CoreMCPlugin;
 import com.coremc.core.config.MessageService;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
 /**
- * {@code /shop} — the shop hub; {@code /shop <category>} jumps straight
- * into gear/food/end/nether; {@code /tokenshop} opens the exchange.
+ * {@code /shop} — opens the shop GUI. Player-only; the catalogue is
+ * fixed per server (customise shop.yml), so there are no
+ * subcommands.
  */
-public final class ShopCommand implements CommandExecutor, TabCompleter {
+public final class ShopCommand implements CommandExecutor {
 
-    private final CoreMCPlugin plugin;
+    private final ShopConfig config;
+    private final ShopGui gui;
+    private final MessageService messages;
 
-    public ShopCommand(final CoreMCPlugin plugin) {
-        this.plugin = plugin;
+    public ShopCommand(final ShopConfig config, final ShopGui gui, final MessageService messages) {
+        this.config = config;
+        this.gui = gui;
+        this.messages = messages;
     }
 
     @Override
-    public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
-        final MessageService messages = plugin.messages();
+    public boolean onCommand(final CommandSender sender, final Command command, final String label,
+                             final String[] args) {
         if (!(sender instanceof Player player)) {
-            messages.sendPrefixed(sender, "player-only", Map.of());
+            messages.sendPrefixed(sender, "shop.only-players");
             return true;
         }
-        if ("tokenshop".equalsIgnoreCase(command.getName())) {
-            plugin.gui().open(player, new TokenShopGui(plugin));
+        if (config.sections().isEmpty()) {
+            messages.sendPrefixed(player, "shop.disabled");
             return true;
         }
-        if (args.length == 0) {
-            plugin.gui().open(player, new ShopMainGui(plugin));
-            return true;
-        }
-        final ShopCategory category = ShopCategory.byKey(args[0]);
-        if (category == null || category == ShopCategory.TOKENS) {
-            messages.sendPrefixed(player, "shop.unknown-category", Map.of("input", args[0]));
-            return true;
-        }
-        plugin.gui().open(player, new ShopCategoryGui(plugin, category));
+        gui.openRoot(player);
         return true;
-    }
-
-    @Override
-    public List<String> onTabComplete(
-            final CommandSender sender, final Command command, final String label, final String[] args) {
-        final List<String> out = new ArrayList<>();
-        if (args.length == 1 && !"tokenshop".equalsIgnoreCase(command.getName())) {
-            final String partial = args[0].toLowerCase();
-            for (final ShopCategory category : ShopCategory.values()) {
-                if (category != ShopCategory.TOKENS && category.key().startsWith(partial)) {
-                    out.add(category.key());
-                }
-            }
-        }
-        return out;
     }
 }

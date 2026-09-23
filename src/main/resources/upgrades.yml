@@ -1,0 +1,62 @@
+# ============================================================
+#  CoreMC — upgrades.yml
+#  Island upgrades (permanent) and island buffs (timed),
+#  bought with coins from the /is island menu.
+#
+#  UPGRADES are permanent and stored per island:
+#    claim-size    grows the island's protected border claim
+#    member-slots  raises how many players may join the island
+#
+#  BUFFS are timed (minutes) and stored per island with their
+#  expiry; they survive restarts with their remaining time.
+#    crop-growth   crops on the island grow faster
+#    spawner-boost spawners on the island run at a higher rate
+#    xp-boost      mob kills on the island grant more XP
+#
+#  Everything below is data — prices, steps, durations and
+#  multipliers can be tuned freely. A broken file disables the
+#  upgrade/buff GUIs with a loud log line, never the plugin.
+# ============================================================
+
+upgrades:
+  claim-size:
+    name: "Island Expansion"
+    icon: GRASS_BLOCK
+    # Blocks added to the border claim (full edge length) per level.
+    # Base border is config.yml's island.border-size (100); the fully
+    # upgraded claim must stay below the grid spacing (200) so
+    # neighbouring claims can never overlap.
+    growth-per-level: 10
+    # Coin price of level 1, level 2, level 3.
+    steps: [2500, 10000, 30000]
+  member-slots:
+    name: "Member Slots"
+    icon: PLAYER_HEAD
+    # How many members an island can hold before any upgrades.
+    base-slots: 3
+    # Slots added per level, and the coin price of each level.
+    slots-per-level: 1
+    steps: [2000, 8000, 25000]
+
+buffs:
+  crop-growth:
+    name: "Green Thumb"
+    icon: WHEAT
+    duration-minutes: 30
+    price: 1500
+    # 2 = crops advance two growth stages per natural growth tick.
+    multiplier: 2
+  spawner-boost:
+    name: "Spawner Overdrive"
+    icon: BLAZE_POWDER
+    duration-minutes: 30
+    price: 2500
+    # 2 = spawner spawn delays halve (twice the spawn rate).
+    multiplier: 2
+  xp-boost:
+    name: "XP Surge"
+    icon: EXPERIENCE_BOTTLE
+    duration-minutes: 30
+    price: 1000
+    # 2 = double XP from mob kills on the island.
+    multiplier: 2

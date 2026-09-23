@@ -1,0 +1,18 @@
+# ============================================================
+#  CoreMC — tebex.yml
+#  Tebex (Buycraft) webstore integration.
+#
+#  Get your secret key from the Tebex creator panel:
+#  Integrations > Plugin API > secret key.
+#
+#  Once enabled, players can link their webstore gift card
+#  with /giftcard link <code> (/gc) and see its number
+#  (click-to-copy) and balance any time with /gc.
+#
+#  api-base is overridable for testing/proxies; the default
+#  is the official Tebex Plugin API.
+# ============================================================
+
+enabled: false
+secret-key: ""
+api-base: "https://plugin.tebex.io"

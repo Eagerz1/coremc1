@@ -1,127 +1,142 @@
 package com.coremc.core.island;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+/** Island model: claim bounds, membership and YAML round-trip. */
 class IslandTest {
 
-    private final UUID islandId = UUID.randomUUID();
-    private final UUID owner = UUID.randomUUID();
-
-    private Island fresh() {
-        return new Island(islandId, owner, "world", 256, 64, -512, 50, 1_234_567L);
+    private Island sampleIsland() {
+        // border 100 -> claim spans (50..150) x (-250..-150) at centre (100, -200)
+        return new Island(
+                UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                UUID.fromString("22222222-2222-2222-2222-222222222222"),
+                "OwnerName",
+                "coremc_islands",
+                3,
+                100,
+                64,
+                -200,
+                100,
+                "default",
+                1697000000000L,
+                100.5,
+                68.0,
+                -197.5,
+                90f,
+                10f);
     }
 
     @Test
-    void mapRoundTripPreservesAllFields() {
-        final Island island = fresh();
-        final UUID member = UUID.randomUUID();
+    void containsMatchesTheBorderSquare() {
+        final Island island = sampleIsland();
+        assertTrue(island.contains("coremc_islands", 100, -200), "centre is inside");
+        assertTrue(island.contains("coremc_islands", 50, -150), "corner is inside");
+        assertTrue(island.contains("coremc_islands", 150, -250), "opposite corner is inside");
+        assertFalse(island.contains("coremc_islands", 49, -200), "one block west is outside");
+        assertFalse(island.contains("coremc_islands", 151, -200), "one block east is outside");
+        assertFalse(island.contains("coremc_islands", 100, -149), "one block north is outside");
+    }
+
+    @Test
+    void containsOnlyAppliesToTheIslandWorld() {
+        final Island island = sampleIsland();
+        assertFalse(island.contains("world", 100, -200), "other worlds are never claimed");
+    }
+
+    @Test
+    void membershipIncludesOwnerButMembersSetDoesNot() {
+        final Island island = sampleIsland();
+        final UUID member = UUID.fromString("33333333-3333-3333-3333-333333333333");
+        assertTrue(island.isMember(island.owner()));
+        assertTrue(island.addMember(member));
+        assertTrue(island.isMember(member));
+        assertFalse(island.members().contains(island.owner()), "owner is not stored as a member");
+        assertEquals(1, island.members().size());
+
+        assertFalse(island.addMember(member), "adding twice changes nothing");
+        assertEquals(1, island.members().size());
+
+        assertTrue(island.removeMember(member));
+        assertFalse(island.isMember(member));
+        assertFalse(island.removeMember(member), "removing twice is a no-op");
+        assertFalse(island.addMember(island.owner()), "the owner can not be added as a member");
+    }
+
+    @Test
+    void mapRoundTripPreservesEverything() {
+        final Island island = sampleIsland();
+        final UUID member = UUID.fromString("33333333-3333-3333-3333-333333333333");
         island.addMember(member);
-        island.level(7);
-        island.setUpgradeTier("border", 2);
 
-        final Island restored = Island.fromMap(island.toMap());
+        final Map<String, Object> map = island.toMap();
+        final Island restored = Island.fromMap(map);
 
-        assertEquals(island.islandId(), restored.islandId());
+        assertEquals(island.id(), restored.id());
         assertEquals(island.owner(), restored.owner());
-        assertEquals(island.members(), restored.members());
+        assertEquals(island.ownerName(), restored.ownerName());
         assertEquals(island.worldName(), restored.worldName());
+        assertEquals(island.slot(), restored.slot());
         assertEquals(island.centerX(), restored.centerX());
-        assertEquals(island.centerY(), restored.centerY());
+        assertEquals(island.baseY(), restored.baseY());
         assertEquals(island.centerZ(), restored.centerZ());
         assertEquals(island.borderSize(), restored.borderSize());
-        assertEquals(7, restored.level());
-        assertEquals(2, restored.upgrades().get("border"));
-        assertEquals(island.createdMillis(), restored.createdMillis());
+        assertEquals(island.schematic(), restored.schematic());
+        assertEquals(island.createdAt(), restored.createdAt());
+        assertEquals(island.members(), restored.members());
+        assertTrue(restored.isMember(member));
+
+        final Island reSerialized = Island.fromMap(restored.toMap());
+        assertEquals(restored.toMap(), reSerialized.toMap(), "round-trip must be stable");
     }
 
     @Test
-    void mapRoundTripPreservesThemeAndSettings() {
-        final Island island = fresh();
-        island.theme("desert");
-        island.setting(Island.Setting.VISITORS, true);
-        island.setting(Island.Setting.MEMBERS_BUILD, false);
+    void upgradesAndBorderResizeRoundTrip() {
+        final Island island = sampleIsland();
+        assertEquals(0, island.upgradeLevel("claim-size"), "new islands start at level 0");
+
+        island.setUpgradeLevel("claim-size", 2);
+        island.setUpgradeLevel("member-slots", 1);
+        island.setBorderSize(120);
+
+        assertEquals(2, island.upgradeLevel("claim-size"));
+        assertEquals(1, island.upgradeLevel("member-slots"));
+        assertEquals(0, island.upgradeLevel("xp-boost"), "unknown upgrades read as 0");
+        assertEquals(120, island.borderSize());
+        assertTrue(island.contains("coremc_islands", 100 + 59, -200),
+                "the grown border claims more land");
+        assertFalse(island.contains("coremc_islands", 100 + 61, -200),
+                "outside the grown border");
 
         final Island restored = Island.fromMap(island.toMap());
-        assertEquals("desert", restored.theme());
-        assertTrue(restored.setting(Island.Setting.VISITORS));
-        assertFalse(restored.setting(Island.Setting.MEMBERS_BUILD));
-        assertTrue(restored.setting(Island.Setting.MOB_SPAWNING)); // untouched -> default
-        assertTrue(restored.setting(Island.Setting.MEMBERS_CONTAINERS));
+        assertEquals(2, restored.upgradeLevel("claim-size"), "claim-size level survives");
+        assertEquals(1, restored.upgradeLevel("member-slots"), "member-slots level survives");
+        assertEquals(120, restored.borderSize(), "grown border survives");
+
+        island.setUpgradeLevel("claim-size", 0);
+        assertEquals(0, island.upgradeLevel("claim-size"), "level 0 forgets the entry");
+        assertTrue(island.toMap().get("upgrades") instanceof Map, "upgrades key stays a map");
     }
 
     @Test
-    void legacyMapsGetLegacyDefaultsForThemeAndSettings() {
-        final java.util.Map<String, Object> v2 = fresh().toMap();
-        v2.remove("theme");
-        v2.remove("settings");
-
-        final Island restored = Island.fromMap(v2);
-        assertEquals(Island.DEFAULT_THEME, restored.theme());
-        assertTrue(restored.setting(Island.Setting.MOB_SPAWNING));
-        assertFalse(restored.setting(Island.Setting.VISITORS)); // strict legacy posture
-        assertTrue(restored.setting(Island.Setting.MEMBERS_BUILD));
-    }
-
-    @Test
-    void legacyV1MapGetsDefaults() {
-        final java.util.Map<String, Object> v1 = new java.util.LinkedHashMap<>();
-        v1.put("island-id", islandId.toString());
-        v1.put("owner", owner.toString());
-        v1.put("world", "world");
-        v1.put("center-x", 0);
-        v1.put("center-y", 64);
-        v1.put("center-z", 0);
-        v1.put("created-millis", 5L);
-
-        final Island restored = Island.fromMap(v1);
-        assertEquals(Island.DEFAULT_BORDER_SIZE, restored.borderSize());
-        assertEquals(Island.DEFAULT_LEVEL, restored.level());
-        assertTrue(restored.members().isEmpty());
+    void oldIslandFilesWithoutUpgradesStillLoad() {
+        final Map<String, Object> map = new java.util.HashMap<>(sampleIsland().toMap());
+        map.remove("upgrades");
+        final Island restored = Island.fromMap(map);
+        assertEquals(0, restored.upgradeLevel("claim-size"));
         assertTrue(restored.upgrades().isEmpty());
     }
 
     @Test
-    void gridCellUsesFloorDivision() {
-        final Island island = new Island(islandId, owner, "world", -128, 64, 300, 50, 0L);
-        assertArrayEquals(new int[] {-1, 1}, island.gridCell(256));
-    }
-
-    @Test
-    void homeIsAboveCentre() {
-        final Island island = fresh();
-        assertEquals(256.5, island.homeX());
-        assertEquals(65.0, island.homeY());
-        assertEquals(-511.5, island.homeZ());
-    }
-
-    @Test
-    void borderSquareContainsExactly50Wide() {
-        final Island island = new Island(islandId, owner, "world", 0, 64, 0, 50, 0L);
-        // [cx-25, cx+25) x [cz-25, cz+25) — 50 blocks wide, no overlaps with neighbours
-        assertTrue(island.containsBlock(-25, -25));
-        assertTrue(island.containsBlock(24, 0));
-        assertFalse(island.containsBlock(25, 0));
-        assertFalse(island.containsBlock(-26, 0));
-        assertFalse(island.containsBlock(0, 25));
-    }
-
-    @Test
-    void membershipRoles() {
-        final Island island = fresh();
-        final UUID member = UUID.randomUUID();
-        assertNull(island.roleOf(member));
-        assertTrue(island.addMember(member));
-        assertEquals(IslandRole.MEMBER, island.roleOf(member));
-        assertEquals(IslandRole.OWNER, island.roleOf(owner));
-        assertFalse(island.addMember(member)); // no duplicates
-        assertTrue(island.removeMember(member));
-        assertNull(island.roleOf(member));
+    void brokenDataIsRejectedLoudly() {
+        final Map<String, Object> map = new java.util.HashMap<>(sampleIsland().toMap());
+        map.remove("center");
+        assertThrows(IllegalArgumentException.class, () -> Island.fromMap(map));
     }
 }

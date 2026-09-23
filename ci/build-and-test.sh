@@ -11,6 +11,12 @@ VER=$(grep -m1 -oE '<version>[0-9.]+' pom.xml | grep -oE '[0-9.]+')
 sed -i "s/@project.version@/$VER/g" src/main/resources/plugin.yml
 CP=$(find zg/.gradle-home -name '*.jar' | grep -v sources | tr '\n' ':')
 
+echo "==> compile vault api (official VaultAPI economy sources)"
+mkdir -p vault-api-classes
+javac --release 21 -nowarn -cp "$CP" -d vault-api-classes $(find ci/vault-api-src -name '*.java')
+jar --create --file vault-api.jar -C vault-api-classes .
+CP="vault-api.jar:$CP"
+
 echo "==> compile main sources"
 javac --release 21 -nowarn -cp "$CP" -d classes $(find src/main/java -name '*.java')
 
@@ -24,7 +30,7 @@ javac --release 21 -nowarn -cp "classes:$CP/tmp/junit-runner.jar" \
   -d test-classes $(find src/test/java -name '*.java')
 
 echo "==> run tests (curated runner: bundles plugin API + libs + JUnit on the classpath)"
-java -cp "classes:test-classes:$CP/tmp/junit-runner.jar" com.coremc.testrun.TestRunner
+java -cp "classes:test-classes:vault-api.jar:$CP/tmp/junit-runner.jar" com.coremc.testrun.TestRunner
 
 echo "==> package jar"
 jar --create --file "sandbox/plugin/CoreMC-$VER.jar" -C classes . -C src/main/resources .

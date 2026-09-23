@@ -1,130 +1,291 @@
-# ==========================================================================
-# CoreMC Shop — every price lives here, never in Java.
+# ============================================================
+#  CoreMC — shop.yml
+#  The skyblock shop: what players can buy and sell. Gear is
+#  intentionally NOT sold — on skyblock you craft your own tools
+#  and armour from what you trade for here.
 #
-# /shop <category> opens a category; /tokenshop opens the exchange. Each
-# entry:  <id>: { material, display, currency, price, amount }
-# currency: MONEY | CREDITS | SKY_TOKENS   (amount defaults to 1)
-# ==========================================================================
+#  Entries are "MATERIAL:BUY:SELL" (coins per single item).
+#  SELL may be omitted: it then defaults to 25% of BUY.
+#  A price of 0 disables that direction for the item.
+#
+#  default-sell-price is what the /sell window pays for any material
+#  that is NOT listed below — so every ordinary block sells for
+#  something. (Custom-named progression items are never sold; they are
+#  returned when the window closes.)
+#
+#  Every change is validated at startup: unknown materials,
+#  sell > buy (infinite money loop) and duplicates in a section
+#  refuse to load the shop, with every problem listed in the log.
+# ============================================================
 
-gear:
-  iron-sword:
-    material: IRON_SWORD
-    display: "&bIron Sword"
-    currency: MONEY
-    price: 250
-  iron-helmet:
-    material: IRON_HELMET
-    display: "&bIron Helmet"
-    currency: MONEY
-    price: 300
-  iron-chestplate:
-    material: IRON_CHESTPLATE
-    display: "&bIron Chestplate"
-    currency: MONEY
-    price: 450
-  shield:
-    material: SHIELD
-    display: "&bShield"
-    currency: MONEY
-    price: 400
-  diamond-helmet:
-    material: DIAMOND_HELMET
-    display: "&bDiamond Helmet"
-    currency: CREDITS
-    price: 50
+starting-balance: 100.0
+currency-symbol: "$"
+default-sell-price: 0.25
 
-food:
-  bread-16:
-    material: BREAD
-    display: "&6Bread x16"
-    currency: MONEY
-    price: 20
-    amount: 16
-  steak-8:
-    material: COOKED_BEEF
-    display: "&6Steak x8"
-    currency: MONEY
-    price: 40
-    amount: 8
-  golden-carrot-8:
-    material: GOLDEN_CARROT
-    display: "&6Golden Carrots x8"
-    currency: MONEY
-    price: 90
-    amount: 8
-  enchanted-golden-apple:
-    material: ENCHANTED_GOLDEN_APPLE
-    display: "&6Enchanted Golden Apple"
-    currency: CREDITS
-    price: 250
+# Max 7 sections — the shop root menu has exactly seven slots.
+sections:
+  building:
+    name: "Building Blocks"
+    icon: BRICKS
+    items:
+      # --- stone family ---
+      - "COBBLESTONE:1:0.25"
+      - "STONE:1.5:0.4"
+      - "STONE_BRICKS:2:0.5"
+      - "SMOOTH_STONE:2:0.5"
+      - "CHISELED_STONE_BRICKS:2.5:0.6"
+      - "MOSSY_COBBLESTONE:3:0.75"
+      - "MOSSY_STONE_BRICKS:2.5:0.6"
+      - "OAK_STAIRS:2:0.5"
+      - "COBBLESTONE_STAIRS:2:0.5"
+      - "STONE_BRICK_STAIRS:2.5:0.6"
+      - "OAK_SLAB:1:0.25"
+      - "COBBLESTONE_SLAB:1:0.25"
+      # --- granite family ---
+      - "GRANITE:1.5:0.4"
+      - "DIORITE:1.5:0.4"
+      - "ANDESITE:1.5:0.4"
+      - "POLISHED_GRANITE:2:0.5"
+      - "POLISHED_DIORITE:2:0.5"
+      - "POLISHED_ANDESITE:2:0.5"
+      # --- deepslate family ---
+      - "DEEPSLATE:2:0.5"
+      - "COBBLED_DEEPSLATE:2:0.5"
+      - "POLISHED_DEEPSLATE:3:0.75"
+      - "DEEPSLATE_BRICKS:3.5:0.9"
+      - "DEEPSLATE_TILES:4:1"
+      # --- earth and sand ---
+      - "DIRT:1:0.25"
+      - "GRASS_BLOCK:5:1.25"
+      - "MUD:1.5:0.4"
+      - "PACKED_MUD:2:0.5"
+      - "MUD_BRICKS:3:0.75"
+      - "MOSS_BLOCK:3:0.75"
+      - "SAND:1.5:0.4"
+      - "RED_SAND:1.5:0.4"
+      - "GRAVEL:1.5:0.4"
+      - "SANDSTONE:2:0.5"
+      - "CUT_SANDSTONE:2.5:0.6"
+      - "SMOOTH_SANDSTONE:2.5:0.6"
+      - "TUFF:2:0.5"
+      - "CALCITE:3:0.75"
+      - "DRIPSTONE_BLOCK:3:0.75"
+      # --- glass and bricks ---
+      - "GLASS:3:0.75"
+      - "GLASS_PANE:2:0.5"
+      - "BRICKS:4:1"
+      # --- quartz family ---
+      - "QUARTZ_BLOCK:8:2"
+      - "QUARTZ_BRICKS:8:2"
+      - "CHISELED_QUARTZ_BLOCK:9:2.25"
+      - "QUARTZ_PILLAR:9:2.25"
+      - "SMOOTH_QUARTZ:9:2.25"
+      # --- wool and terracotta ---
+      - "WHITE_WOOL:3:0.75"
+      - "WHITE_TERRACOTTA:4:1"
+      - "ORANGE_TERRACOTTA:4:1"
+      - "MAGENTA_TERRACOTTA:4:1"
+      - "LIGHT_BLUE_TERRACOTTA:4:1"
+      - "YELLOW_TERRACOTTA:4:1"
+      - "LIME_TERRACOTTA:4:1"
+      - "PINK_TERRACOTTA:4:1"
+      - "GRAY_TERRACOTTA:4:1"
+      - "LIGHT_GRAY_TERRACOTTA:4:1"
+      - "CYAN_TERRACOTTA:4:1"
+      - "PURPLE_TERRACOTTA:4:1"
+      - "BLUE_TERRACOTTA:4:1"
+      - "BROWN_TERRACOTTA:4:1"
+      - "GREEN_TERRACOTTA:4:1"
+      - "RED_TERRACOTTA:4:1"
+      - "BLACK_TERRACOTTA:4:1"
+      # --- concrete ---
+      - "WHITE_CONCRETE:5:1.25"
+      - "ORANGE_CONCRETE:5:1.25"
+      - "MAGENTA_CONCRETE:5:1.25"
+      - "LIGHT_BLUE_CONCRETE:5:1.25"
+      - "YELLOW_CONCRETE:5:1.25"
+      - "LIME_CONCRETE:5:1.25"
+      - "PINK_CONCRETE:5:1.25"
+      - "GRAY_CONCRETE:5:1.25"
+      - "LIGHT_GRAY_CONCRETE:5:1.25"
+      - "CYAN_CONCRETE:5:1.25"
+      - "PURPLE_CONCRETE:5:1.25"
+      - "BLUE_CONCRETE:5:1.25"
+      - "BROWN_CONCRETE:5:1.25"
+      - "GREEN_CONCRETE:5:1.25"
+      - "RED_CONCRETE:5:1.25"
+      - "BLACK_CONCRETE:5:1.25"
+      # --- planks and logs ---
+      - "OAK_PLANKS:2:0.5"
+      - "SPRUCE_PLANKS:2:0.5"
+      - "BIRCH_PLANKS:2:0.5"
+      - "JUNGLE_PLANKS:2:0.5"
+      - "ACACIA_PLANKS:2:0.5"
+      - "DARK_OAK_PLANKS:2:0.5"
+      - "MANGROVE_PLANKS:2:0.5"
+      - "CHERRY_PLANKS:2.5:0.6"
+      - "BAMBOO_PLANKS:2.5:0.6"
+      - "CRIMSON_PLANKS:2:0.5"
+      - "WARPED_PLANKS:2:0.5"
+      - "OAK_LOG:3:0.75"
+      - "SPRUCE_LOG:3:0.75"
+      - "BIRCH_LOG:3:0.75"
+      - "JUNGLE_LOG:3:0.75"
+      - "ACACIA_LOG:3:0.75"
+      - "DARK_OAK_LOG:3:0.75"
+      - "MANGROVE_LOG:3:0.75"
+      - "CHERRY_LOG:3:0.75"
+      - "CRIMSON_STEM:3:0.75"
+      - "WARPED_STEM:3:0.75"
+      # --- ocean, end and nether blocks ---
+      - "PRISMARINE:5:1.25"
+      - "PRISMARINE_BRICKS:6:1.5"
+      - "DARK_PRISMARINE:6:1.5"
+      - "PURPUR_PILLAR:10:2.5"
+      - "END_STONE_BRICKS:8:2"
+      - "RED_NETHER_BRICKS:5:1.25"
+      - "WARPED_WART_BLOCK:12:3"
+      # --- copper and decor ---
+      - "COPPER_BLOCK:12:3"
+      - "CUT_COPPER:13:3.25"
+      - "OXIDIZED_COPPER:12:3"
+      - "AMETHYST_BLOCK:10:2.5"
+      - "CRYING_OBSIDIAN:20:5"
 
-end:
-  ender-pearl-4:
-    material: ENDER_PEARL
-    display: "&5Ender Pearls x4"
-    currency: MONEY
-    price: 120
-    amount: 4
-  end-stone-16:
-    material: END_STONE
-    display: "&5End Stone x16"
-    currency: MONEY
-    price: 60
-    amount: 16
-  chorus-fruit-4:
-    material: CHORUS_FRUIT
-    display: "&5Chorus Fruit x4"
-    currency: MONEY
-    price: 80
-    amount: 4
-  elytra:
-    material: ELYTRA
-    display: "&5Elytra"
-    currency: SKY_TOKENS
-    price: 25
+  crops:
+    name: "Crops & Saplings"
+    icon: WHEAT
+    items:
+      - "WHEAT_SEEDS:1:0.25"
+      - "WHEAT:2:0.5"
+      - "OAK_SAPLING:5:1.25"
+      - "BIRCH_SAPLING:5:1.25"
+      - "SPRUCE_SAPLING:5:1.25"
+      - "JUNGLE_SAPLING:5:1.25"
+      - "ACACIA_SAPLING:5:1.25"
+      - "DARK_OAK_SAPLING:5:1.25"
+      - "CHERRY_SAPLING:6:1.5"
+      - "SUGAR_CANE:3:0.75"
+      - "CARROT:2:0.5"
+      - "POTATO:2:0.5"
+      - "PUMPKIN_SEEDS:2:0.5"
+      - "MELON_SEEDS:2:0.5"
+      - "PUMPKIN:6:1.5"
+      - "MELON_SLICE:2:0.5"
+      - "CACTUS:3:0.75"
+      - "BAMBOO:1:0.25"
+      - "COCOA_BEANS:3:0.75"
+      - "SWEET_BERRIES:2:0.5"
+      - "KELP:1:0.25"
 
-nether:
-  netherrack-32:
-    material: NETHERRACK
-    display: "&cNetherrack x32"
-    currency: MONEY
-    price: 15
-    amount: 32
-  quartz-8:
-    material: QUARTZ
-    display: "&cQuartz x8"
-    currency: MONEY
-    price: 40
-    amount: 8
-  blaze-rod-2:
-    material: BLAZE_ROD
-    display: "&cBlaze Rods x2"
-    currency: MONEY
-    price: 90
-    amount: 2
-  netherite-scrap:
-    material: NETHERITE_SCRAP
-    display: "&cNetherite Scrap"
-    currency: SKY_TOKENS
-    price: 10
+  mob-drops:
+    name: "Mob Drops"
+    icon: ROTTEN_FLESH
+    items:
+      - "ROTTEN_FLESH:1:0.25"
+      - "BONE:2:0.5"
+      - "STRING:2:0.5"
+      - "SPIDER_EYE:3:0.75"
+      - "GUNPOWDER:4:1"
+      - "SLIME_BALL:5:1.25"
+      - "ENDER_PEARL:12:3"
+      - "LEATHER:4:1"
+      - "FEATHER:2:0.5"
+      - "PORKCHOP:2:0.5"
+      - "CHICKEN:2:0.5"
+      - "BEEF:3:0.75"
+      - "MUTTON:2:0.5"
+      - "BLAZE_ROD:10:2.5"
+      - "GHAST_TEAR:15:3.75"
+      - "MAGMA_CREAM:8:2"
+      - "PHANTOM_MEMBRANE:6:1.5"
+      - "INK_SAC:3:0.75"
+      - "GLOW_INK_SAC:5:1.25"
 
-# /tokenshop — Sky Token exchange desk (currency conversions + token packs)
-tokens:
-  token-small:
-    material: SUNFLOWER
-    display: "&b1 Sky Token"
-    currency: MONEY
-    price: 10000
-    amount: 1
-  token-big:
-    material: NETHER_STAR
-    display: "&b5 Sky Tokens"
-    currency: MONEY
-    price: 45000
-    amount: 5
-  token-from-credits:
-    material: AMETHYST_SHARD
-    display: "&b1 Sky Token &7(via Credits)"
-    currency: CREDITS
-    price: 20
-    amount: 1
+  minerals:
+    name: "Minerals"
+    icon: DIAMOND
+    items:
+      - "COAL:3:0.75"
+      - "RAW_COPPER:3:0.75"
+      - "COPPER_INGOT:5:1.25"
+      - "RAW_IRON:5:1.25"
+      - "IRON_INGOT:8:2"
+      - "RAW_GOLD:10:2.5"
+      - "GOLD_INGOT:16:4"
+      - "LAPIS_LAZULI:5:1.25"
+      - "QUARTZ:6:1.5"
+      - "EMERALD:24:6"
+      - "DIAMOND:32:8"
+      - "AMETHYST_SHARD:8:2"
+      - "NETHERITE_SCRAP:150:37.5"
+      # --- storage blocks (nine of the ore each) ---
+      - "COAL_BLOCK:27:6.75"
+      - "IRON_BLOCK:72:18"
+      - "GOLD_BLOCK:144:36"
+      - "REDSTONE_BLOCK:36:9"
+      - "LAPIS_BLOCK:45:11.25"
+      - "DIAMOND_BLOCK:288:72"
+      - "EMERALD_BLOCK:216:54"
+      - "NETHERITE_INGOT:640:160"
+
+  food:
+    name: "Food"
+    icon: BREAD
+    items:
+      - "BREAD:3:0.75"
+      - "APPLE:3:0.75"
+      - "COOKIE:1:0.25"
+      - "PUMPKIN_PIE:5:1.25"
+      - "BAKED_POTATO:2:0.5"
+      - "COOKED_BEEF:6:1.5"
+      - "COOKED_PORKCHOP:6:1.5"
+      - "COOKED_CHICKEN:5:1.25"
+      - "COOKED_MUTTON:5:1.25"
+      - "COOKED_COD:4:1"
+      - "COOKED_SALMON:5:1.25"
+      - "GOLDEN_CARROT:20:5"
+      - "GOLDEN_APPLE:60:15"
+      - "CAKE:20:5"
+
+  redstone:
+    name: "Redstone & Utility"
+    icon: REDSTONE
+    items:
+      - "REDSTONE:4:1"
+      - "REPEATER:10:2.5"
+      - "COMPARATOR:12:3"
+      - "PISTON:12:3"
+      - "STICKY_PISTON:20:5"
+      - "OBSERVER:15:3.75"
+      - "HOPPER:40:10"
+      - "DISPENSER:15:3.75"
+      - "DROPPER:12:3"
+      - "LEVER:2:0.5"
+      - "REDSTONE_TORCH:4:1"
+      - "REDSTONE_LAMP:15:3.75"
+      - "DAYLIGHT_DETECTOR:12:3"
+      - "RAIL:6:1.5"
+      - "POWERED_RAIL:20:5"
+      - "TRAPPED_CHEST:12:3"
+
+  nether:
+    name: "Nether & End"
+    icon: NETHERRACK
+    items:
+      - "NETHERRACK:2:0.5"
+      - "SOUL_SAND:4:1"
+      - "SOUL_SOIL:4:1"
+      - "GLOWSTONE:10:2.5"
+      - "NETHER_BRICKS:5:1.25"
+      - "OBSIDIAN:15:3.75"
+      - "NETHER_WART:5:1.25"
+      - "MAGMA_BLOCK:8:2"
+      - "BASALT:3:0.75"
+      - "BLACKSTONE:3:0.75"
+      - "SHROOMLIGHT:12:3"
+      - "END_STONE:8:2"
+      - "PURPUR_BLOCK:10:2.5"
+      - "ENDER_EYE:25:6.25"
+      - "CHORUS_FRUIT:4:1"
+      - "CHORUS_FLOWER:8:2"

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Logger;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -20,10 +21,14 @@ import org.bukkit.configuration.file.YamlConfiguration;
  */
 public final class YamlIslandDataStore implements IslandDataStore {
 
-    private final Path directory;
+    private static final String SLOT_COUNTER_FILE = ".next-slot";
 
-    public YamlIslandDataStore(final Path directory) {
+    private final Path directory;
+    private final Logger logger;
+
+    public YamlIslandDataStore(final Path directory, final Logger logger) {
         this.directory = directory;
+        this.logger = logger;
     }
 
     @Override
@@ -34,7 +39,11 @@ public final class YamlIslandDataStore implements IslandDataStore {
         }
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory, "*.yml")) {
             for (final Path file : stream) {
-                islands.add(read(file));
+                try {
+                    islands.add(read(file));
+                } catch (final RuntimeException exception) {
+                    logger.warning("Skipping corrupt island file " + file + ": " + exception.getMessage());
+                }
             }
         }
         return islands;
@@ -64,26 +73,24 @@ public final class YamlIslandDataStore implements IslandDataStore {
         Files.deleteIfExists(fileFor(owner));
     }
 
-    private Island read(final Path file) throws IOException {
+    private Island read(final Path file) {
         final YamlConfiguration yaml = new YamlConfiguration();
         try {
-            yaml.loadFromString(new String(Files.readAllBytes(file), StandardCharsets.UTF_8));
-        } catch (final org.bukkit.configuration.InvalidConfigurationException exception) {
-            throw new IOException("Corrupt island file " + file, exception);
+            yaml.loadFromString(Files.readString(file, StandardCharsets.UTF_8));
+        } catch (final IOException | org.bukkit.configuration.InvalidConfigurationException exception) {
+            throw new IllegalArgumentException("unreadable: " + exception.getMessage(), exception);
         }
         final ConfigurationSection section = yaml.getConfigurationSection("island");
         if (section == null) {
-            throw new IOException("Island file without 'island' section: " + file);
+            throw new IllegalArgumentException("no 'island' section");
         }
-        try {
-            return Island.fromMap(deepValues(section));
-        } catch (final IllegalArgumentException | NullPointerException exception) {
-            throw new IOException("Invalid island data in " + file, exception);
-        }
+        return Island.fromMap(deepValues(section));
     }
 
-    /** getValues() returns nested entries as ConfigurationSection, not Map —
-     *  convert recursively so model code never touches Bukkit config types. */
+    /**
+     * getValues() returns nested entries as ConfigurationSection, not Map —
+     * convert recursively so model code never touches Bukkit config types.
+     */
     static Map<String, Object> deepValues(final ConfigurationSection section) {
         final Map<String, Object> values = new java.util.LinkedHashMap<>();
         for (final Map.Entry<String, Object> entry : section.getValues(false).entrySet()) {
@@ -98,5 +105,30 @@ public final class YamlIslandDataStore implements IslandDataStore {
 
     private Path fileFor(final UUID owner) {
         return directory.resolve(owner.toString() + ".yml");
+    }
+
+    @Override
+    public long loadNextSlot() {
+        final Path file = directory.resolve(SLOT_COUNTER_FILE);
+        if (!Files.exists(file)) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(Files.readString(file).trim());
+        } catch (final IOException | NumberFormatException exception) {
+            logger.warning("Corrupt slot counter " + file + " (" + exception.getMessage()
+                    + "), falling back to the highest stored island slot.");
+            return 0L;
+        }
+    }
+
+    @Override
+    public void saveNextSlot(final long nextSlot) {
+        try {
+            Files.createDirectories(directory);
+            Files.writeString(directory.resolve(SLOT_COUNTER_FILE), String.valueOf(nextSlot));
+        } catch (final IOException exception) {
+            logger.severe("Failed to persist the island slot counter: " + exception.getMessage());
+        }
     }
 }

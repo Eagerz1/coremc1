@@ -1,52 +1,60 @@
 package com.coremc.core.island;
 
-import java.util.Set;
-
 /**
- * Assigns free island grid cells in spiral order around the origin.
+ * Maps island slots to grid cells in a deterministic spiral around the
+ * origin: slot 0 is (0,0), slots 1-8 ring the origin, slots 9-24 form the
+ * next ring, and so on. World coordinates of an island centre are the
+ * cell multiplied by the configured spacing.
  *
- * Cells are integer (i, j) grid coordinates; world coordinates are the
- * cell multiplied by the island spacing. The spiral keeps early islands
- * close together for a compact spawn region.
+ * The mapping is a pure function of the slot, so the next free slot can
+ * simply be {@code max(existing slots) + 1} — slots are never reused,
+ * because a deleted island's blocks stay in the world.
  */
 public final class GridAssigner {
 
     private GridAssigner() {
     }
 
-    /**
-     * Returns the first unused cell in spiral order for {@code world}:
-     * (0,0), (1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0,-1), (1,-1), ...
-     * The set contains cell keys produced by {@link #key(int, int, String)}.
-     */
-    public static int[] nextFreeCell(final Set<String> usedCells, final String worldName) {
-        int x = 0;
-        int z = 0;
-        // direction cycle: +x, +z, -x, -z (spiral outwards)
-        int dx = 1, dz = 0;
-        int legLength = 1, stepsInLeg = 0, legsCompleted = 0;
-
-        for (long guard = 0; guard < 1_000_000L; guard++) {
-            if (!usedCells.contains(key(x, z, worldName))) {
-                return new int[] {x, z};
-            }
-            x += dx;
-            z += dz;
-            if (++stepsInLeg == legLength) {
-                stepsInLeg = 0;
-                legsCompleted++;
-                final int tmp = dx;
-                dx = -dz;
-                dz = tmp;
-                if (legsCompleted % 2 == 0) {
-                    legLength++;
-                }
-            }
+    /** Grid cell (cellX, cellZ) for the given slot. */
+    public static int[] cellForSlot(final int slot) {
+        if (slot < 0) {
+            throw new IllegalArgumentException("slot must be >= 0, got " + slot);
         }
-        throw new IllegalStateException("No free island cell found inside spiral guard");
+        if (slot == 0) {
+            return new int[] {0, 0};
+        }
+        int ring = 1;
+        while (ringStart(ring + 1) <= slot) {
+            ring++;
+        }
+        final int offset = slot - ringStart(ring);
+        final int side = 2 * ring;
+        if (offset < side) {
+            return new int[] {ring, -ring + offset};
+        }
+        if (offset < 2 * side) {
+            return new int[] {ring - (offset - side), ring};
+        }
+        if (offset < 3 * side) {
+            return new int[] {-ring, ring - (offset - 2 * side)};
+        }
+        return new int[] {-ring + (offset - 3 * side), -ring};
     }
 
-    public static String key(final int cellX, final int cellZ, final String worldName) {
-        return cellX + ":" + cellZ + "@" + worldName;
+    /** World (x, z) block coordinates of the centre of the given slot. */
+    public static int[] centerForSlot(final int slot, final int spacing) {
+        if (spacing <= 0) {
+            throw new IllegalArgumentException("spacing must be > 0, got " + spacing);
+        }
+        final int[] cell = cellForSlot(slot);
+        return new int[] {cell[0] * spacing, cell[1] * spacing};
+    }
+
+    /** First slot index of a ring (ring 0 = just slot 0). */
+    static int ringStart(final int ring) {
+        if (ring <= 0) {
+            return 0;
+        }
+        return 4 * ring * (ring - 1) + 1;
     }
 }

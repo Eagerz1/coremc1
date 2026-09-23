@@ -1,90 +1,120 @@
 package com.coremc.core.island;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+/** YAML persistence: atomic per-owner files, faithful round-trips. */
 class YamlIslandDataStoreTest {
 
     @TempDir
-    Path tempDir;
+    Path directory;
 
-    @Test
-    void saveAndLoadAllRoundTrip() throws IOException {
-        final YamlIslandDataStore store = new YamlIslandDataStore(tempDir);
-        final UUID owner = UUID.randomUUID();
-        final UUID member = UUID.randomUUID();
-        final Island island = new Island(UUID.randomUUID(), owner, "world", 256, 64, 0, 50, 99L);
-        island.addMember(member);
-        island.setUpgradeTier("member-slots", 1);
-        store.save(island);
-
-        final Collection<Island> loaded = store.loadAll();
-        assertEquals(1, loaded.size());
-        final Island restored = loaded.iterator().next();
-        assertEquals(owner, restored.owner());
-        assertEquals(member, restored.members().iterator().next());
-        assertEquals(256, restored.centerX());
-        assertEquals(50, restored.borderSize());
-        assertEquals(1, restored.upgrades().get("member-slots"));
-        assertEquals(99L, restored.createdMillis());
+    private Island sampleIsland() {
+        final Island island = new Island(
+                UUID.randomUUID(),
+                UUID.fromString("22222222-2222-2222-2222-222222222222"),
+                "OwnerName",
+                "coremc_islands",
+                7,
+                -400,
+                64,
+                600,
+                100,
+                "default",
+                1697000000000L,
+                -399.5,
+                68.0,
+                602.5,
+                180f,
+                0f);
+        island.addMember(UUID.fromString("33333333-3333-3333-3333-333333333333"));
+        island.addMember(UUID.fromString("44444444-4444-4444-4444-444444444444"));
+        return island;
     }
 
     @Test
-    void legacyV1FileLoadsWithDefaults() throws IOException {
-        Files.createDirectories(tempDir);
-        final UUID owner = UUID.randomUUID();
-        final UUID islandId = UUID.randomUUID();
-        Files.writeString(
-                tempDir.resolve(owner + ".yml"),
-                "island:\n"
-                        + "  island-id: " + islandId + "\n"
-                        + "  owner: " + owner + "\n"
-                        + "  world: world\n"
-                        + "  center-x: 0\n"
-                        + "  center-y: 64\n"
-                        + "  center-z: 0\n"
-                        + "  created-millis: 42\n");
-        final YamlIslandDataStore store = new YamlIslandDataStore(tempDir);
+    void savesAndLoadsBackEveryField() throws IOException {
+        final YamlIslandDataStore store = new YamlIslandDataStore(directory, Logger.getLogger("test"));
+        final Island island = sampleIsland();
+        store.save(island);
+
+        assertTrue(Files.exists(directory.resolve(island.owner() + ".yml")), "one file per owner");
         final Collection<Island> loaded = store.loadAll();
         assertEquals(1, loaded.size());
-        final Island island = loaded.iterator().next();
-        assertEquals(Island.DEFAULT_BORDER_SIZE, island.borderSize());
-        assertEquals(1, island.level());
-        assertTrue(island.members().isEmpty());
+        final Island restored = loaded.iterator().next();
+
+        assertEquals(island.id(), restored.id());
+        assertEquals(island.owner(), restored.owner());
+        assertEquals(island.ownerName(), restored.ownerName());
+        assertEquals(island.worldName(), restored.worldName());
+        assertEquals(island.slot(), restored.slot());
+        assertEquals(island.centerX(), restored.centerX());
+        assertEquals(island.baseY(), restored.baseY());
+        assertEquals(island.centerZ(), restored.centerZ());
+        assertEquals(island.borderSize(), restored.borderSize());
+        assertEquals(island.schematic(), restored.schematic());
+        assertEquals(island.createdAt(), restored.createdAt());
+        assertEquals(island.members(), restored.members());
+    }
+
+    @Test
+    void overwritingSavesInPlace() throws IOException {
+        final YamlIslandDataStore store = new YamlIslandDataStore(directory, Logger.getLogger("test"));
+        final Island island = sampleIsland();
+        store.save(island);
+        island.removeMember(UUID.fromString("33333333-3333-3333-3333-333333333333"));
+        store.save(island);
+
+        assertEquals(1, store.loadAll().size());
+        assertEquals(1, store.loadAll().iterator().next().members().size());
     }
 
     @Test
     void deleteRemovesTheFile() throws IOException {
-        final YamlIslandDataStore store = new YamlIslandDataStore(tempDir);
-        final UUID owner = UUID.randomUUID();
-        store.save(new Island(UUID.randomUUID(), owner, "world", 0, 64, 0, 50, 0L));
-        assertEquals(1, store.loadAll().size());
-
-        store.delete(owner);
+        final YamlIslandDataStore store = new YamlIslandDataStore(directory, Logger.getLogger("test"));
+        final Island island = sampleIsland();
+        store.save(island);
+        store.delete(island.owner());
         assertTrue(store.loadAll().isEmpty());
-        store.delete(owner); // deleting again is a no-op
     }
 
     @Test
-    void corruptFileFailsLoadWithIOException() throws IOException {
-        Files.writeString(tempDir.resolve(UUID.randomUUID() + ".yml"), "island: [nope\n");
-        final YamlIslandDataStore store = new YamlIslandDataStore(tempDir);
-        assertThrows(IOException.class, store::loadAll);
+    void corruptFilesAreSkippedNotFatal() throws IOException {
+        final YamlIslandDataStore store = new YamlIslandDataStore(directory, Logger.getLogger("test"));
+        final Island island = sampleIsland();
+        store.save(island);
+        Files.writeString(directory.resolve("deadbeef-0000-0000-0000-000000000000.yml"),
+                "island: {not: enough}");
+
+        final Collection<Island> loaded = store.loadAll();
+        assertEquals(1, loaded.size(), "the valid island still loads");
     }
 
     @Test
-    void saveLeavesNoTempFiles() throws IOException {
-        final YamlIslandDataStore store = new YamlIslandDataStore(tempDir);
-        store.save(new Island(UUID.randomUUID(), UUID.randomUUID(), "world", 0, 64, 0, 50, 0L));
-        assertEquals(0L, Files.list(tempDir).filter(p -> p.toString().endsWith(".tmp")).count());
+    void emptyDirectoryLoadsEmpty() throws IOException {
+        final YamlIslandDataStore store = new YamlIslandDataStore(directory, Logger.getLogger("test"));
+        assertTrue(store.loadAll().isEmpty());
+    }
+
+    @Test
+    void slotCounterRoundTripsAndSurvivesIslandDeletes() throws IOException {
+        final YamlIslandDataStore store = new YamlIslandDataStore(directory, Logger.getLogger("test"));
+        assertEquals(0L, store.loadNextSlot(), "no counter file means zero");
+        store.saveNextSlot(7L);
+        assertEquals(7L, store.loadNextSlot());
+        // deleting islands must not touch the counter
+        final Island island = sampleIsland();
+        store.save(island);
+        store.delete(island.owner());
+        assertEquals(7L, store.loadNextSlot());
     }
 }

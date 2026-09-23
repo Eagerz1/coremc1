@@ -1,244 +1,105 @@
 package com.coremc.core.island;
 
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.bukkit.Location;
+import org.bukkit.World;
 
 /**
- * A CoreMC Skyblock island (schema version 3).
- *
- * Ownership & membership: exactly one owner plus a bounded member set.
- * The island FILE is authoritative for membership; player profiles only
- * carry a fast-lookup association pointer.
- *
- * Geometry: the grid cell is derived from the absolute centre and the
- * configured spacing (stored absolutely so spacing changes never
- * corrupt islands). The BORDER is the protected square centred on the
- * island: new islands start at 50x50 and upgrades can grow it (never
- * beyond {@code spacing/2}, enforced by config validation, so islands
- * on adjacent cells can never overlap).
- *
- * Levels & upgrades: {@link #level} is the island prestige level;
- * {@link #upgrades} is a map of upgrade-id -&gt; purchased tier that
- * future CoreMC upgrade systems extend without schema changes.
- *
- * Theme & settings (schema v3): the {@link #theme} key records which
- * theme the island was generated with (defaults to "plains" for
- * islands created before themes existed); {@link #settings} holds
- * owner-controlled switches (Settings/Permissions GUI) as
- * boolean-by-string keys that enums guard on read.
+ * A CoreMC skyblock island: exactly one owner plus a member set, a grid
+ * position (stored as absolute world coordinates, so later spacing
+ * changes never corrupt existing islands) and a border claim — the
+ * protected square centred on the island.
  */
 public final class Island {
 
-    /** Default border width for brand-new islands (brief requirement). */
-    public static final int DEFAULT_BORDER_SIZE = 50;
-    public static final int DEFAULT_LEVEL = 1;
-    /** Theme assigned to islands that predate the theme system. */
-    public static final String DEFAULT_THEME = "plains";
-
-    /** Toggleable island settings keys (Settings + Permissions GUIs). */
-    public enum Setting {
-        /** Settings: natural mob spawning inside the border (default ON). */
-        MOB_SPAWNING("mob-spawning", true),
-        /**
-         * Settings: non-team players may interact (doors/buttons/containers)
-         * inside the border. Default OFF — matches the legacy strict posture
-         * where outsiders could never touch anything; owners opt in.
-         */
-        VISITORS("visitors", false),
-        /** Permissions: members may break/place blocks (default ON). */
-        MEMBERS_BUILD("members-build", true),
-        /** Permissions: members may open containers and use doors/buttons (default ON). */
-        MEMBERS_CONTAINERS("members-containers", true);
-
-        private final String key;
-        private final boolean defaultValue;
-
-        Setting(final String key, final boolean defaultValue) {
-            this.key = key;
-            this.defaultValue = defaultValue;
-        }
-
-        public String key() {
-            return key;
-        }
-
-        public boolean defaultValue() {
-            return defaultValue;
-        }
-    }
-
-    private final UUID islandId;
+    private final UUID id;
     private final UUID owner;
+    private final String ownerName;
     private final Set<UUID> members = new LinkedHashSet<>();
     private final String worldName;
+    private final int slot;
     private final int centerX;
-    private final int centerY;
+    private final int baseY;
     private final int centerZ;
-    private final int borderSize;
-    private final long createdMillis;
-
-    private int level = DEFAULT_LEVEL;
-    private final Map<String, Integer> upgrades = new LinkedHashMap<>();
-    private String theme = DEFAULT_THEME;
-    private final Map<String, Boolean> settings = new LinkedHashMap<>();
+    private int borderSize;
+    private final String schematic;
+    private final long createdAt;
+    private final double homeX;
+    private final double homeY;
+    private final double homeZ;
+    private final float homeYaw;
+    private final float homePitch;
+    /** Permanent upgrade levels (claim-size, member-slots, ...). */
+    private final Map<String, Integer> upgrades = new java.util.LinkedHashMap<>();
 
     public Island(
-            final UUID islandId,
+            final UUID id,
             final UUID owner,
+            final String ownerName,
             final String worldName,
+            final int slot,
             final int centerX,
-            final int centerY,
+            final int baseY,
             final int centerZ,
             final int borderSize,
-            final long createdMillis) {
-        this.islandId = Objects.requireNonNull(islandId);
-        this.owner = Objects.requireNonNull(owner);
-        this.worldName = Objects.requireNonNull(worldName);
+            final String schematic,
+            final long createdAt,
+            final double homeX,
+            final double homeY,
+            final double homeZ,
+            final float homeYaw,
+            final float homePitch) {
+        this.id = id;
+        this.owner = owner;
+        this.ownerName = ownerName;
+        this.worldName = worldName;
+        this.slot = slot;
         this.centerX = centerX;
-        this.centerY = centerY;
+        this.baseY = baseY;
         this.centerZ = centerZ;
         this.borderSize = borderSize;
-        this.createdMillis = createdMillis;
+        this.schematic = schematic;
+        this.createdAt = createdAt;
+        this.homeX = homeX;
+        this.homeY = homeY;
+        this.homeZ = homeZ;
+        this.homeYaw = homeYaw;
+        this.homePitch = homePitch;
     }
 
-    /** Grid cell of this island for a given spacing. */
-    public int[] gridCell(final int spacing) {
-        return new int[] {Math.floorDiv(centerX, spacing), Math.floorDiv(centerZ, spacing)};
-    }
-
-    /** The block the player stands on after teleporting (island home). */
-    public double homeX() {
-        return centerX + 0.5;
-    }
-
-    public double homeY() {
-        return centerY + 1.0;
-    }
-
-    public double homeZ() {
-        return centerZ + 0.5;
-    }
-
-    /**
-     * Whether (x,z) is inside the protected border square
-     * [cx-border/2, cx+border/2) x [cz-border/2, cz+border/2). All Y levels.
-     */
-    public boolean containsBlock(final int x, final int z) {
-        final int half = borderSize / 2;
-        return x >= centerX - half && x < centerX + half && z >= centerZ - half && z < centerZ + half;
-    }
-
-    /** OWNER or MEMBER or null. */
-    public IslandRole roleOf(final UUID player) {
-        if (owner.equals(player)) {
-            return IslandRole.OWNER;
-        }
-        if (members.contains(player)) {
-            return IslandRole.MEMBER;
-        }
-        return null;
-    }
-
-    public boolean addMember(final UUID player) {
-        return members.add(player);
-    }
-
-    public boolean removeMember(final UUID player) {
-        return members.remove(player);
-    }
-
-    public Map<String, Object> toMap() {
-        final Map<String, Object> map = new LinkedHashMap<>();
-        map.put("island-id", islandId.toString());
-        map.put("owner", owner.toString());
-        final java.util.List<String> memberList = new java.util.ArrayList<>(members.size());
-        for (final UUID member : members) {
-            memberList.add(member.toString());
-        }
-        map.put("members", memberList);
-        map.put("world", worldName);
-        map.put("center-x", centerX);
-        map.put("center-y", centerY);
-        map.put("center-z", centerZ);
-        map.put("border-size", borderSize);
-        map.put("level", level);
-        map.put("upgrades", new LinkedHashMap<>(upgrades));
-        map.put("theme", theme);
-        map.put("settings", new LinkedHashMap<>(settings));
-        map.put("created-millis", createdMillis);
-        return map;
-    }
-
-    /** Tolerant load: v1/v2 files (no members/border/level/upgrades/theme/settings) get defaults. */
-    public static Island fromMap(final Map<String, Object> map) {
-        final int border = map.containsKey("border-size") ? asInt(map.get("border-size")) : DEFAULT_BORDER_SIZE;
-        final Island island = new Island(
-                UUID.fromString(String.valueOf(map.get("island-id"))),
-                UUID.fromString(String.valueOf(map.get("owner"))),
-                String.valueOf(map.get("world")),
-                asInt(map.get("center-x")),
-                asInt(map.get("center-y")),
-                asInt(map.get("center-z")),
-                border,
-                asLong(map.get("created-millis")));
-        if (map.get("level") instanceof Number level) {
-            island.level = Math.max(1, level.intValue());
-        }
-        final Object memberObject = map.get("members");
-        if (memberObject instanceof java.util.List<?> list) {
-            for (final Object entry : list) {
-                island.members.add(UUID.fromString(String.valueOf(entry)));
-            }
-        }
-        final Object upgradeObject = map.get("upgrades");
-        if (upgradeObject instanceof Map<?, ?> raw) {
-            for (final Map.Entry<?, ?> entry : raw.entrySet()) {
-                if (entry.getValue() instanceof Number tier) {
-                    island.upgrades.put(String.valueOf(entry.getKey()), tier.intValue());
-                }
-            }
-        }
-        final Object themeObject = map.get("theme");
-        if (themeObject != null && !String.valueOf(themeObject).isBlank()) {
-            island.theme = String.valueOf(themeObject);
-        }
-        final Object settingsObject = map.get("settings");
-        if (settingsObject instanceof Map<?, ?> raw) {
-            for (final Map.Entry<?, ?> entry : raw.entrySet()) {
-                if (entry.getValue() instanceof Boolean on) {
-                    island.settings.put(String.valueOf(entry.getKey()), on);
-                }
-            }
-        }
-        return island;
-    }
-
-    public UUID islandId() {
-        return islandId;
+    public UUID id() {
+        return id;
     }
 
     public UUID owner() {
         return owner;
     }
 
-    public Set<UUID> members() {
-        return java.util.Collections.unmodifiableSet(members);
+    public String ownerName() {
+        return ownerName;
     }
 
     public String worldName() {
         return worldName;
     }
 
+    public int slot() {
+        return slot;
+    }
+
     public int centerX() {
         return centerX;
     }
 
-    public int centerY() {
-        return centerY;
+    public int baseY() {
+        return baseY;
     }
 
     public int centerZ() {
@@ -249,64 +110,187 @@ public final class Island {
         return borderSize;
     }
 
-    public long createdMillis() {
-        return createdMillis;
+    public String schematic() {
+        return schematic;
     }
 
-    public int level() {
-        return level;
+    /**
+     * Grows the border claim (the protected, bordered square). Used by
+     * the claim-size upgrade; callers must persist the island.
+     */
+    public void setBorderSize(final int size) {
+        this.borderSize = Math.max(1, size);
     }
 
-    public void level(final int level) {
-        this.level = Math.max(1, level);
+    /** Level of a permanent island upgrade (0 when never bought). */
+    public int upgradeLevel(final String id) {
+        return upgrades.getOrDefault(id, 0);
     }
 
-    public Map<String, Integer> upgrades() {
-        return java.util.Collections.unmodifiableMap(upgrades);
-    }
-
-    public void setUpgradeTier(final String upgradeId, final int tier) {
-        upgrades.put(Objects.requireNonNull(upgradeId, "upgradeId"), Math.max(0, tier));
-    }
-
-    /** The theme key this island was generated with (never null). */
-    public String theme() {
-        return theme;
-    }
-
-    public void theme(final String theme) {
-        if (theme != null && !theme.isBlank()) {
-            this.theme = theme;
+    /** Sets a permanent upgrade level (clamped to non-negative). */
+    public void setUpgradeLevel(final String id, final int level) {
+        if (level <= 0) {
+            upgrades.remove(id);
+        } else {
+            upgrades.put(id, level);
         }
     }
 
-    /** Effective value of a toggleable setting (stored override or its default). */
-    public boolean setting(final Setting setting) {
-        return settings.getOrDefault(setting.key(), setting.defaultValue());
+    /** Unmodifiable view of the upgrade levels. */
+    public Map<String, Integer> upgrades() {
+        return Collections.unmodifiableMap(upgrades);
     }
 
-    public void setting(final Setting setting, final boolean value) {
-        settings.put(setting.key(), value);
+    public long createdAt() {
+        return createdAt;
     }
 
-    private static int asInt(final Object value) {
-        if (value instanceof Number number) {
+    /** The island home point in the given (island) world. */
+    public Location home(final World world) {
+        return new Location(world, homeX, homeY, homeZ, homeYaw, homePitch);
+    }
+
+    public boolean isOwner(final UUID player) {
+        return owner.equals(player);
+    }
+
+    /** True for the owner and every member. */
+    public boolean isMember(final UUID player) {
+        return owner.equals(player) || members.contains(player);
+    }
+
+    public boolean addMember(final UUID player) {
+        if (owner.equals(player)) {
+            return false;
+        }
+        return members.add(player);
+    }
+
+    public boolean removeMember(final UUID player) {
+        return members.remove(player);
+    }
+
+    /** Unmodifiable view of the member UUIDs (owner not included). */
+    public Set<UUID> members() {
+        return Collections.unmodifiableSet(members);
+    }
+
+    /**
+     * Whether the given block column lies inside the island's border
+     * claim. The border square spans {@code borderSize} blocks centred
+     * on the island centre, matching the visual world border exactly.
+     */
+    public boolean contains(final String world, final int x, final int z) {
+        if (!worldName.equals(world)) {
+            return false;
+        }
+        final int half = borderSize / 2;
+        return Math.abs(x - centerX) <= half && Math.abs(z - centerZ) <= half;
+    }
+
+    /** Serialises the island to a flat map for YAML persistence. */
+    public Map<String, Object> toMap() {
+        final List<String> memberIds = new ArrayList<>();
+        for (final UUID member : members) {
+            memberIds.add(member.toString());
+        }
+        return Map.ofEntries(
+                Map.entry("id", id.toString()),
+                Map.entry("owner", owner.toString()),
+                Map.entry("owner-name", ownerName),
+                Map.entry("members", memberIds),
+                Map.entry("world", worldName),
+                Map.entry("slot", slot),
+                Map.entry("center", Map.of("x", centerX, "y", baseY, "z", centerZ)),
+                Map.entry("border-size", borderSize),
+                Map.entry("schematic", schematic),
+                Map.entry("created", createdAt),
+                Map.entry("home", Map.of(
+                        "x", homeX, "y", homeY, "z", homeZ,
+                        "yaw", (double) homeYaw, "pitch", (double) homePitch)),
+                Map.entry("upgrades", new LinkedHashMap<>(upgrades)));
+    }
+
+    /** Rebuilds an island from {@link #toMap()} output. */
+    public static Island fromMap(final Map<String, Object> map) {
+        require(map, "id", "owner", "owner-name", "world", "slot", "center", "border-size",
+                "schematic", "created", "home");
+        final Map<String, Object> center = nested(map, "center");
+        final Map<String, Object> home = nested(map, "home");
+        final List<UUID> members = new ArrayList<>();
+        final Object rawMembers = map.get("members");
+        if (rawMembers instanceof List<?> list) {
+            for (final Object entry : list) {
+                members.add(UUID.fromString(String.valueOf(entry)));
+            }
+        }
+        final Island island = new Island(
+                UUID.fromString(String.valueOf(map.get("id"))),
+                UUID.fromString(String.valueOf(map.get("owner"))),
+                String.valueOf(map.get("owner-name")),
+                String.valueOf(map.get("world")),
+                intAt(map, "slot"),
+                intAt(center, "x"),
+                intAt(center, "y"),
+                intAt(center, "z"),
+                intAt(map, "border-size"),
+                String.valueOf(map.get("schematic")),
+                longAt(map, "created"),
+                doubleAt(home, "x"),
+                doubleAt(home, "y"),
+                doubleAt(home, "z"),
+                (float) doubleAt(home, "yaw"),
+                (float) doubleAt(home, "pitch"));
+        for (final UUID member : members) {
+            island.addMember(member);
+        }
+        if (map.get("upgrades") instanceof Map<?, ?> rawUpgrades) {
+            for (final Map.Entry<?, ?> entry : rawUpgrades.entrySet()) {
+                if (entry.getValue() instanceof Number number) {
+                    island.upgrades.put(String.valueOf(entry.getKey()), number.intValue());
+                }
+            }
+        }
+        return island;
+    }
+
+    private static void require(final Map<String, Object> map, final String... keys) {
+        for (final String key : keys) {
+            if (!map.containsKey(key)) {
+                throw new IllegalArgumentException("Island data missing key '" + key + "'");
+            }
+        }
+    }
+
+    private static Map<String, Object> nested(final Map<String, Object> map, final String key) {
+        if (map.get(key) instanceof Map<?, ?> nested) {
+            final Map<String, Object> result = new java.util.LinkedHashMap<>();
+            for (final Map.Entry<?, ?> entry : nested.entrySet()) {
+                result.put(String.valueOf(entry.getKey()), entry.getValue());
+            }
+            return result;
+        }
+        throw new IllegalArgumentException("Island data key '" + key + "' is not a section");
+    }
+
+    private static int intAt(final Map<String, Object> map, final String key) {
+        if (map.get(key) instanceof Number number) {
             return number.intValue();
         }
-        throw new IllegalArgumentException("Expected numeric island field, got: " + value);
+        throw new IllegalArgumentException("Island data key '" + key + "' is not a number");
     }
 
-    private static long asLong(final Object value) {
-        if (value instanceof Number number) {
+    private static long longAt(final Map<String, Object> map, final String key) {
+        if (map.get(key) instanceof Number number) {
             return number.longValue();
         }
-        throw new IllegalArgumentException("Expected numeric island field, got: " + value);
+        throw new IllegalArgumentException("Island data key '" + key + "' is not a number");
     }
 
-    @Override
-    public String toString() {
-        return "Island{id=" + islandId + ", owner=" + owner + ", members=" + members.size() + ", centre=" + centerX
-                + "," + centerY + "," + centerZ + ", border=" + borderSize + ", level=" + level + " @ " + worldName
-                + "}";
+    private static double doubleAt(final Map<String, Object> map, final String key) {
+        if (map.get(key) instanceof Number number) {
+            return number.doubleValue();
+        }
+        throw new IllegalArgumentException("Island data key '" + key + "' is not a number");
     }
 }

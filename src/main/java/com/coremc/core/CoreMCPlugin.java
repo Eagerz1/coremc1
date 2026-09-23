@@ -1,404 +1,419 @@
 package com.coremc.core;
 
-import com.coremc.core.command.CoreMCCommand;
-import com.coremc.core.command.CurrencyAdminCommand;
-import com.coremc.core.command.HealCommand;
-import com.coremc.core.command.ProfileCommand;
 import com.coremc.core.config.CoreConfig;
 import com.coremc.core.config.MessageService;
-import com.coremc.core.economy.Currency;
-import com.coremc.core.economy.EconomyService;
-import com.coremc.core.gui.GuiService;
+import com.coremc.core.island.BuffListener;
+import com.coremc.core.rank.EchestCommand;
+import com.coremc.core.rank.FlyCommand;
+import com.coremc.core.rank.RankCommand;
+import com.coremc.core.rank.RankConfig;
+import com.coremc.core.rank.RankListener;
+import com.coremc.core.rank.RankService;
+import com.coremc.core.rank.SeasonCommand;
+import com.coremc.core.rank.YamlRankStore;
+import com.coremc.core.island.IslandBuffService;
 import com.coremc.core.island.IslandCommand;
-import com.coremc.core.island.IslandProtectionListener;
+import com.coremc.core.island.IslandPointsService;
+import com.coremc.core.island.IsTopBoardGui;
+import com.coremc.core.island.IsTopGui;
+import com.coremc.core.island.IsTopListener;
+import com.coremc.core.island.IslandTopRewards;
+import com.coremc.core.island.PointsListener;
+import com.coremc.core.island.IslandGui;
+import com.coremc.core.island.IslandMenuListener;
+import com.coremc.core.island.IslandUpgradeConfig;
+import com.coremc.core.island.IslandUpgradeService;
+import com.coremc.core.island.IslandListener;
 import com.coremc.core.island.IslandService;
-import com.coremc.core.island.YamlIslandDataStore;
-import com.coremc.core.player.PlayerDataService;
-import com.coremc.core.player.PlayerListener;
-import com.coremc.core.gen.GensCommand;
-import com.coremc.core.gen.GeneratorService;
-import com.coremc.core.placeable.PlaceableListener;
-import com.coremc.core.placeable.PlaceableService;
-import com.coremc.core.player.YamlPlayerDataStore;
-import com.coremc.core.role.OmniToolListener;
-import com.coremc.core.role.OmniToolService;
-import com.coremc.core.role.RoleCommand;
-import com.coremc.core.role.RoleService;
-import com.coremc.core.role.xp.FarmingXpListener;
-import com.coremc.core.role.xp.FishingXpListener;
-import com.coremc.core.role.xp.LoggingXpListener;
-import com.coremc.core.role.xp.MiningXpListener;
-import com.coremc.core.role.xp.SlayerXpListener;
-import com.coremc.core.spawner.KillProgressListener;
+import com.coremc.core.island.SchematicService;
+import com.coremc.core.shop.EconomyService;
+import com.coremc.core.shop.VaultEconomy;
+import com.coremc.core.island.YamlBuffStore;
+import com.coremc.core.spawner.SpawnerCommand;
+import com.coremc.core.spawner.SpawnerMenuGui;
+import com.coremc.core.spawner.SpawnerMenuListener;
+import com.coremc.core.spawner.SpawnerConfig;
+import com.coremc.core.spawner.SpawnerHolograms;
+import com.coremc.core.spawner.SpawnerListener;
 import com.coremc.core.spawner.SpawnerService;
-import com.coremc.core.spawner.SpawnersCommand;
-import com.coremc.core.scheduler.TaskService;
+import com.coremc.core.spawner.YamlSpawnerDataStore;
 import com.coremc.core.shop.ShopCommand;
-import com.coremc.core.shop.ShopService;
-import java.util.logging.Level;
+import com.coremc.core.shop.SellCommand;
+import com.coremc.core.tebex.GiftcardCommand;
+import com.coremc.core.tebex.GiftcardStore;
+import com.coremc.core.tebex.TebexClient;
+import com.coremc.core.tebex.TebexConfig;
+import com.coremc.core.shop.SellGui;
+import com.coremc.core.shop.SellListener;
+import com.coremc.core.shop.ShopConfig;
+import com.coremc.core.shop.ShopGui;
+import com.coremc.core.shop.ShopListener;
+import com.coremc.core.shop.YamlEconomyStore;
+import com.coremc.core.world.IslandWorldService;
+import java.nio.file.Path;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * CoreMC plugin bootstrap.
+ * CoreMC — Skyblock core.
  *
- * Owns the plugin's services and wires them together. Services are plain
- * objects with narrow responsibilities, created once in onEnable and torn
- * down in reverse order in onDisable — no static service locators, no
- * re-creation on reload.
+ * Bootstrap order matters: config and messages first, then the island
+ * world (created as a void world on first boot), then the island
+ * registry, command and listeners. Everything is main-thread only.
  */
 public final class CoreMCPlugin extends JavaPlugin {
 
-    private TaskService taskService;
     private CoreConfig coreConfig;
-    private MessageService messageService;
-    private PlayerDataService playerDataService;
-    private EconomyService economyService;
-    private IslandService islandService;
-    private GuiService guiService;
-    private OmniToolService omniToolService;
-    private RoleService roleService;
-    private PlaceableService placeableService;
-    private GeneratorService generatorService;
+    private MessageService messages;
+    private IslandWorldService worlds;
+    private SchematicService schematics;
+    private IslandService islands;
+    private ShopConfig shopConfig;
+    private EconomyService economy;
+    private ShopGui shopGui;
+    private SellListener sellListener;
+    private IslandPointsService islandPoints;
+    private TebexConfig tebexConfig;
+    private TebexClient tebexClient;
+    private GiftcardStore giftcardStore;
+    private IslandTopRewards islandTopRewards;
+    private SpawnerConfig spawnerConfig;
     private SpawnerService spawnerService;
-    private ShopService shopService;
-    private com.coremc.core.island.ThemeService themeService;
-    private com.coremc.core.island.MiningCubeService miningCubeService;
-    private com.coremc.core.island.IslandUpgradeEffects islandUpgradeEffects;
-
-    /**
-     * Creates (or attaches to) the dedicated island world. Islands live in
-     * their own void world, never in the main world: terrain cannot leak
-     * between islands and the void keeps the world small. If the world
-     * already exists (e.g. {@code world} from before the dedicated world
-     * existed), that world is simply reused — nothing is regenerated.
-     */
-    private void ensureIslandWorld() {
-        final String name = coreConfig.islandWorldName();
-        if (org.bukkit.Bukkit.getWorld(name) != null) {
-            return;
-        }
-        getLogger().info("Creating dedicated island world '" + name + "' (void terrain)...");
-        final org.bukkit.World created = new org.bukkit.WorldCreator(name)
-                .generator(new com.coremc.core.island.VoidChunkGenerator())
-                .environment(org.bukkit.World.Environment.NORMAL)
-                .generateStructures(false)
-                .createWorld();
-        if (created == null) {
-            getLogger().severe("Failed to create the island world '" + name + "'!");
-            return;
-        }
-        created.setSpawnFlags(false, false); // no ambient/animal spawns cluttering the void
-        created.setKeepSpawnInMemory(false);
-        getLogger().info("Island world ready: " + name);
-    }
+    private IslandUpgradeConfig upgradeConfig;
+    private IslandBuffService buffService;
+    private RankConfig rankConfig;
+    private RankService rankService;
 
     @Override
     public void onEnable() {
-        try {
-            enableSafely();
-        } catch (final RuntimeException exception) {
-            getLogger().log(Level.SEVERE, "CoreMC failed to enable — shutting services down.", exception);
-            shutdownServices();
-            throw exception;
-        }
-    }
-
-    private void enableSafely() {
-        // 1. Task registry first: everything else schedules through it.
-        this.taskService = new TaskService(this);
-
-        // 2. Configuration and messages.
         this.coreConfig = new CoreConfig(this);
         this.coreConfig.load();
 
-        this.messageService = new MessageService(this);
-        this.messageService.load();
+        this.messages = new MessageService(this);
+        this.messages.load();
 
-        // 3. Player data (YAML store in plugins/CoreMC/profiles/).
-        this.playerDataService =
-                new PlayerDataService(this, new YamlPlayerDataStore(getDataFolder().toPath().resolve("profiles")),
-                        taskService);
-        this.playerDataService.startAutosave(coreConfig.autosaveSeconds());
+        this.schematics = new SchematicService(this);
+        this.schematics.extractDefault();
 
-        // 3b. Economy (pure service over player profiles; no I/O of its own).
-        this.economyService = new EconomyService(playerDataService);
-
-        // 3c. Island registry (loads async from plugins/CoreMC/islands/) inside
-        //     the DEDICATED island world (created as void terrain when absent).
-        ensureIslandWorld();
-        this.themeService = new com.coremc.core.island.ThemeService(this);
-        final int themes = themeService.load();
-        getLogger().info(themes + " island theme(s) loaded from themes.yml.");
-        this.islandService = new IslandService(
-                this,
-                coreConfig,
-                new YamlIslandDataStore(getDataFolder().toPath().resolve("islands")),
-                playerDataService,
-                getDataFolder().toPath().resolve("islands"));
-        this.islandService.start();
-        this.miningCubeService = new com.coremc.core.island.MiningCubeService(this);
-        this.miningCubeService.load();
-        this.miningCubeService.startRegeneration(taskService);
-        this.islandUpgradeEffects = new com.coremc.core.island.IslandUpgradeEffects(this);
-        if (this.islandService.islandWorld().isEmpty()) {
-            getLogger().warning("Island world '" + coreConfig.islandWorldName()
-                    + "' does not exist — /island commands will report it as unavailable.");
+        this.worlds = new IslandWorldService(coreConfig);
+        try {
+            worlds.islandWorld();
+        } catch (final RuntimeException exception) {
+            getLogger().severe("Could not create the island world: " + exception.getMessage());
+            getServer().getPluginManager().disablePlugin(this);
+            return;
         }
 
-        // 3d. GUI runtime (holder-bound menus; no per-player tracking maps).
-        this.guiService = new GuiService(this);
+        // Island upgrades + buffs (upgrades.yml). A broken file disables the
+        // upgrade system with one loud log line — member caps lift (the old
+        // behaviour) and menus show "unavailable" — but never the plugin.
+        this.upgradeConfig = IslandUpgradeConfig.disabled();
+        try {
+            final IslandUpgradeConfig parsed = new IslandUpgradeConfig(this, coreConfig);
+            parsed.load();
+            this.upgradeConfig = parsed;
+        } catch (final RuntimeException exception) {
+            getLogger().severe("Island upgrades disabled — " + exception.getMessage());
+        }
 
-        // 3e. Roles + OmniTool (profile-driven progression).
-        this.omniToolService = new OmniToolService(this);
-        this.roleService = new RoleService(this);
-        final int omniUpgrades = omniToolService.load();
+        this.islands = new IslandService(this, coreConfig, messages, worlds, schematics, upgradeConfig);
+        this.islands.load();
 
-        // 3f. Placeables: generators + spawners.
-        this.placeableService = new PlaceableService(this);
-        this.generatorService = new GeneratorService(this);
-        this.spawnerService = new SpawnerService(this);
-
-        // 3g. Load persistent world/service data (after worlds exist).
-        placeableService.load();
-        final int gens = generatorService.load();
-        final int spawners = spawnerService.load();
-        this.shopService = new ShopService(this);
-        final int shopEntries = shopService.loadCatalogue();
-        getLogger().info("Loaded " + gens + " generator(s), " + spawners + " spawner type(s), "
-                + shopEntries + " shop entr(y/ies), " + omniUpgrades + " omni upgrade(s).");
-
-        // 4. Listeners.
         final PluginManager pluginManager = getServer().getPluginManager();
+        pluginManager.registerEvents(new IslandListener(islands, messages, worlds), this);
+
+        // Shop: catalogue (shop.yml) + coin balances (balances.yml). A broken
+        // catalogue or unreadable balance file disables /shop with a loud log
+        // line but never the plugin itself.
+        this.shopConfig = new ShopConfig(this);
+        this.economy = null;
+        try {
+            shopConfig.load();
+            this.economy = new EconomyService(
+                    new YamlEconomyStore(Path.of(getDataFolder().getPath(), "balances.yml"), getLogger()),
+                    shopConfig.startingBalance(),
+                    getLogger());
+        } catch (final RuntimeException | java.io.IOException exception) {
+            getLogger().severe("Shop disabled — " + exception.getMessage());
+            this.shopConfig = new ShopConfig(this);
+            this.economy = null;
+        }
+        this.shopGui = new ShopGui(shopConfig, economy);
+        final PluginCommand shopCommand = getCommand("shop");
+        if (shopCommand != null) {
+            shopCommand.setExecutor(new ShopCommand(shopConfig, shopGui, messages));
+        } else {
+            getLogger().severe("Command 'shop' missing from plugin.yml — /shop will not work.");
+        }
+        final SellGui sellGui = new SellGui(messages);
+        registerSimpleCommand("sell", new SellCommand(economy, sellGui, messages));
+
+        // Tebex webstore: gift cards (/giftcard, /gc). Off until the owner
+        // fills in the Plugin API secret key in tebex.yml.
+        this.tebexConfig = new TebexConfig(this);
+        this.giftcardStore = new GiftcardStore(
+                Path.of(getDataFolder().getPath(), "giftcards.yml"));
+        try {
+            tebexConfig.load();
+            giftcardStore.load();
+        } catch (final RuntimeException | java.io.IOException exception) {
+            getLogger().severe("Tebex integration disabled — " + exception.getMessage());
+            tebexConfig = new TebexConfig(this);
+        }
+        this.tebexClient = new TebexClient(tebexConfig);
+        registerSimpleCommand("giftcard", new GiftcardCommand(this, tebexConfig,
+                tebexClient, giftcardStore, messages));
+        if (tebexConfig.enabled()) {
+            getLogger().info("Tebex integration active — /giftcard is live.");
+        }
+
+        // Ranks (Core / Core+ / Core++): /fly, /echest, the sell
+        // multiplier, season payouts and River keys. A broken ranks.yml
+        // disables the ladder loudly (no ranks, no perks, x1.0 sells).
+        this.rankConfig = RankConfig.disabled();
+        try {
+            final RankConfig parsed = new RankConfig(this);
+            parsed.load();
+            this.rankConfig = parsed;
+        } catch (final RuntimeException exception) {
+            getLogger().severe("Ranks disabled — " + exception.getMessage());
+        }
+        this.rankService = null;
+        if (economy != null && rankConfig.enabled()) {
+            this.rankService = new RankService(this, rankConfig, economy, messages,
+                    new YamlRankStore(
+                            Path.of(getDataFolder().getPath(), "ranks-data.yml"), getLogger()));
+            rankService.load();
+            pluginManager.registerEvents(new RankListener(rankService), this);
+        } else if (economy == null) {
+            getLogger().severe("Ranks disabled — no economy (the shop failed to load).");
+        }
+
+        if (economy != null) {
+            pluginManager.registerEvents(
+                    new ShopListener(shopConfig, economy, shopGui, messages, rankService), this);
+            this.sellListener = new SellListener(shopConfig, economy, messages, rankService);
+            pluginManager.registerEvents(sellListener, this);
+            registerVaultBridge();
+        }
+
+        registerSimpleCommand("rank", new RankCommand(rankConfig,
+                rankService == null ? null : rankService, messages));
+        registerSimpleCommand("fly", new FlyCommand(
+                rankService == null ? null : rankService, messages));
+        registerSimpleCommand("echest", new EchestCommand(
+                rankService == null ? null : rankService, messages));
+
+        // Spawners: progression config (spawners.yml) + placed spawner
+        // registry (spawners-data.yml). A broken config disables the
+        // spawner system with a loud log line, never the plugin.
+        this.spawnerConfig = new SpawnerConfig(this);
+        this.spawnerService = null;
+        try {
+            spawnerConfig.load();
+            if (economy == null) {
+                getLogger().severe("Spawners disabled — no economy (the shop failed to load).");
+            } else {
+                this.spawnerService = new SpawnerService(
+                        this, spawnerConfig,
+                        new YamlSpawnerDataStore(
+                                Path.of(getDataFolder().getPath(), "spawners-data.yml"), getLogger()),
+                        economy, messages, islands);
+                spawnerService.load();
+                final SpawnerHolograms spawnerHolograms =
+                        new SpawnerHolograms(this, spawnerService);
+                spawnerService.attach(spawnerHolograms);
+                pluginManager.registerEvents(spawnerHolograms, this);
+                pluginManager.registerEvents(new SpawnerListener(spawnerService, messages), this);
+                islands.onDelete(spawnerService::onIslandDeleted);
+            }
+        } catch (final RuntimeException exception) {
+            getLogger().severe("Spawners disabled — " + exception.getMessage());
+            this.spawnerService = null;
+        }
+
+        // Menus: /is opens the double-chest island menu (members-only), its
+        // sub-menus (upgrades, buffs, members, invite) are small chests, and
+        // /spawner opens the spawner menu. Purchases reuse the command flows.
+        this.buffService = new IslandBuffService(this,
+                new YamlBuffStore(Path.of(getDataFolder().getPath(), "buffs.yml"), getLogger()),
+                spawnerService, upgradeConfig);
+        buffService.load();
+        islands.onDelete(buffService::onIslandDeleted);
+        pluginManager.registerEvents(new BuffListener(islands, buffService, upgradeConfig), this);
+
+        // Island points: blocks broken/placed, play time and upgrades earn
+        // points for the island top leaderboards (Solos / Duos / Teams).
+        this.islandPoints = new IslandPointsService(
+                Path.of(getDataFolder().getPath(), "island-points.yml"));
+        try {
+            islandPoints.load();
+        } catch (final java.io.IOException exception) {
+            getLogger().severe("Island points start fresh — " + exception.getMessage());
+        }
+        islands.onDelete(islandPoints::remove);
+        pluginManager.registerEvents(new PointsListener(islands, islandPoints), this);
+        // +1 point per 5 minutes online, +flush of the points file every minute
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            for (final org.bukkit.entity.Player online : getServer().getOnlinePlayers()) {
+                final var island = islands.islandOf(online.getUniqueId());
+                if (island != null) {
+                    islandPoints.add(island, IslandPointsService.PLAY_POINTS);
+                }
+            }
+        }, 20L * 60 * 5, 20L * 60 * 5);
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            try {
+                islandPoints.flush();
+            } catch (final java.io.IOException exception) {
+                getLogger().warning("Could not save island points: " + exception.getMessage());
+            }
+        }, 20L * 60, 20L * 60);
+
+        final IslandUpgradeService upgradeService = new IslandUpgradeService(
+                upgradeConfig, islands, buffService, economy, messages, islandPoints);
+        SpawnerMenuGui spawnerMenuGui = null;
+        if (spawnerService != null) {
+            spawnerMenuGui = new SpawnerMenuGui(spawnerConfig, spawnerService, islands);
+            pluginManager.registerEvents(
+                    new SpawnerMenuListener(spawnerConfig, spawnerService, spawnerMenuGui), this);
+        }
+        final IslandGui islandGui = new IslandGui(islands, upgradeConfig, buffService, spawnerMenuGui);
         pluginManager.registerEvents(
-                new PlayerListener(playerDataService, messageService, coreConfig, islandService), this);
-        pluginManager.registerEvents(new IslandProtectionListener(this), this);
-        pluginManager.registerEvents(islandUpgradeEffects, this);
-        pluginManager.registerEvents(guiService, this);
-        pluginManager.registerEvents(new OmniToolListener(this), this);
-        pluginManager.registerEvents(new MiningXpListener(this), this);
-        pluginManager.registerEvents(new LoggingXpListener(this), this);
-        pluginManager.registerEvents(new FarmingXpListener(this), this);
-        pluginManager.registerEvents(new FishingXpListener(this), this);
-        pluginManager.registerEvents(new SlayerXpListener(this), this);
-        pluginManager.registerEvents(new PlaceableListener(this), this);
-        pluginManager.registerEvents(new KillProgressListener(this), this);
+                new IslandMenuListener(islands, islandGui, upgradeService, upgradeConfig, messages),
+                this);
 
-        // 5. Commands.
-        registerCommands();
+        final IsTopGui isTopGui = new IsTopGui(islands, islandPoints);
+        final IsTopBoardGui isTopBoardGui = new IsTopBoardGui(islands, islandPoints);
+        pluginManager.registerEvents(new IsTopListener(isTopGui, isTopBoardGui), this);
+        final IslandCommand command = new IslandCommand(islands, messages, islandGui, isTopGui);
 
-        getLogger().info("CoreMC " + getDescription().getVersion() + " enabled.");
+        // Island top season rewards: the leaders of each leaderboard are
+        // paid in webstore gift cards when /season set starts a new season.
+        this.islandTopRewards = new IslandTopRewards(this, islands::all, islandPoints, tebexConfig,
+                tebexClient, giftcardStore, messages, getLogger(),
+                Path.of(getDataFolder().getPath(), "island-rewards.yml"));
+        islandTopRewards.load();
+        registerSimpleCommand("season", new SeasonCommand(
+                rankService == null ? null : rankService, islandTopRewards, messages));
+        final PluginCommand islandCommand = getCommand("island");
+        if (islandCommand != null) {
+            islandCommand.setExecutor(command);
+            islandCommand.setTabCompleter(command);
+        } else {
+            getLogger().severe("Command 'island' missing from plugin.yml — /is will not work.");
+        }
+
+        if (spawnerService != null) {
+            final PluginCommand spawnerCommand = getCommand("spawner");
+            if (spawnerCommand != null) {
+                final SpawnerCommand executor =
+                        new SpawnerCommand(spawnerConfig, spawnerService, messages, spawnerMenuGui);
+                spawnerCommand.setExecutor(executor);
+                spawnerCommand.setTabCompleter(executor);
+            } else {
+                getLogger().severe("Command 'spawner' missing from plugin.yml — /spawner will not work.");
+            }
+        }
+
+        getLogger().info("CoreMC enabled: " + islands.count() + " island(s), world '"
+                + worlds.islandWorld().getName() + "'.");
+    }
+
+    /**
+     * Exposes CoreMC's coin economy through the Vault API when the Vault
+     * plugin is installed: any Vault-aware plugin then reads and spends
+     * the same coins (balances stay owned by CoreMC). Without Vault,
+     * everything works unchanged — the bridge simply never loads.
+     */
+    private void registerVaultBridge() {
+        if (getServer().getPluginManager().getPlugin("Vault") == null) {
+            getLogger().info("Vault not installed — economy bridge skipped (coins stay internal).");
+            return;
+        }
+        try {
+            final Object bridge = new VaultEconomy(economy);
+            getServer().getServicesManager().register(
+                    net.milkbowl.vault.economy.Economy.class,
+                    (net.milkbowl.vault.economy.Economy) bridge,
+                    this, org.bukkit.plugin.ServicePriority.Normal);
+            getLogger().info("Vault economy bridge active: provider 'CoreMC' — "
+                    + "other plugins can now use CoreMC coins.");
+        } catch (final Throwable throwable) {
+            // missing API classes or a Vault version mismatch must never
+                     // take the plugin down
+            getLogger().warning("Vault is installed but the economy bridge could not load: "
+                    + throwable.getMessage());
+        }
+    }
+
+    /** Registers a command executor, logging loudly when plugin.yml is missing it. */
+    private void registerSimpleCommand(final String name, final CommandExecutor executor) {
+        final PluginCommand command = getCommand(name);
+        if (command != null) {
+            command.setExecutor(executor);
+            if (executor instanceof TabCompleter completer) {
+                command.setTabCompleter(completer);
+            }
+        } else {
+            getLogger().severe("Command '" + name + "' missing from plugin.yml — /" + name
+                    + " will not work.");
+        }
     }
 
     @Override
     public void onDisable() {
-        shutdownServices();
-    }
-
-    private void shutdownServices() {
-        // Stop scheduled work first so nothing touches dead services.
-        if (taskService != null) {
-            taskService.cancelAll();
+        // settle any open /sell windows first so a shutdown never
+        // swallows items or coins still sitting in them
+        if (sellListener != null) {
+            sellListener.closeAll();
         }
-        // Flush and shut down player data (synchronous, safe on disable).
-        if (playerDataService != null) {
-            playerDataService.shutdown();
-        }
-        if (islandService != null) {
-            islandService.shutdown();
-        }
-        this.taskService = null;
-        this.coreConfig = null;
-        this.messageService = null;
-        this.playerDataService = null;
-        this.economyService = null;
-        if (omniToolService != null) {
-            omniToolService.clearTransient();
-        }
-        if (placeableService != null) {
-            placeableService.save(); // shutdown-critical: never lose placed blocks
-            placeableService = null;
-        }
-        this.generatorService = null;
-        this.spawnerService = null;
-        this.shopService = null;
-        this.islandService = null;
-        this.guiService = null;
-        this.omniToolService = null;
-        this.roleService = null;
-        getLogger().info("CoreMC disabled — all player data saved, all tasks cancelled.");
-    }
-
-    /** Reloads config.yml + messages.yml and re-applies settings. */
-    public void reloadCoreConfig() {
-        coreConfig.load();
-        messageService.load();
-        // Re-apply the autosave interval with fresh configuration.
-        playerDataService.startAutosave(coreConfig.autosaveSeconds());
-        themeService.load();
-        miningCubeService.load();
-        spawnerService.load();
-        generatorService.load();
-        shopService.loadCatalogue();
-        omniToolService.load();
-    }
-
-    private void registerCommands() {
-        final PluginCommand coremc = getCommand("coremc");
-        if (coremc == null) {
-            throw new IllegalStateException("Command 'coremc' missing from plugin.yml");
-        }
-        final CoreMCCommand coremcCommand = new CoreMCCommand(this);
-        coremc.setExecutor(coremcCommand);
-        coremc.setTabCompleter(coremcCommand);
-
-        final PluginCommand profile = getCommand("profile");
-        if (profile == null) {
-            throw new IllegalStateException("Command 'profile' missing from plugin.yml");
-        }
-        final ProfileCommand profileCommand = new ProfileCommand(this);
-        profile.setExecutor(profileCommand);
-        profile.setTabCompleter(profileCommand);
-
-        final PluginCommand heal = getCommand("heal");
-        if (heal == null) {
-            throw new IllegalStateException("Command 'heal' missing from plugin.yml");
-        }
-        final HealCommand healCommand = new HealCommand(this);
-        heal.setExecutor(healCommand);
-        heal.setTabCompleter(healCommand);
-
-        final PluginCommand island = getCommand("island");
-        if (island == null) {
-            throw new IllegalStateException("Command 'island' missing from plugin.yml");
-        }
-        final IslandCommand islandCommand = new IslandCommand(this);
-        island.setExecutor(islandCommand);
-        island.setTabCompleter(islandCommand);
-
-        registerCurrencyCommand("credits", Currency.CREDITS);
-        registerCurrencyCommand("skytokens", Currency.SKY_TOKENS);
-        registerCurrencyCommand("money", Currency.MONEY);
-
-        final PluginCommand role = getCommand("role");
-        if (role == null) {
-            throw new IllegalStateException("Command 'role' missing from plugin.yml");
-        }
-        final RoleCommand roleCommand = new RoleCommand(this);
-        role.setExecutor(roleCommand);
-        role.setTabCompleter(roleCommand);
-
-        final PluginCommand gens = getCommand("gens");
-        if (gens == null) {
-            throw new IllegalStateException("Command 'gens' missing from plugin.yml");
-        }
-        gens.setExecutor(new GensCommand(this));
-
-        final PluginCommand spawners = getCommand("spawners");
-        if (spawners == null) {
-            throw new IllegalStateException("Command 'spawners' missing from plugin.yml");
-        }
-        spawners.setExecutor(new SpawnersCommand(this));
-
-        final ShopCommand shopCommand = new ShopCommand(this);
-        for (final String name : new String[] {"shop", "tokenshop"}) {
-            final PluginCommand cmd = getCommand(name);
-            if (cmd == null) {
-                throw new IllegalStateException("Command '" + name + "' missing from plugin.yml");
+        if (islandPoints != null) {
+            try {
+                islandPoints.flush();
+            } catch (final java.io.IOException exception) {
+                getLogger().warning("Could not save island points: " + exception.getMessage());
             }
-            cmd.setExecutor(shopCommand);
-            cmd.setTabCompleter(shopCommand);
         }
-    }
-
-    private void registerCurrencyCommand(final String name, final Currency currency) {
-        final PluginCommand command = getCommand(name);
-        if (command == null) {
-            throw new IllegalStateException("Command '" + name + "' missing from plugin.yml");
+        if (giftcardStore != null) {
+            try {
+                giftcardStore.save();
+            } catch (final java.io.IOException exception) {
+                getLogger().warning("Could not save gift cards: " + exception.getMessage());
+            }
         }
-        final CurrencyAdminCommand handler = new CurrencyAdminCommand(this, currency);
-        command.setExecutor(handler);
-        command.setTabCompleter(handler);
+        // drop the Vault economy registration before anything else
+        getServer().getServicesManager().unregisterAll(this);
+        if (economy != null) {
+            economy.shutdown();
+        }
+        getLogger().info("CoreMC disabled.");
     }
 
-    /** Central task service (tracked, cancelled on disable). */
-    public TaskService tasks() {
-        return taskService;
-    }
-
-    /** Typed plugin configuration. */
     public CoreConfig coreConfig() {
         return coreConfig;
     }
 
-    /** Message/branding service. */
     public MessageService messages() {
-        return messageService;
+        return messages;
     }
 
-    /** Player profile lifecycle service. */
-    public PlayerDataService playerData() {
-        return playerDataService;
+    public IslandWorldService worlds() {
+        return worlds;
     }
 
-    /** Economy service (all currency movement goes through here). */
-    public EconomyService economy() {
-        return economyService;
+    public SchematicService schematics() {
+        return schematics;
     }
 
-    /** Island lifecycle service. */
-    public IslandService islands() {
-        return islandService;
-    }
-
-    /** Island themes (themes.yml). */
-    public com.coremc.core.island.ThemeService themes() {
-        return themeService;
-    }
-
-    /** The Mining Cube effect system. */
-    public com.coremc.core.island.MiningCubeService miningCube() {
-        return miningCubeService;
-    }
-
-    /** Live effects of island upgrade tracks (purchase hook + listeners). */
-    public com.coremc.core.island.IslandUpgradeEffects upgradeEffects() {
-        return islandUpgradeEffects;
-    }
-
-    /** GUI runtime. */
-    public GuiService gui() {
-        return guiService;
-    }
-
-    /** OmniTool service. */
-    public OmniToolService omniTool() {
-        return omniToolService;
-    }
-
-    /** Role service (selection + progression routing). */
-    public RoleService roles() {
-        return roleService;
-    }
-
-    /** Placeable identity + placement registry. */
-    public PlaceableService placeables() {
-        return placeableService;
-    }
-
-    /** Generator catalogue and purchases. */
-    public GeneratorService generators() {
-        return generatorService;
-    }
-
-    /** Spawner catalogue, unlock progression and purchases. */
     public SpawnerService spawners() {
         return spawnerService;
     }
 
-    /** Shop catalogue and purchases. */
-    public ShopService shop() {
-        return shopService;
+    public IslandService islands() {
+        return islands;
     }
 }

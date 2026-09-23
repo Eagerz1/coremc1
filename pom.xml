@@ -6,11 +6,11 @@
 
     <groupId>com.coremc</groupId>
     <artifactId>coremc</artifactId>
-    <version>0.10.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>CoreMC</name>
-    <description>CoreMC Skyblock core plugin</description>
+    <description>CoreMC core plugin</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -22,6 +22,10 @@
             <id>papermc-repo</id>
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -32,10 +36,29 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Vault economy API (provided at runtime by the Vault plugin);
+             the offline builds compile the same sources from
+             ci/vault-api-src. -->
+        <dependency>
+            <groupId>com.github.MilkBowl</groupId>
+            <artifactId>VaultAPI</artifactId>
+            <version>1.7</version>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>5.9.2</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- TestRunner talks to the JUnit Platform launcher API directly;
+             jupiter alone does not pull this in, so `mvn package` would
+             fail to compile the test sources without it. -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.9.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

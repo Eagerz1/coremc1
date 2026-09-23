@@ -1,0 +1,197 @@
+# ============================================================
+#  CoreMC — spawners.yml
+#  The mob spawner progression system.
+#
+#  GROUPS share an Essence (dropped by any of the group's mobs)
+#  and a rare Relic. Every MOB has its own unique drop, used to
+#  unlock that mob's higher spawner variants.
+#
+#  Variants (per mob, in order): normal -> advanced -> ancient
+#  -> mythic. Each variant spawns mobs faster and in bigger
+#  bursts; Mythic spawners also auto-kill their spawns (drops
+#  are credited to the island owner).
+#
+#  Drop chances per player kill:
+#    essence = settings.essence-chance
+#    unique  = luck.base-chance + level * luck.bonus-per-level
+#              (island luck, up to luck.max-level; default
+#               0.1 -> 0.5, bought with coins via /spawner luck)
+#    relic   = settings.relic-chance
+#
+#  Everything below is data — add groups, mobs, tweak costs and
+#  chances freely. Broken entries refuse to load the system
+#  (with every problem listed in the log) rather than half-work.
+# ============================================================
+
+settings:
+  essence-chance: 0.25
+  relic-chance: 0.01
+  # Send a chat line when essence drops (unique drops and relics
+  # always announce).
+  announce-essence: false
+  luck:
+    base-chance: 0.1
+    bonus-per-level: 0.1
+    max-level: 4
+    # Coins for luck level 1, 2, 3, 4.
+    costs: [750, 2500, 7500, 20000]
+  spawner:
+    # Base spawn cycle; variants divide the delays by their rate.
+    min-delay-ticks: 100
+    max-delay-ticks: 400
+    player-range: 16
+    # How many spawners may be stacked on one block: sneak-click a
+    # spawner onto an identical one to stack, sneak-break takes all.
+    max-stack: 64
+
+  # Mob stacking: spawns from registered spawners merge into counted
+  # entities ("4x Pig"); killing a stack drops and credits the count.
+  mob-stack:
+    enabled: true
+    radius: 5
+    max: 1024
+
+# Variant behaviour. rate divides the spawn delay, count is mobs
+# per cycle, nearby-limit caps live mobs around the spawner.
+variants:
+  normal:   {rate: 1.0, count: 2, nearby-limit: 8,  auto-kill: false}
+  advanced: {rate: 2.0, count: 3, nearby-limit: 12, auto-kill: false}
+  ancient:  {rate: 3.0, count: 4, nearby-limit: 16, auto-kill: false}
+  mythic:   {rate: 4.0, count: 6, nearby-limit: 24, auto-kill: true}
+
+# Variant upgrade requirements: the mob's group essence plus the mob's
+# OWN unique drop (the drop chance starts at 10% and island luck raises
+# it up to 50%). Normal spawners are the entry level; a stacked spawner
+# pays these per stacked spawner. Every mob falls back to these numbers;
+# a group's `upgrade-overrides:` beats them for that group, and a single
+# mob's own `upgrades:` beats both — balance per group and per mob here.
+upgrade-defaults:
+  advanced: {essence: 10, drops: 3}
+  ancient: {essence: 25, drops: 10}
+  mythic: {essence: 75, drops: 30}
+
+groups:
+  organic:
+    name: "Organic"
+    essence: {item: PRISMARINE_SHARD, name: "Organic Essence"}
+    relic: {item: HEART_OF_THE_SEA, name: "Primordial Heart"}
+    mobs:
+      pig:
+        entity: PIG
+        name: "Pig"
+        drop: {item: BONE, name: "Pig Tusk"}
+        spawner-cost: 2500
+        unlock: {}
+        # starter mob: a friendlier Ancient for the first spawner farm
+        upgrades: {ancient: {essence: 20, drops: 6}}
+      cow:
+        entity: COW
+        name: "Cow"
+        drop: {item: GOLD_NUGGET, name: "Cow Bell"}
+        spawner-cost: 5000
+        unlock: {essence: 15, drops: {pig: 4}}
+      sheep:
+        entity: SHEEP
+        name: "Sheep"
+        drop: {item: WHITE_WOOL, name: "Golden Fleece"}
+        spawner-cost: 10000
+        unlock: {essence: 30, drops: {cow: 8}}
+
+  undead:
+    name: "Undead"
+    essence: {item: ECHO_SHARD, name: "Undead Essence"}
+    relic: {item: NETHER_STAR, name: "Undying Sigil"}
+    mobs:
+      zombie:
+        entity: ZOMBIE
+        name: "Zombie"
+        drop: {item: ROTTEN_FLESH, name: "Zombie Brain"}
+        spawner-cost: 2500
+        unlock: {}
+      skeleton:
+        entity: SKELETON
+        name: "Skeleton"
+        drop: {item: ARROW, name: "Cursed Arrow"}
+        spawner-cost: 5000
+        unlock: {essence: 15, drops: {zombie: 4}}
+      spider:
+        entity: SPIDER
+        name: "Spider"
+        drop: {item: STRING, name: "Spider Silk"}
+        spawner-cost: 10000
+        unlock: {essence: 30, drops: {skeleton: 8}}
+
+  infernal:
+    name: "Infernal"
+    essence: {item: MAGMA_CREAM, name: "Infernal Essence"}
+    relic: {item: NETHERITE_SCRAP, name: "Ember of the First Flame"}
+    mobs:
+      blaze:
+        entity: BLAZE
+        name: "Blaze"
+        drop: {item: BLAZE_POWDER, name: "Blaze Cinder"}
+        spawner-cost: 2500
+        unlock: {}
+      magma-cube:
+        entity: MAGMA_CUBE
+        name: "Magma Cube"
+        drop: {item: SLIME_BALL, name: "Magma Clot"}
+        spawner-cost: 5000
+        unlock: {essence: 15, drops: {blaze: 4}}
+      wither-skeleton:
+        entity: WITHER_SKELETON
+        name: "Wither Skeleton"
+        drop: {item: BONE, name: "Wither Bone"}
+        spawner-cost: 10000
+        unlock: {essence: 30, drops: {magma-cube: 8}}
+
+  ender:
+    name: "Ender"
+    essence: {item: ENDER_PEARL, name: "Ender Essence"}
+    relic: {item: PURPUR_BLOCK, name: "Void Relic"}
+    # endgame group: every Ender mob pays more for Mythic
+    upgrade-overrides:
+      mythic: {essence: 90, drops: 36}
+    mobs:
+      enderman:
+        entity: ENDERMAN
+        name: "Enderman"
+        drop: {item: ENDER_EYE, name: "Enderman Focus"}
+        spawner-cost: 2500
+        unlock: {}
+      endermite:
+        entity: ENDERMITE
+        name: "Endermite"
+        drop: {item: PHANTOM_MEMBRANE, name: "Endermite Husk"}
+        spawner-cost: 5000
+        unlock: {essence: 15, drops: {enderman: 4}}
+      shulker:
+        entity: SHULKER
+        name: "Shulker"
+        drop: {item: SHULKER_SHELL, name: "Shulker Husk"}
+        spawner-cost: 10000
+        unlock: {essence: 30, drops: {endermite: 8}}
+
+  corrupted:
+    name: "Corrupted"
+    essence: {item: AMETHYST_SHARD, name: "Corrupted Essence"}
+    relic: {item: WITHER_ROSE, name: "Corrupted Sigil"}
+    mobs:
+      witch:
+        entity: WITCH
+        name: "Witch"
+        drop: {item: BOOK, name: "Witch's Grimoire"}
+        spawner-cost: 2500
+        unlock: {}
+      evoker:
+        entity: EVOKER
+        name: "Evoker"
+        drop: {item: EMERALD, name: "Evoker Sigil"}
+        spawner-cost: 5000
+        unlock: {essence: 15, drops: {witch: 4}}
+      pillager:
+        entity: PILLAGER
+        name: "Pillager"
+        drop: {item: IRON_INGOT, name: "Pillager Insignia"}
+        spawner-cost: 10000
+        unlock: {essence: 30, drops: {evoker: 8}}
