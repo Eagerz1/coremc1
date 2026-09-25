@@ -1,0 +1,18 @@
+Cloning into 'zg'...
+==> compile vault api (official VaultAPI economy sources)
+==> compile main sources
+src/main/java/com/coremc/core/placeholder/XCurrencyExpansion.java:6: error: package me.clip.placeholderapi.expansion does not exist
+import me.clip.placeholderapi.expansion.PlaceholderExpansion;
+                                       ^
+src/main/java/com/coremc/core/placeholder/XCurrencyExpansion.java:15: error: cannot find symbol
+public final class XCurrencyExpansion extends PlaceholderExpansion {
+                                              ^
+  symbol: class PlaceholderExpansion
+src/main/java/com/coremc/core/placeholder/CoremcExpansion.java:6: error: package me.clip.placeholderapi.expansion does not exist
+import me.clip.placeholderapi.expansion.PlaceholderExpansion;
+                                       ^
+src/main/java/com/coremc/core/placeholder/CoremcExpansion.java:23: error: cannot find symbol
+public final class CoremcExpansion extends PlaceholderExpansion {
+                                           ^
+  symbol: class PlaceholderExpansion
+4 errors
