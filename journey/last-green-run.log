@@ -1,0 +1,113 @@
+[server] booting (boot1)...
+[server] boot1 ready
+[rcon] connected
+[setup] gamerules applied (natural spawning off — only our summons and spawners)
+  PASS  boot1: zero server ERROR lines (excl. platform noise)
+  PASS  boot1: zero CoreMC warn/error/exception lines
+
+=== PHASE 1: join + /is create ===
+  PASS  owner spawns on first boot
+  PASS  /is create pastes island
+  PASS  client was sent to the islands level
+  PASS  island has solid ground under the live spawn position
+[island] home=0.5,68.0,2.5 groundY=67
+
+=== PHASE 2: virtual essence commands ===
+  PASS  fresh balances are all zero
+  PASS  console give slayer 1500
+  PASS  balances after give/set (comma-formatted)
+  PASS  /essence balance <player> shows another player
+  PASS  console take slayer 500
+  PASS  take subtracts (1,000 left)
+  PASS  overdraw take is refused
+  PASS  refused take leaves the balance unchanged
+  PASS  negative set clamps to zero
+  PASS  unknown essence type is rejected
+  PASS  guest spawns
+  PASS  guest starts at zero too
+  PASS  non-admin cannot /essence give
+
+=== PHASE 3: placeholderapi placeholders ===
+  PASS  /papicheck resolves every essence placeholder + %x_currency%
+  PASS  guest placeholders are zeroed
+
+=== PHASE 4: spawner buy, place, info, hologram ===
+  PASS  /spawner buy pig costs $2,500
+  PASS  the bought spawner is a real spawner item in the inventory
+  PASS  found a clear spot on the island for the spawner
+  PASS  bot placed the spawner
+  PASS  the placed block is a real spawner block
+  PASS  /spawner info shows [Normal]
+  PASS  /spawner info lists the Advanced requirement list
+  PASS  stack-label hologram floats above the spawner
+
+=== PHASE 5: upgrade GUI checklist ===
+  PASS  "/spawner upgrade" opens the upgrade GUI
+  PASS  window title is "COREMC - Upgrade Spawner"
+  PASS  slot 13 is the upgrade button naming the target variant
+  PASS  button lore carries the requirement header
+  PASS  a met requirement shows a tick
+  PASS  the three shortfalls show crosses
+  PASS  shortfall lines say (You have N)
+  PASS  not clickable-to-upgrade while requirements fail
+  PASS  failed click names exactly the missing requirements
+  PASS  the checklist re-renders after a failed click
+  PASS  hostile clicks cannot move GUI items
+  PASS  admin giveitem hands out 3 Pig Tusks
+  PASS  all four requirements now tick
+  PASS  the button invites the click
+  PASS  slot 15 is the progress book
+  PASS  successful click upgrades to Advanced
+  PASS  the window closed itself after the upgrade
+  PASS  success consumes slayer but never the kill threshold
+  PASS  the three Pig Tusks were consumed
+  PASS  coins were spent: %coremc_coins% shows 492,500
+  PASS  /spawner info now says [Advanced]
+  PASS  a guest cannot open the upgrade flow
+
+=== PHASE 6: earning rules (slayer/mining/farming) ===
+  PASS  a summoned natural cow appeared
+  PASS  bot killed the natural cow
+  PASS  natural mob kill pays Normal rate: +1 slayer, +1 kill
+  PASS  passive /kill death pays no slayer and no kills
+  PASS  the Advanced spawner spawned a pig (faster variant cycle)
+[essence] advanced kill attempt 1 did not register, retrying
+  PASS  advanced spawner pigs pay exactly 2 slayer per kill (stack of 2)
+[essence] advanced stack count was 2
+  PASS  admin gives a Mythic pig spawner
+  PASS  mythic spawner placed
+  PASS  sneak-break recovers the advanced spawner as an item
+  PASS  mythic auto-kill pays ZERO slayer and ZERO kills (drops only)
+  PASS  mining natural diamond ore pays +8 Mining Essence
+  PASS  bot holds stone to place
+  PASS  bot placed a stone block (player-placed)
+  PASS  breaking your own placed stone pays NOTHING (anti place-mine loop)
+  PASS  harvesting ripe wheat pays +2 Farming Essence
+  PASS  unripe wheat pays nothing
+
+=== PHASE 7: restart persistence ===
+[JGuest] connection ended
+[JOwner] connection ended
+[server] stopping...
+[server] exited
+  PASS  essence-balances.yml persisted the owner profile
+  PASS  essence-balances.yml numbers match the live balance
+  PASS  placed-blocks.yml has no stale entries (the placed stone was consumed)
+[server] booting (boot2)...
+[server] boot2 ready
+[rcon] connected
+  PASS  boot2: zero server ERROR lines (excl. platform noise)
+  PASS  boot2: zero CoreMC warn/error/exception lines
+  PASS  owner spawns after restart
+  PASS  balances survived the restart exactly
+  PASS  placeholders resolve the persisted state
+  PASS  mythic spawner survived as [Mythic]
+  PASS  mythic info mentions auto-kill
+  PASS  bot placed a fresh stone after the restart
+  PASS  post-restart placed stone still pays nothing
+
+=== PHASE 8: final audit ===
+[JOwner] connection ended
+[server] stopping...
+[server] exited
+  PASS  final: zero server ERROR lines (excl. platform noise)

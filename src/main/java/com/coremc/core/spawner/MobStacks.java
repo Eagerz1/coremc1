@@ -97,6 +97,10 @@ public final class MobStacks {
         }
         if (best != null) {
             applyCount(best, bestCount + 1);
+            // the stack adopts the newest member's spawner tier: if a stray
+            // (untagged) mob absorbs spawner spawns, the stack must still pay
+            // the spawner's kill rate, not Normal
+            spawners.applyVariantTag(best, spawners.variantOf(spawned));
             spawned.remove();
             return true;
         }
@@ -135,6 +139,9 @@ public final class MobStacks {
         final EntityType type = entity.getType();
         final Location location = entity.getLocation();
         final World world = entity.getWorld();
+        // captured before the entity is discarded: the replacement must pay
+        // this stack's variant rate when it is eventually killed
+        final SpawnerVariant variant = spawners.variantOf(entity);
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             final Chunk chunk = world.getChunkAt(location);
             if (!world.isChunkLoaded(chunk.getX(), chunk.getZ())) {
@@ -144,6 +151,7 @@ public final class MobStacks {
                     CreatureSpawnEvent.SpawnReason.CUSTOM);
             if (spawned instanceof LivingEntity living) {
                 applyCount(living, count - 1);
+                spawners.applyVariantTag(living, variant);
             }
         });
     }

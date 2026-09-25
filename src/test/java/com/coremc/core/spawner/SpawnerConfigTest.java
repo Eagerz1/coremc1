@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
@@ -66,18 +67,8 @@ class SpawnerConfigTest {
 
     @Test
     void stackingSettingsHaveSaneDefaults() {
-        final SpawnerConfig config = parse("variants:\n  normal: {rate: 1.0, count: 1, nearby-limit: 6, auto-kill: false}\n"
-                + "  advanced: {rate: 2.0, count: 1, nearby-limit: 6, auto-kill: false}\n"
-                + "  ancient: {rate: 3.0, count: 1, nearby-limit: 6, auto-kill: false}\n"
-                + "  mythic: {rate: 4.0, count: 1, nearby-limit: 6, auto-kill: false}\n"
-                + "groups:\n  organic:\n    essence: {item: PRISMARINE_SHARD, name: Organic Essence}\n"
-                + "    relic: {item: HEART_OF_THE_SEA, name: Primordial Heart}\n"
-                + "    mobs:\n      pig:\n        entity: PIG\n        name: Pig\n"
-                + "        drop: {item: BONE, name: Pig Tusk}\n"
-                + "        spawner-cost: 2500\n"
-                + "        upgrades:\n          advanced: {essence: 4, drops: 8, relics: 0}\n"
-                + "          ancient: {essence: 8, drops: 16, relics: 1}\n"
-                + "          mythic: {essence: 16, drops: 32, relics: 2}\n");
+        final SpawnerConfig config = parse(minimalGroups("organic", "item: HEART_OF_THE_SEA",
+                REQUIREMENTS_ALL_TIERS));
         assertEquals(64, config.maxSpawnerStack());
         assertTrue(config.mobStackEnabled());
         assertEquals(5, config.mobStackRadius());
@@ -85,13 +76,12 @@ class SpawnerConfigTest {
     }
 
     @Test
-    void everyGroupHasDistinctEssenceAndRelicMaterials() throws IOException {
+    void everyGroupHasADistinctRelicMaterial() throws IOException {
         final SpawnerConfig config = bundled();
-        assertEquals(Material.PRISMARINE_SHARD, config.group("organic").essenceMaterial());
-        assertEquals("Organic Essence", config.group("organic").essenceName());
         assertEquals(Material.HEART_OF_THE_SEA, config.group("organic").relicMaterial());
-        assertEquals(Material.ENDER_PEARL, config.group("ender").essenceMaterial());
-        assertEquals("Ender Essence", config.group("ender").essenceName());
+        assertEquals(Material.NETHER_STAR, config.group("undead").relicMaterial());
+        assertEquals(Material.NETHERITE_SCRAP, config.group("infernal").relicMaterial());
+        assertEquals(Material.PURPUR_BLOCK, config.group("ender").relicMaterial());
         assertEquals(Material.WITHER_ROSE, config.group("corrupted").relicMaterial());
     }
 
@@ -120,49 +110,74 @@ class SpawnerConfigTest {
     }
 
     @Test
-    void upgradeCostsResolveFromDefaultsGroupAndMobOverrides() throws IOException {
+    void upgradeRequirementsResolveFromDefaultsGroupAndMobOverrides() throws IOException {
         final SpawnerConfig config = bundled();
         for (final SpawnerGroup group : config.groups()) {
             for (final SpawnerMob mob : group.mobs()) {
-                assertEquals(new SpawnerUpgradeCost(10, 3, 0),
-                        mob.upgradeCost(SpawnerVariant.ADVANCED), mob.id());
-                assertNull(mob.upgradeCost(SpawnerVariant.NORMAL), mob.id());
+                // defaults: $5,000 + 10,000 kills + 20 slayer + 3 own drops
+                assertEquals(List.of(
+                        new UpgradeRequirement(UpgradeRequirement.Type.MONEY, null, null, 5000),
+                        new UpgradeRequirement(UpgradeRequirement.Type.KILLS, null, null, 10000),
+                        UpgradeRequirement.essence(com.coremc.core.essence.EssenceType.SLAYER, 20),
+                        new UpgradeRequirement(UpgradeRequirement.Type.DROP, null, null, 3)),
+                        mob.upgradeRequirements(SpawnerVariant.ADVANCED), mob.id());
+                assertNull(mob.upgradeRequirements(SpawnerVariant.NORMAL), mob.id());
                 if (mob.id().equals("pig")) {
                     // the starter mob ships a friendlier Ancient (mob-level override)
-                    assertEquals(new SpawnerUpgradeCost(20, 6, 0),
-                            mob.upgradeCost(SpawnerVariant.ANCIENT), mob.id());
+                    assertEquals(List.of(
+                            new UpgradeRequirement(UpgradeRequirement.Type.MONEY, null, null, 15000),
+                            new UpgradeRequirement(UpgradeRequirement.Type.KILLS, null, null, 30000),
+                            UpgradeRequirement.essence(com.coremc.core.essence.EssenceType.SLAYER, 40),
+                            new UpgradeRequirement(UpgradeRequirement.Type.DROP, null, null, 6)),
+                            mob.upgradeRequirements(SpawnerVariant.ANCIENT), mob.id());
                 } else {
-                    assertEquals(new SpawnerUpgradeCost(25, 10, 0),
-                            mob.upgradeCost(SpawnerVariant.ANCIENT), mob.id());
+                    assertEquals(List.of(
+                            new UpgradeRequirement(UpgradeRequirement.Type.MONEY, null, null, 25000),
+                            new UpgradeRequirement(UpgradeRequirement.Type.KILLS, null, null, 50000),
+                            UpgradeRequirement.essence(com.coremc.core.essence.EssenceType.SLAYER, 60),
+                            new UpgradeRequirement(UpgradeRequirement.Type.DROP, null, null, 8)),
+                            mob.upgradeRequirements(SpawnerVariant.ANCIENT), mob.id());
                 }
                 if (group.id().equals("ender")) {
                     // the endgame group pays more for Mythic (group override)
-                    assertEquals(new SpawnerUpgradeCost(90, 36, 0),
-                            mob.upgradeCost(SpawnerVariant.MYTHIC), mob.id());
+                    assertEquals(List.of(
+                            new UpgradeRequirement(UpgradeRequirement.Type.MONEY, null, null, 150000),
+                            new UpgradeRequirement(UpgradeRequirement.Type.KILLS, null, null, 200000),
+                            UpgradeRequirement.essence(com.coremc.core.essence.EssenceType.SLAYER, 300),
+                            new UpgradeRequirement(UpgradeRequirement.Type.DROP, null, null, 36)),
+                            mob.upgradeRequirements(SpawnerVariant.MYTHIC), mob.id());
                 } else {
-                    assertEquals(new SpawnerUpgradeCost(75, 30, 0),
-                            mob.upgradeCost(SpawnerVariant.MYTHIC), mob.id());
+                    assertEquals(List.of(
+                            new UpgradeRequirement(UpgradeRequirement.Type.MONEY, null, null, 100000),
+                            new UpgradeRequirement(UpgradeRequirement.Type.KILLS, null, null, 150000),
+                            UpgradeRequirement.essence(com.coremc.core.essence.EssenceType.SLAYER, 200),
+                            new UpgradeRequirement(UpgradeRequirement.Type.DROP, null, null, 25)),
+                            mob.upgradeRequirements(SpawnerVariant.MYTHIC), mob.id());
                 }
             }
         }
     }
 
     @Test
-    void upgradeTiersEscalateInEssenceAndOwnDrops() throws IOException {
+    void upgradeTiersEscalateInMoneyKillsEssenceAndDrops() throws IOException {
         final SpawnerConfig config = bundled();
         for (final SpawnerGroup group : config.groups()) {
             for (final SpawnerMob mob : group.mobs()) {
-                final SpawnerUpgradeCost advanced = mob.upgradeCost(SpawnerVariant.ADVANCED);
-                final SpawnerUpgradeCost ancient = mob.upgradeCost(SpawnerVariant.ANCIENT);
-                final SpawnerUpgradeCost mythic = mob.upgradeCost(SpawnerVariant.MYTHIC);
-                assertTrue(ancient.essence() > advanced.essence()
-                        && ancient.drops() >= advanced.drops(), mob.id());
-                assertTrue(mythic.essence() > ancient.essence()
-                        && mythic.drops() > ancient.drops(), mob.id());
-                // progression is essence + the mob's own unique drop — nothing else
-                assertEquals(0, advanced.relics(), mob.id());
-                assertEquals(0, ancient.relics(), mob.id());
-                assertEquals(0, mythic.relics(), mob.id());
+                final List<UpgradeRequirement> advanced = mob.upgradeRequirements(SpawnerVariant.ADVANCED);
+                final List<UpgradeRequirement> ancient = mob.upgradeRequirements(SpawnerVariant.ANCIENT);
+                final List<UpgradeRequirement> mythic = mob.upgradeRequirements(SpawnerVariant.MYTHIC);
+                assertTrue(ancient.stream().mapToDouble(UpgradeRequirement::amount).sum()
+                        > advanced.stream().mapToDouble(UpgradeRequirement::amount).sum(), mob.id());
+                assertTrue(mythic.stream().mapToDouble(UpgradeRequirement::amount).sum()
+                        > ancient.stream().mapToDouble(UpgradeRequirement::amount).sum(), mob.id());
+                // every tier asks for money, kills, slayer essence and own drops
+                for (final List<UpgradeRequirement> tier : List.of(advanced, ancient, mythic)) {
+                    assertEquals(4, tier.size(), mob.id());
+                    assertTrue(tier.stream().anyMatch(r -> r.type() == UpgradeRequirement.Type.MONEY));
+                    assertTrue(tier.stream().anyMatch(r -> r.type() == UpgradeRequirement.Type.KILLS));
+                    assertTrue(tier.stream().anyMatch(r -> r.type() == UpgradeRequirement.Type.ESSENCE));
+                    assertTrue(tier.stream().anyMatch(r -> r.type() == UpgradeRequirement.Type.DROP));
+                }
             }
         }
     }
@@ -241,11 +256,9 @@ class SpawnerConfigTest {
     }
 
     @Test
-    void dropChancesFromSettings() throws IOException {
+    void relicChanceFromSettings() throws IOException {
         final SpawnerConfig config = bundled();
-        assertEquals(0.25, config.essenceChance(), 1e-9);
         assertEquals(0.01, config.relicChance(), 1e-9);
-        assertEquals(false, config.announceEssence());
     }
 
     // ------------------------------------------------------------------
@@ -272,22 +285,23 @@ class SpawnerConfigTest {
     void brokenMaterialIsRejectedLoudly() {
         final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
                 () -> parse(minimalGroups("organic", "item: NOT_A_MATERIAL",
-                        "item: HEART_OF_THE_SEA")));
+                        REQUIREMENTS_ALL_TIERS)));
         assertTrue(error.getMessage().contains("NOT_A_MATERIAL"), error.getMessage());
     }
 
     @Test
     void nonMobEntityIsRejected() {
         final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
-                () -> parse(minimalGroups("organic", "item: PRISMARINE_SHARD", "item: HEART_OF_THE_SEA")
+                () -> parse(minimalGroups("organic", "item: HEART_OF_THE_SEA",
+                                REQUIREMENTS_ALL_TIERS)
                         .replace("entity: PIG", "entity: ITEM_FRAME")));
         assertTrue(error.getMessage().contains("is not a mob"), error.getMessage());
     }
 
     @Test
     void missingVariantIsRejected() {
-        final String yaml = minimalGroups("organic", "item: PRISMARINE_SHARD",
-                        "item: HEART_OF_THE_SEA")
+        final String yaml = minimalGroups("organic", "item: HEART_OF_THE_SEA",
+                        REQUIREMENTS_ALL_TIERS)
                 .replace("\n  advanced: {rate: 2.0, count: 3, nearby-limit: 12, auto-kill: false}", "");
         final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
                 () -> parse(yaml));
@@ -295,14 +309,56 @@ class SpawnerConfigTest {
     }
 
     @Test
-    void missingUpgradeCostIsRejected() {
-        final String yaml = minimalGroups("organic", "essence-item: PRISMARINE_SHARD",
-                        "relic-item: HEART_OF_THE_SEA")
-                .replace("upgrades: {advanced: {essence: 10, drops: 1}, ancient: {essence: 20, drops: 3}, mythic: {essence: 50, drops: 8, relics: 1}}",
-                        "upgrades: {advanced: {essence: 10, drops: 1}}");
+    void missingUpgradeRequirementsForATierAreRejected() {
         final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
-                () -> parse(yaml));
+                () -> parse(minimalGroups("organic", "item: HEART_OF_THE_SEA", """
+                        upgrades:
+                          advanced:
+                            - {type: money, amount: 100}
+                            - {type: kills, amount: 500}
+                            - {type: essence, essence: slayer, amount: 2}
+                            - {type: drop, amount: 1}
+                        """)));
         assertTrue(error.getMessage().contains("ancient"), error.getMessage());
+    }
+
+    @Test
+    void unknownRequirementTypeIsRejected() {
+        final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> parse(minimalGroups("organic", "item: HEART_OF_THE_SEA", """
+                        upgrades:
+                          advanced:
+                            - {type: money, amount: 100}
+                            - {type: blood, amount: 500}
+                            - {type: essence, essence: slayer, amount: 2}
+                            - {type: drop, amount: 1}
+                        """)));
+        assertTrue(error.getMessage().contains("type"), error.getMessage());
+    }
+
+    @Test
+    void essenceRequirementWithoutEssenceKeyIsRejected() {
+        final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> parse(minimalGroups("organic", "item: HEART_OF_THE_SEA", """
+                        upgrades:
+                          advanced:
+                            - {type: money, amount: 100}
+                            - {type: essence, amount: 2}
+                            - {type: drop, amount: 1}
+                        """)));
+        assertTrue(error.getMessage().contains("essence"), error.getMessage());
+    }
+
+    @Test
+    void zeroOrNegativeAmountIsRejected() {
+        final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> parse(minimalGroups("organic", "item: HEART_OF_THE_SEA", """
+                        upgrades:
+                          advanced:
+                            - {type: money, amount: 0}
+                            - {type: drop, amount: 1}
+                        """)));
+        assertTrue(error.getMessage().contains("amount"), error.getMessage());
     }
 
     // ------------------------------------------------------------------
@@ -310,76 +366,91 @@ class SpawnerConfigTest {
     // ------------------------------------------------------------------
 
     @Test
-    void upgradeDefaultsFillMobsWithoutOwnCosts() {
+    void upgradeDefaultsFillMobsWithoutOwnRequirements() {
         final SpawnerConfig config = parse(upgradeDoc(
-                "upgrade-defaults:\n  advanced: {essence: 10, drops: 3}\n"
-                        + "  ancient: {essence: 25, drops: 10}\n  mythic: {essence: 75, drops: 30}",
-                "upgrades: {}"));
+                DEFAULTS_DOC, "upgrades: {}"));
         final SpawnerMob pig = config.group("organic").mob("pig");
-        assertEquals(new SpawnerUpgradeCost(10, 3, 0), pig.upgradeCost(SpawnerVariant.ADVANCED));
-        assertEquals(new SpawnerUpgradeCost(25, 10, 0), pig.upgradeCost(SpawnerVariant.ANCIENT));
-        assertEquals(new SpawnerUpgradeCost(75, 30, 0), pig.upgradeCost(SpawnerVariant.MYTHIC));
-        assertNull(pig.upgradeCost(SpawnerVariant.NORMAL));
+        assertEquals(UpgradeRequirement.essence(com.coremc.core.essence.EssenceType.SLAYER, 10),
+                find(pig, SpawnerVariant.ADVANCED, UpgradeRequirement.Type.ESSENCE));
+        assertEquals(3, find(pig, SpawnerVariant.ADVANCED, UpgradeRequirement.Type.DROP).amount());
+        assertEquals(25, find(pig, SpawnerVariant.ANCIENT, UpgradeRequirement.Type.ESSENCE).amount());
+        assertEquals(75, find(pig, SpawnerVariant.MYTHIC, UpgradeRequirement.Type.ESSENCE).amount());
+        assertNull(pig.upgradeRequirements(SpawnerVariant.NORMAL));
     }
 
     @Test
     void groupOverridesBeatTheDefaults() {
         final SpawnerConfig config = parse(upgradeDoc(
-                "upgrade-defaults:\n  advanced: {essence: 10, drops: 3}\n"
-                        + "  ancient: {essence: 25, drops: 10}\n  mythic: {essence: 75, drops: 30}",
-                "upgrades: {}",
-                "    upgrade-overrides:\n      mythic: {essence: 90, drops: 36}"));
+                DEFAULTS_DOC, "upgrades: {}",
+                """
+                    upgrade-overrides:
+                      mythic:
+                        - {type: money, amount: 9000}
+                        - {type: kills, amount: 9000}
+                        - {type: essence, essence: slayer, amount: 90}
+                        - {type: drop, amount: 36}
+                    """));
         final SpawnerMob pig = config.group("organic").mob("pig");
         // the group's mythic beats the global default...
-        assertEquals(new SpawnerUpgradeCost(90, 36, 0), pig.upgradeCost(SpawnerVariant.MYTHIC));
+        assertEquals(90, find(pig, SpawnerVariant.MYTHIC, UpgradeRequirement.Type.ESSENCE).amount());
         // ...while untouched tiers still fall back to the defaults
-        assertEquals(new SpawnerUpgradeCost(10, 3, 0), pig.upgradeCost(SpawnerVariant.ADVANCED));
-        assertEquals(new SpawnerUpgradeCost(25, 10, 0), pig.upgradeCost(SpawnerVariant.ANCIENT));
+        assertEquals(10, find(pig, SpawnerVariant.ADVANCED, UpgradeRequirement.Type.ESSENCE).amount());
+        assertEquals(25, find(pig, SpawnerVariant.ANCIENT, UpgradeRequirement.Type.ESSENCE).amount());
     }
 
     @Test
     void mobUpgradesBeatGroupOverridesAndDefaults() {
         final SpawnerConfig config = parse(upgradeDoc(
-                "upgrade-defaults:\n  advanced: {essence: 10, drops: 3}\n"
-                        + "  ancient: {essence: 25, drops: 10}\n  mythic: {essence: 75, drops: 30}",
-                "upgrades: {mythic: {essence: 111, drops: 44}}",
-                "    upgrade-overrides:\n      mythic: {essence: 90, drops: 36}"));
+                DEFAULTS_DOC, """
+                    upgrades:
+                      mythic:
+                        - {type: money, amount: 1111}
+                        - {type: kills, amount: 1111}
+                        - {type: essence, essence: slayer, amount: 111}
+                        - {type: drop, amount: 44}
+                    """,
+                """
+                    upgrade-overrides:
+                      mythic:
+                        - {type: money, amount: 9000}
+                        - {type: kills, amount: 9000}
+                        - {type: essence, essence: slayer, amount: 90}
+                        - {type: drop, amount: 36}
+                    """));
         final SpawnerMob pig = config.group("organic").mob("pig");
-        assertEquals(new SpawnerUpgradeCost(111, 44, 0), pig.upgradeCost(SpawnerVariant.MYTHIC));
+        assertEquals(111, find(pig, SpawnerVariant.MYTHIC, UpgradeRequirement.Type.ESSENCE).amount());
         // tiers the mob does not name still resolve through the chain
-        assertEquals(new SpawnerUpgradeCost(25, 10, 0), pig.upgradeCost(SpawnerVariant.ANCIENT));
+        assertEquals(25, find(pig, SpawnerVariant.ANCIENT, UpgradeRequirement.Type.ESSENCE).amount());
+    }
+
+    @Test
+    void dropRequirementMayNameAnotherMob() {
+        final SpawnerConfig config = parse(upgradeDoc(
+                DEFAULTS_DOC, """
+                    upgrades:
+                      mythic:
+                        - {type: money, amount: 1111}
+                        - {type: kills, amount: 1111}
+                        - {type: essence, essence: slayer, amount: 111}
+                        - {type: drop, amount: 44, mob: cow}
+                    """));
+        final SpawnerMob pig = config.group("organic").mob("pig");
+        assertEquals("cow", find(pig, SpawnerVariant.MYTHIC, UpgradeRequirement.Type.DROP).mobId());
     }
 
     @Test
     void incompleteUpgradeDefaultsAreRejected() {
         final String yaml = upgradeDoc(
-                "upgrade-defaults:\n  advanced: {essence: 10, drops: 3}",
-                "upgrades: {}");
+                """
+                    upgrade-defaults:
+                      advanced:
+                        - {type: money, amount: 100}
+                        - {type: essence, essence: slayer, amount: 10}
+                        - {type: drop, amount: 3}
+                    """, "upgrades: {}");
         final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
                 () -> parse(yaml));
         assertTrue(error.getMessage().contains("ancient"), error.getMessage());
-    }
-
-    @Test
-    void emptyUpgradeCostIsRejected() {
-        final String yaml = upgradeDoc(
-                "upgrade-defaults:\n  advanced: {essence: 0, drops: 0}\n"
-                        + "  ancient: {essence: 25, drops: 10}\n  mythic: {essence: 75, drops: 30}",
-                "upgrades: {}");
-        final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
-                () -> parse(yaml));
-        assertTrue(error.getMessage().contains("at least one material"), error.getMessage());
-    }
-
-    @Test
-    void negativeCostAmountsClampToZero() {
-        final SpawnerConfig config = parse(upgradeDoc(
-                "upgrade-defaults:\n  advanced: {essence: -50, drops: 3}\n"
-                        + "  ancient: {essence: 25, drops: -4, relics: 2}\n  mythic: {essence: 75, drops: 30}",
-                "upgrades: {}"));
-        final SpawnerMob pig = config.group("organic").mob("pig");
-        assertEquals(new SpawnerUpgradeCost(0, 3, 0), pig.upgradeCost(SpawnerVariant.ADVANCED));
-        assertEquals(new SpawnerUpgradeCost(25, 0, 2), pig.upgradeCost(SpawnerVariant.ANCIENT));
     }
 
     @Test
@@ -398,18 +469,72 @@ class SpawnerConfigTest {
 
     @Test
     void luckCostsShorterThanMaxLevelRejected() {
-        final String yaml = minimalGroups("organic", "essence-item: PRISMARINE_SHARD",
-                        "relic-item: HEART_OF_THE_SEA")
+        final String yaml = minimalGroups("organic", "item: HEART_OF_THE_SEA",
+                        REQUIREMENTS_ALL_TIERS)
                 .replace("costs: [750, 2500, 7500, 20000]", "costs: [750, 2500]");
         final IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
                 () -> parse(yaml));
         assertTrue(error.getMessage().contains("costs"), error.getMessage());
     }
 
+    // ------------------------------------------------------------------
+    // helpers
+    // ------------------------------------------------------------------
+
+    private static final String DEFAULTS_DOC = """
+            upgrade-defaults:
+              advanced:
+                - {type: money, amount: 1000}
+                - {type: kills, amount: 1000}
+                - {type: essence, essence: slayer, amount: 10}
+                - {type: drop, amount: 3}
+              ancient:
+                - {type: money, amount: 2500}
+                - {type: kills, amount: 2500}
+                - {type: essence, essence: slayer, amount: 25}
+                - {type: drop, amount: 10}
+              mythic:
+                - {type: money, amount: 7500}
+                - {type: kills, amount: 7500}
+                - {type: essence, essence: slayer, amount: 75}
+                - {type: drop, amount: 30}
+            """;
+
+    /** All three tiers as mob-level requirements, for the minimal document. */
+    private static final String REQUIREMENTS_ALL_TIERS = """
+        upgrades:
+          advanced:
+            - {type: money, amount: 100}
+            - {type: kills, amount: 100}
+            - {type: essence, essence: slayer, amount: 10}
+            - {type: drop, amount: 1}
+          ancient:
+            - {type: money, amount: 200}
+            - {type: kills, amount: 200}
+            - {type: essence, essence: slayer, amount: 20}
+            - {type: drop, amount: 2}
+          mythic:
+            - {type: money, amount: 300}
+            - {type: kills, amount: 300}
+            - {type: essence, essence: slayer, amount: 30}
+            - {type: drop, amount: 3}
+        """;
+
+    private static UpgradeRequirement find(final SpawnerMob mob, final SpawnerVariant variant,
+                                           final UpgradeRequirement.Type type) {
+        for (final UpgradeRequirement requirement : mob.upgradeRequirements(variant)) {
+            if (requirement.type() == type) {
+                return requirement;
+            }
+        }
+        return null;
+    }
+
     /**
      * Minimal document with upgrade-defaults, an optional group-level
-     * upgrade-overrides block and a chosen pig upgrades line, for the
-     * progression-resolution tests.
+     * upgrade-overrides block and a chosen pig upgrades block, for the
+     * progression-resolution tests. All inserted blocks are written at
+     * zero indent and re-indented to their YAML nesting level here.
      */
     private static String upgradeDoc(final String upgradeDefaults, final String pigUpgrades) {
         return upgradeDoc(upgradeDefaults, pigUpgrades, "");
@@ -417,20 +542,18 @@ class SpawnerConfigTest {
 
     private static String upgradeDoc(final String upgradeDefaults, final String pigUpgrades,
                                      final String groupOverrides) {
-        return minimalGroups("organic", "item: PRISMARINE_SHARD", "item: HEART_OF_THE_SEA")
-                .replace("upgrades: {advanced: {essence: 10, drops: 1}, ancient: {essence: 20, drops: 3}, mythic: {essence: 50, drops: 8, relics: 1}}",
-                        pigUpgrades)
+        return minimalGroups("organic", "item: HEART_OF_THE_SEA", pigUpgrades)
                 .replace("    relic: {item: HEART_OF_THE_SEA, name: \"Test Relic\"}",
-                        "    relic: {item: HEART_OF_THE_SEA, name: \"Test Relic\"}\n" + groupOverrides)
+                        "    relic: {item: HEART_OF_THE_SEA, name: \"Test Relic\"}\n"
+                                + indented(groupOverrides, 4))
                 .replace("\ngroups:", "\n" + upgradeDefaults + "\ngroups:");
     }
 
     /** Minimal-but-valid document with one group and one mob, for mutation tests. */
-    private static String minimalGroups(final String groupId, final String essence,
-                                        final String relic) {
+    private static String minimalGroups(final String groupId, final String relic,
+                                        final String pigUpgrades) {
         return """
                 settings:
-                  essence-chance: 0.25
                   relic-chance: 0.01
                   luck:
                     base-chance: 0.1
@@ -449,7 +572,6 @@ class SpawnerConfigTest {
                 groups:
                   %s:
                     name: "Test"
-                    essence: {%s, name: "Test Essence"}
                     relic: {%s, name: "Test Relic"}
                     mobs:
                       pig:
@@ -458,7 +580,22 @@ class SpawnerConfigTest {
                         drop: {item: BONE, name: "Pig Tusk"}
                         spawner-cost: 2500
                         unlock: {}
-                        upgrades: {advanced: {essence: 10, drops: 1}, ancient: {essence: 20, drops: 3}, mythic: {essence: 50, drops: 8, relics: 1}}
-                """.formatted(groupId, essence, relic);
+                %s""".formatted(groupId, relic, indented(pigUpgrades, 8));
+    }
+
+    /** Re-indents a zero-based YAML block by the given prefix (per line). */
+    private static String indented(final String block, final int spaces) {
+        if (block == null || block.isBlank()) {
+            return "";
+        }
+        final String indent = " ".repeat(spaces);
+        final StringBuilder out = new StringBuilder();
+        for (final String line : block.stripTrailing().split("\n", -1)) {
+            if (!out.isEmpty()) {
+                out.append('\n');
+            }
+            out.append(line.isBlank() ? "" : indent + line);
+        }
+        return out.toString();
     }
 }

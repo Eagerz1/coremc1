@@ -4,7 +4,7 @@ main: com.coremc.core.CoreMCPlugin
 api-version: '1.21'
 description: CoreMC Skyblock core plugin.
 author: CoreMC Team
-softdepend: [Vault]
+softdepend: [Vault, PlaceholderAPI]
 website: https://github.com/Eagerz1/coremc1
 
 commands:
@@ -60,6 +60,12 @@ commands:
     usage: /season [set <number>]
     permission: coremc.command.season
     permission-message: You do not have permission to use this command.
+  essence:
+    description: "Essence balances - view yours (or a player's); admins give/take/set."
+    usage: /essence [balance [player]|give|take|set <player> <type> <amount>]
+    permission: coremc.command.essence
+    permission-message: You do not have permission to use this command.
+    aliases: [essences, ess]
 
 permissions:
   coremc.*:
@@ -75,6 +81,7 @@ permissions:
       coremc.command.fly: true
       coremc.command.echest: true
       coremc.command.season: true
+      coremc.command.essence: true
       coremc.rank.admin: true
       coremc.season.admin: true
       coremc.island.bypass: true
@@ -109,6 +116,12 @@ permissions:
   coremc.command.season:
     description: Allows using /season.
     default: true
+  coremc.command.essence:
+    description: Allows using /essence to view balances.
+    default: true
+  coremc.admin.essence:
+    description: Allows /essence give|take|set <player> <type> <amount>.
+    default: op
   coremc.rank.admin:
     description: Allows /rank set <player> <rank|none>.
     default: op

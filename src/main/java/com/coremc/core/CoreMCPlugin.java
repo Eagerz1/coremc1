@@ -26,10 +26,20 @@ import com.coremc.core.island.IslandUpgradeService;
 import com.coremc.core.island.IslandListener;
 import com.coremc.core.island.IslandService;
 import com.coremc.core.island.SchematicService;
+import com.coremc.core.essence.EssenceCommand;
+import com.coremc.core.essence.EssenceConfig;
+import com.coremc.core.essence.EssenceListener;
+import com.coremc.core.essence.EssenceManager;
+import com.coremc.core.essence.PlacedBlockTracker;
+import com.coremc.core.essence.YamlEssenceStore;
+import com.coremc.core.placeholder.CoremcExpansion;
+import com.coremc.core.placeholder.XCurrencyExpansion;
 import com.coremc.core.shop.EconomyService;
 import com.coremc.core.shop.VaultEconomy;
 import com.coremc.core.island.YamlBuffStore;
 import com.coremc.core.spawner.SpawnerCommand;
+import com.coremc.core.spawner.SpawnerUpgradeGui;
+import com.coremc.core.spawner.SpawnerUpgradeListener;
 import com.coremc.core.spawner.SpawnerMenuGui;
 import com.coremc.core.spawner.SpawnerMenuListener;
 import com.coremc.core.spawner.SpawnerConfig;
@@ -82,6 +92,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private IslandTopRewards islandTopRewards;
     private SpawnerConfig spawnerConfig;
     private SpawnerService spawnerService;
+    private EssenceManager essenceManager;
     private IslandUpgradeConfig upgradeConfig;
     private IslandBuffService buffService;
     private RankConfig rankConfig;
@@ -207,6 +218,24 @@ public final class CoreMCPlugin extends JavaPlugin {
         registerSimpleCommand("echest", new EchestCommand(
                 rankService == null ? null : rankService, messages));
 
+        // Essence: virtual balances (essence-balances.yml) earned by active
+        // play — Slayer for manual mob kills, Mining and Farming for blocks.
+        // Write-through persistence, exactly like the economy. The store file
+        // must NOT be named essences.yml: that is the earning-RULES config
+        // (EssenceConfig) — sharing the name made the first save overwrite
+        // the rules and break earning on the next boot.
+        this.essenceManager = null;
+        try {
+            this.essenceManager = new EssenceManager(new YamlEssenceStore(
+                    Path.of(getDataFolder().getPath(), "essence-balances.yml"), getLogger()), getLogger());
+        } catch (final java.io.IOException exception) {
+            getLogger().severe("Essence disabled — storage unreadable: " + exception.getMessage());
+        }
+        final EssenceConfig essenceConfig = new EssenceConfig(this);
+        final PlacedBlockTracker placedBlocks =
+                new PlacedBlockTracker(Path.of(getDataFolder().getPath(), "placed-blocks.yml"), getLogger());
+        placedBlocks.load();
+
         // Spawners: progression config (spawners.yml) + placed spawner
         // registry (spawners-data.yml). A broken config disables the
         // spawner system with a loud log line, never the plugin.
@@ -216,12 +245,14 @@ public final class CoreMCPlugin extends JavaPlugin {
             spawnerConfig.load();
             if (economy == null) {
                 getLogger().severe("Spawners disabled — no economy (the shop failed to load).");
+            } else if (essenceManager == null) {
+                getLogger().severe("Spawners disabled — no essence storage.");
             } else {
                 this.spawnerService = new SpawnerService(
                         this, spawnerConfig,
                         new YamlSpawnerDataStore(
                                 Path.of(getDataFolder().getPath(), "spawners-data.yml"), getLogger()),
-                        economy, messages, islands);
+                        economy, essenceManager, messages, islands);
                 spawnerService.load();
                 final SpawnerHolograms spawnerHolograms =
                         new SpawnerHolograms(this, spawnerService);
@@ -233,6 +264,20 @@ public final class CoreMCPlugin extends JavaPlugin {
         } catch (final RuntimeException exception) {
             getLogger().severe("Spawners disabled — " + exception.getMessage());
             this.spawnerService = null;
+        }
+
+        // Essence earning + the /essence command run independently of the
+        // spawner system (mining/farming pay even with spawners off).
+        if (essenceManager != null) {
+            try {
+                essenceConfig.load();
+                pluginManager.registerEvents(
+                        new EssenceListener(essenceManager, essenceConfig, placedBlocks, spawnerService),
+                        this);
+            } catch (final RuntimeException exception) {
+                getLogger().severe("Essence earning disabled — " + exception.getMessage());
+            }
+            registerSimpleCommand("essence", new EssenceCommand(essenceManager, messages));
         }
 
         // Menus: /is opens the double-chest island menu (members-only), its
@@ -276,10 +321,15 @@ public final class CoreMCPlugin extends JavaPlugin {
         final IslandUpgradeService upgradeService = new IslandUpgradeService(
                 upgradeConfig, islands, buffService, economy, messages, islandPoints);
         SpawnerMenuGui spawnerMenuGui = null;
+        SpawnerUpgradeGui spawnerUpgradeGui = null;
         if (spawnerService != null) {
             spawnerMenuGui = new SpawnerMenuGui(spawnerConfig, spawnerService, islands);
             pluginManager.registerEvents(
                     new SpawnerMenuListener(spawnerConfig, spawnerService, spawnerMenuGui), this);
+            spawnerUpgradeGui = new SpawnerUpgradeGui(
+                    spawnerService, economy, essenceManager, spawnerConfig);
+            pluginManager.registerEvents(
+                    new SpawnerUpgradeListener(spawnerService, spawnerUpgradeGui), this);
         }
         final IslandGui islandGui = new IslandGui(islands, upgradeConfig, buffService, spawnerMenuGui);
         pluginManager.registerEvents(
@@ -311,11 +361,26 @@ public final class CoreMCPlugin extends JavaPlugin {
             final PluginCommand spawnerCommand = getCommand("spawner");
             if (spawnerCommand != null) {
                 final SpawnerCommand executor =
-                        new SpawnerCommand(spawnerConfig, spawnerService, messages, spawnerMenuGui);
+                        new SpawnerCommand(spawnerConfig, spawnerService, messages, spawnerMenuGui,
+                                spawnerUpgradeGui);
                 spawnerCommand.setExecutor(executor);
                 spawnerCommand.setTabCompleter(executor);
             } else {
                 getLogger().severe("Command 'spawner' missing from plugin.yml — /spawner will not work.");
+            }
+        }
+
+        // PlaceholderAPI (optional): %coremc_*_essence% & friends plus the
+        // configurable %x_currency%. Only touched when PAPI is present, so
+        // its classes never load without it.
+        if (essenceManager != null
+                && getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            try {
+                new CoremcExpansion(essenceManager, economy).register();
+                new XCurrencyExpansion(essenceManager, coreConfig).register();
+                getLogger().info("PlaceholderAPI expansions registered (coremc, x).");
+            } catch (final Throwable error) {
+                getLogger().warning("PlaceholderAPI expansions failed: " + error.getMessage());
             }
         }
 
@@ -377,6 +442,9 @@ public final class CoreMCPlugin extends JavaPlugin {
             } catch (final java.io.IOException exception) {
                 getLogger().warning("Could not save island points: " + exception.getMessage());
             }
+        }
+        if (essenceManager != null) {
+            essenceManager.shutdown();
         }
         if (giftcardStore != null) {
             try {

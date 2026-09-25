@@ -25,12 +25,13 @@ Core / Core+ / Core++ rank ladder.
 | Island top | `/is top` opens a category picker (small chest) with the three leaderboards — Solos, Duos and Teams (by team size) — each opening a 54-slot board with the top ten islands as owner heads (rank, points, team size and the season reward in the lore). Points: blocks broken or placed on your island 0.2 each, 1 per 5 minutes of play time, +500 per island upgrade, +5,000 per island core level (the core arrives soon). Points persist (`island-points.yml`) and die with the island. Each season change pays the leaders in webstore gift cards (GC) — see Island top rewards. |
 | Tebex giftcards | With a Tebex webstore configured (`tebex.yml`, Plugin API secret key), `/giftcard` (`/gc`) links a webstore gift card and shows its number — click it to copy — with its live balance beside it, straight from the Tebex API. Island top season rewards arrive as freshly created gift cards through the same API. |
 | Island top rewards | When a new season starts (`/season set <n>`), the island top leaders are paid in webstore gift cards — always to the island owner. Teams pay five places (100 / 75 / 50 / 35 / 25 GC), Duos three (100 / 75 / 50 GC), Solos five (100 / 75 / 50 / 30 / 25 GC). Each card is created through the Tebex Plugin API, linked to the owner (`/gc` shows it) and messaged to online owners immediately; a season is only ever paid once (`island-rewards.yml` remembers the last paid season), and an unconfigured Tebex leaves the season unpaid with a loud log line instead of eating the rewards. |
-| Sell window | `/sell` opens an empty double chest: drop anything in and close it to get paid. Every listed item pays its shop sell price (times the rank multiplier), any other ordinary block pays `default-sell-price`, and custom progression items (essences, drops, spawner items) are returned untouched. A restart settles open windows, so items are never lost. |
+| Sell window | `/sell` opens an empty double chest: drop anything in and close it to get paid. Every listed item pays its shop sell price (times the rank multiplier), any other ordinary block pays `default-sell-price`, and custom progression items (unique drops, relics, spawner items) are returned untouched. A restart settles open windows, so items are never lost. |
 | Vault economy | With [Vault](https://github.com/MilkBowl/VaultAPI) installed, CoreMC registers its coins as a Vault economy provider: any Vault-aware plugin (placeholders, shops, scoreboards, …) reads and spends the same `balances.yml` coins through the standard ServicesManager. Without Vault everything works unchanged (soft-depend; graceful no-op with a log line). |
-| Spawner progression | 5 mob groups (Organic, Undead, Infernal, Ender, Corrupted), 3 mobs each. Every group shares an Essence and a rare Relic; every mob has a unique drop. `/spawner buy` costs coins plus unlock materials. The `/spawner` menu shows every mob as a real spawner block with the mob rendered inside the cage, flowing down three columns. |
-| Spawner variants | normal → advanced → ancient → mythic. Each variant spawns faster and in bigger bursts (rate 1–4×, count 2–6, nearby cap 8–24); Mythic spawners auto-kill their spawns and credit the drops to the island owner. Upgrades cost essence + the mob's own unique drop only — no coins, no relics. Costs come straight from `spawners.yml` (`upgrade-defaults`, optional per-group and per-mob overrides) and scale per spawner in the stack, so a 2x stack pays twice. |
+| Placeholders | With [PlaceholderAPI](https://github.com/PlaceholderAPI/PlaceholderAPI) installed, CoreMC registers two expansions: `coremc` (`%coremc_slayer_essence%`, `%coremc_mining_essence%`, `%coremc_farming_essence%`, `%coremc_essence_total%`, `%coremc_mob_kills%`, `%coremc_coins%` — all comma-formatted) and `x` (`%x_currency%`, configurable via `x-currency` in config.yml). Without PAPI everything works unchanged (soft-depend). |
+| Essence | Three virtual account currencies earned through active play (never items, never negative, persisted in `essence-balances.yml`): **Slayer** for mobs you kill yourself (melee or your own projectiles — passive deaths, Mythic auto-kill and `/kill` pay nothing; Normal 1 / Advanced 2 / Ancient 3 / Mythic 5 per mob, and a killed "4x Pig" stack pays 4x), **Mining** for natural ores, deepslate ores, obsidian and generator blocks (player-placed blocks are tracked in `placed-blocks.yml` and never pay — no place-mine loops), **Farming** for fully-grown wheat, carrots, potatoes, beetroot and nether wart, plus sugar cane, melons and pumpkins. Every kill also feeds a lifetime mob-kill counter. Rates live in `essences.yml`. |
+| Spawner variants | normal → advanced → ancient → mythic. Each variant spawns faster and in bigger bursts (rate 1–4×, count 2–6, nearby cap 8–24); Mythic spawners auto-kill their spawns and credit the drops to the island owner (but pay no Slayer Essence — that needs a player's own hand). `/spawner upgrade` opens the Upgrade GUI: a checklist of that tier's requirements with live ✔ / ✖ ticks and `(You have N)` shortfalls; clicking the button with every ✔ consumes money → essence → unique drops in that order (mob kills are a lifetime threshold, never spent), applies the upgrade and refreshes the hologram with the stack preserved. A ✖ click plays an error sound and names exactly what's missing. Requirements are lists of typed entries (`money`, `kills`, `essence`, `drop`) in `spawners.yml` — `upgrade-defaults`, with optional per-group and per-mob overrides — and scale per spawner in the stack, so a 2x stack pays twice. |
 | Spawner items | Spawners are real items (BlockStateMeta + PDC): recoverable by breaking, re-placeable, variant preserved. Custom items match by PDC tag with a display-name fallback, and are never sellable in the shop as raw materials. |
-| Spawner stacking | Identical spawners stack on one block: sneak-click a held spawner onto a placed one (same mob + variant, island members only, up to `settings.spawner.max-stack` = 64). The stack label floats above the cage as a persistent text-display hologram ("32x Pig Spawner [Normal]"), the spawn count and upgrade cost scale with the stack, and `/spawner info` shows the stack line. Sneak-break takes the whole stack as one "N x" item; a normal break takes exactly one spawner out and leaves the rest placed. Placing an "N x" item registers an N-stack in one go. Spawners only place on your own island (a clear message says so otherwise). |
+| Spawner stacking | Identical spawners stack on one block: sneak-click a held spawner onto a placed one (same mob + variant, island members only, up to `settings.spawner.max-stack` = 64). The stack label floats above the cage as a persistent text-display hologram ("32x Pig Spawner [Normal]"), the spawn count and upgrade cost scale with the stack, and `/spawner info` shows the stack line. Sneak-break takes the whole stack as one "N x" item straight into your inventory (never a ground drop that can bounce into the void); a normal break takes exactly one spawner out and leaves the rest placed. Placing an "N x" item registers an N-stack in one go. Spawners only place on your own island (a clear message says so otherwise). |
 | Mob stacking | Spawner spawns merge into counted entities — "4x Pig" — so big farms stay light on entities (`settings.mob-stack`: radius 5, max 1024). Killing a stack drops and credits the whole count: loot, XP and kill-reward rolls all multiply, and a count-1 replacement appears an instant later. Mythic auto-kill fodder dies as a whole stack with no replacement. |
 | Island luck | `/spawner luck upgrade` buys island-wide luck levels (coins): the unique-drop chance rises from 10% to 50%. Survives restarts; removed with the island. |
 | Island menu | `/is` opens the island menu — a double chest (54 slots) for island holders only (everyone else gets the deny line + help). Buttons: island info, go home, invite, members, border toggle, upgrades, buffs, spawner progression, delete (two-click confirm), close. |
@@ -65,7 +66,7 @@ Core / Core+ / Core++ rank ladder.
 | `/spawner list` | Every group, mob and spawner price. |
 | `/spawner buy <mob>` | Buys a Normal spawner — coins plus the mob's unlock materials (essence + earlier mobs' drops). |
 | `/spawner info` | Describes the spawner you look at: variant, spawn stats, stack size, next upgrade cost. |
-| `/spawner upgrade` | Upgrades the spawner you look at (owner/member of its island only). Costs essence + the mob's own unique drop, data-driven per tier and scaled by the stack size; a missing-materials line says exactly what is still needed. |
+| `/spawner upgrade` | Opens the Upgrade GUI for the spawner you look at (owner/member of its island only): current stack, target variant with the live ✔/✖ requirement checklist, your progress book, and the upgrade button. |
 | `/spawner luck` | Shows your island's luck level and unique-drop chance. |
 | `/spawner luck upgrade` | Buys the next luck level with coins. |
 | `/rank` | Shows your rank: multiplier, season payout, River keys, perks, and the next rank with its price. |
@@ -77,7 +78,9 @@ Core / Core+ / Core++ rank ladder.
 | `/season` | Shows the current season. |
 | `/season set <number>` | Admin: starts a new season — pays out ranked players and sends the island top gift card rewards. |
 | `/spawner give <player> <mob> [variant]` | Admin: hand out a spawner item. |
-| `/spawner giveitem <player> essence\|drop\|relic <id> [amount]` | Admin: hand out progression materials. |
+| `/spawner giveitem <player> drop\|relic <id> [amount]` | Admin: hand out unique drops and relics (essence is virtual — use `/essence give`). |
+| `/essence` `/essences` `/ess` | Your essence balances: Slayer, Mining, Farming and lifetime mob kills. `/essence balance [player]` views another player. |
+| `/essence give\|take\|set <player> <slayer\|mining\|farming\|kills> <amount>` | Admin (`coremc.admin.essence`): adjust virtual essence; `take` never drives a balance negative. |
 | `/spawner setluck <player> <level>` | Admin: set a player's island luck. |
 
 Aliases: `/island`, `/isle`, `/block`; `/store` for `/shop`; `/sp` for
@@ -93,7 +96,8 @@ admin `coremc.season.admin` (op).
 
 - `config.yml` — island world name, Y level, spacing, border size, border
   visibility, schematic name, delete-confirm and invite-expiry windows,
-  starter chest contents.
+  starter chest contents, and `x-currency` — what `%x_currency%` shows
+  (`total`, `slayer`, `mining` or `farming`).
 - `messages.yml` — every user-facing string, `&` colour codes, with the
   bundled defaults as fallback for missing keys. Every message goes out
   prefixed with cyan-bold `COREMC >>>` (the `prefix` key); unknown
@@ -117,12 +121,23 @@ admin `coremc.season.admin` (op).
   picker shows two rows of seven, each category paginates like a
   section); Building ships ~425 blocks across twelve categories.
 - `spawners.yml` — the whole spawner progression: groups, mobs, drop
-  items, spawner and upgrade costs (essence + the mob's own drop per
-  tier, via `upgrade-defaults` with optional per-group/per-mob
-  overrides), variant behaviour (rate/count/
-  nearby-limit/auto-kill), kill chances and island-luck maths. Broken
-  entries refuse to load the system (every problem listed in the log)
-  rather than half-work.
+  items, spawner costs and per-tier upgrade requirements (lists of
+  `{type: money|kills|essence|drop, amount, ...}` entries, via
+  `upgrade-defaults` with optional per-group and per-mob overrides),
+  variant behaviour (rate/count/nearby-limit/auto-kill), relic chance
+  and island-luck maths. Broken entries refuse to load the system
+  (every problem listed in the log) rather than half-work.
+- `essences.yml` — the essence earning rules: Slayer Essence per mob
+  by spawner variant, and the Mining/Farming block payout maps.
+  Validated at startup like every other config.
+- `essences-data` — balances live in `plugins/CoreMC/essence-balances.yml`
+  (per player: slayer, mining, farming, lifetime kills), written
+  atomically on every change, corrupt files start fresh. The store file
+  is deliberately not named `essences.yml` — that name belongs to the
+  earning rules above, and sharing it made the first balance save
+  overwrite the rules and disable earning on the next boot.
+- `placed-blocks.yml` — remembered player placements of mining-eligible
+  blocks (the anti place-mine loop), atomic writes.
 - `spawners-data.yml` — placed spawners + island luck (written atomically
   on every change).
 - `upgrades.yml` — island upgrades (claim size, member slots) and timed

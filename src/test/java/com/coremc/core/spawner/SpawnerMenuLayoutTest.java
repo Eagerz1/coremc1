@@ -72,23 +72,42 @@ final class SpawnerMenuLayoutTest {
                 groups:
                   alpha:
                     name: "Alpha"
-                    essence: {item: PRISMARINE_SHARD, name: "A Essence"}
                     relic: {item: HEART_OF_THE_SEA, name: "A Relic"}
                     mobs:
-                      pig: {entity: PIG, name: "Pig", drop: {item: BONE, name: "Tusk"},
-                            spawner-cost: 100, unlock: {},
-                            upgrades: {advanced: {essence: 1}, ancient: {essence: 2}, mythic: {essence: 3}}}
-                      cow: {entity: COW, name: "Cow", drop: {item: BONE, name: "Bell"},
-                            spawner-cost: 100, unlock: {},
-                            upgrades: {advanced: {essence: 1}, ancient: {essence: 2}, mythic: {essence: 3}}}
+                      pig:
+                        entity: PIG
+                        name: "Pig"
+                        drop: {item: BONE, name: "Tusk"}
+                        spawner-cost: 100
+                        unlock: {}
+                        upgrades:
+                          advanced: [{type: money, amount: 10}]
+                          ancient: [{type: money, amount: 20}]
+                          mythic: [{type: money, amount: 30}]
+                      cow:
+                        entity: COW
+                        name: "Cow"
+                        drop: {item: BONE, name: "Bell"}
+                        spawner-cost: 100
+                        unlock: {}
+                        upgrades:
+                          advanced: [{type: money, amount: 10}]
+                          ancient: [{type: money, amount: 20}]
+                          mythic: [{type: money, amount: 30}]
                   beta:
                     name: "Beta"
-                    essence: {item: ECHO_SHARD, name: "B Essence"}
                     relic: {item: NETHER_STAR, name: "B Relic"}
                     mobs:
-                      zombie: {entity: ZOMBIE, name: "Zombie", drop: {item: BONE, name: "Brain"},
-                               spawner-cost: 100, unlock: {},
-                               upgrades: {advanced: {essence: 1}, ancient: {essence: 2}, mythic: {essence: 3}}}
+                      zombie:
+                        entity: ZOMBIE
+                        name: "Zombie"
+                        drop: {item: BONE, name: "Brain"}
+                        spawner-cost: 100
+                        unlock: {}
+                        upgrades:
+                          advanced: [{type: money, amount: 10}]
+                          ancient: [{type: money, amount: 20}]
+                          mythic: [{type: money, amount: 30}]
                 """);
         final SpawnerConfig config = new SpawnerConfig(null);
         final YamlConfiguration parsed = new YamlConfiguration();

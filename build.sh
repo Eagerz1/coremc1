@@ -47,6 +47,33 @@ VJAR
 fi
 MAIN_CP="$VAULT_API:$MAIN_CP"
 
+# PlaceholderAPI (compile-time stub from ci/placeholderapi-src, mirroring
+# the Vault recipe above; runtime comes from the real PAPI plugin or the
+# sandbox mock built below)
+PAPI_API="$TOOLCHAIN/papi-api.jar"
+if [[ ! -f "$PAPI_API" ]]; then
+    echo "==> Compiling PlaceholderAPI stub classes"
+    rm -rf target/papi-api-classes
+    mkdir -p target/papi-api-classes
+    find ci/placeholderapi-src -name '*.java' > target/papi-sources.txt
+    "$JRE/bin/java" -cp "$JDT" org.eclipse.jdt.internal.compiler.batch.Main \
+        -21 -encoding UTF-8 -nowarn -proc:none \
+        -cp "$MAIN_CP" \
+        -d target/papi-api-classes \
+        @target/papi-sources.txt
+    python3 - "$PAPI_API" <<'PJAR'
+import os, sys, zipfile
+out = sys.argv[1]
+with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as jar:
+    for root, dirs, files in os.walk("target/papi-api-classes"):
+        for name in files:
+            full = os.path.join(root, name)
+            jar.write(full, os.path.relpath(full, "target/papi-api-classes"))
+print("wrote", out)
+PJAR
+fi
+MAIN_CP="$PAPI_API:$MAIN_CP"
+
 cd "$ROOT"
 echo "==> CoreMC $VERSION — compiling main sources"
 rm -rf target
@@ -87,10 +114,44 @@ with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as jar:
 print("wrote", out)
 PYEOF
 
+# Mock PlaceholderAPI plugin for the sandbox server (real class bodies +
+# /papicheck); CoreMC's own jar never contains the me.clip classes.
+echo "==> Building mock PlaceholderAPI plugin"
+rm -rf target/mock-papi-classes
+mkdir -p target/mock-papi-classes
+find ci/mock-papi-src -name '*.java' > target/mock-papi-sources.txt
+"$JRE/bin/java" -cp "$JDT" org.eclipse.jdt.internal.compiler.batch.Main \
+    -21 -encoding UTF-8 -nowarn -proc:none \
+    -cp "$PAPI_API:$PAPER_API:${LIB_CP%:}" \
+    -d target/mock-papi-classes \
+    @target/mock-papi-sources.txt
+mkdir -p sandbox/plugin
+cp ci/mock-papi-src/plugin.yml target/mock-papi-classes/plugin.yml
+# the stub classes were wiped by the main-source target/ reset above —
+# re-extract them from the compiled papi-api.jar
+rm -rf target/papi-api-classes
+mkdir -p target/papi-api-classes
+PAPI_API="$PAPI_API" python3 - <<'PXTRACT'
+import os, zipfile
+with zipfile.ZipFile(os.environ["PAPI_API"]) as z:
+    z.extractall("target/papi-api-classes")
+PXTRACT
+python3 - <<'MJAR'
+import os, zipfile
+with zipfile.ZipFile("sandbox/plugin/PlaceholderAPI.jar", "w", zipfile.ZIP_DEFLATED) as jar:
+    # the working me.clipPlaceholderAPI bodies + the mock plugin itself
+    for base in ("target/papi-api-classes", "target/mock-papi-classes"):
+        for root, dirs, files in os.walk(base):
+            for name in files:
+                full = os.path.join(root, name)
+                jar.write(full, os.path.relpath(full, base))
+print("wrote sandbox/plugin/PlaceholderAPI.jar")
+MJAR
+
 if [[ "${1:-}" != "--no-test" ]]; then
     echo "==> Compiling tests"
     find src/test/java -name '*.java' > target/test-sources.txt
-    TEST_CP="target/classes:${JUNIT_CP}${LIB_CP}$VAULT_API:$PAPER_API"
+    TEST_CP="target/classes:${JUNIT_CP}${LIB_CP}$VAULT_API:$PAPI_API:$PAPER_API"
     "$JRE/bin/java" -cp "$JDT" org.eclipse.jdt.internal.compiler.batch.Main \
         -21 -encoding UTF-8 -nowarn -proc:none \
         -cp "$TEST_CP" \
@@ -102,7 +163,7 @@ if [[ "${1:-}" != "--no-test" ]]; then
     fi
 
     echo "==> Running tests"
-    "$JRE/bin/java" -cp "target/classes:target/test-classes:${JUNIT_CP}${VAULT_API}:${PAPER_API}:${LIB_CP%:}" \
+    "$JRE/bin/java" -cp "target/classes:target/test-classes:${JUNIT_CP}${VAULT_API}:${PAPI_API}:${PAPER_API}:${LIB_CP%:}" \
         com.coremc.testrun.TestRunner
 fi
 

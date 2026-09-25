@@ -43,3 +43,7 @@ island:
     - "OAK_SAPLING:2"
     - "WHEAT_SEEDS:4"
     - "BREAD:5"
+
+# What the %x_currency% placeholder shows: the server's headline
+# currency. total (all essence summed), slayer, mining or farming.
+x-currency: total

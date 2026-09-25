@@ -1,6 +1,8 @@
 package com.coremc.core.spawner;
 
 import com.coremc.core.config.MessageService;
+import com.coremc.core.essence.EssenceManager;
+import com.coremc.core.essence.EssenceType;
 import com.coremc.core.island.Island;
 import com.coremc.core.island.IslandService;
 import com.coremc.core.shop.EconomyService;
@@ -45,6 +47,7 @@ public final class SpawnerService {
     private final SpawnerConfig config;
     private final SpawnerDataStore store;
     private final EconomyService economy;
+    private final EssenceManager essences;
     private final MessageService messages;
     private final IslandService islands;
     private final Logger logger;
@@ -53,6 +56,7 @@ public final class SpawnerService {
     private final NamespacedKey itemKey;
     private final NamespacedKey spawnerKey;
     private final NamespacedKey amountKey;
+    private final NamespacedKey variantKey;
 
     private final Map<UUID, Integer> luck = new LinkedHashMap<>();
     private final Map<String, SpawnerEntry> spawners = new LinkedHashMap<>();
@@ -66,18 +70,20 @@ public final class SpawnerService {
     private SpawnerHolograms holograms;
 
     public SpawnerService(final JavaPlugin plugin, final SpawnerConfig config, final SpawnerDataStore store,
-                          final EconomyService economy, final MessageService messages,
-                          final IslandService islands) {
+                          final EconomyService economy, final EssenceManager essences,
+                          final MessageService messages, final IslandService islands) {
         this.plugin = plugin;
         this.config = config;
         this.store = store;
         this.economy = economy;
+        this.essences = essences;
         this.messages = messages;
         this.islands = islands;
         this.logger = plugin.getLogger();
         this.itemKey = new NamespacedKey(plugin, "coremc_item");
         this.spawnerKey = new NamespacedKey(plugin, "coremc_spawner");
         this.amountKey = new NamespacedKey(plugin, "coremc_spawner_amount");
+        this.variantKey = new NamespacedKey(plugin, "coremc_variant");
         this.mobStacks = new MobStacks(plugin, config, this);
     }
 
@@ -104,12 +110,6 @@ public final class SpawnerService {
     // ------------------------------------------------------------------
     // Custom items
     // ------------------------------------------------------------------
-
-    /** Essence item for a group ("Organic Essence"). */
-    public ItemStack essenceItem(final SpawnerGroup group, final int amount) {
-        return customItem(group.essenceMaterial(), "&b" + group.essenceName(), amount,
-                "essence:" + group.id(), "&7Dropped by " + group.name() + " mobs");
-    }
 
     /** Rare relic item for a group. */
     public ItemStack relicItem(final SpawnerGroup group, final int amount) {
@@ -250,11 +250,12 @@ public final class SpawnerService {
             return;
         }
 
-        // Unlock requirements: essence + earlier mobs' drops.
+        // Unlock requirements: Slayer Essence + earlier mobs' drops.
         final List<String> missing = new ArrayList<>();
-        if (countOf(player, essenceItemMatcher(group)) < mob.unlockEssence()) {
-            missing.add((mob.unlockEssence() - countOf(player, essenceItemMatcher(group)))
-                    + " " + group.essenceName());
+        final long slayerHeld = essences.balance(player.getUniqueId(), EssenceType.SLAYER);
+        if (slayerHeld < mob.unlockEssence()) {
+            missing.add(EssenceManager.format(mob.unlockEssence() - slayerHeld) + " "
+                    + EssenceType.SLAYER.display());
         }
         for (final Map.Entry<String, Integer> requirement : mob.unlockDrops().entrySet()) {
             final SpawnerMob source = group.mob(requirement.getKey());
@@ -273,7 +274,7 @@ public final class SpawnerService {
         }
 
         economy.withdraw(player.getUniqueId(), cost);
-        removeUpTo(player, essenceItemMatcher(group), mob.unlockEssence());
+        essences.take(player.getUniqueId(), EssenceType.SLAYER, mob.unlockEssence());
         for (final Map.Entry<String, Integer> requirement : mob.unlockDrops().entrySet()) {
             final SpawnerMob source = group.mob(requirement.getKey());
             if (source != null) {
@@ -298,18 +299,9 @@ public final class SpawnerService {
                 "mob", group.mob(mobId).name(), "variant", variant.display()));
     }
 
-    /** Admin: hand essence/drops/relics to a player. */
+    /** Admin: hand drops/relics to a player (essence is virtual: /essence give). */
     public void giveSystemItem(final Player player, final String kind, final String id, final int amount) {
-        if ("essence".equalsIgnoreCase(kind)) {
-            final SpawnerGroup group = config.group(id);
-            if (group == null) {
-                messages.sendPrefixed(player, "spawner.unknown-mob", Map.of("id", id));
-                return;
-            }
-            giveItem(player, essenceItem(group, amount));
-            messages.sendPrefixed(player, "spawner.given", Map.of(
-                    "amount", String.valueOf(amount), "item", group.essenceName()));
-        } else if ("drop".equalsIgnoreCase(kind)) {
+        if ("drop".equalsIgnoreCase(kind)) {
             final SpawnerGroup group = config.groupOf(id);
             if (group == null) {
                 messages.sendPrefixed(player, "spawner.unknown-mob", Map.of("id", id));
@@ -469,8 +461,14 @@ public final class SpawnerService {
         if (mob != null) {
             applySpawnerState(block, mob, updated.variant(),
                     boostOf(updated.islandId()), updated.amount());
-            block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5),
-                    spawnerItem(mob, updated.variant(), 1));
+            // hand the recovered spawner straight to the breaker — a natural
+            // drop at the block can bounce off the island into the void
+            final ItemStack one = spawnerItem(mob, updated.variant(), 1);
+            if (breaker != null) {
+                giveItem(breaker, one);
+            } else {
+                block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5), one);
+            }
         }
         refreshHologram(updated);
         if (breaker != null) {
@@ -490,8 +488,15 @@ public final class SpawnerService {
         if (group != null) {
             final SpawnerMob mob = group.mob(entry.mobId());
             if (mob != null) {
-                block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5),
-                        spawnerItem(mob, entry.variant(), entry.amount()));
+                // a breaker gets the whole stack directly; explosions (no
+                // breaker) still drop naturally where the spawner stood
+                final ItemStack recovered = spawnerItem(mob, entry.variant(), entry.amount());
+                if (breaker != null) {
+                    giveItem(breaker, recovered);
+                } else {
+                    block.getWorld().dropItemNaturally(
+                            block.getLocation().add(0.5, 0.5, 0.5), recovered);
+                }
             }
         }
         if (breaker != null && entry.amount() > 1) {
@@ -539,55 +544,117 @@ public final class SpawnerService {
         }
     }
 
-    /** /spawner upgrade — upgrades the spawner the player is looking at. */
-    public void upgrade(final Player player) {
+    /** The spawner the player looks at, with its upgrade context (or null reasons messaged). */
+    public UpgradeContext upgradeContext(final Player player) {
         final SpawnerEntry entry = targetEntry(player);
         if (entry == null) {
             messages.sendPrefixed(player, "spawner.upgrade-look");
-            return;
+            return null;
         }
         final Island playerIsland = islands.islandOf(player.getUniqueId());
         if (playerIsland == null || !playerIsland.id().equals(entry.islandId())) {
             messages.sendPrefixed(player, "spawner.not-your-spawner");
-            return;
+            return null;
+        }
+        final SpawnerMob mob = mobById(entry.mobId());
+        if (mob == null) {
+            messages.sendPrefixed(player, "spawner.upgrade-look");
+            return null;
         }
         final SpawnerVariant next = entry.variant().next();
         if (next == null) {
             messages.sendPrefixed(player, "spawner.already-mythic");
-            return;
+            return null;
         }
-        final SpawnerGroup group = config.groupOf(entry.mobId());
-        final SpawnerMob mob = group == null ? null : group.mob(entry.mobId());
-        final SpawnerUpgradeCost cost = mob == null ? null : mob.upgradeCost(next);
-        if (mob == null || cost == null) {
+        final List<UpgradeRequirement> requirements = mob.upgradeRequirements(next);
+        if (requirements == null) {
             messages.sendPrefixed(player, "spawner.upgrade-look");
-            return;
+            return null;
         }
+        return new UpgradeContext(entry, mob, next, requirements);
+    }
 
-        // A stacked spawner upgrades as one stack — the cost scales with it.
+    /** Everything the Upgrade GUI needs for one look-at attempt. */
+    public record UpgradeContext(SpawnerEntry entry, SpawnerMob mob, SpawnerVariant next,
+                                 List<UpgradeRequirement> requirements) {
+    }
+
+    /**
+     * How much of one requirement the player currently has (stack-scaled
+     * requirement against live player state).
+     */
+    public double hasFor(final Player player, final UpgradeRequirement requirement,
+                         final SpawnerMob ownMob) {
+        return switch (requirement.type()) {
+            case MONEY -> economy.balance(player.getUniqueId());
+            case KILLS -> essences.kills(player.getUniqueId());
+            case ESSENCE -> essences.balance(player.getUniqueId(),
+                    requirement.essence() == null ? EssenceType.SLAYER : requirement.essence());
+            case DROP -> countOf(player, dropMatcher(dropMobFor(requirement, ownMob)));
+        };
+    }
+
+    /** The mob whose unique drop a requirement wants (null = the mob being upgraded). */
+    public SpawnerMob dropMobFor(final UpgradeRequirement requirement, final SpawnerMob ownMob) {
+        return requirement.mobId() == null ? ownMob : mobById(requirement.mobId());
+    }
+
+    /**
+     * /spawner upgrade (and the Upgrade GUI button): checks every
+     * requirement, consumes the spendable ones (money, essence, unique
+     * drops — kills are a threshold, not spent) and applies the variant
+     * upgrade. Returns false with a missing-requirements message when
+     * anything shows a ✖.
+     */
+    public boolean attemptUpgrade(final Player player) {
+        final UpgradeContext context = upgradeContext(player);
+        return context != null && attemptUpgrade(player, context);
+    }
+
+    /** GUI entry point with an already-resolved context. */
+    public boolean attemptUpgrade(final Player player, final UpgradeContext context) {
+        final SpawnerEntry entry = context.entry();
+        final SpawnerMob mob = context.mob();
+        final SpawnerVariant next = context.next();
+        // A stacked spawner upgrades as one stack — every requirement scales with it.
         final int stackScale = entry.amount();
+
         final List<String> missing = new ArrayList<>();
-        if (countOf(player, essenceItemMatcher(group)) < cost.essence() * stackScale) {
-            missing.add((cost.essence() * stackScale - countOf(player, essenceItemMatcher(group)))
-                    + " " + group.essenceName());
-        }
-        if (countOf(player, dropMatcher(mob)) < cost.drops() * stackScale) {
-            missing.add((cost.drops() * stackScale - countOf(player, dropMatcher(mob)))
-                    + " " + mob.dropName());
-        }
-        if (countOf(player, relicMatcher(group)) < cost.relics() * stackScale) {
-            missing.add((cost.relics() * stackScale - countOf(player, relicMatcher(group)))
-                    + " " + group.relicName());
+        for (final UpgradeRequirement requirement : context.requirements()) {
+            final double need = requirement.amount() * stackScale;
+            final double have = hasFor(player, requirement, mob);
+            if (have + 1e-9 < need) {
+                missing.add(UpgradeLore.describe(
+                        new UpgradeRequirement(requirement.type(), requirement.essence(),
+                                requirement.mobId(), need),
+                        dropNameFor(requirement, mob), configCurrency()));
+            }
         }
         if (!missing.isEmpty()) {
             messages.sendPrefixed(player, "spawner.missing-items",
                     Map.of("missing", String.join(", ", missing)));
-            return;
+            return false;
         }
 
-        removeUpTo(player, essenceItemMatcher(group), cost.essence() * stackScale);
-        removeUpTo(player, dropMatcher(mob), cost.drops() * stackScale);
-        removeUpTo(player, relicMatcher(group), cost.relics() * stackScale);
+        // All ✔ — consume the spendable requirements.
+        for (final UpgradeRequirement requirement : context.requirements()) {
+            if (!requirement.consumed()) {
+                continue;
+            }
+            final double need = requirement.amount() * stackScale;
+            switch (requirement.type()) {
+                case MONEY -> economy.withdraw(player.getUniqueId(), need);
+                case ESSENCE -> essences.take(player.getUniqueId(),
+                        requirement.essence() == null ? EssenceType.SLAYER : requirement.essence(),
+                        Math.round(need));
+                case DROP -> removeUpTo(player, dropMatcher(dropMobFor(requirement, mob)),
+                        (int) Math.round(need));
+                case KILLS -> { // threshold only
+                }
+                default -> {
+                }
+            }
+        }
 
         final SpawnerEntry upgraded = new SpawnerEntry(entry.world(), entry.x(), entry.y(), entry.z(),
                 entry.mobId(), next, entry.islandId(), entry.amount());
@@ -603,6 +670,17 @@ public final class SpawnerService {
                         + settings.count() + " per cycle"
                         + (settings.autoKill() ? ", auto-kill" : "")
                         + (stackScale > 1 ? ", x" + stackScale + " stack" : "")));
+        return true;
+    }
+
+    /** Display name of the drop a requirement wants. */
+    private String dropNameFor(final UpgradeRequirement requirement, final SpawnerMob ownMob) {
+        final SpawnerMob mob = dropMobFor(requirement, ownMob);
+        return mob == null ? "?" : mob.dropName();
+    }
+
+    private String configCurrency() {
+        return "$";
     }
 
     /** /spawner info — describes the spawner the player is looking at. */
@@ -635,12 +713,18 @@ public final class SpawnerService {
         }
         final SpawnerVariant next = entry.variant().next();
         if (next != null) {
-            final SpawnerUpgradeCost cost = mob.upgradeCost(next);
-            if (cost != null) {
+            final List<UpgradeRequirement> requirements = mob.upgradeRequirements(next);
+            if (requirements != null) {
+                final List<String> parts = new ArrayList<>();
+                for (final UpgradeRequirement requirement : requirements) {
+                    parts.add("&e" + UpgradeLore.describe(
+                            new UpgradeRequirement(requirement.type(), requirement.essence(),
+                                    requirement.mobId(), requirement.amount() * entry.amount()),
+                            dropNameFor(requirement, mob), configCurrency()));
+                }
                 player.sendMessage(messages.prefix() + ColorUtil.colorize(
-                        "&7Next: &f" + next.display() + " &8— &e" + cost.essence() + " "
-                                + group.essenceName() + "&8, &e" + cost.drops() + " " + mob.dropName()
-                                + (cost.relics() > 0 ? "&8, &d" + cost.relics() + " " + group.relicName() : "")));
+                        "&7Next: &f" + next.display() + " &8— " + String.join("&8, ", parts)
+                                + (entry.amount() > 1 ? " &8(x" + entry.amount() + " stack)" : "")));
             }
         } else {
             player.sendMessage(messages.prefix() + ColorUtil.colorize("&7This spawner is &dmaxed&7."));
@@ -780,14 +864,9 @@ public final class SpawnerService {
 
         // a killed mob stack counts as that many kills, but only says so once
         final int kills = mobStacks.countOf(entity);
-        boolean foundEssence = false;
         boolean foundDrop = false;
         boolean foundRelic = false;
         for (int kill = 0; kill < kills; kill++) {
-            if (random.nextDouble() < config.essenceChance()) {
-                giveItem(beneficiary, essenceItem(group, 1));
-                foundEssence = true;
-            }
             if (random.nextDouble() < config.uniqueDropChance(luckLevel)) {
                 giveItem(beneficiary, dropItem(mob, 1));
                 foundDrop = true;
@@ -796,10 +875,6 @@ public final class SpawnerService {
                 giveItem(beneficiary, relicItem(group, 1));
                 foundRelic = true;
             }
-        }
-        if (foundEssence && config.announceEssence()) {
-            messages.sendPrefixed(beneficiary, "spawner.found-essence",
-                    Map.of("essence", group.essenceName()));
         }
         if (foundDrop) {
             messages.sendPrefixed(beneficiary, "spawner.found-drop",
@@ -813,13 +888,22 @@ public final class SpawnerService {
 
     /** Scheduled auto-kill for Mythic spawns (and mob stacking). */
     public void onCreatureSpawn(final LivingEntity entity) {
+        // Tag the spawner's variant first, so the (surviving) entity knows
+        // its tier — Slayer Essence pays per variant on manual kills.
+        final SpawnerEntry source = nearbySpawnerEntry(
+                entity.getLocation(), entity.getType(), AUTO_KILL_SPAWN_RANGE);
+        if (source != null) {
+            entity.getPersistentDataContainer().set(variantKey, PersistentDataType.STRING,
+                    source.variant().name());
+        }
         if (mobStacks.tryStack(entity)) {
             return; // merged into a nearby stack — this entity is gone
         }
         if (autoKillMobs.size() > 10_000) {
             autoKillMobs.clear(); // paranoia valve
         }
-        final SpawnerEntry mythic = nearbyMythicSpawner(entity.getLocation(), entity.getType());
+        final SpawnerEntry mythic = source != null && source.variant() == SpawnerVariant.MYTHIC
+                ? source : null;
         if (mythic == null) {
             return;
         }
@@ -892,11 +976,6 @@ public final class SpawnerService {
     private interface ItemMatcher {
 
         boolean matches(ItemStack stack);
-    }
-
-    private ItemMatcher essenceItemMatcher(final SpawnerGroup group) {
-        return stack -> isCustomItem(stack, "essence:" + group.id(), group.essenceMaterial(),
-                "&b" + group.essenceName());
     }
 
     private ItemMatcher dropMatcher(final SpawnerMob mob) {
@@ -984,6 +1063,24 @@ public final class SpawnerService {
     /** Mob stacking runtime. */
     public MobStacks mobStacks() {
         return mobStacks;
+    }
+
+    /**
+     * Tags an entity with a spawner variant. Mob-stack replacements are
+     * spawned with reason CUSTOM (not SPAWNER), so they skip the automatic
+     * tagging in {@link #onCreatureSpawn} — they inherit the variant of the
+     * stack they replace instead, keeping kill rewards at the right rate.
+     */
+    public void applyVariantTag(final LivingEntity entity, final SpawnerVariant variant) {
+        entity.getPersistentDataContainer().set(variantKey, PersistentDataType.STRING,
+                variant.name());
+    }
+
+    /** The spawner variant this entity came from (natural mobs are Normal). */
+    public SpawnerVariant variantOf(final LivingEntity entity) {
+        final String raw = entity.getPersistentDataContainer().get(variantKey, PersistentDataType.STRING);
+        final SpawnerVariant variant = raw == null ? null : SpawnerVariant.of(raw);
+        return variant == null ? SpawnerVariant.NORMAL : variant;
     }
 
     /** Attaches the hologram manager and labels every already-loaded spawner. */

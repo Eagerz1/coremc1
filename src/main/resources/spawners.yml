@@ -2,21 +2,34 @@
 #  CoreMC — spawners.yml
 #  The mob spawner progression system.
 #
-#  GROUPS share an Essence (dropped by any of the group's mobs)
-#  and a rare Relic. Every MOB has its own unique drop, used to
-#  unlock that mob's higher spawner variants.
+#  GROUPS share a rare Relic; every MOB has its own unique drop,
+#  used both to unlock later mobs and to upgrade spawners.
 #
 #  Variants (per mob, in order): normal -> advanced -> ancient
 #  -> mythic. Each variant spawns mobs faster and in bigger
 #  bursts; Mythic spawners also auto-kill their spawns (drops
-#  are credited to the island owner).
+#  are credited to the island owner — but no Slayer Essence:
+#  only kills a player lands by hand pay that).
+#
+#  UPGRADES (/spawner upgrade opens a checklist GUI): each
+#  variant costs a LIST of requirements, scaled by the stack
+#  size (a 3x stack pays 3x everything):
+#    {type: money,  amount: N}           coins (spent)
+#    {type: kills,  amount: N}           lifetime mob kills (threshold)
+#    {type: essence, essence: slayer, amount: N}   virtual essence (spent)
+#    {type: drop,   amount: N, mob: id}  unique drops (spent; mob
+#                                        defaults to the mob being
+#                                        upgraded)
+#  Resolution: a mob's own `upgrades:` beats the group's
+#  `upgrade-overrides:` beats the global `upgrade-defaults:`.
 #
 #  Drop chances per player kill:
-#    essence = settings.essence-chance
 #    unique  = luck.base-chance + level * luck.bonus-per-level
 #              (island luck, up to luck.max-level; default
 #               0.1 -> 0.5, bought with coins via /spawner luck)
 #    relic   = settings.relic-chance
+#  Slayer Essence is NOT a chance drop any more — every mob a
+#  player kills pays it deterministically (essences.yml).
 #
 #  Everything below is data — add groups, mobs, tweak costs and
 #  chances freely. Broken entries refuse to load the system
@@ -24,11 +37,7 @@
 # ============================================================
 
 settings:
-  essence-chance: 0.25
   relic-chance: 0.01
-  # Send a chat line when essence drops (unique drops and relics
-  # always announce).
-  announce-essence: false
   luck:
     base-chance: 0.1
     bonus-per-level: 0.1
@@ -59,21 +68,28 @@ variants:
   ancient:  {rate: 3.0, count: 4, nearby-limit: 16, auto-kill: false}
   mythic:   {rate: 4.0, count: 6, nearby-limit: 24, auto-kill: true}
 
-# Variant upgrade requirements: the mob's group essence plus the mob's
-# OWN unique drop (the drop chance starts at 10% and island luck raises
-# it up to 50%). Normal spawners are the entry level; a stacked spawner
-# pays these per stacked spawner. Every mob falls back to these numbers;
-# a group's `upgrade-overrides:` beats them for that group, and a single
-# mob's own `upgrades:` beats both — balance per group and per mob here.
+# Default upgrade requirements per variant (money + lifetime kills +
+# Slayer Essence + the mob's own unique drop). Stacks pay per spawner.
 upgrade-defaults:
-  advanced: {essence: 10, drops: 3}
-  ancient: {essence: 25, drops: 10}
-  mythic: {essence: 75, drops: 30}
+  advanced:
+    - {type: money, amount: 5000}
+    - {type: kills, amount: 10000}
+    - {type: essence, essence: slayer, amount: 20}
+    - {type: drop, amount: 3}
+  ancient:
+    - {type: money, amount: 25000}
+    - {type: kills, amount: 50000}
+    - {type: essence, essence: slayer, amount: 60}
+    - {type: drop, amount: 8}
+  mythic:
+    - {type: money, amount: 100000}
+    - {type: kills, amount: 150000}
+    - {type: essence, essence: slayer, amount: 200}
+    - {type: drop, amount: 25}
 
 groups:
   organic:
     name: "Organic"
-    essence: {item: PRISMARINE_SHARD, name: "Organic Essence"}
     relic: {item: HEART_OF_THE_SEA, name: "Primordial Heart"}
     mobs:
       pig:
@@ -83,7 +99,12 @@ groups:
         spawner-cost: 2500
         unlock: {}
         # starter mob: a friendlier Ancient for the first spawner farm
-        upgrades: {ancient: {essence: 20, drops: 6}}
+        upgrades:
+          ancient:
+            - {type: money, amount: 15000}
+            - {type: kills, amount: 30000}
+            - {type: essence, essence: slayer, amount: 40}
+            - {type: drop, amount: 6}
       cow:
         entity: COW
         name: "Cow"
@@ -99,7 +120,6 @@ groups:
 
   undead:
     name: "Undead"
-    essence: {item: ECHO_SHARD, name: "Undead Essence"}
     relic: {item: NETHER_STAR, name: "Undying Sigil"}
     mobs:
       zombie:
@@ -123,7 +143,6 @@ groups:
 
   infernal:
     name: "Infernal"
-    essence: {item: MAGMA_CREAM, name: "Infernal Essence"}
     relic: {item: NETHERITE_SCRAP, name: "Ember of the First Flame"}
     mobs:
       blaze:
@@ -147,11 +166,14 @@ groups:
 
   ender:
     name: "Ender"
-    essence: {item: ENDER_PEARL, name: "Ender Essence"}
     relic: {item: PURPUR_BLOCK, name: "Void Relic"}
     # endgame group: every Ender mob pays more for Mythic
     upgrade-overrides:
-      mythic: {essence: 90, drops: 36}
+      mythic:
+        - {type: money, amount: 150000}
+        - {type: kills, amount: 200000}
+        - {type: essence, essence: slayer, amount: 300}
+        - {type: drop, amount: 36}
     mobs:
       enderman:
         entity: ENDERMAN
@@ -174,7 +196,6 @@ groups:
 
   corrupted:
     name: "Corrupted"
-    essence: {item: AMETHYST_SHARD, name: "Corrupted Essence"}
     relic: {item: WITHER_ROSE, name: "Corrupted Sigil"}
     mobs:
       witch:

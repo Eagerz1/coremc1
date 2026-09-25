@@ -6,3 +6,7 @@ target/
 
 # CI sandbox artifacts (63M, re-created by CI)
 sandbox/
+
+# live journey server (assembled by journey/setup-server.sh)
+journey-server/
+journey/node_modules/

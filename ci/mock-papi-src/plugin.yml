@@ -1,0 +1,10 @@
+name: PlaceholderAPI
+version: 2.11.6-mock
+main: MockPapiPlugin
+api-version: '1.21'
+description: Offline-sandbox mock of PlaceholderAPI (registry + setPlaceholders + /papicheck). Never ships with CoreMC.
+commands:
+  papicheck:
+    description: Print resolved CoreMC placeholders for a player.
+    usage: /papicheck [player]
+    permission: coremc.admin

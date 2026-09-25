@@ -6,6 +6,7 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.coremc.core.essence.EssenceType;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -13,8 +14,9 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * Loads and validates spawners.yml: groups, essences, relics, unique
- * drops, variant behaviour, upgrade costs and island-luck maths.
+ * Loads and validates spawners.yml: groups, relics, unique drops,
+ * variant behaviour, upgrade requirements (money / kills / virtual
+ * essence / unique drops) and island-luck maths.
  * Like the shop, every problem is collected into one loud exception
  * so a misconfiguration can never half-work.
  */
@@ -26,12 +28,10 @@ public final class SpawnerConfig {
     private final List<SpawnerGroup> groups = new ArrayList<>();
     private final Map<SpawnerVariant, SpawnerVariantSettings> variants =
             new EnumMap<>(SpawnerVariant.class);
-    private final Map<SpawnerVariant, SpawnerUpgradeCost> upgradeDefaults =
+    private final Map<SpawnerVariant, List<UpgradeRequirement>> upgradeDefaults =
             new EnumMap<>(SpawnerVariant.class);
 
-    private double essenceChance = 0.25;
     private double relicChance = 0.01;
-    private boolean announceEssence = false;
     private double luckBaseChance = 0.1;
     private double luckBonusPerLevel = 0.1;
     private int luckMaxLevel = 4;
@@ -79,9 +79,7 @@ public final class SpawnerConfig {
     }
 
     private void parseSettings(final YamlConfiguration yaml, final List<String> problems) {
-        this.essenceChance = chance(yaml, "settings.essence-chance", 0.25, problems);
         this.relicChance = chance(yaml, "settings.relic-chance", 0.01, problems);
-        this.announceEssence = yaml.getBoolean("settings.announce-essence", false);
         this.luckBaseChance = chance(yaml, "settings.luck.base-chance", 0.1, problems);
         this.luckBonusPerLevel = chance(yaml, "settings.luck.bonus-per-level", 0.1, problems);
 
@@ -118,7 +116,7 @@ public final class SpawnerConfig {
      * Parses the global {@code upgrade-defaults} section: the variant
      * progression every mob falls back to (group overrides and single-mob
      * {@code upgrades:} entries can beat it). Optional — without it every
-     * mob must define its own complete upgrade costs.
+     * mob must define its own complete upgrade requirements.
      */
     private void parseUpgradeDefaults(final YamlConfiguration yaml, final List<String> problems) {
         upgradeDefaults.clear();
@@ -126,26 +124,26 @@ public final class SpawnerConfig {
         if (root == null) {
             return;
         }
-        upgradeDefaults.putAll(parseCosts(root, "upgrade-defaults", problems));
+        upgradeDefaults.putAll(parseRequirements(root, "upgrade-defaults", problems));
         for (final SpawnerVariant variant : SpawnerVariant.values()) {
             if (variant != SpawnerVariant.NORMAL && !upgradeDefaults.containsKey(variant)) {
-                problems.add("upgrade-defaults: missing cost for " + variant.name().toLowerCase());
+                problems.add("upgrade-defaults: missing requirements for " + variant.name().toLowerCase());
             }
         }
     }
 
     /**
-     * Parses a variant → cost mapping ({@code essence} from the mob's
-     * group, {@code drops} of the mob's own unique drop, optional
-     * {@code relics}). Unknown keys are reported loudly and skipped;
-     * negative amounts clamp to zero.
+     * Parses a variant → requirement-list mapping. Each entry is a list
+     * of typed requirements ({@code money}, {@code kills},
+     * {@code essence} + which essence, {@code drop} + optional mob).
+     * Unknown types, missing essence keys and non-positive amounts are
+     * reported loudly.
      */
-    private Map<SpawnerVariant, SpawnerUpgradeCost> parseCosts(final ConfigurationSection root,
-                                                               final String where,
-                                                               final List<String> problems) {
-        final Map<SpawnerVariant, SpawnerUpgradeCost> costs = new EnumMap<>(SpawnerVariant.class);
+    private Map<SpawnerVariant, List<UpgradeRequirement>> parseRequirements(
+            final ConfigurationSection root, final String where, final List<String> problems) {
+        final Map<SpawnerVariant, List<UpgradeRequirement>> parsed = new EnumMap<>(SpawnerVariant.class);
         if (root == null) {
-            return costs;
+            return parsed;
         }
         for (final String key : root.getKeys(false)) {
             final SpawnerVariant variant = SpawnerVariant.of(key);
@@ -153,17 +151,67 @@ public final class SpawnerConfig {
                 problems.add(where + ": '" + key + "' is not a variant above normal");
                 continue;
             }
-            final ConfigurationSection cost = root.getConfigurationSection(key);
-            if (cost == null) {
-                problems.add(where + ": '" + key + "' is not a mapping");
-                continue;
+            final List<UpgradeRequirement> requirements = new ArrayList<>();
+            for (final Map<?, ?> entry : root.getMapList(key)) {
+                final UpgradeRequirement requirement = parseRequirement(entry,
+                        where + "." + variant.name().toLowerCase(), problems);
+                if (requirement != null) {
+                    requirements.add(requirement);
+                }
             }
-            costs.put(variant, new SpawnerUpgradeCost(
-                    Math.max(0, cost.getInt("essence", 0)),
-                    Math.max(0, cost.getInt("drops", 0)),
-                    Math.max(0, cost.getInt("relics", 0))));
+            if (requirements.isEmpty()) {
+                problems.add(where + ": '" + key + "' needs at least one requirement");
+            } else {
+                parsed.put(variant, List.copyOf(requirements));
+            }
         }
-        return costs;
+        return parsed;
+    }
+
+    /** One requirement map entry ({@code {type: ..., amount: ...}}). */
+    private UpgradeRequirement parseRequirement(final Map<?, ?> entry, final String where,
+                                                final List<String> problems) {
+        final Object typeKey = entry.get("type");
+        final UpgradeRequirement.Type type = UpgradeRequirement.Type.of(
+                typeKey == null ? null : String.valueOf(typeKey));
+        if (type == null) {
+            problems.add(where + ": requirement " + entry + " has no valid 'type'");
+            return null;
+        }
+        final double amount;
+        try {
+            amount = Double.parseDouble(String.valueOf(entry.get("amount")));
+        } catch (final NumberFormatException | NullPointerException exception) {
+            problems.add(where + ": requirement " + entry + " has a bad 'amount'");
+            return null;
+        }
+        if (amount <= 0) {
+            problems.add(where + ": requirement " + entry + " needs a positive 'amount'");
+            return null;
+        }
+        switch (type) {
+            case MONEY, KILLS -> {
+                return new UpgradeRequirement(type, null, null, amount);
+            }
+            case ESSENCE -> {
+                final EssenceType essence = EssenceType.of(
+                        entry.get("essence") == null ? null : String.valueOf(entry.get("essence")));
+                if (essence == null) {
+                    problems.add(where + ": essence requirement " + entry
+                            + " needs 'essence: slayer|mining|farming'");
+                    return null;
+                }
+                return UpgradeRequirement.essence(essence, amount);
+            }
+            case DROP -> {
+                final String mob = entry.get("mob") == null ? null : String.valueOf(entry.get("mob"));
+                return UpgradeRequirement.drop(mob, amount);
+            }
+            default -> {
+                problems.add(where + ": requirement " + entry + " has an unsupported type");
+                return null;
+            }
+        }
     }
 
     private void parseVariants(final YamlConfiguration yaml, final List<String> problems) {
@@ -209,8 +257,6 @@ public final class SpawnerConfig {
                 problems.add("group '" + groupId + "' is not a mapping");
                 continue;
             }
-            final Material essence = material(section.getString("essence.item"), "group '" + groupId + "' essence", problems);
-            final String essenceName = section.getString("essence.name", groupId + " Essence");
             final Material relic = material(section.getString("relic.item"), "group '" + groupId + "' relic", problems);
             final String relicName = section.getString("relic.name", groupId + " Relic");
 
@@ -220,7 +266,7 @@ public final class SpawnerConfig {
                 continue;
             }
             final List<SpawnerMob> mobs = new ArrayList<>();
-            final Map<SpawnerVariant, SpawnerUpgradeCost> groupOverrides = parseCosts(
+            final Map<SpawnerVariant, List<UpgradeRequirement>> groupOverrides = parseRequirements(
                     section.getConfigurationSection("upgrade-overrides"),
                     "group '" + groupId + "' upgrade-overrides", problems);
             for (final String mobId : mobsSection.getKeys(false)) {
@@ -234,11 +280,11 @@ public final class SpawnerConfig {
                 problems.add("group '" + groupId + "' has no valid mobs");
                 continue;
             }
-            if (essence == null || relic == null) {
+            if (relic == null) {
                 continue;
             }
             parsed.add(new SpawnerGroup(groupId, section.getString("name", groupId),
-                    essence, essenceName, relic, relicName, mobs));
+                    relic, relicName, mobs));
         }
         if (parsed.isEmpty()) {
             problems.add("no valid groups defined");
@@ -248,7 +294,7 @@ public final class SpawnerConfig {
     }
 
     private SpawnerMob parseMob(final String groupId, final ConfigurationSection section,
-                                final Map<SpawnerVariant, SpawnerUpgradeCost> groupOverrides,
+                                final Map<SpawnerVariant, List<UpgradeRequirement>> groupOverrides,
                                 final List<String> problems) {
         if (section == null) {
             return null;
@@ -274,32 +320,28 @@ public final class SpawnerConfig {
 
         // Variant progression resolves mob-level `upgrades:` over the
         // group's `upgrade-overrides:` over the global `upgrade-defaults:`.
-        final Map<SpawnerVariant, SpawnerUpgradeCost> upgrades =
+        final Map<SpawnerVariant, List<UpgradeRequirement>> upgrades =
                 new EnumMap<>(SpawnerVariant.class);
-        final Map<SpawnerVariant, SpawnerUpgradeCost> own = parseCosts(
+        final Map<SpawnerVariant, List<UpgradeRequirement>> own = parseRequirements(
                 section.getConfigurationSection("upgrades"),
                 "group '" + groupId + "' mob '" + mobId + "' upgrades", problems);
         for (final SpawnerVariant variant : SpawnerVariant.values()) {
             if (variant == SpawnerVariant.NORMAL) {
                 continue;
             }
-            SpawnerUpgradeCost cost = own.get(variant);
-            if (cost == null) {
-                cost = groupOverrides.get(variant);
+            List<UpgradeRequirement> requirements = own.get(variant);
+            if (requirements == null) {
+                requirements = groupOverrides.get(variant);
             }
-            if (cost == null) {
-                cost = upgradeDefaults.get(variant);
+            if (requirements == null) {
+                requirements = upgradeDefaults.get(variant);
             }
-            if (cost == null) {
-                problems.add("group '" + groupId + "' mob '" + mobId + "': missing upgrade cost for "
+            if (requirements == null || requirements.isEmpty()) {
+                problems.add("group '" + groupId + "' mob '" + mobId + "': missing upgrade requirements for "
                         + variant.name().toLowerCase());
                 continue;
             }
-            if (cost.isEmpty()) {
-                problems.add("group '" + groupId + "' mob '" + mobId + "': upgrade to "
-                        + variant.name().toLowerCase() + " needs at least one material");
-            }
-            upgrades.put(variant, cost);
+            upgrades.put(variant, requirements);
         }
 
         final Map<String, Integer> unlockDrops = new LinkedHashMap<>();
@@ -403,16 +445,8 @@ public final class SpawnerConfig {
         return luckCosts.get(level - 1);
     }
 
-    public double essenceChance() {
-        return essenceChance;
-    }
-
     public double relicChance() {
         return relicChance;
-    }
-
-    public boolean announceEssence() {
-        return announceEssence;
     }
 
     public int luckMaxLevel() {

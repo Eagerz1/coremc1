@@ -1,0 +1,62 @@
+# ============================================================
+#  Essence — the virtual progression currency.
+#
+#  Earned only through active play; balances live in
+#  essences.yml (per player) and never go negative.
+#
+#  slayer  one award per mob a PLAYER killed (melee or own
+#          projectile — passive deaths pay nothing), scaled
+#          by the spawner variant and the stack count.
+#  mining  natural blocks only (player-placed blocks are
+#          tracked and never pay).
+#  farming fully-grown crops; sugar cane, melons and
+#          pumpkins always count.
+# ============================================================
+
+slayer:
+  # Slayer Essence per killed mob, by spawner variant.
+  per-mob:
+    normal: 1
+    advanced: 2
+    ancient: 3
+    mythic: 5
+
+mining:
+  blocks:
+    # generator blocks
+    COBBLESTONE: 1
+    STONE: 1
+    # overworld ores (ore + deepslate ore pairs)
+    COAL_ORE: 1
+    DEEPSLATE_COAL_ORE: 1
+    COPPER_ORE: 2
+    DEEPSLATE_COPPER_ORE: 2
+    IRON_ORE: 2
+    DEEPSLATE_IRON_ORE: 2
+    GOLD_ORE: 3
+    DEEPSLATE_GOLD_ORE: 3
+    REDSTONE_ORE: 2
+    DEEPSLATE_REDSTONE_ORE: 2
+    LAPIS_ORE: 3
+    DEEPSLATE_LAPIS_ORE: 3
+    DIAMOND_ORE: 8
+    DEEPSLATE_DIAMOND_ORE: 8
+    EMERALD_ORE: 10
+    DEEPSLATE_EMERALD_ORE: 10
+    # nether
+    NETHER_GOLD_ORE: 2
+    NETHER_QUARTZ_ORE: 2
+    ANCIENT_DEBRIS: 25
+    OBSIDIAN: 4
+    CRYING_OBSIDIAN: 6
+
+farming:
+  blocks:
+    WHEAT: 2
+    CARROTS: 2
+    POTATOES: 2
+    BEETROOTS: 2
+    NETHER_WART: 3
+    SUGAR_CANE: 1
+    MELON: 2
+    PUMPKIN: 2

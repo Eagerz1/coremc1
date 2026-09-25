@@ -164,13 +164,13 @@ spawner:
   help-admin:
     - "&b&lSpawner admin"
     - "&b/sp give <player> <mob> [variant] &8- &fhand out a spawner"
-    - "&b/sp giveitem <player> essence|drop|relic <id> [amount] &8- &fhand out materials"
+    - "&b/sp giveitem <player> drop|relic <id> [amount] &8- &fhand out materials"
     - "&b/sp setluck <player> <level> &8- &fset island luck"
 
   list-header: "&b&lSpawner progression &8- mobs and prices"
   usage-buy: "&cUsage: &b/spawner buy <mob>"
   usage-give: "&cUsage: &b/spawner give <player> <mob> [normal|advanced|ancient|mythic]"
-  usage-giveitem: "&cUsage: &b/spawner giveitem <player> essence|drop|relic <id> [amount]"
+  usage-giveitem: "&cUsage: &b/spawner giveitem <player> drop|relic <id> [amount]"
   usage-setluck: "&cUsage: &b/spawner setluck <player> <level>"
 
   no-island: "&cYou don't have an island. Create one with &b/is create&c."
@@ -200,6 +200,16 @@ spawner:
   set-luck: "&d(admin) &7Island luck set to &f{level} &7(&f{chance} &7unique drop chance)."
   set-luck-admin: "&a{player}'s island luck set to &f{level}&a."
 
-  found-essence: "&b+1 {essence}"
   found-drop: "&eLucky! +1 {drop}"
   found-relic: "&dA rare relic! +1 {relic}"
+
+# ---- Essence (virtual balances: /essence) ----
+essence:
+  only-players: "&cOnly players have essence balances."
+  no-permission: "&cYou do not have permission to do that."
+  usage: "&cUsage: &b/essence [balance [player]] &8- &7admins: &b/essence give|take|set <player> <slayer|mining|farming|kills> <amount>"
+  unknown-type: "&cUnknown essence type '&f{type}&c'. Try &fslayer&c, &fmining&c, &ffarming&c or &fkills&c."
+  not-enough: "&c{player} only has &f{amount} {item}&c."
+  admin-changed: "&a(admin) {action} &f{amount} x {item} &8- &f{player}&a."
+  balance: "&b&lEssence &8- &7Slayer: &f{slayer} &8| &7Mining: &f{mining} &8| &7Farming: &f{farming} &8| &7Kills: &f{kills}"
+  balance-other: "&b&l{player}'s Essence &8- &7Slayer: &f{slayer} &8| &7Mining: &f{mining} &8| &7Farming: &f{farming} &8| &7Kills: &f{kills}"

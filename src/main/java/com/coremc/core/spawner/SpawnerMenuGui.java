@@ -55,9 +55,10 @@ public final class SpawnerMenuGui {
     private ItemStack guideItem() {
         return GuiItems.item(Material.WRITTEN_BOOK, "&b&lSpawner Guide",
                 "&7Buy mob spawners with coins,",
-                "&7unlock them with essence and",
-                "&7their drops, then upgrade each",
-                "&7one through its variants.",
+                "&7unlock them with Slayer",
+                "&7Essence and drops, then",
+                "&7upgrade each one through",
+                "&7its variants.",
                 "&7Luck improves drop rolls.",
                 "&8/spawner help for commands.");
     }
@@ -100,7 +101,7 @@ public final class SpawnerMenuGui {
         final ItemStack item = GuiItems.item(Material.SPAWNER, "&f&l" + mob.name(),
                 "&7Group: &f" + (group == null ? "?" : group.name()),
                 "&7Spawner: &e" + Money.format(mob.spawnerCost(), "$"),
-                "&7Unlock: &f" + mob.unlockEssence() + " &7essence"
+                "&7Unlock: &f" + mob.unlockEssence() + " &7Slayer Essence"
                         + (mob.unlockDrops().isEmpty() ? "" : " &7+ drops"),
                 "&eClick to buy");
         if (item.getItemMeta() instanceof BlockStateMeta meta) {

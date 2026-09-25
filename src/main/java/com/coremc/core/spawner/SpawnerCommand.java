@@ -29,13 +29,16 @@ public final class SpawnerCommand implements CommandExecutor, TabCompleter {
     private final SpawnerService spawners;
     private final MessageService messages;
     private final SpawnerMenuGui menu;
+    private final SpawnerUpgradeGui upgradeGui;
 
     public SpawnerCommand(final SpawnerConfig config, final SpawnerService spawners,
-                          final MessageService messages, final SpawnerMenuGui menu) {
+                          final MessageService messages, final SpawnerMenuGui menu,
+                          final SpawnerUpgradeGui upgradeGui) {
         this.config = config;
         this.spawners = spawners;
         this.messages = messages;
         this.menu = menu;
+        this.upgradeGui = upgradeGui;
     }
 
     @Override
@@ -62,7 +65,10 @@ public final class SpawnerCommand implements CommandExecutor, TabCompleter {
             }
             case "upgrade" -> {
                 if (requirePlayer(sender)) {
-                    spawners.upgrade((Player) sender);
+                    final var context = spawners.upgradeContext((Player) sender);
+                    if (context != null) {
+                        upgradeGui.open((Player) sender, context);
+                    }
                 }
             }
             case "luck" -> {
@@ -156,7 +162,7 @@ public final class SpawnerCommand implements CommandExecutor, TabCompleter {
                         .append(ColorUtil.colorize(")"));
             }
             sender.sendMessage(messages.prefix() + ColorUtil.colorize(
-                    "&b" + group.name() + " &7(" + group.essenceName() + "): ") + line);
+                    "&b" + group.name() + "&7: ") + line);
         }
     }
 
@@ -206,14 +212,13 @@ public final class SpawnerCommand implements CommandExecutor, TabCompleter {
             }
         } else if (args.length == 3 && args[0].equalsIgnoreCase("giveitem")
                 && sender.hasPermission("coremc.spawner.admin")) {
-            options.add("essence");
             options.add("drop");
             options.add("relic");
         } else if (args.length == 4 && args[0].equalsIgnoreCase("giveitem")
                 && sender.hasPermission("coremc.spawner.admin")) {
             final String kind = args[2].toLowerCase();
             for (final SpawnerGroup group : config.groups()) {
-                if (kind.equals("essence") || kind.equals("relic")) {
+                if (kind.equals("relic")) {
                     options.add(group.id());
                 } else if (kind.equals("drop")) {
                     group.mobs().forEach(mob -> options.add(mob.id()));

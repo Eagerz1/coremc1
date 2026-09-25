@@ -39,6 +39,8 @@ public final class CoreConfig {
     private long deleteConfirmSeconds = 30L;
     private long inviteExpirySeconds = 300L;
     private final List<ChestItem> chestItems = new ArrayList<>();
+    /** What %x_currency% shows: total, slayer, mining or farming. */
+    private String xCurrency = "total";
 
     public CoreConfig(final JavaPlugin plugin) {
         this.plugin = plugin;
@@ -48,8 +50,14 @@ public final class CoreConfig {
     public void load() {
         plugin.saveDefaultConfig();
         plugin.reloadConfig();
-        final FileConfiguration config = plugin.getConfig();
+        parse(plugin.getConfig());
+    }
 
+    /**
+     * Parses (and validates) a config document — the hook {@link #load()}
+     * uses, exposed so tests can drive it without a plugin data folder.
+     */
+    public void parse(final FileConfiguration config) {
         final String world = config.getString("island.world", islandWorldName);
         if (world == null || !world.matches(WORLD_NAME_PATTERN)) {
             plugin.getLogger().warning("island.world '" + world + "' is not a valid world name, "
@@ -93,6 +101,14 @@ public final class CoreConfig {
 
         this.deleteConfirmSeconds = Math.max(5L, config.getLong("island.delete-confirm-seconds", 30L));
         this.inviteExpirySeconds = Math.max(15L, config.getLong("island.invite-expiry-seconds", 300L));
+
+        final String currency = config.getString("x-currency", xCurrency);
+        if (currency == null || !currency.matches("total|slayer|mining|farming")) {
+            plugin.getLogger().warning("x-currency '" + currency
+                    + "' is not total/slayer/mining/farming, using '" + xCurrency + "'.");
+        } else {
+            this.xCurrency = currency;
+        }
 
         this.chestItems.clear();
         for (final String raw : config.getStringList("island.chest-items")) {
@@ -154,6 +170,11 @@ public final class CoreConfig {
 
     public boolean borderVisual() {
         return borderVisual;
+    }
+
+    /** The %x_currency% source: total (default), slayer, mining or farming. */
+    public String xCurrency() {
+        return xCurrency;
     }
 
     public String islandSchematic() {
