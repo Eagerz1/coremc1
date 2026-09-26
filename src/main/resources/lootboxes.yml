@@ -1,0 +1,462 @@
+# ============================================================
+#  CoreMC — lootboxes
+#
+#  Three physical ENDER_CHEST lootboxes (PDC-identified, can NEVER
+#  be placed). Right-clicking a block starts the premium opening:
+#  the chest rises and spins, 8 normal rewards reveal one by one,
+#  then 1 guaranteed Rare reveals dramatically. All 9 rewards are
+#  rolled and persisted BEFORE the animation, so disconnects and
+#  crashes can never lose them (/rewards + auto-delivery on join).
+#
+#  Prices are Credits. categories: lines appear in the item lore.
+#  normal-rewards is rolled 8 times, rare-rewards exactly once.
+#  Reward entry shape: see crates.yml. Odds are never hidden —
+#  the preview GUI shows weight and exact chance for every entry.
+# ============================================================
+
+lootboxes:
+  core:
+    name: "&b&lCore Lootbox"
+    price: 500
+    categories:
+      - "Money and Sky Tokens"
+      - "River and Sky Keys"
+      - "Role XP and boosters"
+      - "Generator and spawner materials"
+      - "Farming, mining, fishing, slayer"
+    normal-rewards:
+      money:
+        type: money
+        display: "&aMoney Pouch"
+        rarity: common
+        min: 8000
+        max: 25000
+        weight: 22
+      sky-tokens:
+        type: tokens
+        display: "&bSky Tokens"
+        rarity: common
+        min: 1000
+        max: 3500
+        weight: 22
+      river-key:
+        type: key
+        id: river
+        display: "&b&lRiver Key"
+        rarity: uncommon
+        amount: 1
+        weight: 8
+      sky-key:
+        type: key
+        id: sky
+        display: "&9&lSky Key"
+        rarity: uncommon
+        amount: 1
+        weight: 5
+      role-xp:
+        type: item
+        id: role_xp_voucher_small
+        material: EXPERIENCE_BOTTLE
+        display: "&eRole XP Voucher (Small)"
+        rarity: common
+        amount: 1
+        weight: 10
+      generator-parts:
+        type: item
+        id: generator_parts
+        material: IRON_BLOCK
+        display: "&fGenerator Parts"
+        rarity: uncommon
+        min: 1
+        max: 3
+        weight: 8
+      spawner-shard:
+        type: item
+        id: spawner_core_shard
+        material: AMETHYST_SHARD
+        display: "&dSpawner Core Shard"
+        rarity: uncommon
+        min: 1
+        max: 2
+        weight: 7
+      farming-cache:
+        type: item
+        id: farming_cache
+        material: HAY_BLOCK
+        display: "&eFarming Cache"
+        rarity: common
+        min: 2
+        max: 6
+        weight: 6
+      mining-cache:
+        type: item
+        id: mining_cache
+        material: RAW_IRON
+        display: "&7Mining Cache"
+        rarity: common
+        min: 8
+        max: 16
+        weight: 6
+      slayer-cache:
+        type: item
+        id: slayer_cache
+        material: ROTTEN_FLESH
+        display: "&cSlayer Cache"
+        rarity: common
+        min: 8
+        max: 16
+        weight: 3
+      small-booster:
+        type: item
+        id: booster_personal_small
+        material: SUGAR
+        display: "&fSmall Personal Booster"
+        rarity: uncommon
+        amount: 1
+        weight: 3
+    rare-rewards:
+      crimson-key:
+        type: key
+        id: crimson
+        display: "&c&lCrimson Key"
+        rarity: rare
+        amount: 1
+        weight: 25
+      generator-core:
+        type: item
+        id: generator_core
+        material: LODESTONE
+        display: "&bGenerator Core"
+        rarity: rare
+        amount: 1
+        weight: 20
+      core-fragments:
+        type: item
+        id: core_fragment
+        material: ECHO_SHARD
+        display: "&5Core Fragment Bundle"
+        rarity: rare
+        min: 2
+        max: 4
+        weight: 20
+      rare-companion-treat:
+        type: item
+        id: companion_material_rare
+        material: GOLDEN_CARROT
+        display: "&6Rare Companion Treat"
+        rarity: rare
+        min: 1
+        max: 2
+        weight: 15
+      core-tag:
+        type: item
+        id: tag_core
+        material: NAME_TAG
+        display: "&bCore Tag"
+        rarity: rare
+        amount: 1
+        weight: 10
+      island-module:
+        type: item
+        id: island_module_component
+        material: PRISMARINE_SHARD
+        display: "&3Island Module Component"
+        rarity: epic
+        amount: 1
+        weight: 10
+
+  monthly:
+    name: "&d&lMonthly Lootbox"
+    price: 1000
+    categories:
+      - "Bigger money and Sky Tokens"
+      - "Sky Keys and a Crimson chance"
+      - "Generator and spawner resources"
+      - "Role, OmniTool and companions"
+      - "Medium boosters"
+    normal-rewards:
+      money:
+        type: money
+        display: "&aMoney Pouch"
+        rarity: common
+        min: 20000
+        max: 60000
+        weight: 22
+      sky-tokens:
+        type: tokens
+        display: "&bSky Tokens"
+        rarity: common
+        min: 3000
+        max: 8000
+        weight: 22
+      sky-key:
+        type: key
+        id: sky
+        display: "&9&lSky Key"
+        rarity: uncommon
+        amount: 1
+        weight: 10
+      crimson-key:
+        type: key
+        id: crimson
+        display: "&c&lCrimson Key"
+        rarity: rare
+        amount: 1
+        weight: 4
+      generator-parts:
+        type: item
+        id: generator_parts
+        material: IRON_BLOCK
+        display: "&fGenerator Parts"
+        rarity: uncommon
+        min: 2
+        max: 5
+        weight: 10
+      spawner-shard:
+        type: item
+        id: spawner_core_shard
+        material: AMETHYST_SHARD
+        display: "&dSpawner Core Shard"
+        rarity: uncommon
+        min: 1
+        max: 3
+        weight: 8
+      role-xp:
+        type: item
+        id: role_xp_voucher_medium
+        material: EXPERIENCE_BOTTLE
+        display: "&eRole XP Voucher (Medium)"
+        rarity: common
+        amount: 1
+        weight: 8
+      omnitool-part:
+        type: item
+        id: omnitool_part
+        material: BREEZE_ROD
+        display: "&6OmniTool Part"
+        rarity: uncommon
+        amount: 1
+        weight: 6
+      companion-treat:
+        type: item
+        id: companion_material_common
+        material: BONE
+        display: "&fCompanion Treat"
+        rarity: uncommon
+        min: 2
+        max: 4
+        weight: 6
+      medium-booster:
+        type: item
+        id: booster_medium
+        material: GLOWSTONE_DUST
+        display: "&eMedium Booster"
+        rarity: uncommon
+        amount: 1
+        weight: 4
+    rare-rewards:
+      crimson-keys:
+        type: key
+        id: crimson
+        display: "&c&lCrimson Keys"
+        rarity: rare
+        min: 2
+        max: 3
+        weight: 25
+      rare-module:
+        type: item
+        id: island_module_component_rare
+        material: PRISMARINE_CRYSTALS
+        display: "&3Rare Module Component"
+        rarity: epic
+        amount: 1
+        weight: 15
+      core-fragments:
+        type: item
+        id: core_fragment
+        material: ECHO_SHARD
+        display: "&5Large Core Fragment Bundle"
+        rarity: rare
+        min: 4
+        max: 8
+        weight: 20
+      companion-upgrade:
+        type: item
+        id: companion_upgrade_rare
+        material: GOLDEN_APPLE
+        display: "&6Rare Companion Upgrade"
+        rarity: rare
+        amount: 1
+        weight: 15
+      seasonal-cosmetic:
+        type: item
+        id: cosmetic_seasonal
+        material: FIREWORK_ROCKET
+        display: "&dSeasonal Cosmetic"
+        rarity: rare
+        amount: 1
+        weight: 10
+      monthly-tag:
+        type: item
+        id: tag_monthly
+        material: NAME_TAG
+        display: "&dMonthly Tag"
+        rarity: rare
+        amount: 1
+        weight: 10
+      generator-skin:
+        type: item
+        id: generator_skin_voucher
+        material: PAINTING
+        display: "&bGenerator Skin Voucher"
+        rarity: epic
+        amount: 1
+        weight: 5
+
+  seasonal:
+    name: "&6&lSeasonal Lootbox"
+    price: 1500
+    categories:
+      - "High-value progression materials"
+      - "Modules and companions"
+      - "Keys and cosmetics"
+      - "Seasonal collectibles"
+      - "Boosters and big Sky Tokens"
+    normal-rewards:
+      money:
+        type: money
+        display: "&aMoney Pouch"
+        rarity: common
+        min: 40000
+        max: 120000
+        weight: 20
+      sky-tokens:
+        type: tokens
+        display: "&bSky Tokens"
+        rarity: common
+        min: 6000
+        max: 15000
+        weight: 22
+      sky-key:
+        type: key
+        id: sky
+        display: "&9&lSky Key"
+        rarity: uncommon
+        min: 1
+        max: 2
+        weight: 10
+      crimson-key:
+        type: key
+        id: crimson
+        display: "&c&lCrimson Key"
+        rarity: rare
+        amount: 1
+        weight: 6
+      core-fragment:
+        type: item
+        id: core_fragment
+        material: ECHO_SHARD
+        display: "&5Core Fragment"
+        rarity: uncommon
+        min: 2
+        max: 4
+        weight: 10
+      generator-core:
+        type: item
+        id: generator_core
+        material: LODESTONE
+        display: "&bGenerator Core"
+        rarity: rare
+        amount: 1
+        weight: 6
+      module-shard:
+        type: item
+        id: island_module_shard
+        material: PRISMARINE_SHARD
+        display: "&3Island Module Shard"
+        rarity: uncommon
+        min: 1
+        max: 3
+        weight: 8
+      companion-treat:
+        type: item
+        id: companion_material_rare
+        material: GOLDEN_CARROT
+        display: "&6Rare Companion Treat"
+        rarity: rare
+        min: 1
+        max: 2
+        weight: 6
+      seasonal-collectible:
+        type: item
+        id: collectible_seasonal
+        material: AMETHYST_CLUSTER
+        display: "&dSeasonal Collectible"
+        rarity: uncommon
+        amount: 1
+        weight: 7
+      strong-booster:
+        type: item
+        id: booster_strong
+        material: BLAZE_POWDER
+        display: "&cStrong Personal Booster"
+        rarity: rare
+        amount: 1
+        weight: 5
+    rare-rewards:
+      crimson-keys:
+        type: key
+        id: crimson
+        display: "&c&lCrimson Keys"
+        rarity: rare
+        min: 2
+        max: 4
+        weight: 22
+      seasonal-module:
+        type: item
+        id: island_module_component_seasonal
+        material: PRISMARINE_CRYSTALS
+        display: "&6Seasonal Module Component"
+        rarity: epic
+        amount: 1
+        weight: 16
+      big-core-fragments:
+        type: item
+        id: core_fragment
+        material: ECHO_SHARD
+        display: "&5Huge Core Fragment Bundle"
+        rarity: epic
+        min: 6
+        max: 12
+        weight: 18
+      companion-upgrade:
+        type: item
+        id: companion_upgrade_seasonal
+        material: ENCHANTED_GOLDEN_APPLE
+        display: "&6Seasonal Companion Upgrade"
+        rarity: epic
+        amount: 1
+        weight: 12
+      seasonal-cosmetic:
+        type: item
+        id: cosmetic_seasonal_grand
+        material: FIREWORK_ROCKET
+        display: "&6Grand Seasonal Cosmetic"
+        rarity: epic
+        amount: 1
+        weight: 12
+      seasonal-tag:
+        type: item
+        id: tag_seasonal
+        material: NAME_TAG
+        display: "&6Seasonal Tag"
+        rarity: epic
+        amount: 1
+        weight: 10
+      token-jackpot:
+        type: tokens
+        display: "&bSky Token Jackpot"
+        rarity: legendary
+        min: 20000
+        max: 40000
+        weight: 10

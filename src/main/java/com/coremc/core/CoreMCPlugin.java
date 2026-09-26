@@ -70,6 +70,37 @@ import com.coremc.core.shop.ShopGui;
 import com.coremc.core.shop.ShopListener;
 import com.coremc.core.shop.YamlEconomyStore;
 import com.coremc.core.world.IslandWorldService;
+import com.coremc.core.credits.CreditReason;
+import com.coremc.core.credits.CreditService;
+import com.coremc.core.credits.CreditsCommand;
+import com.coremc.core.credits.SkyTokenService;
+import com.coremc.core.credits.YamlBalanceStore;
+import com.coremc.core.crate.CrateCommand;
+import com.coremc.core.crate.CrateConfig;
+import com.coremc.core.crate.CrateListener;
+import com.coremc.core.crate.CrateService;
+import com.coremc.core.crate.KeyItems;
+import com.coremc.core.lootbox.LootboxCommand;
+import com.coremc.core.lootbox.LootboxConfig;
+import com.coremc.core.lootbox.LootboxItems;
+import com.coremc.core.lootbox.LootboxListener;
+import com.coremc.core.lootbox.LootboxService;
+import com.coremc.core.reward.PendingRewards;
+import com.coremc.core.reward.RewardDeliverer;
+import com.coremc.core.reward.RewardType;
+import com.coremc.core.reward.YamlPendingStore;
+import com.coremc.core.store.BundleCommand;
+import com.coremc.core.store.BundleConfig;
+import com.coremc.core.store.PreviewGui;
+import com.coremc.core.store.PurchaseService;
+import com.coremc.core.store.RewardsCommand;
+import com.coremc.core.store.StoreCommand;
+import com.coremc.core.store.StoreConfig;
+import com.coremc.core.store.StoreGui;
+import com.coremc.core.store.StoreItemTags;
+import com.coremc.core.store.StoreJoinListener;
+import com.coremc.core.store.StoreListener;
+import com.coremc.core.store.TransactionLog;
 import java.nio.file.Path;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
@@ -109,6 +140,11 @@ public final class CoreMCPlugin extends JavaPlugin {
     private RankService rankService;
     private GeneratorConfig generatorConfig;
     private GeneratorService generatorService;
+    private CreditService creditService;
+    private SkyTokenService skyTokenService;
+    private StoreConfig storeConfig;
+    private PendingRewards pendingRewards;
+    private LootboxService lootboxService;
 
     @Override
     public void onEnable() {
@@ -292,6 +328,119 @@ public final class CoreMCPlugin extends JavaPlugin {
             registerSimpleCommand("essence", new EssenceCommand(essenceManager, messages));
         }
 
+        // Store: Credits (the store currency, 100 = €1), Sky Tokens,
+        // the five PDC crate keys + crates, the three ENDER_CHEST
+        // lootboxes, bundles, /store, /rewards and the admin commands.
+        // Broken configs disable the store with one loud log line —
+        // never the plugin, and never a corrupted purchase.
+        this.creditService = null;
+        this.skyTokenService = null;
+        try {
+            this.creditService = new CreditService(new YamlBalanceStore(
+                    Path.of(getDataFolder().getPath(), "credits.yml"), getLogger()), getLogger());
+            this.skyTokenService = new SkyTokenService(new YamlBalanceStore(
+                    Path.of(getDataFolder().getPath(), "sky-tokens.yml"), getLogger()), getLogger());
+        } catch (final java.io.IOException exception) {
+            getLogger().severe("Credits/Sky Tokens disabled — storage unreadable: "
+                    + exception.getMessage());
+            this.creditService = null;
+            this.skyTokenService = null;
+        }
+        this.storeConfig = new StoreConfig(this);
+        CrateConfig crateConfig = CrateConfig.disabled();
+        LootboxConfig lootboxConfig = LootboxConfig.disabled();
+        BundleConfig bundleConfig = null;
+        try {
+            storeConfig.load();
+            final CrateConfig parsedCrates = new CrateConfig(this);
+            parsedCrates.load();
+            final LootboxConfig parsedBoxes = new LootboxConfig(this);
+            final java.util.Set<String> keyIds = new java.util.LinkedHashSet<>();
+            for (final var key : parsedCrates.keys()) {
+                keyIds.add(key.id());
+            }
+            parsedBoxes.load(keyIds);
+            // crates may pay lootboxes — cross-check now that both are loaded
+            for (final var crate : parsedCrates.crates()) {
+                for (final var reward : crate.pool()) {
+                    if (reward.type() == RewardType.LOOTBOX
+                            && parsedBoxes.byId(reward.id()) == null) {
+                        throw new IllegalArgumentException("broken crates.yml: crate '"
+                                + crate.id() + "' pays unknown lootbox '" + reward.id() + "'");
+                    }
+                }
+            }
+            final BundleConfig parsedBundles = new BundleConfig(this);
+            parsedBundles.load(parsedCrates, parsedBoxes);
+            crateConfig = parsedCrates;
+            lootboxConfig = parsedBoxes;
+            bundleConfig = parsedBundles;
+        } catch (final RuntimeException exception) {
+            getLogger().severe("Store disabled — " + exception.getMessage());
+            crateConfig = CrateConfig.disabled();
+            lootboxConfig = LootboxConfig.disabled();
+            bundleConfig = null;
+        }
+        StoreGui storeGui = null;
+        RewardDeliverer rewardDeliverer = null;
+        if (creditService != null && economy != null && crateConfig.enabled()
+                && lootboxConfig.enabled() && bundleConfig != null) {
+            try {
+                this.pendingRewards = new PendingRewards(new YamlPendingStore(
+                        Path.of(getDataFolder().getPath(), "pending-rewards.yml"), getLogger()),
+                        getLogger());
+            } catch (final java.io.IOException exception) {
+                getLogger().severe("Store disabled — pending-reward storage unreadable: "
+                        + exception.getMessage());
+                this.pendingRewards = null;
+            }
+            if (pendingRewards != null) {
+                final StoreItemTags itemTags = new StoreItemTags(this);
+                final KeyItems keyItems = new KeyItems(itemTags);
+                final LootboxItems lootboxItems = new LootboxItems(itemTags);
+                final TransactionLog transactionLog = new TransactionLog(
+                        Path.of(getDataFolder().getPath(), "store-transactions.log"), getLogger());
+                rewardDeliverer = new RewardDeliverer(economy, skyTokenService, creditService,
+                        crateConfig, keyItems, lootboxConfig, lootboxItems, itemTags, getLogger());
+                final PurchaseService purchaseService = new PurchaseService(creditService,
+                        pendingRewards, rewardDeliverer, transactionLog, messages);
+                storeGui = new StoreGui(crateConfig, lootboxConfig, bundleConfig, creditService);
+                final PreviewGui previewGui = new PreviewGui(crateConfig);
+                final CrateService crateService = new CrateService(crateConfig, keyItems,
+                        pendingRewards, rewardDeliverer, transactionLog, messages, getLogger(),
+                        Path.of(getDataFolder().getPath(), "crates-data.yml"));
+                crateService.load();
+                this.lootboxService = new LootboxService(this, lootboxConfig, crateConfig,
+                        pendingRewards, rewardDeliverer, transactionLog, messages, getLogger());
+
+                pluginManager.registerEvents(new StoreListener(storeGui, previewGui,
+                        purchaseService, crateConfig, lootboxConfig, bundleConfig), this);
+                pluginManager.registerEvents(new CrateListener(crateService, keyItems,
+                        previewGui, messages), this);
+                pluginManager.registerEvents(new LootboxListener(lootboxConfig, lootboxService,
+                        lootboxItems, previewGui, messages), this);
+                pluginManager.registerEvents(new StoreJoinListener(this, pendingRewards,
+                        rewardDeliverer, rankService, crateConfig, transactionLog, messages), this);
+
+                registerSimpleCommand("corecrate", new CrateCommand(crateConfig, crateService,
+                        keyItems, transactionLog, messages));
+                registerSimpleCommand("corelootbox", new LootboxCommand(lootboxConfig,
+                        lootboxItems, transactionLog, messages));
+                registerSimpleCommand("corebundle", new BundleCommand(bundleConfig,
+                        pendingRewards, rewardDeliverer, transactionLog, messages));
+                getLogger().info("Store active: " + crateConfig.keys().size() + " keys, "
+                        + crateConfig.crates().size() + " crates, "
+                        + lootboxConfig.all().size() + " lootboxes, "
+                        + bundleConfig.all().size() + " bundles.");
+            }
+        } else if (economy == null) {
+            getLogger().severe("Store disabled — no economy (the shop failed to load).");
+        }
+        registerSimpleCommand("store", new StoreCommand(storeGui, messages));
+        registerSimpleCommand("rewards", new RewardsCommand(pendingRewards, rewardDeliverer,
+                messages));
+        registerSimpleCommand("corecredits", new CreditsCommand(creditService, messages));
+
         // Menus: /is opens the double-chest island menu (members-only), its
         // sub-menus (upgrades, buffs, members, invite) are small chests, and
         // /spawner opens the spawner menu. Purchases reuse the command flows.
@@ -413,6 +562,18 @@ public final class CoreMCPlugin extends JavaPlugin {
                 tebexClient, giftcardStore, messages, getLogger(),
                 Path.of(getDataFolder().getPath(), "island-rewards.yml"));
         islandTopRewards.load();
+        // Island milestones pay Credits alongside the season gift cards
+        // (once per season, same guard) — earned progression, not just paid.
+        if (creditService != null && storeConfig != null
+                && storeConfig.islandTopCreditMultiplier() > 0) {
+            final CreditService credits = creditService;
+            final double multiplier = storeConfig.islandTopCreditMultiplier();
+            islandTopRewards.creditHook((reward, season) -> credits.add(
+                    reward.island().owner(), Math.round(reward.amount() * multiplier),
+                    CreditReason.ISLAND_MILESTONE,
+                    "island top #" + reward.rank() + " " + reward.category().display()
+                            + " season " + season));
+        }
         registerSimpleCommand("season", new SeasonCommand(
                 rankService == null ? null : rankService, islandTopRewards, messages));
         final PluginCommand islandCommand = getCommand("island");
@@ -442,7 +603,8 @@ public final class CoreMCPlugin extends JavaPlugin {
         if (essenceManager != null
                 && getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             try {
-                new CoremcExpansion(essenceManager, economy).register();
+                new CoremcExpansion(essenceManager, economy, creditService, skyTokenService)
+                        .register();
                 new XCurrencyExpansion(essenceManager, coreConfig).register();
                 getLogger().info("PlaceholderAPI expansions registered (coremc, x).");
             } catch (final Throwable error) {
@@ -502,6 +664,20 @@ public final class CoreMCPlugin extends JavaPlugin {
         if (sellListener != null) {
             sellListener.closeAll();
         }
+        // lootbox animations: remove every temporary display entity; the
+        // rolled rewards are already pending and survive the restart
+        if (lootboxService != null) {
+            lootboxService.cleanupAll();
+        }
+        if (pendingRewards != null) {
+            pendingRewards.shutdown();
+        }
+        if (creditService != null) {
+            creditService.shutdown();
+        }
+        if (skyTokenService != null) {
+            skyTokenService.shutdown();
+        }
         if (islandPoints != null) {
             try {
                 islandPoints.flush();
@@ -556,5 +732,24 @@ public final class CoreMCPlugin extends JavaPlugin {
 
     public GeneratorService generators() {
         return generatorService;
+    }
+
+    /**
+     * The Credits service — CoreMC's store currency API for every other
+     * system: {@code credits().add(uuid, amount, CreditReason.QUEST)}.
+     * Null when Credit storage failed to load.
+     */
+    public CreditService credits() {
+        return creditService;
+    }
+
+    /** The Sky Token service (null when its storage failed to load). */
+    public SkyTokenService skyTokens() {
+        return skyTokenService;
+    }
+
+    /** The pending-reward ledger (null when the store is disabled). */
+    public PendingRewards pendingRewards() {
+        return pendingRewards;
     }
 }

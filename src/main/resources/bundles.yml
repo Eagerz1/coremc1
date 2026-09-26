@@ -1,0 +1,50 @@
+# ============================================================
+#  CoreMC — bundles
+#
+#  Bundles contain ONLY keys and lootboxes (never direct exclusive
+#  progression rewards). Contents are exact and listed in the lore;
+#  discounts are modest and honest — no fake marketing. Prices are
+#  Credits. Content lines: "key:<id>:<amount>" / "lootbox:<id>:<amount>",
+#  cross-checked against crates.yml and lootboxes.yml at load time.
+# ============================================================
+
+bundles:
+  starter:
+    name: "&a&lStarter Bundle"
+    icon: CHEST
+    price: 500
+    contents:
+      - "key:river:2"
+      - "key:sky:1"
+      - "lootbox:core:1"
+
+  sky:
+    name: "&9&lSky Bundle"
+    icon: CHEST
+    price: 1000
+    contents:
+      - "key:river:3"
+      - "key:sky:2"
+      - "key:crimson:1"
+      - "lootbox:core:1"
+
+  crimson:
+    name: "&c&lCrimson Bundle"
+    icon: RED_SHULKER_BOX
+    price: 1750
+    contents:
+      - "key:sky:3"
+      - "key:crimson:2"
+      - "lootbox:core:1"
+      - "lootbox:monthly:1"
+
+  season:
+    name: "&6&lSeason Bundle"
+    icon: YELLOW_SHULKER_BOX
+    price: 3000
+    contents:
+      - "key:sky:5"
+      - "key:crimson:3"
+      - "lootbox:core:2"
+      - "lootbox:monthly:1"
+      - "lootbox:seasonal:1"

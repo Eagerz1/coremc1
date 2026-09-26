@@ -1,0 +1,143 @@
+[server] booting (boot1)...
+[server] boot1 ready
+[rcon] connected
+  PASS  boot1: zero server ERROR lines (excl. platform noise)
+  PASS  boot1: zero CoreMC warn/error/exception lines
+
+=== PHASE 1: join + island + Credits admin commands ===
+  PASS  owner spawns
+  PASS  /is create pastes an island
+  PASS  island has ground under the spawn position
+[island] home=0,67,2
+  PASS  a fresh player holds exactly 0 Credits
+  PASS  /corecredits give lands exactly
+  PASS  an overdraw is refused, balances never go negative
+  PASS  the refused take changed nothing
+  PASS  /corecredits shows the own balance
+  PASS  /corecredits set is exact
+
+=== PHASE 2: /store GUI + insufficient balance + odds preview ===
+  PASS  /store opens the store
+  PASS  the root window is titled Store
+  PASS  slot 4 is the ᴄʀᴇᴅɪᴛs / ʙᴀʟᴀɴᴄᴇ panel
+  PASS  the panel shows the live balance (10)
+  PASS  the panel spells out 100 ᴄʀᴇᴅɪᴛs = €1
+  PASS  slot 20 is Crate Keys
+  PASS  slot 22 is Lootboxes
+  PASS  slot 24 is Bundles
+  PASS  slot 49 explains how Credits are earned in game
+  PASS  the Vote Key is the first key entry
+  PASS  an unaffordable key shows ᴘʀɪᴄᴇ 75 with the red ✖
+  PASS  a failed buy states the EXACT missing Credits (65)
+  PASS  a failed buy debits nothing
+  PASS  and delivers nothing
+  PASS  the preview shows the Money Pouch at its exact 30% chance
+  PASS  with its exact amount range
+  PASS  the rare Voter Tag shows 8% and its rarity
+
+=== PHASE 3: buying a Vote Key: exact debit, no rapid-buy duplication ===
+  PASS  the purchase confirms the exact debit
+  PASS  75 Credits actually left the balance
+  PASS  exactly one Vote Key arrived
+  PASS  the key is the configured tripwire hook
+  PASS  rapid double-click buys exactly once
+  PASS  the second click is refused with the exact shortfall
+  PASS  only one price was debited
+  PASS  exactly two keys total — no duplication
+
+=== PHASE 4: crates: PDC keys only, one open per key, double-click safe ===
+  PASS  found a crate block spot on the island
+  PASS  console binds the Vote Crate
+  PASS  the binding is listed
+  PASS  the fake renamed key arrived
+  PASS  holding a vote-key-named tripwire hook
+[note] cannot distinguish fake by components; using clear/regive fallback
+  PASS  the renamed fake NEVER opens the crate
+  PASS  the fake was not consumed either
+  PASS  inventory clear of hooks before the real test
+  PASS  /corecrate givekey delivers 3 real keys
+  PASS  holding the real Vote Key
+  PASS  the real key opens the crate
+  PASS  exactly ONE key was consumed
+  PASS  a rapid double right-click opens exactly ONCE
+  PASS  and consumed exactly one key
+
+=== PHASE 5: lootbox: premium animation, no placement, 9 rewards, cleanup ===
+  PASS  /corelootbox give delivers the Core Lootbox
+  PASS  the lootbox is an ender chest item
+  PASS  found a lootbox spot away from the crate
+  PASS  holding the lootbox
+  PASS  right-click starts the opening
+  PASS  exactly one box was consumed
+  PASS  NO real ender chest block was placed
+  PASS  display-entity FX are running
+  PASS  ZERO pickup-able item entities during the show
+  PASS  all 9 rewards (8 + 1 guaranteed rare) delivered
+  PASS  every FX entity was cleaned up
+  PASS  nothing was left pending
+
+=== PHASE 6: disconnect mid-animation → next login delivers exactly once ===
+  PASS  second opening starts
+  PASS  animation is running when the player disconnects
+[JOwner] connection ended
+  PASS  the disconnect cleaned up every FX entity
+  PASS  the 9 rolled rewards persisted as one pending transaction
+  PASS  owner rejoins
+  PASS  the next login delivers all 9 — exactly once
+  PASS  no double delivery
+  PASS  the pending ledger is empty again
+
+=== PHASE 7: bundles: exact contents, exact debit ===
+  PASS  the Starter Bundle is listed
+  PASS  its lore lists the EXACT contents
+  PASS  and the live affordable price
+  PASS  the bundle debits exactly 500
+  PASS  exactly 2 PDC-tagged River Keys arrived
+  PASS  exactly 1 PDC-tagged Sky Key arrived
+  PASS  exactly 1 PDC-tagged Core Lootbox arrived
+  PASS  /corebundle give works too
+  PASS  the admin bundle delivered the same exact contents
+
+=== PHASE 8: full inventory: debit once, drop nothing, /rewards catches up ===
+  PASS  the purchase still succeeds
+  PASS  the player is told the reward is saved, not dropped
+  PASS  the debit happened exactly once
+  PASS  NOTHING paid was dropped on the ground
+  PASS  the key is not in the inventory yet
+  PASS  /rewards delivers it
+  PASS  the paid key arrived exactly once
+
+=== PHASE 9: restart: persistence + rank River key migration ===
+[JOwner] connection ended
+[server] stopping...
+[server] exited
+  PASS  pending-rewards.yml is empty at shutdown
+  PASS  the crate binding is persisted
+[server] booting (boot2)...
+[server] boot2 ready
+[rcon] connected
+  PASS  boot2: zero server ERROR lines (excl. platform noise)
+  PASS  boot2: zero CoreMC warn/error/exception lines
+  PASS  owner rejoins after the restart
+  PASS  rank River keys migrate to physical keys on login
+  PASS  the Credit balance survived the restart
+  PASS  the keys survived the restart
+  PASS  exactly 2 migrated River Keys arrived
+  PASS  the crate binding survived
+  PASS  the crate still opens after the restart
+
+=== PHASE 10: final audit: transaction log + clean server log ===
+  PASS  store-transactions.log records PURCHASE
+  PASS  store-transactions.log records CRATE_OPEN
+  PASS  store-transactions.log records LOOTBOX_OPEN
+  PASS  store-transactions.log records ADMIN_GIVEKEY
+  PASS  store-transactions.log records ADMIN_GIVELOOTBOX
+  PASS  store-transactions.log records ADMIN_GIVEBUNDLE
+  PASS  store-transactions.log records RANK_RIVER_KEYS
+[JOwner] connection ended
+[server] stopping...
+[server] exited
+  PASS  final: zero server ERROR lines (excl. platform noise)
+  PASS  final: zero CoreMC warn/error/exception lines
+
+RESULT  pass=106 fail=0

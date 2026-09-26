@@ -1,0 +1,422 @@
+# ============================================================
+#  CoreMC — crate keys + crates
+#
+#  CoreMC has exactly five physical crate keys. Keys are real
+#  PDC-identified items: renaming or crafting a vanilla item can
+#  NEVER create a valid key. Prices are Credits (100 = EUR 1);
+#  every key is also earnable in game (voting, ranks, crates,
+#  lootboxes, events), paying only accelerates.
+#
+#  Reward entry shape (under crates.<id>.rewards.<reward-id>):
+#    type:     money | tokens | credits | key | lootbox | item | command
+#    display:  shown name (& colours, rendered small-caps)
+#    rarity:   common | uncommon | rare | epic | legendary
+#              (rare+ glows in previews and can broadcast)
+#    min/max:  amount range (or amount: for a fixed amount)
+#    weight:   share of the pool (chance = weight / pool total)
+#    id:       key/lootbox id, or the PDC tag for item rewards
+#    material: vanilla material for item rewards
+#
+#  Every crate has a preview GUI showing amount, rarity, weight
+#  and the exact calculated chance — odds are never hidden.
+# ============================================================
+
+keys:
+  vote:
+    name: "&a&lVote Key"
+    material: TRIPWIRE_HOOK
+    price: 75
+    description:
+      - "Earned by voting for CoreMC."
+      - "Opens the Vote Crate."
+  river:
+    name: "&b&lRiver Key"
+    material: TRIPWIRE_HOOK
+    price: 125
+    description:
+      - "Early farming and fishing loot."
+      - "Also granted by rank purchases."
+  sky:
+    name: "&9&lSky Key"
+    material: TRIPWIRE_HOOK
+    price: 250
+    description:
+      - "Midgame progression loot:"
+      - "generators, spawners, OmniTool."
+  crimson:
+    name: "&c&lCrimson Key"
+    material: TRIPWIRE_HOOK
+    price: 400
+    description:
+      - "High-tier loot. No exclusive"
+      - "best-in-slot gear, ever."
+  boost:
+    name: "&d&lBoost Key"
+    material: TRIPWIRE_HOOK
+    price: 300
+    description:
+      - "Earned by boosting the Discord"
+      - "or the server. Special, not"
+      - "pay-to-win."
+
+crates:
+  vote:
+    name: "&a&lVote Crate"
+    display-material: CHEST
+    key: vote
+    open-sound: BLOCK_CHEST_OPEN
+    win-sound: ENTITY_PLAYER_LEVELUP
+    particle: HAPPY_VILLAGER
+    broadcast-rare: true
+    rewards:
+      money:
+        type: money
+        display: "&aMoney Pouch"
+        rarity: common
+        min: 5000
+        max: 15000
+        weight: 30
+      sky-tokens:
+        type: tokens
+        display: "&bSky Tokens"
+        rarity: common
+        min: 500
+        max: 1500
+        weight: 30
+      role-xp:
+        type: item
+        id: role_xp_voucher_small
+        material: EXPERIENCE_BOTTLE
+        display: "&eRole XP Voucher (Small)"
+        rarity: common
+        amount: 1
+        weight: 20
+      common-booster:
+        type: item
+        id: booster_common
+        material: SUGAR
+        display: "&fCommon Booster"
+        rarity: uncommon
+        amount: 1
+        weight: 12
+      voter-tag:
+        type: item
+        id: tag_voter
+        material: NAME_TAG
+        display: "&aVoter Tag"
+        rarity: rare
+        amount: 1
+        weight: 8
+
+  river:
+    name: "&b&lRiver Crate"
+    display-material: CHEST
+    key: river
+    open-sound: BLOCK_CHEST_OPEN
+    win-sound: ENTITY_PLAYER_LEVELUP
+    particle: SPLASH
+    broadcast-rare: true
+    rewards:
+      money:
+        type: money
+        display: "&aMoney Pouch"
+        rarity: common
+        min: 10000
+        max: 30000
+        weight: 25
+      sky-tokens:
+        type: tokens
+        display: "&bSky Tokens"
+        rarity: common
+        min: 1000
+        max: 3000
+        weight: 25
+      farming-cache:
+        type: item
+        id: farming_cache
+        material: HAY_BLOCK
+        display: "&eFarming Cache"
+        rarity: common
+        min: 4
+        max: 8
+        weight: 12
+      fishing-cache:
+        type: item
+        id: fishing_cache
+        material: COD
+        display: "&3Fishing Cache"
+        rarity: common
+        min: 8
+        max: 16
+        weight: 12
+      role-xp:
+        type: item
+        id: role_xp_voucher_small
+        material: EXPERIENCE_BOTTLE
+        display: "&eRole XP Voucher (Small)"
+        rarity: common
+        amount: 1
+        weight: 10
+      companion-treat:
+        type: item
+        id: companion_material_common
+        material: BONE
+        display: "&fCompanion Treat"
+        rarity: uncommon
+        min: 1
+        max: 3
+        weight: 8
+      small-booster:
+        type: item
+        id: booster_personal_small
+        material: SUGAR
+        display: "&fSmall Personal Booster"
+        rarity: uncommon
+        amount: 1
+        weight: 5
+      river-key:
+        type: key
+        id: river
+        display: "&b&lRiver Key"
+        rarity: rare
+        amount: 1
+        weight: 3
+
+  sky:
+    name: "&9&lSky Crate"
+    display-material: CHEST
+    key: sky
+    open-sound: BLOCK_CHEST_OPEN
+    win-sound: ENTITY_PLAYER_LEVELUP
+    particle: CLOUD
+    broadcast-rare: true
+    rewards:
+      money:
+        type: money
+        display: "&aMoney Pouch"
+        rarity: common
+        min: 25000
+        max: 75000
+        weight: 22
+      sky-tokens:
+        type: tokens
+        display: "&bSky Tokens"
+        rarity: common
+        min: 2500
+        max: 6000
+        weight: 22
+      generator-parts:
+        type: item
+        id: generator_parts
+        material: IRON_BLOCK
+        display: "&fGenerator Parts"
+        rarity: uncommon
+        min: 2
+        max: 4
+        weight: 12
+      spawner-shard:
+        type: item
+        id: spawner_core_shard
+        material: AMETHYST_SHARD
+        display: "&dSpawner Core Shard"
+        rarity: uncommon
+        min: 1
+        max: 3
+        weight: 10
+      omnitool-part:
+        type: item
+        id: omnitool_part
+        material: BREEZE_ROD
+        display: "&6OmniTool Part"
+        rarity: uncommon
+        amount: 1
+        weight: 9
+      role-xp:
+        type: item
+        id: role_xp_voucher_medium
+        material: EXPERIENCE_BOTTLE
+        display: "&eRole XP Voucher (Medium)"
+        rarity: common
+        amount: 1
+        weight: 10
+      medium-booster:
+        type: item
+        id: booster_medium
+        material: GLOWSTONE_DUST
+        display: "&eMedium Booster"
+        rarity: uncommon
+        amount: 1
+        weight: 7
+      companion-treat:
+        type: item
+        id: companion_material_common
+        material: BONE
+        display: "&fCompanion Treat"
+        rarity: uncommon
+        min: 1
+        max: 3
+        weight: 6
+      crimson-key:
+        type: key
+        id: crimson
+        display: "&c&lCrimson Key"
+        rarity: rare
+        amount: 1
+        weight: 2
+
+  crimson:
+    name: "&c&lCrimson Crate"
+    display-material: RED_SHULKER_BOX
+    key: crimson
+    open-sound: BLOCK_ENDER_CHEST_OPEN
+    win-sound: UI_TOAST_CHALLENGE_COMPLETE
+    particle: FLAME
+    broadcast-rare: true
+    rewards:
+      money:
+        type: money
+        display: "&aMoney Pouch"
+        rarity: common
+        min: 50000
+        max: 150000
+        weight: 20
+      sky-tokens:
+        type: tokens
+        display: "&bSky Tokens"
+        rarity: common
+        min: 5000
+        max: 12500
+        weight: 20
+      core-fragment:
+        type: item
+        id: core_fragment
+        material: ECHO_SHARD
+        display: "&5Core Fragment"
+        rarity: uncommon
+        min: 1
+        max: 3
+        weight: 14
+      rare-omnitool-part:
+        type: item
+        id: omnitool_part_rare
+        material: NETHERITE_SCRAP
+        display: "&6Rare OmniTool Part"
+        rarity: rare
+        min: 1
+        max: 2
+        weight: 9
+      generator-core:
+        type: item
+        id: generator_core
+        material: LODESTONE
+        display: "&bGenerator Core"
+        rarity: rare
+        amount: 1
+        weight: 8
+      rare-companion-treat:
+        type: item
+        id: companion_material_rare
+        material: GOLDEN_CARROT
+        display: "&6Rare Companion Treat"
+        rarity: rare
+        min: 1
+        max: 2
+        weight: 8
+      strong-booster:
+        type: item
+        id: booster_strong
+        material: BLAZE_POWDER
+        display: "&cStrong Personal Booster"
+        rarity: rare
+        amount: 1
+        weight: 8
+      crimson-tag:
+        type: item
+        id: tag_crimson
+        material: NAME_TAG
+        display: "&cCrimson Tag"
+        rarity: rare
+        amount: 1
+        weight: 6
+      core-lootbox:
+        type: lootbox
+        id: core
+        display: "&b&lCore Lootbox"
+        rarity: epic
+        amount: 1
+        weight: 7
+
+  boost:
+    name: "&d&lBoost Crate"
+    display-material: PURPLE_SHULKER_BOX
+    key: boost
+    open-sound: BLOCK_CHEST_OPEN
+    win-sound: ENTITY_PLAYER_LEVELUP
+    particle: WITCH
+    broadcast-rare: true
+    rewards:
+      sky-tokens:
+        type: tokens
+        display: "&bSky Tokens"
+        rarity: common
+        min: 4000
+        max: 10000
+        weight: 26
+      island-booster:
+        type: item
+        id: booster_island_xp
+        material: FIREWORK_STAR
+        display: "&dIsland XP Booster"
+        rarity: uncommon
+        amount: 1
+        weight: 15
+      role-booster:
+        type: item
+        id: booster_role_xp
+        material: GLOWSTONE_DUST
+        display: "&eRole XP Booster"
+        rarity: uncommon
+        amount: 1
+        weight: 15
+      companion-treat:
+        type: item
+        id: companion_material_common
+        material: BONE
+        display: "&fCompanion Treat"
+        rarity: uncommon
+        min: 2
+        max: 4
+        weight: 12
+      booster-tag:
+        type: item
+        id: tag_booster
+        material: NAME_TAG
+        display: "&dBooster Tag"
+        rarity: rare
+        amount: 1
+        weight: 8
+      generator-parts:
+        type: item
+        id: generator_parts
+        material: IRON_BLOCK
+        display: "&fGenerator Parts"
+        rarity: uncommon
+        min: 2
+        max: 5
+        weight: 14
+      island-module-shard:
+        type: item
+        id: island_module_shard
+        material: PRISMARINE_SHARD
+        display: "&3Island Module Shard"
+        rarity: uncommon
+        min: 1
+        max: 2
+        weight: 7
+      crimson-key:
+        type: key
+        id: crimson
+        display: "&c&lCrimson Key"
+        rarity: rare
+        amount: 1
+        weight: 3

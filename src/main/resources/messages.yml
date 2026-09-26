@@ -254,3 +254,54 @@ gens:
   gone: "&cThat generator is no longer there."
   max-tier: "&c{generator} is already the highest tier."
   upgraded: "&aUpgraded &f{from} &ato &f{to} &afor &e{cost}&a — now &e{value} &aevery &f{interval}&a."
+
+# ------------------------------------------------------------
+# Store: /store, Credits, crates, lootboxes, bundles, /rewards
+# ------------------------------------------------------------
+store:
+  only-players: "&cOnly players can use this command."
+  unavailable: "&cThe store is unavailable right now — an admin should check the console."
+  no-permission: "&cYou do not have permission to do that."
+  player-not-found: "&cPlayer &f{player} &cis not online."
+  bad-amount: "&c'{amount}' is not a valid amount."
+
+  not-enough-credits: "&cYou are missing &f{missing} &cCredits (price &f{price}&c, you have &f{balance}&c). Credits are earned through quests, island milestones, seasons, events and voting — or at the webstore."
+  purchased: "&aPurchased &f{item} &afor &e{price} Credits&a. Balance: &e{balance} Credits&a."
+  delivery-pending: "&eYour inventory could not hold everything — the rest is saved. Claim it with &b/rewards&e."
+
+  rewards-none: "&aNothing pending — all your rewards were delivered."
+  rewards-delivered: "&aDelivered &f{count} &apending reward(s)."
+  rewards-remaining: "&e{count} reward(s) still pending — free up inventory space and run &b/rewards &eagain."
+
+  credits-balance: "&aYour Credits: &e{balance}&a. &7(100 Credits = €1 — also earned in game.)"
+  credits-balance-other: "&f{player}&a's Credits: &e{balance}&a."
+  credits-usage: "&cUsage: &b/corecredits [balance [player]] &cor &b/corecredits give|take|set <player> <amount> [reason]"
+  credits-updated: "&f{player}&a's Credits are now &e{balance}&a."
+  credits-too-low: "&c{player} does not hold that many Credits (balance &f{balance}&c). Balances never go negative."
+
+  crate-usage: "&cUsage: &b/corecrate givekey <player> <type> <amount> &c| &b/corecrate set <crate> [world x y z] &c| &b/corecrate remove [world x y z] &c| &b/corecrate list"
+  unknown-key: "&cUnknown key type &f{key}&c. Types: vote, river, sky, crimson, boost."
+  unknown-crate: "&cUnknown crate &f{crate}&c."
+  unknown-bundle: "&cUnknown bundle &f{bundle}&c."
+  key-given: "&aGave &f{amount}x {key} &ato &f{player}&a."
+  lootbox-given: "&aGave &f{amount}x {box} &ato &f{player}&a."
+  bundle-given: "&aGave &f{amount}x {bundle} &acontents to &f{player}&a."
+  lootbox-usage: "&cUsage: &b/corelootbox give <player> <type> <amount>"
+  bundle-usage: "&cUsage: &b/corebundle give <player> <type> <amount>"
+  inventory-full-partial: "&eOnly {given} of {wanted} fit their inventory — the rest was NOT dropped; give the remainder once space frees up."
+
+  crate-bound: "&aCrate &f{crate} &abound to that block."
+  crate-unbound: "&aCrate binding removed."
+  crate-no-block: "&cNo bound crate block there (look at a block within 6 blocks, or pass world x y z)."
+  crate-list-header: "&aBound crates: &f{count}"
+  crate-needs-key: "&cThe &f{crate} &copens with a &f{key}&c — right-click holding the real key. Renamed items never work."
+  crate-opened: "&aThe {crate} &agave you: {reward}&a!"
+  crate-rare-broadcast: "&d&l{player} &r&dpulled {reward} &dfrom the {crate}&d!"
+
+  lootbox-busy: "&cYou already have a lootbox opening — wait for it to finish."
+  lootbox-unknown: "&cThis lootbox is not configured any more — an admin should check lootboxes.yml."
+  lootbox-need-block: "&eRight-click a block with the lootbox to start the opening."
+  lootbox-opening: "&aOpening the {box}&a… 8 rewards + 1 guaranteed rare incoming."
+  lootbox-done: "&aThe {box} &adelivered all 9 rewards."
+
+  river-keys-migrated: "&aYour &f{amount} &arank River key(s) are now physical keys — check your inventory (or /rewards)."

@@ -53,6 +53,7 @@ public class IslandTopRewards {
 
     private int lastPaidSeason;
     private CompletableFuture<Void> payoutChain = CompletableFuture.completedFuture(null);
+    private java.util.function.ObjIntConsumer<Reward> creditHook;
 
     public IslandTopRewards(final JavaPlugin plugin, final Supplier<List<Island>> standings,
                             final IslandPointsService points, final TebexConfig tebexConfig,
@@ -128,6 +129,15 @@ public class IslandTopRewards {
         return table;
     }
 
+    /**
+     * Installs the Credits side-payout: called once per winner when a
+     * season pays out (reward + season number). Used by the store
+     * wiring to award ISLAND_MILESTONE Credits alongside gift cards.
+     */
+    public void creditHook(final java.util.function.ObjIntConsumer<Reward> hook) {
+        this.creditHook = hook;
+    }
+
     /** The last season that was paid out (0 = none yet). */
     public int lastPaidSeason() {
         return lastPaidSeason;
@@ -157,6 +167,13 @@ public class IslandTopRewards {
         lastPaidSeason = season;
         persist();
         final List<Reward> table = winners(standings.get(), points::points);
+        // island-milestone Credits ride along with the season payout —
+        // the same once-per-season guard applies, so they never double-pay
+        if (creditHook != null) {
+            for (final Reward reward : table) {
+                creditHook.accept(reward, season);
+            }
+        }
         payoutChain = new CompletableFuture<>();
         if (table.isEmpty()) {
             logger.info("Island top rewards: nobody ranked yet — nothing to pay for season "

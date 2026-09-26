@@ -1,5 +1,7 @@
 package com.coremc.core.placeholder;
 
+import com.coremc.core.credits.CreditService;
+import com.coremc.core.credits.SkyTokenService;
 import com.coremc.core.essence.EssenceManager;
 import com.coremc.core.essence.EssenceType;
 import com.coremc.core.shop.EconomyService;
@@ -15,6 +17,8 @@ import org.bukkit.OfflinePlayer;
  *   <li>{@code %coremc_essence_total%} — all three summed</li>
  *   <li>{@code %coremc_mob_kills%} — lifetime kill count</li>
  *   <li>{@code %coremc_coins%} — coin balance</li>
+ *   <li>{@code %coremc_credits%} — store Credits (100 = €1)</li>
+ *   <li>{@code %coremc_sky_tokens%} — Sky Token balance</li>
  * </ul>
  *
  * Registered by CoreMC only when PlaceholderAPI is installed; persist() is
@@ -26,10 +30,19 @@ public final class CoremcExpansion extends PlaceholderExpansion {
 
     private final EssenceManager essences;
     private final EconomyService economy;
+    private final CreditService credits;
+    private final SkyTokenService tokens;
 
     public CoremcExpansion(final EssenceManager essences, final EconomyService economy) {
+        this(essences, economy, null, null);
+    }
+
+    public CoremcExpansion(final EssenceManager essences, final EconomyService economy,
+                           final CreditService credits, final SkyTokenService tokens) {
         this.essences = essences;
         this.economy = economy;
+        this.credits = credits;
+        this.tokens = tokens;
     }
 
     @Override
@@ -76,6 +89,14 @@ public final class CoremcExpansion extends PlaceholderExpansion {
                 return economy == null
                         ? EssenceManager.format(0)
                         : String.format("%,.0f", economy.balance(player.getUniqueId()));
+            case "credits":
+                return credits == null
+                        ? EssenceManager.format(0)
+                        : CreditService.format(credits.balance(player.getUniqueId()));
+            case "sky_tokens":
+                return tokens == null
+                        ? EssenceManager.format(0)
+                        : EssenceManager.format(tokens.balance(player.getUniqueId()));
             default:
                 return null;
         }

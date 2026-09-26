@@ -19,7 +19,6 @@ commands:
     usage: /shop
     permission: coremc.command.shop
     permission-message: You do not have permission to use this command.
-    aliases: [store]
   sell:
     description: "Open the sell window - drop items in, close to get paid."
     usage: /sell
@@ -72,6 +71,37 @@ commands:
     permission: coremc.command.essence
     permission-message: You do not have permission to use this command.
     aliases: [essences, ess]
+  store:
+    description: "The CoreMC store - crate keys, lootboxes and bundles, paid with Credits."
+    usage: /store
+    permission: coremc.command.store
+    permission-message: You do not have permission to use this command.
+  rewards:
+    description: "Claim pending store/crate/lootbox rewards that did not fit your inventory."
+    usage: /rewards
+    permission: coremc.command.rewards
+    permission-message: You do not have permission to use this command.
+  corecredits:
+    description: "Credits - view balances; admins give/take/set with an audit reason."
+    usage: /corecredits [balance [player]|give|take|set <player> <amount> [reason]]
+    permission: coremc.command.corecredits
+    permission-message: You do not have permission to use this command.
+    aliases: [credits]
+  corecrate:
+    description: "Crate admin - give keys, bind/unbind crate blocks, list bindings."
+    usage: /corecrate givekey <player> <type> <amount> | set <crate> [world x y z] | remove | list
+    permission: coremc.command.corecrate
+    permission-message: You do not have permission to use this command.
+  corelootbox:
+    description: "Lootbox admin - give physical lootboxes."
+    usage: /corelootbox give <player> <type> <amount>
+    permission: coremc.command.corelootbox
+    permission-message: You do not have permission to use this command.
+  corebundle:
+    description: "Bundle admin - give a bundle's exact contents."
+    usage: /corebundle give <player> <type> <amount>
+    permission: coremc.command.corebundle
+    permission-message: You do not have permission to use this command.
 
 permissions:
   coremc.*:
@@ -89,6 +119,16 @@ permissions:
       coremc.command.echest: true
       coremc.command.season: true
       coremc.command.essence: true
+      coremc.command.store: true
+      coremc.command.rewards: true
+      coremc.command.corecredits: true
+      coremc.command.corecrate: true
+      coremc.command.corelootbox: true
+      coremc.command.corebundle: true
+      coremc.admin.credits: true
+      coremc.admin.crates: true
+      coremc.admin.lootboxes: true
+      coremc.admin.bundles: true
       coremc.rank.admin: true
       coremc.season.admin: true
       coremc.island.bypass: true
@@ -135,6 +175,36 @@ permissions:
     default: true
   coremc.admin.essence:
     description: Allows /essence give|take|set <player> <type> <amount>.
+    default: op
+  coremc.command.store:
+    description: Allows using /store.
+    default: true
+  coremc.command.rewards:
+    description: Allows using /rewards.
+    default: true
+  coremc.command.corecredits:
+    description: Allows using /corecredits (viewing needs no admin permission).
+    default: true
+  coremc.command.corecrate:
+    description: Allows using /corecrate (all subcommands are admin-gated).
+    default: true
+  coremc.command.corelootbox:
+    description: Allows using /corelootbox (all subcommands are admin-gated).
+    default: true
+  coremc.command.corebundle:
+    description: Allows using /corebundle (all subcommands are admin-gated).
+    default: true
+  coremc.admin.credits:
+    description: Allows /corecredits give|take|set (logged with reasons).
+    default: op
+  coremc.admin.crates:
+    description: Allows /corecrate admin tools and unbinding crate blocks.
+    default: op
+  coremc.admin.lootboxes:
+    description: Allows /corelootbox give.
+    default: op
+  coremc.admin.bundles:
+    description: Allows /corebundle give.
     default: op
   coremc.rank.admin:
     description: Allows /rank set <player> <rank|none>.

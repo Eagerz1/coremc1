@@ -186,6 +186,43 @@ final class IslandTopRewardsTest {
     }
 
     @Test
+    void creditHookFiresOncePerSeasonAndNeverWhileTebexIsOff() throws Exception {
+        final Island solo = island("Only", 1);
+        final IslandPointsService points = new IslandPointsService(tempDir.resolve("points.yml"));
+        points.add(solo, 500.0);
+        final GiftcardStore store = new GiftcardStore(tempDir.resolve("giftcards.yml"));
+        store.load();
+        final IslandTopRewards rewards = rewards(List.of(solo), points,
+                new TebexConfig("secret", server.baseUrl()), store,
+                tempDir.resolve("island-rewards.yml"));
+        final List<String> credited = new java.util.ArrayList<>();
+        rewards.creditHook((reward, season) -> credited.add(
+                reward.island().owner() + "|" + Math.round(reward.amount() * 5.0) + "|" + season));
+
+        server.respond(200, """
+                {"data": {"id": 41, "code": "GC-1",
+                          "balance": {"starting": "100.00", "remaining": "100.00", "currency": "GBP"},
+                          "note": "Island top #1 Solos", "void": false}}
+                """);
+        rewards.payOut(3);
+        rewards.currentPayout().get(10, TimeUnit.SECONDS);
+        assertEquals(List.of(solo.owner() + "|500|3"), credited,
+                "the €100 place pays 500 Credits at multiplier 5");
+
+        // paying the same season again credits nothing
+        rewards.payOut(3);
+        assertEquals(1, credited.size());
+
+        // Tebex off: no gift card AND no credits (the season stays unpaid)
+        final IslandTopRewards off = rewards(List.of(solo), points,
+                new TebexConfig("", server.baseUrl()), store,
+                tempDir.resolve("island-rewards-off.yml"));
+        off.creditHook((reward, season) -> credited.add("off"));
+        off.payOut(9);
+        assertEquals(1, credited.size(), "Tebex-off never pays credits either");
+    }
+
+    @Test
     void stateFileSurvivesReload() throws Exception {
         final IslandPointsService points = new IslandPointsService(tempDir.resolve("points.yml"));
         final Path state = tempDir.resolve("island-rewards.yml");

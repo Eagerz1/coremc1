@@ -1,0 +1,19 @@
+# ============================================================
+#  CoreMC — store settings
+#  Credits are the store currency: 100 Credits = €1. Every store
+#  item is also earnable in game (quests, island milestones,
+#  seasonal progression, events, voting) — paying only accelerates.
+#  Prices live next to the things they price:
+#    crates.yml     key prices + crate reward tables
+#    lootboxes.yml  lootbox prices + reward pools
+#    bundles.yml    bundle prices + exact contents
+# ============================================================
+
+credits:
+  # The advertised conversion (display only — Credits are sold on the
+  # webstore, this line keeps the GUI honest).
+  per-euro: 100
+
+# ISLAND_MILESTONE Credits paid alongside the island top season gift
+# cards: credits = gift-card euros x this multiplier (0 disables).
+island-top-credit-multiplier: 5.0

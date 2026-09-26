@@ -90,6 +90,23 @@ public final class RankService {
         return state == null ? 0 : state.riverKeys;
     }
 
+    /**
+     * Empties the virtual River key counter and returns what it held —
+     * the crate system converts these into physical PDC River Keys on
+     * join. Ranks keep granting the counter exactly as before; only
+     * the redemption became physical.
+     */
+    public int drainRiverKeys(final UUID playerId) {
+        final YamlRankStore.PlayerRank state = players.get(playerId);
+        if (state == null || state.riverKeys <= 0) {
+            return 0;
+        }
+        final int drained = state.riverKeys;
+        state.riverKeys = 0;
+        persist();
+        return drained;
+    }
+
     /** The current season number. */
     public int season() {
         return season;
