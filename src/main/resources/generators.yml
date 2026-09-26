@@ -1,0 +1,211 @@
+# ============================================================
+#  CoreMC — generators.yml
+#  The /gens progression: generators are bought with coins,
+#  placed on your island, stacked, upgraded tier by tier and
+#  paid out automatically while you play.
+#
+#  Everything below is data — names, blocks, prices, output,
+#  intervals, island requirements, caps and the upgrade path
+#  can all be re-balanced freely. A broken file disables the
+#  generator system with one loud log line, never the plugin.
+#
+#  Per generator:
+#    name                    display name (rendered in small caps)
+#    tier                    1-based, unique, defines the menu order
+#    color                   & colour code of the tier
+#    block                   the block placed in the world
+#    icon                    optional menu icon (defaults to block)
+#    price                   purchase price in coins
+#    interval                seconds between payouts
+#    value                   coins produced per payout, per generator
+#    output.material         item pushed into an adjacent container
+#    output.amount           how many per payout, per generator
+#    required-island-points  island points needed to unlock it
+#    max-placed              how many of it one island may place
+#    upgrade.to              the next generator id
+#    upgrade.cost            coins to upgrade ONE generator
+#                            (a stack of 8 costs 8 x this)
+# ============================================================
+
+settings:
+  # How many generators may share one block (sneak-click to stack).
+  max-stack: 64
+  # How many generators one island may have placed in total.
+  max-per-island: 64
+  # Generators only run while an island member is online.
+  require-online: true
+  # Also push the physical output into a container touching the
+  # generator (chest, barrel, hopper...). Coins are always paid.
+  produce-items: true
+  # Floating "8x ɪʀᴏɴ ɢᴇɴᴇʀᴀᴛᴏʀ" labels above placed generators.
+  holograms: true
+
+generators:
+
+  cobblestone:
+    name: "Cobblestone Generator"
+    tier: 1
+    color: "&7"
+    block: COBBLESTONE
+    price: 1000
+    interval: 60
+    value: 50
+    output:
+      material: COBBLESTONE
+      amount: 8
+    required-island-points: 0
+    max-placed: 32
+    upgrade:
+      to: coal
+      cost: 5000
+
+  coal:
+    name: "Coal Generator"
+    tier: 2
+    color: "&8"
+    block: COAL_BLOCK
+    price: 7500
+    interval: 45
+    value: 150
+    output:
+      material: COAL
+      amount: 4
+    required-island-points: 0
+    max-placed: 32
+    upgrade:
+      to: iron
+      cost: 20000
+
+  iron:
+    name: "Iron Generator"
+    tier: 3
+    color: "&f"
+    block: IRON_BLOCK
+    price: 25000
+    interval: 30
+    value: 450
+    output:
+      material: IRON_INGOT
+      amount: 3
+    required-island-points: 500
+    max-placed: 24
+    upgrade:
+      to: gold
+      cost: 50000
+
+  gold:
+    name: "Gold Generator"
+    tier: 4
+    color: "&6"
+    block: GOLD_BLOCK
+    price: 100000
+    interval: 20
+    value: 700
+    output:
+      material: GOLD_INGOT
+      amount: 3
+    required-island-points: 1500
+    max-placed: 24
+    upgrade:
+      to: redstone
+      cost: 90000
+
+  redstone:
+    name: "Redstone Generator"
+    tier: 5
+    color: "&c"
+    block: REDSTONE_BLOCK
+    price: 200000
+    interval: 18
+    value: 1000
+    output:
+      material: REDSTONE
+      amount: 6
+    required-island-points: 3000
+    max-placed: 20
+    upgrade:
+      to: lapis
+      cost: 180000
+
+  lapis:
+    name: "Lapis Generator"
+    tier: 6
+    color: "&9"
+    block: LAPIS_BLOCK
+    price: 400000
+    interval: 15
+    value: 1500
+    output:
+      material: LAPIS_LAZULI
+      amount: 6
+    required-island-points: 6000
+    max-placed: 16
+    upgrade:
+      to: diamond
+      cost: 350000
+
+  diamond:
+    name: "Diamond Generator"
+    tier: 7
+    color: "&b"
+    block: DIAMOND_BLOCK
+    price: 750000
+    interval: 12
+    value: 2400
+    output:
+      material: DIAMOND
+      amount: 2
+    required-island-points: 12000
+    max-placed: 12
+    upgrade:
+      to: emerald
+      cost: 700000
+
+  emerald:
+    name: "Emerald Generator"
+    tier: 8
+    color: "&a"
+    block: EMERALD_BLOCK
+    price: 1500000
+    interval: 10
+    value: 3500
+    output:
+      material: EMERALD
+      amount: 2
+    required-island-points: 25000
+    max-placed: 10
+    upgrade:
+      to: amethyst
+      cost: 1300000
+
+  amethyst:
+    name: "Amethyst Generator"
+    tier: 9
+    color: "&d"
+    block: AMETHYST_BLOCK
+    price: 3000000
+    interval: 8
+    value: 5000
+    output:
+      material: AMETHYST_SHARD
+      amount: 3
+    required-island-points: 50000
+    max-placed: 8
+    upgrade:
+      to: netherite
+      cost: 2600000
+
+  netherite:
+    name: "Netherite Generator"
+    tier: 10
+    color: "&5"
+    block: NETHERITE_BLOCK
+    price: 6000000
+    interval: 6
+    value: 8000
+    output:
+      material: NETHERITE_SCRAP
+      amount: 1
+    required-island-points: 100000
+    max-placed: 6
+    # top of the ladder: no upgrade section

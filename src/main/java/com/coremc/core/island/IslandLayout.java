@@ -6,9 +6,10 @@ package com.coremc.core.island;
  *
  * <pre>
  * Island menu (double chest, 54):
- *   [4] info        [10] go home    [12] invite   [14] members
- *   [16] border     [20] upgrades   [24] buffs    [31] spawners
- *   [45] delete     [49] close      everything else filler.
+ *   [4]  island info
+ *   [10] go home   [12] invite     [14] members     [16] border
+ *   [19] upgrades  [21] buffs      [23] spawners    [25] generators
+ *   [45] delete    [49] close      everything else filler.
  * Sub-menus (small chest, 27):
  *   Upgrades: [11] claim size, [15] member slots, [18] back, [26] close.
  *   Buffs:    [11], [13], [15] buffs,             [18] back, [26] close.
@@ -28,9 +29,10 @@ public final class IslandLayout {
     public static final int MENU_INVITE = 12;
     public static final int MENU_MEMBERS = 14;
     public static final int MENU_BORDER = 16;
-    public static final int MENU_UPGRADES = 20;
-    public static final int MENU_BUFFS = 24;
-    public static final int MENU_SPAWNERS = 31;
+    public static final int MENU_UPGRADES = 19;
+    public static final int MENU_BUFFS = 21;
+    public static final int MENU_SPAWNERS = 23;
+    public static final int MENU_GENERATORS = 25;
     public static final int MENU_DELETE = 45;
     public static final int MENU_CLOSE = 49;
 
@@ -57,6 +59,25 @@ public final class IslandLayout {
     public static final int INVITE_MAX = 8;
     public static int inviteSlot(final int ordinal) {
         return INVITE_FIRST + ordinal;
+    }
+
+    /** The framed edge of the island menu (top and bottom rows). */
+    public static int[] menuFrame() {
+        final int[] slots = new int[18];
+        for (int index = 0; index < 9; index++) {
+            slots[index] = index;
+            slots[9 + index] = MENU_SIZE - 9 + index;
+        }
+        return slots;
+    }
+
+    /** The framed edge of a sub-menu (its bottom row). */
+    public static int[] subFrame() {
+        final int[] slots = new int[9];
+        for (int index = 0; index < 9; index++) {
+            slots[index] = SUB_SIZE - 9 + index;
+        }
+        return slots;
     }
 
     private IslandLayout() {

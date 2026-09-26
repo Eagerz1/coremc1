@@ -42,6 +42,13 @@ Core / Core+ / Core++ rank ladder.
 | Spawner menu | `/spawner` opens a double chest (54 slots): the guide book, the island's luck upgrade, and all 15 mob spawners laid out by group. Clicking a mob buys it through the same flow as `/spawner buy`. |
 | Rank ladder | Core → Core+ → Core++ (`ranks.yml`, order = worst to best, the ladder is validated to only improve as it climbs). Bought with coins via `/rank buy` — you always pay only the upgrade step. |
 | Rank perks | Any rank: `/fly` (survival flight toggle) and `/echest` (your real ender chest, anywhere). Shop sells pay the rank multiplier. Every new season pays out the rank's season money — online players immediately, offline players on their next join (`/season`, admins start a season with `/season set <n>`). River keys (for the upcoming crates) are granted on first acquiring each rank and tracked per player. The chat-colour perks (dye colours, gradients, bold) are declared per rank and arrive with the upcoming chat system; skytokens (for island upgrades) build on this later. |
+| Generators | Ten tiers of self-paying blocks (`generators.yml`): Cobblestone → Coal → Iron → Gold → Redstone → Lapis → Diamond → Emerald → Amethyst → Netherite. Every tier is fully configurable — display name, tier number, colour, block, icon, purchase price, generation interval, coin value, physical output (`material` + `amount`), required island points, max placed per island and its upgrade target + cost. The whole file is validated at startup (unknown materials, duplicate tiers, upgrades pointing at a lower tier or at nothing) and a broken file disables generators loudly instead of half-working. |
+| Generator economy | Each tick a generator pays its value into the placer's coins (the island owner when they are offline) and pushes its physical output into an adjacent container — from $50 every 60 s (Cobblestone, $1,000) up to $8,000 every 6 s (Netherite, $6,000,000, 100,000 island points). `require-online` keeps offline islands from farming money. |
+| Placed generators | Real blocks tied to their island and placer, persisted in `generators-data.yml` on every change. They can only be placed inside your own claim, never drop their vanilla block (an Iron Generator can never be laundered into iron blocks), and are protected from explosions, pistons, endermen, fire and block fade. Generator items carry a PDC tag, so `/sell` and the shop refuse them. |
+| Generator stacking | Sneak-click an identical generator onto a placed one to stack it (up to `settings.max-stack` = 64). Value, output and upgrade cost all scale with the stack, and a text-display hologram (`8x ɪʀᴏɴ ɢᴇɴᴇʀᴀᴛᴏʀ`) floats above it. A normal break takes one generator out of the stack, a sneak-break takes the whole stack straight into your inventory — never a ground drop that can bounce into the void. |
+| Generator management | Right-click a placed generator (or `/gens info`) for its window: name, tier, stack size, rate, current value and per-hour income, owner and island, an upgrade button that previews the new rate, new value and scaled cost with a live ✔ / ✖, and a pick-up button that names exactly what you get back. The top tier says so instead of offering an upgrade. |
+| Generator menu | `/gens` opens a double chest: your balance, island points, generator count and income per hour, then the whole ladder in tier order. Affordable tiers glow with a green ✔ price and `ᴄʟɪᴄᴋ ᴛᴏ ᴘᴜʀᴄʜᴀsᴇ`; unaffordable ones show the red ✖ price; locked ones are grey panes that name the missing island points. |
+| GUI design language | Every CoreMC menu speaks one visual language: `&` colour codes only (never MiniMessage), small-caps lore (`ᴘʀɪᴄᴇ`, `ᴛɪᴇʀ`, `ᴄʟɪᴄᴋ ᴛᴏ ᴜᴘɢʀᴀᴅᴇ`), short blocks separated by blank lines, values coloured by meaning, tier-coloured names, and a dynamic affordability marker wherever a cost exists — `&7ᴘʀɪᴄᴇ: &a$25,000 &a✔` when you can pay, `&c$25,000 &c✖` when you cannot. Locked and unavailable entries never look like purchasable ones (grey panes, `&8&l` names, a red `ʟᴏᴄᴋᴇᴅ` line). The shared helpers live in `util/SmallCaps`, `util/GuiText` and `util/GuiItems`. |
 | Rank pricing | Core $75k (x1.05 sells, $100k/season, 2 keys), Core+ $250k (x1.2, $250k/season, 5 keys), Core++ $750k (x1.5, $500k/season, 12 keys) — each rank pays for itself within a season or two. Admins grant/clear with `/rank set <player> <rank\|none>`. |
 
 ## Commands
@@ -69,6 +76,11 @@ Core / Core+ / Core++ rank ladder.
 | `/spawner upgrade` | Opens the Upgrade GUI for the spawner you look at (owner/member of its island only): current stack, target variant with the live ✔/✖ requirement checklist, your progress book, and the upgrade button. |
 | `/spawner luck` | Shows your island's luck level and unique-drop chance. |
 | `/spawner luck upgrade` | Buys the next luck level with coins. |
+| `/gens` | Opens the generator menu (double chest): your panel plus the whole tier ladder. Aliases `/gen`, `/generators`. |
+| `/gens list` | Every generator with its tier, price, value and interval. |
+| `/gens buy <generator> [amount]` | Buys generators with coins (island points gate the higher tiers). |
+| `/gens info` | Opens the management window for the generator you look at (owner/member of its island only). |
+| `/gens give <player> <generator> [amount]` | Admin (`coremc.gens.admin`): hand out generator items. |
 | `/rank` | Shows your rank: multiplier, season payout, River keys, perks, and the next rank with its price. |
 | `/rank list` | The whole ladder with prices and perks. |
 | `/rank buy` | Buys the next rank with coins (upgrade steps only), granting its River keys and perks. |
@@ -84,13 +96,14 @@ Core / Core+ / Core++ rank ladder.
 | `/spawner setluck <player> <level>` | Admin: set a player's island luck. |
 
 Aliases: `/island`, `/isle`, `/block`; `/store` for `/shop`; `/sp` for
-`/spawner`; `/ranks` and `/tier` for `/rank`; `/ec` and `/enderchest` for
-`/gc` for `/giftcard`. Everyone may use `/is`, `/shop`, `/sell`, `/giftcard`,
-`/spawner`, `/rank`, `/fly`,
-`/echest`.
-`/echest` and `/season` (`coremc.command.*`); the spawner admin tools need
-`coremc.spawner.admin` (op), rank admin `coremc.rank.admin` (op) and season
-admin `coremc.season.admin` (op).
+`/spawner`; `/gen` and `/generators` for `/gens`; `/ranks` and `/tier`
+for `/rank`; `/ec` and `/enderchest` for `/echest`; `/gc` for
+`/giftcard`. Everyone may use `/is`, `/shop`, `/sell`, `/giftcard`,
+`/spawner`, `/gens`, `/rank`, `/fly`, `/echest` and `/season`
+(`coremc.command.*`); the spawner admin tools need
+`coremc.spawner.admin` (op), generator admin `coremc.gens.admin` (op),
+rank admin `coremc.rank.admin` (op) and season admin
+`coremc.season.admin` (op).
 
 ## Configuration
 
@@ -140,6 +153,18 @@ admin `coremc.season.admin` (op).
   blocks (the anti place-mine loop), atomic writes.
 - `spawners-data.yml` — placed spawners + island luck (written atomically
   on every change).
+- `generators.yml` — the generator ladder: `settings` (max stack, max
+  per island, require-online, produce-items, holograms) and one entry
+  per generator (name, tier, colour, block, icon, price, interval,
+  value, `output.material` + `output.amount`, required island points,
+  max placed, `upgrade.to` + `upgrade.cost`). Validated as a whole at
+  startup — duplicate tiers, unknown materials, negative prices, or an
+  upgrade pointing at a missing/lower tier disable generators with one
+  loud log line listing every problem.
+- `generators-data.yml` — every placed generator (world, coordinates,
+  generator id, island, placer, stack size), written atomically on
+  every change; corrupt entries are skipped with a warning instead of
+  losing the rest.
 - `upgrades.yml` — island upgrades (claim size, member slots) and timed
   buffs (crop growth, spawner boost, XP boost): icons, level prices,
   durations and multipliers. The whole file is validated at startup —
@@ -167,6 +192,15 @@ mvn package          # produces target/CoreMC-<version>.jar
 `paper-api` is a `provided` dependency; tests run via JUnit 5 (Surefire on
 Maven, or the curated `TestRunner` used by the offline/CI builds).
 
+Two scripted live journeys drive a real Paper server from this checkout
+with mineflayer bots + RCON (`bash journey/setup-server.sh`, then
+`node journey/run.mjs` or `node journey/gens-journey.mjs` from
+`journey-server/`): the headline flows, and the generator system
+end-to-end (menu, buy, place, produce, stack, upgrade, pick up,
+anti-exploit guards, restart persistence and a zero-error log audit).
+The last green runs are committed as `journey/last-green-run.log` and
+`journey/last-green-gens-run.log`.
+
 CI (`.github/workflows/build.yml`) compiles, tests and packages on every
 push to `arena/**` branches, then commits build status and artifacts back
 to `sandbox/`. `build.sh` mirrors the Maven build offline for the
@@ -180,6 +214,8 @@ development sandbox; it is not a second build system.
 | `src/main/java/com/coremc/core/world` | Void world generator + island world service |
 | `src/main/java/com/coremc/core/shop` | Coin economy + chest-GUI shop |
 | `src/main/java/com/coremc/core/spawner` | Spawner progression: config, service, command, listener, store, menu GUI |
+| `src/main/java/com/coremc/core/gens` | Generators: config, tiers, entries, store, service, lore, layout, holograms, menu + management GUIs, listeners, command |
+| `src/main/java/com/coremc/core/util` | Shared GUI language: `ColorUtil`, `SmallCaps`, `GuiText`, `GuiItems` |
 | `src/main/java/com/coremc/core/rank` | Rank ladder: config, store, service, commands, join listener |
 | `src/main/java/com/coremc/core/island` (menus) | Island menu GUI, upgrade + buff services, buff listener, buff store |
 | `src/main/java/com/coremc/core/config` | Typed config + message service |

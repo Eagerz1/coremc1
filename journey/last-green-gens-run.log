@@ -1,0 +1,143 @@
+[server] booting (boot1)...
+[server] boot1 ready
+[rcon] connected
+  PASS  boot1: zero server ERROR lines (excl. platform noise)
+  PASS  boot1: zero CoreMC warn/error/exception lines
+
+=== PHASE 1: join + /is create ===
+  PASS  owner spawns
+  PASS  /is create pastes an island
+  PASS  owner is in the island world
+  PASS  island has ground under the spawn position
+[island] home=0,67,2
+
+=== PHASE 2: /gens list + /gens help ===
+  PASS  /gens list prints the header
+  PASS  the ladder starts at the Cobblestone Generator
+  PASS  the ladder ends at the Netherite Generator
+  PASS  list shows the starter price ($1,000)
+  PASS  /gens help lists the buy command
+  PASS  an unknown generator id is refused
+
+=== PHASE 3: the /gens menu ===
+  PASS  /gens opens the generator menu
+  PASS  window title is "COREMC — Generators"
+  PASS  the menu is a double chest
+  PASS  slot 11 is the Cobblestone Generator
+  PASS  lore carries the tier line
+  PASS  an affordable price shows the green tick
+  PASS  the click action is spelled out
+  PASS  the icon is the generator block itself
+  PASS  slot 24 is the Netherite Generator
+  PASS  a gated generator is marked LOCKED
+  PASS  the locked generator shows red crosses
+  PASS  a locked generator never invites a purchase
+  PASS  locked generators look different: a grey pane, not the block
+  PASS  slot 4 is the island generator panel
+  PASS  back and close sit in the bottom row
+
+=== PHASE 4: buying from the menu ===
+  PASS  coin balance readable
+  PASS  clicking an affordable generator buys it
+  PASS  the coins actually left the balance
+  PASS  a named generator item is in the inventory (never a plain cobblestone)
+
+=== PHASE 5: placing a generator ===
+  PASS  found a clear spot on the island
+  PASS  placing registers the generator
+  PASS  the generator block is in the world
+  PASS  a hologram floats above the generator
+  PASS  generators-data.yml recorded the placement immediately
+
+=== PHASE 6: production pays the island ===
+  PASS  console /gens give hands over a generator
+  PASS  found a second clear spot
+  PASS  the netherite generator is placed
+  PASS  the generator pays its value into the balance
+  PASS  physical output lands in an adjacent container
+
+=== PHASE 7: stacking generators ===
+  PASS  the stacking items arrived
+  PASS  a non-sneak click explains the stacking gesture
+  PASS  a non-sneak click never places a second generator on top
+  PASS  sneak-clicking stacks onto the placed generator
+  PASS  the hologram shows the new stack size
+  PASS  the stack size is persisted
+
+=== PHASE 8: the management window ===
+  PASS  right-clicking a generator opens the management window
+  PASS  window title is "COREMC — Generator"
+  PASS  the panel shows the stack amount
+  PASS  the panel shows the generation rate
+  PASS  the panel shows the current value
+  PASS  the panel names the owner
+  PASS  the panel names the island
+  PASS  the upgrade button names the next tier
+  PASS  the upgrade button previews the new rate and value
+  PASS  an affordable upgrade is ticked and clickable
+  PASS  the pickup button says what you get back
+  PASS  clicking the upgrade applies it
+  PASS  the upgrade charged for the whole stack (2 x $5,000)
+  PASS  the block became the new tier
+  PASS  the hologram followed the upgrade
+
+=== PHASE 9: anti-exploit guards ===
+  PASS  a normal break takes one out of the stack
+  PASS  the rest of the stack stays placed
+  PASS  the recovered item is a named generator, not a plain block
+  PASS  exactly one item came back (no duplication)
+  PASS  a sneak-break takes the whole stack
+  PASS  the block is gone after the last pickup
+  PASS  the hologram went with it
+  PASS  the registration was removed from generators-data.yml
+  PASS  placing off-island is refused with a clear message
+  PASS  no generator block survives the refused placement
+  PASS  nothing was registered off-island
+  PASS  an explosion leaves the generator standing
+  PASS  /sell opens
+
+=== PHASE 10: the island menu opens the generator menu ===
+  PASS  /is opens the island menu
+  PASS  slot 25 is the generators button
+  PASS  clicking it opens the generator menu
+
+=== PHASE 10: the restyled island menus ===
+  PASS  /is opens the island menu
+  PASS  both button rows are filled
+  PASS  every island button speaks small caps
+  PASS  the menu is framed top and bottom
+  PASS  the upgrades menu opens
+  PASS  the claim upgrade shows a live affordability marker
+  PASS  its cost line is small caps
+  PASS  back and close sit where they always do
+  PASS  back returns to the island menu
+  PASS  buffs show the same marker
+  PASS  buff lore is small caps too
+  PASS  the spawner menu speaks small caps
+  PASS  spawner prices carry the marker
+
+=== PHASE 11: restart persistence ===
+  PASS  at least one generator is registered before the restart
+[JOwner] connection ended
+[server] stopping...
+[server] exited
+[server] booting (boot2)...
+[server] boot2 ready
+[rcon] connected
+  PASS  boot2: zero server ERROR lines (excl. platform noise)
+  PASS  boot2: zero CoreMC warn/error/exception lines
+  PASS  owner spawns after the restart
+  PASS  the placed generator survived the restart
+  PASS  its hologram came back too
+  PASS  it still produces after the restart
+  PASS  it is still manageable after the restart
+  PASS  the top tier says so instead of offering an upgrade
+
+=== PHASE 12: final audit ===
+[JOwner] connection ended
+[server] stopping...
+[server] exited
+  PASS  final: zero server ERROR lines (excl. platform noise)
+  PASS  final: zero CoreMC warn/error/exception lines
+
+RESULT  pass=102 fail=0

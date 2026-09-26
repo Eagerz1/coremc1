@@ -40,7 +40,7 @@ class IslandLayoutTest {
         final int[] buttons = {IslandLayout.MENU_INFO, IslandLayout.MENU_GO_HOME,
                 IslandLayout.MENU_INVITE, IslandLayout.MENU_MEMBERS, IslandLayout.MENU_BORDER,
                 IslandLayout.MENU_UPGRADES, IslandLayout.MENU_BUFFS, IslandLayout.MENU_SPAWNERS,
-                IslandLayout.MENU_DELETE, IslandLayout.MENU_CLOSE};
+                IslandLayout.MENU_GENERATORS, IslandLayout.MENU_DELETE, IslandLayout.MENU_CLOSE};
         final TreeSet<Integer> seen = new TreeSet<>();
         for (final int button : buttons) {
             assertTrue(button >= 0 && button < IslandLayout.MENU_SIZE,
@@ -80,6 +80,53 @@ class IslandLayoutTest {
         for (int i = 0; i < 3; i++) {
             assertTrue(buffs.add(IslandLayout.buffSlot(i)), "buff slot " + i + " is distinct");
         }
+    }
+
+    @Test
+    void theTwoButtonRowsAreEvenlySpaced() {
+        // row 1: go home / invite / members / border
+        assertEquals(10, IslandLayout.MENU_GO_HOME);
+        assertEquals(IslandLayout.MENU_GO_HOME + 2, IslandLayout.MENU_INVITE);
+        assertEquals(IslandLayout.MENU_INVITE + 2, IslandLayout.MENU_MEMBERS);
+        assertEquals(IslandLayout.MENU_MEMBERS + 2, IslandLayout.MENU_BORDER);
+        // row 2: upgrades / buffs / spawners / generators, same spacing
+        assertEquals(19, IslandLayout.MENU_UPGRADES);
+        assertEquals(IslandLayout.MENU_UPGRADES + 2, IslandLayout.MENU_BUFFS);
+        assertEquals(IslandLayout.MENU_BUFFS + 2, IslandLayout.MENU_SPAWNERS);
+        assertEquals(IslandLayout.MENU_SPAWNERS + 2, IslandLayout.MENU_GENERATORS);
+        // both rows use the same columns
+        assertEquals(IslandLayout.MENU_GO_HOME % 9, IslandLayout.MENU_UPGRADES % 9);
+        assertEquals(IslandLayout.MENU_BORDER % 9, IslandLayout.MENU_GENERATORS % 9);
+    }
+
+    @Test
+    void theMenuFrameIsTheTopAndBottomRows() {
+        final int[] frame = IslandLayout.menuFrame();
+        assertEquals(18, frame.length);
+        final TreeSet<Integer> slots = new TreeSet<>();
+        for (final int slot : frame) {
+            assertTrue(slots.add(slot), "frame slot " + slot + " is listed twice");
+            assertTrue(slot < 9 || slot >= IslandLayout.MENU_SIZE - 9,
+                    "frame slot " + slot + " is in the top or bottom row");
+        }
+        // the frame never reaches the two button rows
+        for (final int button : new int[]{IslandLayout.MENU_GO_HOME, IslandLayout.MENU_BORDER,
+                IslandLayout.MENU_UPGRADES, IslandLayout.MENU_GENERATORS}) {
+            assertTrue(!slots.contains(button), "button " + button + " stays out of the frame");
+        }
+    }
+
+    @Test
+    void theSubMenuFrameIsTheBottomRow() {
+        final int[] frame = IslandLayout.subFrame();
+        assertEquals(9, frame.length);
+        for (final int slot : frame) {
+            assertTrue(slot >= IslandLayout.SUB_SIZE - 9 && slot < IslandLayout.SUB_SIZE,
+                    "frame slot " + slot + " is in the bottom row");
+        }
+        // back and close live on that row, and are drawn before the frame
+        assertTrue(IslandLayout.SUB_BACK >= IslandLayout.SUB_SIZE - 9);
+        assertTrue(IslandLayout.SUB_CLOSE >= IslandLayout.SUB_SIZE - 9);
     }
 
     @Test

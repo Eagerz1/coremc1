@@ -26,6 +26,16 @@ import com.coremc.core.island.IslandUpgradeService;
 import com.coremc.core.island.IslandListener;
 import com.coremc.core.island.IslandService;
 import com.coremc.core.island.SchematicService;
+import com.coremc.core.gens.GensCommand;
+import com.coremc.core.gens.GensMenuGui;
+import com.coremc.core.gens.GensMenuListener;
+import com.coremc.core.gens.GeneratorConfig;
+import com.coremc.core.gens.GeneratorHolograms;
+import com.coremc.core.gens.GeneratorListener;
+import com.coremc.core.gens.GeneratorManageGui;
+import com.coremc.core.gens.GeneratorManageListener;
+import com.coremc.core.gens.GeneratorService;
+import com.coremc.core.gens.YamlGeneratorDataStore;
 import com.coremc.core.essence.EssenceCommand;
 import com.coremc.core.essence.EssenceConfig;
 import com.coremc.core.essence.EssenceListener;
@@ -97,6 +107,8 @@ public final class CoreMCPlugin extends JavaPlugin {
     private IslandBuffService buffService;
     private RankConfig rankConfig;
     private RankService rankService;
+    private GeneratorConfig generatorConfig;
+    private GeneratorService generatorService;
 
     @Override
     public void onEnable() {
@@ -323,7 +335,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         SpawnerMenuGui spawnerMenuGui = null;
         SpawnerUpgradeGui spawnerUpgradeGui = null;
         if (spawnerService != null) {
-            spawnerMenuGui = new SpawnerMenuGui(spawnerConfig, spawnerService, islands);
+            spawnerMenuGui = new SpawnerMenuGui(spawnerConfig, spawnerService, islands, economy);
             pluginManager.registerEvents(
                     new SpawnerMenuListener(spawnerConfig, spawnerService, spawnerMenuGui), this);
             spawnerUpgradeGui = new SpawnerUpgradeGui(
@@ -331,7 +343,61 @@ public final class CoreMCPlugin extends JavaPlugin {
             pluginManager.registerEvents(
                     new SpawnerUpgradeListener(spawnerService, spawnerUpgradeGui), this);
         }
-        final IslandGui islandGui = new IslandGui(islands, upgradeConfig, buffService, spawnerMenuGui);
+        // Generators (/gens): a bought-placed-stacked-upgraded
+        // progression that pays out on its own. A broken generators.yml
+        // disables the system with one loud log line, never the plugin.
+        this.generatorConfig = GeneratorConfig.disabled();
+        try {
+            final GeneratorConfig parsed = new GeneratorConfig(this);
+            parsed.load();
+            this.generatorConfig = parsed;
+        } catch (final RuntimeException exception) {
+            getLogger().severe("Generators disabled — " + exception.getMessage());
+        }
+        GensMenuGui gensMenuGui = null;
+        GeneratorManageGui generatorManageGui = null;
+        if (generatorConfig.enabled() && economy != null) {
+            this.generatorService = new GeneratorService(this, generatorConfig,
+                    new YamlGeneratorDataStore(
+                            Path.of(getDataFolder().getPath(), "generators-data.yml"), getLogger()),
+                    economy, messages, islands, islandPoints);
+            generatorService.load();
+            generatorService.start();
+            islands.onDelete(generatorService::onIslandDeleted);
+            if (generatorConfig.holograms()) {
+                final GeneratorHolograms generatorHolograms =
+                        new GeneratorHolograms(this, generatorService);
+                generatorService.attach(generatorHolograms);
+                pluginManager.registerEvents(generatorHolograms, this);
+            }
+            gensMenuGui = new GensMenuGui(generatorConfig, generatorService, economy);
+            generatorManageGui = new GeneratorManageGui(generatorService, economy);
+            pluginManager.registerEvents(
+                    new GeneratorListener(generatorService, generatorManageGui, messages), this);
+            pluginManager.registerEvents(
+                    new GeneratorManageListener(generatorService, generatorManageGui), this);
+        } else if (economy == null) {
+            getLogger().severe("Generators disabled — no economy (the shop failed to load).");
+        }
+
+        final IslandGui islandGui = new IslandGui(islands, upgradeConfig, buffService,
+                spawnerMenuGui, gensMenuGui, economy);
+        if (gensMenuGui != null) {
+            pluginManager.registerEvents(new GensMenuListener(generatorConfig, generatorService,
+                    gensMenuGui, islandGui), this);
+            final PluginCommand gensCommand = getCommand("gens");
+            if (gensCommand != null) {
+                final GensCommand executor = new GensCommand(generatorConfig, generatorService,
+                        gensMenuGui, generatorManageGui, messages);
+                gensCommand.setExecutor(executor);
+                gensCommand.setTabCompleter(executor);
+            } else {
+                getLogger().severe("Command 'gens' missing from plugin.yml — /gens will not work.");
+            }
+        } else {
+            // the system is off: /gens still answers, with the "unavailable" line
+            registerSimpleCommand("gens", new GensCommand(generatorConfig, null, null, null, messages));
+        }
         pluginManager.registerEvents(
                 new IslandMenuListener(islands, islandGui, upgradeService, upgradeConfig, messages),
                 this);
@@ -443,6 +509,9 @@ public final class CoreMCPlugin extends JavaPlugin {
                 getLogger().warning("Could not save island points: " + exception.getMessage());
             }
         }
+        if (generatorService != null) {
+            generatorService.shutdown();
+        }
         if (essenceManager != null) {
             essenceManager.shutdown();
         }
@@ -483,5 +552,9 @@ public final class CoreMCPlugin extends JavaPlugin {
 
     public IslandService islands() {
         return islands;
+    }
+
+    public GeneratorService generators() {
+        return generatorService;
     }
 }

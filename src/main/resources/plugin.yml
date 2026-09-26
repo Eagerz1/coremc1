@@ -37,6 +37,12 @@ commands:
     permission: coremc.command.spawner
     permission-message: You do not have permission to use this command.
     aliases: [sp]
+  gens:
+    description: "CoreMC generator progression - menu, list, buy, info."
+    usage: /gens [menu|list|buy <generator> [amount]|info]
+    permission: coremc.command.gens
+    permission-message: You do not have permission to use this command.
+    aliases: [gen, generator, generators]
   rank:
     description: "CoreMC rank ladder - view, list, buy, admin set."
     usage: /rank [view|list|buy|set <player> <rank>]
@@ -77,6 +83,7 @@ permissions:
       coremc.command.sell: true
       coremc.command.giftcard: true
       coremc.command.spawner: true
+      coremc.command.gens: true
       coremc.command.rank: true
       coremc.command.fly: true
       coremc.command.echest: true
@@ -86,6 +93,7 @@ permissions:
       coremc.season.admin: true
       coremc.island.bypass: true
       coremc.spawner.admin: true
+      coremc.gens.admin: true
   coremc.command.island:
     description: Allows using /is.
     default: true
@@ -103,6 +111,12 @@ permissions:
     default: true
   coremc.spawner.admin:
     description: Allows the admin tools /spawner give, giveitem and setluck.
+    default: op
+  coremc.command.gens:
+    description: Allows using /gens.
+    default: true
+  coremc.gens.admin:
+    description: Allows the admin tool /gens give.
     default: op
   coremc.command.rank:
     description: Allows using /rank.
