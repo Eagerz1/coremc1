@@ -1,0 +1,423 @@
+# ============================================================
+#  CoreMC — progression.yml
+#  Island Level, Island Mastery, Island Core slots and active XP.
+#
+#  Core direction:
+#    Island XP comes from ACTIVE gameplay. High-volume sources have
+#    rolling caps and diminishing returns so passive/AFK systems cannot
+#    dominate a season.
+#
+#  Mastery Points are limited. Islands must specialise early: Farming,
+#  Mining, Fishing, Slayer and Industry branches unlock noticeable
+#  mechanics/capacity instead of endless tiny percentages.
+#
+#  Costs can combine Island Level + Mastery Points + Money + Sky Tokens.
+#  Level unlocks permission; currencies pay the sink.
+# ============================================================
+
+settings:
+  # Island top points granted per island level reached.
+  level-up-island-top-points: 5000
+
+industry:
+  # Read by the Industry GUI now; future native generators should call the
+  # progression service for the effective capacity.
+  base-generator-capacity: 1
+
+# Level XP is TOTAL island XP required for that level.
+levels:
+  - {level: 1,  xp: 0,      mastery-points: 0, sky-tokens: 0,   milestone: "Starter island online"}
+  - {level: 2,  xp: 500,    mastery-points: 1, sky-tokens: 25,  milestone: "First mastery choice"}
+  - {level: 3,  xp: 1200,   mastery-points: 0, sky-tokens: 35,  milestone: "Additional generator capacity"}
+  - {level: 4,  xp: 2200,   mastery-points: 1, sky-tokens: 45,  milestone: "Specialisation opens"}
+  - {level: 5,  xp: 3600,   mastery-points: 1, sky-tokens: 60,  milestone: "Island Core module slot I"}
+  - {level: 6,  xp: 5400,   mastery-points: 0, sky-tokens: 70,  milestone: "Infrastructure grid"}
+  - {level: 7,  xp: 7600,   mastery-points: 1, sky-tokens: 80,  milestone: "Mining Cube functionality"}
+  - {level: 8,  xp: 10200,  mastery-points: 0, sky-tokens: 90,  milestone: "Branch mechanics expand"}
+  - {level: 9,  xp: 13200,  mastery-points: 1, sky-tokens: 100, milestone: "Rare events tier I"}
+  - {level: 10, xp: 16800,  mastery-points: 1, sky-tokens: 125, milestone: "Advanced generators + mastery milestone"}
+  - {level: 11, xp: 21000,  mastery-points: 0, sky-tokens: 140, milestone: "Island operations scale"}
+  - {level: 12, xp: 25800,  mastery-points: 1, sky-tokens: 160, milestone: "Elite Slayer mobs"}
+  - {level: 13, xp: 31200,  mastery-points: 0, sky-tokens: 180, milestone: "Treasure tables improve"}
+  - {level: 14, xp: 37200,  mastery-points: 1, sky-tokens: 200, milestone: "Rare discovery paths"}
+  - {level: 15, xp: 43800,  mastery-points: 1, sky-tokens: 225, milestone: "Island Core module slot II"}
+  - {level: 16, xp: 51000,  mastery-points: 0, sky-tokens: 250, milestone: "Specialist production"}
+  - {level: 17, xp: 58800,  mastery-points: 1, sky-tokens: 275, milestone: "Surge events tier II"}
+  - {level: 18, xp: 67200,  mastery-points: 0, sky-tokens: 300, milestone: "Island logistics improve"}
+  - {level: 19, xp: 76200,  mastery-points: 1, sky-tokens: 325, milestone: "Advanced branch choice"}
+  - {level: 20, xp: 85800,  mastery-points: 1, sky-tokens: 350, milestone: "Advanced Industry systems"}
+  - {level: 21, xp: 96000,  mastery-points: 0, sky-tokens: 375, milestone: "Late-season scaling"}
+  - {level: 22, xp: 108000, mastery-points: 1, sky-tokens: 400, milestone: "Champion encounters"}
+  - {level: 23, xp: 121500, mastery-points: 0, sky-tokens: 425, milestone: "Deep specialisation"}
+  - {level: 24, xp: 136500, mastery-points: 1, sky-tokens: 450, milestone: "Endgame preparation"}
+  - {level: 25, xp: 153000, mastery-points: 1, sky-tokens: 500, milestone: "Island Core module slot III"}
+  - {level: 26, xp: 171000, mastery-points: 0, sky-tokens: 550, milestone: "Master systems online"}
+  - {level: 27, xp: 190500, mastery-points: 1, sky-tokens: 600, milestone: "Prestige materials"}
+  - {level: 28, xp: 211500, mastery-points: 0, sky-tokens: 650, milestone: "Island identity locked in"}
+  - {level: 29, xp: 234000, mastery-points: 1, sky-tokens: 700, milestone: "Final season push"}
+  - {level: 30, xp: 258000, mastery-points: 1, sky-tokens: 1000, milestone: "End-game island prestige"}
+
+# Rolling source caps are per island, per source. XP after the soft cap is
+# multiplied by soft-multiplier until the hard cap is reached.
+sources:
+  farming:
+    name: "Farming"
+    icon: WHEAT
+    xp-per-unit: 3
+    soft-cap-xp: 1500
+    hard-cap-xp: 3000
+    soft-multiplier: 0.25
+    window-minutes: 60
+  mining:
+    name: "Mining"
+    icon: DIAMOND_PICKAXE
+    xp-per-unit: 2
+    soft-cap-xp: 1800
+    hard-cap-xp: 3500
+    soft-multiplier: 0.25
+    window-minutes: 60
+  fishing:
+    name: "Fishing"
+    icon: FISHING_ROD
+    xp-per-unit: 35
+    soft-cap-xp: 1400
+    hard-cap-xp: 2800
+    soft-multiplier: 0.30
+    window-minutes: 60
+  slayer:
+    name: "Slayer"
+    icon: IRON_SWORD
+    xp-per-unit: 4
+    soft-cap-xp: 2000
+    hard-cap-xp: 4000
+    soft-multiplier: 0.20
+    window-minutes: 60
+  spawner:
+    name: "Spawner Progression"
+    icon: SPAWNER
+    xp-per-unit: 250
+    soft-cap-xp: 2000
+    hard-cap-xp: 5000
+    soft-multiplier: 0.35
+    window-minutes: 60
+  industry:
+    name: "Industry"
+    icon: REDSTONE
+    xp-per-unit: 200
+    soft-cap-xp: 1600
+    hard-cap-xp: 4200
+    soft-multiplier: 0.35
+    window-minutes: 60
+  role:
+    name: "Role Progression"
+    icon: NAME_TAG
+    xp-per-unit: 100
+    soft-cap-xp: 1200
+    hard-cap-xp: 3000
+    soft-multiplier: 0.35
+    window-minutes: 60
+  milestone:
+    name: "Milestones"
+    icon: NETHER_STAR
+    xp-per-unit: 1
+    soft-cap-xp: 0
+    hard-cap-xp: 0
+    soft-multiplier: 1.0
+    window-minutes: 0
+
+core:
+  module-slot-levels: [5, 15, 25]
+  modules:
+    overclocked-generator:
+      name: "Overclocked Generator Module"
+      icon: REDSTONE_BLOCK
+      island-level: 10
+      lore:
+        - "ɢᴇɴᴇʀᴀᴛᴏʀs ʀᴜɴ ʜᴏᴛᴛᴇʀ."
+        - "ʀᴀʀᴇ ʀᴇᴡᴀʀᴅs ᴀʀᴇ sʟɪɢʜᴛʟʏ ʀɪsᴋɪᴇʀ."
+      effects: {generator-speed: 0.15, rare-generator-rewards: -0.05}
+    verdant:
+      name: "Verdant Module"
+      icon: MOSS_BLOCK
+      island-level: 5
+      lore:
+        - "ꜰᴀʀᴍɪɴɢ ᴍᴜᴛᴀᴛɪᴏɴs ɪᴍᴘʀᴏᴠᴇ."
+        - "ᴘᴀssɪᴠᴇ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴ ɪs ɴᴏᴛ ʙᴏᴏsᴛᴇᴅ."
+      effects: {crop-mutation-chance: 0.01}
+    hunter:
+      name: "Hunter Module"
+      icon: WITHER_SKELETON_SKULL
+      island-level: 12
+      lore:
+        - "ᴇʟɪᴛᴇ ᴍᴏʙs ᴀᴘᴘᴇᴀʀ ᴍᴏʀᴇ ᴏꜰᴛᴇɴ."
+        - "ᴛʜᴇʏ ᴀʀᴇ ᴀʟsᴏ ᴛᴏᴜɢʜᴇʀ."
+      effects: {elite-mob-chance: 0.01, elite-difficulty: 0.10}
+    treasure:
+      name: "Treasure Module"
+      icon: HEART_OF_THE_SEA
+      island-level: 15
+      lore:
+        - "ʀᴀʀᴇ ᴅɪsᴄᴏᴠᴇʀɪᴇs ɪɴᴄʀᴇᴀsᴇ."
+        - "ᴏʀᴅɪɴᴀʀʏ ᴘʀᴏᴅᴜᴄᴛɪᴏɴ sʟᴏᴡs sʟɪɢʜᴛʟʏ."
+      effects: {discovery-chance: 0.01, ordinary-production: -0.03}
+
+branches:
+  farming:
+    name: "Farming"
+    icon: WHEAT
+    upgrades:
+      crop-mutation:
+        name: "Crop Mutation"
+        icon: GLOW_BERRIES
+        island-level: 2
+        mastery-points: 1
+        money: 2500
+        sky-tokens: 25
+        lore:
+          - "ᴍᴀɴᴜᴀʟ ʜᴀʀᴠᴇsᴛs ᴄᴀɴ ᴍᴜᴛᴀᴛᴇ."
+          - "ᴍᴜᴛᴀᴛᴇᴅ ᴄʀᴏᴘs ꜰᴇᴇᴅ ꜰᴜᴛᴜʀᴇ ᴄʀᴀꜰᴛɪɴɢ."
+        effects: {crop-mutation-chance: 0.01}
+      harvest-streak:
+        name: "Harvest Streak"
+        icon: GOLDEN_HOE
+        island-level: 5
+        mastery-points: 1
+        money: 10000
+        sky-tokens: 80
+        requires: [crop-mutation]
+        lore:
+          - "ᴄᴏɴᴛɪɴᴜᴏᴜs ᴍᴀɴᴜᴀʟ ꜰᴀʀᴍɪɴɢ ʙᴜɪʟᴅs ᴀ sᴛʀᴇᴀᴋ."
+          - "ɪɴᴀᴄᴛɪᴠɪᴛʏ ʙʀᴇᴀᴋs ɪᴛ."
+        effects: {harvest-streak: 1}
+      favoured-crop:
+        name: "Favoured Crop"
+        icon: CARROT
+        island-level: 9
+        mastery-points: 1
+        money: 35000
+        sky-tokens: 175
+        requires: [harvest-streak]
+        lore:
+          - "ᴘɪᴄᴋ ᴏɴᴇ ᴄʀᴏᴘ ᴛᴏ sᴘᴇᴄɪᴀʟɪsᴇ ɪɴ."
+          - "ꜰᴜᴛᴜʀᴇ ꜰᴀʀᴍɪɴɢ ᴍᴇɴᴜ ᴜɴʟᴏᴄᴋ."
+        effects: {favoured-crop-slots: 1}
+      overgrowth:
+        name: "Overgrowth"
+        icon: MOSS_BLOCK
+        island-level: 16
+        mastery-points: 2
+        money: 120000
+        sky-tokens: 450
+        requires: [favoured-crop]
+        lore:
+          - "ʀᴀʀᴇ ᴍᴀɴᴜᴀʟ ʜᴀʀᴠᴇsᴛs ʀᴇɢʀᴏᴡ ᴀ ᴘᴀᴛᴄʜ."
+          - "ᴀᴜᴛᴏᴍᴀᴛɪᴏɴ ᴅᴏᴇs ɴᴏᴛ ᴛʀɪɢɢᴇʀ ɪᴛ."
+        effects: {overgrowth-chance: 0.005}
+
+  mining:
+    name: "Mining"
+    icon: DIAMOND_PICKAXE
+    upgrades:
+      rich-veins:
+        name: "Rich Veins"
+        icon: RAW_GOLD
+        island-level: 2
+        mastery-points: 1
+        money: 2500
+        sky-tokens: 25
+        lore:
+          - "ʀᴀʀᴇ ᴠᴀʟᴜᴀʙʟᴇ ᴠᴇɪɴs ᴄᴀɴ ᴀᴘᴘᴇᴀʀ."
+          - "ʙᴜɪʟᴅs ᴛᴏᴡᴀʀᴅ ᴍɪɴɪɴɢ ᴄᴜʙᴇs."
+        effects: {rich-vein-chance: 0.01}
+      mining-surge:
+        name: "Mining Surge"
+        icon: CLOCK
+        island-level: 7
+        mastery-points: 1
+        money: 15000
+        sky-tokens: 100
+        requires: [rich-veins]
+        lore:
+          - "ᴀᴄᴛɪᴠᴇ ᴍɪɴɪɴɢ ᴄʜᴀʀɢᴇs ᴀ sᴜʀɢᴇ."
+          - "sᴜʀɢᴇs ɪᴍᴘʀᴏᴠᴇ ᴏʀᴇ ᴘᴏᴏʟs."
+        effects: {mining-surge: 1}
+      core-fragments:
+        name: "Core Fragments"
+        icon: AMETHYST_SHARD
+        island-level: 10
+        mastery-points: 1
+        money: 50000
+        sky-tokens: 220
+        requires: [mining-surge]
+        lore:
+          - "ʀᴀʀᴇ ᴍɪɴɪɴɢ ᴅʀᴏᴘs ꜰᴏʀ ᴄᴏʀᴇ ᴄʀᴀꜰᴛɪɴɢ."
+          - "ᴜsᴇᴅ ʙʏ ꜰᴜᴛᴜʀᴇ ᴍᴏᴅᴜʟᴇs."
+        effects: {core-fragment-chance: 0.004}
+      cube-layers:
+        name: "Cube Layers"
+        icon: DEEPSLATE_DIAMOND_ORE
+        island-level: 18
+        mastery-points: 2
+        money: 150000
+        sky-tokens: 550
+        requires: [core-fragments]
+        lore:
+          - "ᴍɪɴɪɴɢ ᴄᴜʙᴇs ɢᴀɪɴ ɴᴇᴡ ʟᴀʏᴇʀ ᴘᴏᴏʟs."
+          - "ɴᴏᴛ ᴀ ꜰʟᴀᴛ sᴇʟʟ ᴘʀɪᴄᴇ ʙᴜꜰꜰ."
+        effects: {mining-cube-layers: 1}
+
+  fishing:
+    name: "Fishing"
+    icon: FISHING_ROD
+    upgrades:
+      hotspots:
+        name: "Fishing Hotspots"
+        icon: LILY_PAD
+        island-level: 2
+        mastery-points: 1
+        money: 2500
+        sky-tokens: 25
+        lore:
+          - "ᴛᴇᴍᴘᴏʀᴀʀʏ ɪsʟᴀɴᴅ ʜᴏᴛsᴘᴏᴛs ᴄᴀɴ ꜰᴏʀᴍ."
+          - "ᴀᴄᴛɪᴠᴇ ꜰɪsʜɪɴɢ ᴛʀɪɢɢᴇʀs ᴛʜᴇᴍ."
+        effects: {fishing-hotspot-chance: 0.01}
+      sunken-cache:
+        name: "Sunken Cache"
+        icon: CHEST
+        island-level: 6
+        mastery-points: 1
+        money: 12000
+        sky-tokens: 90
+        requires: [hotspots]
+        lore:
+          - "ʀᴀʀᴇ ᴄᴀᴛᴄʜᴇs ᴄᴀɴ ʙᴇᴄᴏᴍᴇ ᴄᴀᴄʜᴇs."
+          - "ᴄᴀᴄʜᴇs ꜰᴇᴇᴅ ᴍᴏᴅᴜʟᴇ ᴄʀᴀꜰᴛɪɴɢ."
+        effects: {sunken-cache-chance: 0.008}
+      treasure-table:
+        name: "Treasure Table"
+        icon: HEART_OF_THE_SEA
+        island-level: 13
+        mastery-points: 1
+        money: 65000
+        sky-tokens: 260
+        requires: [sunken-cache]
+        lore:
+          - "ᴜɴʟᴏᴄᴋs ᴀᴅᴠᴀɴᴄᴇᴅ ꜰɪsʜɪɴɢ ᴛʀᴇᴀsᴜʀᴇ."
+          - "ꜰᴜᴛᴜʀᴇ ʟᴏᴏᴛ ᴛᴀʙʟᴇ ʜᴏᴏᴋ."
+        effects: {fishing-treasure-tier: 1}
+      angler-streak:
+        name: "Angler Streak"
+        icon: NAUTILUS_SHELL
+        island-level: 19
+        mastery-points: 2
+        money: 140000
+        sky-tokens: 500
+        requires: [treasure-table]
+        lore:
+          - "ᴀᴄᴛɪᴠᴇ ᴄᴀᴛᴄʜᴇs ʙᴜɪʟᴅ ᴀ ꜰɪsʜɪɴɢ sᴛʀᴇᴀᴋ."
+          - "ᴀꜰᴋ ᴛɪᴍᴇ ʀᴇsᴇᴛs ᴛʜᴇ ʙᴏɴᴜs."
+        effects: {fishing-streak: 1}
+
+  slayer:
+    name: "Slayer"
+    icon: IRON_SWORD
+    upgrades:
+      kill-streak:
+        name: "Kill Streak"
+        icon: BONE
+        island-level: 2
+        mastery-points: 1
+        money: 2500
+        sky-tokens: 25
+        lore:
+          - "ᴍᴀɴᴜᴀʟ ᴋɪʟʟs ʙᴜɪʟᴅ ᴀ sʟᴀʏᴇʀ sᴛʀᴇᴀᴋ."
+          - "ᴘᴀssɪᴠᴇ ᴅᴇᴀᴛʜs ᴅᴏ ɴᴏᴛ ᴄᴏᴜɴᴛ."
+        effects: {slayer-streak: 1}
+      elite-mobs:
+        name: "Elite Mobs"
+        icon: NETHERITE_SWORD
+        island-level: 12
+        mastery-points: 1
+        money: 75000
+        sky-tokens: 300
+        requires: [kill-streak]
+        lore:
+          - "ɴᴏʀᴍᴀʟ ᴍᴏʙs ᴄᴀɴ ʙᴇᴄᴏᴍᴇ ᴇʟɪᴛᴇ."
+          - "ʜᴀʀᴅᴇʀ ꜰɪɢʜᴛs, ʙᴇᴛᴇʀ ʀᴇᴡᴀʀᴅs."
+        effects: {elite-mob-chance: 0.01}
+      hunted-mob:
+        name: "Hunted Mob"
+        icon: TARGET
+        island-level: 15
+        mastery-points: 1
+        money: 110000
+        sky-tokens: 425
+        requires: [elite-mobs]
+        lore:
+          - "ᴄʜᴏᴏsᴇ ᴀ ᴍᴏʙ ᴛᴏ sᴘᴇᴄɪᴀʟɪsᴇ ᴀɢᴀɪɴsᴛ."
+          - "ꜰᴜᴛᴜʀᴇ sʟᴀʏᴇʀ ᴍᴇɴᴜ ᴜɴʟᴏᴄᴋ."
+        effects: {hunted-mob-slots: 1}
+      champion-events:
+        name: "Champion Events"
+        icon: DRAGON_HEAD
+        island-level: 22
+        mastery-points: 2
+        money: 250000
+        sky-tokens: 750
+        requires: [hunted-mob]
+        lore:
+          - "ʀᴀʀᴇ sʟᴀʏᴇʀ ᴀᴄᴛɪᴏɴs sᴘᴀᴡɴ ᴄʜᴀᴍᴘɪᴏɴs."
+          - "ɪsʟᴀɴᴅ ᴇɴᴄᴏᴜɴᴛᴇʀs ꜰᴏʀ ᴛᴇᴀᴍs."
+        effects: {champion-event-chance: 0.003}
+
+  industry:
+    name: "Industry"
+    icon: REDSTONE
+    upgrades:
+      generator-bays:
+        name: "Generator Bays"
+        icon: FURNACE
+        island-level: 3
+        mastery-points: 1
+        money: 5000
+        sky-tokens: 50
+        lore:
+          - "ᴀᴅᴅs ɴᴏᴛɪᴄᴇᴀʙʟᴇ ɢᴇɴᴇʀᴀᴛᴏʀ ᴄᴀᴘᴀᴄɪᴛʏ."
+          - "ꜰᴜᴛᴜʀᴇ ɢᴇɴᴇʀᴀᴛᴏʀs ʀᴇᴀᴅ ᴛʜɪs."
+        effects: {generator-capacity: 2}
+      infrastructure-grid:
+        name: "Infrastructure Grid"
+        icon: LODESTONE
+        island-level: 6
+        mastery-points: 1
+        money: 25000
+        sky-tokens: 140
+        requires: [generator-bays]
+        lore:
+          - "ɢʀᴏᴡs ᴛʜᴇ ɪsʟᴀɴᴅ ɢʀɪᴅ ᴀɴᴅ ᴄʀᴇᴡ sᴘᴀᴄᴇ."
+          - "ᴜɴʟᴏᴄᴋs ᴇᴀʀʟʏ ɪɴꜰʀᴀsᴛʀᴜᴄᴛᴜʀᴇ."
+        effects: {claim-size-level: 1, member-slots-level: 1, generator-capacity: 1}
+      spawner-logistics:
+        name: "Spawner Logistics"
+        icon: HOPPER
+        island-level: 10
+        mastery-points: 1
+        money: 80000
+        sky-tokens: 300
+        requires: [infrastructure-grid]
+        lore:
+          - "ɪᴍᴘʀᴏᴠᴇs sᴘᴀᴡɴᴇʀ sᴛᴀᴄᴋɪɴɢ."
+          - "ʟᴀʀɢᴇʀ ꜰᴀʀᴍs, ꜰᴇᴡᴇʀ ʙʟᴏᴄᴋs."
+        effects: {spawner-stack-bonus: 16}
+      advanced-industry:
+        name: "Advanced Industry"
+        icon: BEACON
+        island-level: 20
+        mastery-points: 2
+        money: 250000
+        sky-tokens: 900
+        requires: [spawner-logistics]
+        lore:
+          - "ᴜɴʟᴏᴄᴋs ʜɪɢʜ-ᴛɪᴇʀ ɪɴᴅᴜsᴛʀʏ ʜᴏᴏᴋs."
+          - "ɢᴇɴᴇʀᴀᴛᴏʀs, sᴛᴏʀᴀɢᴇ ᴀɴᴅ ᴀᴜᴛᴏᴍᴀᴛɪᴏɴ."
+        effects: {generator-capacity: 3, spawner-stack-bonus: 32, automation-capacity: 1}

@@ -22,6 +22,24 @@ class IslandLayoutTest {
     }
 
     @Test
+    void masteryMenuIsADoubleChest() {
+        assertEquals(54, IslandLayout.MASTERY_SIZE);
+        final int[] buttons = {IslandLayout.MASTERY_INFO, IslandLayout.MASTERY_TOKENS,
+                IslandLayout.MASTERY_FARMING, IslandLayout.MASTERY_MINING,
+                IslandLayout.MASTERY_FISHING, IslandLayout.MASTERY_SLAYER,
+                IslandLayout.MASTERY_INDUSTRY, IslandLayout.MASTERY_CORE,
+                IslandLayout.MASTERY_MODULES, IslandLayout.coreBuffSlot(0),
+                IslandLayout.coreBuffSlot(IslandLayout.coreBuffCapacity() - 1),
+                IslandLayout.MASTERY_BACK, IslandLayout.MASTERY_CLOSE};
+        final TreeSet<Integer> seen = new TreeSet<>();
+        for (final int button : buttons) {
+            assertTrue(button >= 0 && button < IslandLayout.MASTERY_SIZE,
+                    "mastery slot " + button + " fits the double chest");
+            assertTrue(seen.add(button), "mastery slot " + button + " collides");
+        }
+    }
+
+    @Test
     void subMenusAreSmallChests() {
         assertEquals(27, IslandLayout.SUB_SIZE);
         for (final int slot : new int[]{IslandLayout.SUB_BACK, IslandLayout.SUB_CLOSE,

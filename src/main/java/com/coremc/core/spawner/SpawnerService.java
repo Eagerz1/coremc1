@@ -5,6 +5,7 @@ import com.coremc.core.essence.EssenceManager;
 import com.coremc.core.essence.EssenceType;
 import com.coremc.core.island.Island;
 import com.coremc.core.island.IslandService;
+import com.coremc.core.progression.IslandProgressionService;
 import com.coremc.core.shop.EconomyService;
 import com.coremc.core.util.ColorUtil;
 import java.io.IOException;
@@ -50,6 +51,7 @@ public final class SpawnerService {
     private final EssenceManager essences;
     private final MessageService messages;
     private final IslandService islands;
+    private final IslandProgressionService progression;
     private final Logger logger;
     private final Random random = new Random();
 
@@ -71,7 +73,8 @@ public final class SpawnerService {
 
     public SpawnerService(final JavaPlugin plugin, final SpawnerConfig config, final SpawnerDataStore store,
                           final EconomyService economy, final EssenceManager essences,
-                          final MessageService messages, final IslandService islands) {
+                          final MessageService messages, final IslandService islands,
+                          final IslandProgressionService progression) {
         this.plugin = plugin;
         this.config = config;
         this.store = store;
@@ -79,6 +82,7 @@ public final class SpawnerService {
         this.essences = essences;
         this.messages = messages;
         this.islands = islands;
+        this.progression = progression;
         this.logger = plugin.getLogger();
         this.itemKey = new NamespacedKey(plugin, "coremc_item");
         this.spawnerKey = new NamespacedKey(plugin, "coremc_spawner");
@@ -282,6 +286,10 @@ public final class SpawnerService {
             }
         }
         giveItem(player, spawnerItem(mob, SpawnerVariant.NORMAL));
+        final Island island = islands.islandOf(player.getUniqueId());
+        if (progression != null && island != null) {
+            progression.recordActivity(player, island, "spawner", 1L);
+        }
         messages.sendPrefixed(player, "spawner.bought", Map.of(
                 "mob", mob.name(),
                 "cost", com.coremc.core.shop.Money.format(cost, "$")));
@@ -428,12 +436,15 @@ public final class SpawnerService {
                             target.variant(), target.amount())));
             return -1;
         }
-        if (target.amount() >= config.maxSpawnerStack()) {
+        final int stackLimit = progression == null
+                ? config.maxSpawnerStack()
+                : progression.effectiveSpawnerStackLimit(playerIsland, config.maxSpawnerStack());
+        if (target.amount() >= stackLimit) {
             messages.sendPrefixed(player, "spawner.stack-limit", Map.of(
-                    "max", String.valueOf(config.maxSpawnerStack())));
+                    "max", String.valueOf(stackLimit)));
             return -1;
         }
-        final int newAmount = Math.min(config.maxSpawnerStack(),
+        final int newAmount = Math.min(stackLimit,
                 target.amount() + Math.max(1, addAmount));
         final SpawnerEntry updated = target.withAmount(newAmount);
         spawners.put(updated.key(), updated);
@@ -663,6 +674,13 @@ public final class SpawnerService {
         applySpawnerState(blockOf(upgraded), mob, next, boostOf(entry.islandId()), upgraded.amount());
         refreshHologram(upgraded);
 
+        if (progression != null) {
+            final Island island = islands.islandById(entry.islandId());
+            if (island != null) {
+                progression.recordActivity(player, island, "spawner", Math.max(2L, 2L * stackScale));
+            }
+        }
+
         final SpawnerVariantSettings settings = config.variantSettings(next);
         messages.sendPrefixed(player, "spawner.upgraded", Map.of(
                 "variant", next.display(),
@@ -707,9 +725,13 @@ public final class SpawnerService {
                         + settings.nearbyLimit() + " &7mobs nearby"
                         + (settings.autoKill() ? "&7, &dauto-kill" : "")));
         if (entry.amount() > 1) {
+            final Island island = islands.islandById(entry.islandId());
+            final int stackLimit = progression == null
+                    ? config.maxSpawnerStack()
+                    : progression.effectiveSpawnerStackLimit(island, config.maxSpawnerStack());
             player.sendMessage(messages.prefix() + ColorUtil.colorize(
                     "&7Stack: &f" + entry.amount() + "x"
-                    + (entry.amount() >= config.maxSpawnerStack() ? " &8(max)" : "")));
+                    + (entry.amount() >= stackLimit ? " &8(max)" : "")));
         }
         final SpawnerVariant next = entry.variant().next();
         if (next != null) {
@@ -801,6 +823,9 @@ public final class SpawnerService {
         economy.withdraw(player.getUniqueId(), cost);
         luck.put(island.id(), level + 1);
         persist();
+        if (progression != null) {
+            progression.recordActivity(player, island, "industry", 2L);
+        }
         messages.sendPrefixed(player, "spawner.luck-upgraded", Map.of(
                 "level", String.valueOf(level + 1),
                 "chance", chanceText(config.uniqueDropChance(level + 1))));

@@ -154,7 +154,7 @@ function auditLog(label) {
   // chunks (their vanilla stack frames included). Anything plugin-caused
   // still surfaces with a "Could not pass event ... CoreMC" header or
   // com.coremc frames, which the plugin check below catches.
-  const NOISE = /yggdrasil|versionfetcher|version information|no key layers|chunktaskscheduler|chunk wait|chunk holder|DO NOT REPORT THIS TO PAPER|java\.base@|net\.minecraft\./i
+  const NOISE = /yggdrasil|versionfetcher|version information|no key layers|chunktaskscheduler|chunk wait|chunk holder|server has not responded|------------------------------|thread dump|Current Thread|PID:|Suspended:|Native:|State:|\tStack:|CraftWorld\.getChunkAt|PluginCommand\.execute|BukkitCommandNode|com\.mojang\.brigadier|SchematicService\.(paste|preGenerate)|IslandService\.create|IslandCommand\.onCommand|DO NOT REPORT THIS TO PAPER|java\.base@|net\.minecraft\./i
   const lines = txt.split('\n').filter((l) => !NOISE.test(l))
   const serverErrors = lines.filter((l) => /ERROR\]:/.test(l))
   const pluginProblems = lines.filter(
@@ -884,8 +884,46 @@ async function main() {
   e = await essenceOf(owner)
   check(e && e.farming === 77, 'unripe wheat pays nothing', String(e && e.farming))
 
-  // ------------------------------------------- P7 restart persistence
-  phase(7, 'restart persistence')
+  // ------------------------------------------- P7 Core buffs + events
+  phase(7, 'core buffs and hourly events')
+  clearChat(owner)
+  let buffWin = await openWindow(owner, '/is buffs')
+  check(!!buffWin && /rich veins/i.test(slotJson(buffWin, 10)), '/is buffs opens Core Buff GUI with Rich Veins')
+  if (buffWin) {
+    await click(owner, 10) // unlock rich veins (journey config removes requirements)
+    check(await waitChat(owner, /core buff unlocked.*rich veins/i), 'Rich Veins unlocks from the Core Buff GUI', recentChat(owner))
+    clearChat(owner)
+    await click(owner, 10) // equip rich veins
+    check(await waitChat(owner, /equipped core buff.*rich veins/i), 'Rich Veins equips into the Island Core slot', recentChat(owner))
+    clearChat(owner)
+    await click(owner, 10) // unequip so Deep Waters can occupy the single early slot
+    check(await waitChat(owner, /unequipped core buff.*rich veins/i), 'Core Buff can be swapped out', recentChat(owner))
+    clearChat(owner)
+    await click(owner, 12) // unlock deep waters
+    check(await waitChat(owner, /core buff unlocked.*deep waters/i), 'Deep Waters unlocks from the Core Buff GUI', recentChat(owner))
+    clearChat(owner)
+    await click(owner, 12) // equip deep waters
+    check(await waitChat(owner, /equipped core buff.*deep waters/i), 'Deep Waters equips after the swap', recentChat(owner))
+    await closeWin(owner)
+  }
+  const progBeforeRestart = yamlLoad(fs.readFileSync(path.join(PLUGIN_DIR, 'island-progression.yml'), 'utf8'))
+  const islandProfiles = Object.values((progBeforeRestart && progBeforeRestart.islands) || {})
+  check(islandProfiles.some((p) => Array.isArray(p['active-modules']) && p['active-modules'].includes('deep-waters')),
+    'island-progression.yml persisted equipped Core Buff', JSON.stringify(progBeforeRestart).slice(0, 260))
+
+  out = await rc('coreevent start slayer-frenzy')
+  check(/started event|slayer-frenzy/i.test(out), 'manual /coreevent start works', out.trim())
+  out = await rc('coreevent status')
+  check(/active event.*slayer frenzy|slayer frenzy/i.test(out), 'event status shows active timer', out.trim())
+  out = await rc('coreevent stop')
+  check(/stopped|has ended/i.test(out), 'manual /coreevent stop cleans up active event', out.trim())
+  out = await rc('coreevent status')
+  check(/no event active/i.test(out), 'event cleanup leaves no active event', out.trim())
+  out = await rc('coreevent next')
+  check(/next automatic event/i.test(out), '/coreevent next reports the automatic schedule', out.trim())
+
+  // ------------------------------------------- P8 restart persistence
+  phase(8, 'restart persistence')
   const eFinal = await essenceOf(owner)
   await quitBot(owner, OWNER)
   await quitBot(guest, GUEST)
@@ -925,6 +963,11 @@ async function main() {
   const wantLine = `PAPIRESULT JOwner ${eFinal.slayer.toLocaleString('en-US')}|${eFinal.mining}|${eFinal.farming}|${(eFinal.slayer + eFinal.mining + eFinal.farming).toLocaleString('en-US')}|${eFinal.kills.toLocaleString('en-US')}|492,500|${(eFinal.slayer + eFinal.mining + eFinal.farming).toLocaleString('en-US')}`
   check(out.includes(wantLine), 'placeholders resolve the persisted state', out.trim())
 
+  buffWin = await openWindow(owner, '/is buffs')
+  check(!!buffWin && /deep waters/i.test(slotJson(buffWin, 12)) && /(ᴇǫᴜɪᴘᴘᴇᴅ|✔|status)/i.test(slotJson(buffWin, 12)),
+    'equipped Core Buff survives restart and renders as equipped', buffWin ? slotJson(buffWin, 12).slice(0, 220) : 'no window')
+  await closeWin(owner)
+
   // the mythic spawner is still mythic with its hologram
   if (mythOk) {
     await walkTo(owner, mythX + 1, mythZ - 1)
@@ -959,8 +1002,8 @@ async function main() {
     }
   }
 
-  // ------------------------------------------------ P8 final audit
-  phase(8, 'final audit')
+  // ------------------------------------------------ P9 final audit
+  phase(9, 'final audit')
   await quitBot(owner, OWNER)
   await sleep(1500)
   await stopServer()

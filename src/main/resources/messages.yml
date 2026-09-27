@@ -20,6 +20,8 @@ island:
     - "&b/is join &8- &faccept a pending island invite"
     - "&b/is leave &8- &fleave the island you are a member of"
     - "&b/is kick <player> &8- &fremove a member from your island"
+    - "&b/is upgrades &8- &fisland level, mastery and core"
+    - "&b/is buffs &8- &fmanage Island Core buffs"
     - "&b/is delete &8- &fpermanently delete your island"
     - "&b/is top &8- &fthe island top: Solos, Duos and Teams"
 
@@ -75,6 +77,36 @@ island:
   top-reward: "&aIsland top season reward! &f#{rank} {category}: &e{amount} GC &f— your gift card is linked below, spend it with &b/gc&f."
 
   schematic-failed: "&cIsland generation failed: &f{error}"
+
+progression:
+  unavailable: "&cIsland Mastery is not available right now."
+  level-up: "&aIsland Level &f{level}&a reached! &7{milestone} &8| &e+{points} Mastery Points &8| &e+{tokens} Sky Tokens&a."
+  mastery-already: "&cThat mastery is already unlocked."
+  mastery-missing: "&cYou still need: &f{missing}&c."
+  mastery-unlocked: "&aUnlocked &f{upgrade} &ain &f{branch}&a Mastery."
+
+core-buff:
+  missing: "&cYou still need: &f{missing}&c."
+  unlocked: "&aCore Buff unlocked: &f{buff}&a."
+  equipped: "&aEquipped Core Buff: &f{buff}&a."
+  unequipped: "&eUnequipped Core Buff: &f{buff}&e."
+  cooldown: "&cCore Buffs can be swapped again in &f{time}&c."
+  no-slot: "&cNo free Island Core slots. Unlock more at Island Levels 5, 15 and 25."
+
+event:
+  unavailable: "&cCore events are not available right now."
+  no-permission: "&cYou do not have permission to do that."
+  usage: "&cUsage: &b/coreevent start <event> &8| &b/coreevent stop &8| &b/coreevent status &8| &b/coreevent next"
+  start: "&d&l{event} &ais active for &f15 minutes&a!"
+  remaining: "&d&l{event} &7ends in &f{time}&7."
+  end: "&d&l{event} &7has ended."
+  manual-start: "&aStarted event: &f{event}&a."
+  manual-stop: "&aStopped the active event."
+  manual-failed: "&cCould not start that event. Check the id or active event."
+  none-active: "&cThere is no active event."
+  status-none: "&7No event active. Next automatic event in &f{next}&7."
+  status-active: "&7Active event: &f{event} &8- &7remaining &f{remaining}&7."
+  next: "&7Next automatic event in &f{time}&7."
 
 rank:
   only-players: "&cOnly players can use this command."

@@ -1,5 +1,6 @@
 package com.coremc.core.essence;
 
+import com.coremc.core.progression.IslandProgressionService;
 import com.coremc.core.spawner.SpawnerService;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -36,13 +37,16 @@ public final class EssenceListener implements Listener {
     private final EssenceConfig config;
     private final PlacedBlockTracker placedBlocks;
     private final SpawnerService spawners;
+    private final IslandProgressionService progression;
 
     public EssenceListener(final EssenceManager essences, final EssenceConfig config,
-                           final PlacedBlockTracker placedBlocks, final SpawnerService spawners) {
+                           final PlacedBlockTracker placedBlocks, final SpawnerService spawners,
+                           final IslandProgressionService progression) {
         this.essences = essences;
         this.config = config;
         this.placedBlocks = placedBlocks;
         this.spawners = spawners;
+        this.progression = progression;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -59,9 +63,15 @@ public final class EssenceListener implements Listener {
         // system disabled a lone normal mob still pays its base reward
         final int mobCount = spawners == null ? 1 : Math.max(1, spawners.mobStacks().countOf(entity));
         final SpawnerVariant variant = spawners == null ? SpawnerVariant.NORMAL : spawners.variantOf(entity);
-        essences.addKills(killer.getUniqueId(), SlayerRewards.killsFor(activeKill, mobCount));
+        final long killCredit = SlayerRewards.killsFor(activeKill, mobCount);
+        final double killMultiplier = progression == null ? 1.0D
+                : progression.killProgressionMultiplier(killer, entity.getLocation());
+        essences.addKills(killer.getUniqueId(), Math.round(killCredit * killMultiplier));
         essences.give(killer.getUniqueId(), EssenceType.SLAYER,
                 SlayerRewards.slayerFor(activeKill, variant, mobCount, config));
+        if (progression != null) {
+            progression.recordActivity(killer, entity.getLocation(), "slayer", mobCount);
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -93,6 +103,9 @@ public final class EssenceListener implements Listener {
                 placedBlocks.remove(world, block.getX(), block.getY(), block.getZ());
             } else if (mining > 0) {
                 essences.give(event.getPlayer().getUniqueId(), EssenceType.MINING, mining);
+                if (progression != null) {
+                    progression.recordActivity(event.getPlayer(), block.getLocation(), "mining", 1L);
+                }
             }
         }
 
@@ -101,6 +114,9 @@ public final class EssenceListener implements Listener {
         final Long farming = config.farmingBlocks().get(material);
         if (farming != null && farming > 0 && isFullyGrown(block)) {
             essences.give(event.getPlayer().getUniqueId(), EssenceType.FARMING, farming);
+            if (progression != null) {
+                progression.recordActivity(event.getPlayer(), block.getLocation(), "farming", 1L);
+            }
         }
     }
 

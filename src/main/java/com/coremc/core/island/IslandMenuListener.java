@@ -1,6 +1,10 @@
 package com.coremc.core.island;
 
 import com.coremc.core.config.MessageService;
+import com.coremc.core.progression.IslandCoreBuffConfig;
+import com.coremc.core.progression.IslandCoreBuffService;
+import com.coremc.core.progression.IslandProgressionConfig;
+import com.coremc.core.progression.IslandProgressionService;
 import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Sound;
@@ -30,15 +34,21 @@ public final class IslandMenuListener implements Listener {
     private final IslandGui gui;
     private final IslandUpgradeService upgrades;
     private final IslandUpgradeConfig config;
+    private final IslandProgressionService progression;
+    private final IslandCoreBuffService coreBuffs;
     private final MessageService messages;
 
     public IslandMenuListener(final IslandService islands, final IslandGui gui,
                               final IslandUpgradeService upgrades, final IslandUpgradeConfig config,
+                              final IslandProgressionService progression,
+                              final IslandCoreBuffService coreBuffs,
                               final MessageService messages) {
         this.islands = islands;
         this.gui = gui;
         this.upgrades = upgrades;
         this.config = config;
+        this.progression = progression;
+        this.coreBuffs = coreBuffs;
         this.messages = messages;
     }
 
@@ -80,6 +90,9 @@ public final class IslandMenuListener implements Listener {
         switch (menu.kind()) {
             case ISLAND -> handleIslandClick(event, player);
             case UPGRADES -> handleUpgradesClick(event, player);
+            case MASTERY_BRANCH -> handleMasteryBranchClick(menu, event, player);
+            case CORE -> handleCoreClick(event, player);
+            case CORE_BUFFS -> handleCoreBuffClick(event, player);
             case BUFFS -> handleBuffsClick(menu, event, player);
             case MEMBERS -> handleMembersClick(menu, event, player);
             case INVITE -> handleInviteClick(event, player);
@@ -120,7 +133,7 @@ public final class IslandMenuListener implements Listener {
             }
             case IslandLayout.MENU_BUFFS -> {
                 clickSound(player);
-                gui.openBuffs(player);
+                gui.openCoreBuffs(player);
             }
             case IslandLayout.MENU_SPAWNERS -> {
                 clickSound(player);
@@ -165,6 +178,60 @@ public final class IslandMenuListener implements Listener {
 
     private void handleUpgradesClick(final InventoryClickEvent event, final Player player) {
         final int slot = event.getSlot();
+        if (slot == IslandLayout.MASTERY_CLOSE) {
+            player.closeInventory();
+            clickSound(player);
+            return;
+        }
+        if (slot == IslandLayout.MASTERY_BACK) {
+            clickSound(player);
+            gui.openIslandMenu(player);
+            return;
+        }
+        final String branchId = branchAt(slot);
+        if (branchId != null) {
+            clickSound(player);
+            gui.openMasteryBranch(player, branchId);
+            return;
+        }
+        if (slot == IslandLayout.MASTERY_CORE || slot == IslandLayout.MASTERY_MODULES) {
+            clickSound(player);
+            gui.openCore(player);
+        }
+    }
+
+    private void handleMasteryBranchClick(final IslandMenu menu, final InventoryClickEvent event,
+                                          final Player player) {
+        final int slot = event.getSlot();
+        if (slot == IslandLayout.MASTERY_CLOSE) {
+            player.closeInventory();
+            clickSound(player);
+            return;
+        }
+        if (slot == IslandLayout.MASTERY_BACK) {
+            clickSound(player);
+            gui.openUpgrades(player);
+            return;
+        }
+        if (progression == null || menu.branchId() == null) {
+            return;
+        }
+        final IslandProgressionConfig.MasteryBranch branch = progression.config().branch(menu.branchId());
+        if (branch == null) {
+            return;
+        }
+        for (int i = 0; i < branch.upgrades().size() && i < IslandLayout.masteryUpgradeCapacity(); i++) {
+            if (IslandLayout.masteryUpgradeSlot(i) == slot) {
+                clickSound(player);
+                progression.purchaseMastery(player, branch.id(), branch.upgrades().get(i).id());
+                gui.openMasteryBranch(player, branch.id());
+                return;
+            }
+        }
+    }
+
+    private void handleCoreClick(final InventoryClickEvent event, final Player player) {
+        final int slot = event.getSlot();
         if (slot == IslandLayout.SUB_CLOSE) {
             player.closeInventory();
             clickSound(player);
@@ -172,18 +239,66 @@ public final class IslandMenuListener implements Listener {
         }
         if (slot == IslandLayout.SUB_BACK) {
             clickSound(player);
+            gui.openUpgrades(player);
+        } else if (slot == 16) {
+            clickSound(player);
+            gui.openCoreBuffs(player);
+        }
+    }
+
+    private void handleCoreBuffClick(final InventoryClickEvent event, final Player player) {
+        final int slot = event.getSlot();
+        if (slot == IslandLayout.MASTERY_CLOSE) {
+            player.closeInventory();
+            clickSound(player);
+            return;
+        }
+        if (slot == IslandLayout.MASTERY_BACK) {
+            clickSound(player);
             gui.openIslandMenu(player);
             return;
         }
-        if (slot == IslandLayout.UPGRADE_CLAIM) {
-            clickSound(player);
-            upgrades.buyClaimSize(player);
-            gui.openUpgrades(player);
-        } else if (slot == IslandLayout.UPGRADE_SLOTS) {
-            clickSound(player);
-            upgrades.buyMemberSlots(player);
-            gui.openUpgrades(player);
+        if (coreBuffs == null) {
+            return;
         }
+        final var defs = coreBuffs.config().buffs();
+        for (int i = 0; i < defs.size() && i < IslandLayout.coreBuffCapacity(); i++) {
+            if (IslandLayout.coreBuffSlot(i) == slot) {
+                clickSound(player);
+                if (event.isRightClick() && "fortune-cycle".equals(defs.get(i).id())) {
+                    final Island island = islands.islandOf(player.getUniqueId());
+                    cycleFortuneFocus(island);
+                } else {
+                    coreBuffs.clickBuff(player, defs.get(i).id());
+                }
+                gui.openCoreBuffs(player);
+                return;
+            }
+        }
+    }
+
+    private void cycleFortuneFocus(final Island island) {
+        if (island == null || coreBuffs == null) {
+            return;
+        }
+        final IslandCoreBuffConfig.BuffDef buff = coreBuffs.config().buff("fortune-cycle");
+        if (buff == null || buff.list("focuses").isEmpty()) {
+            return;
+        }
+        final java.util.List<String> focuses = buff.list("focuses");
+        final int current = focuses.indexOf(coreBuffs.fortuneFocus(island));
+        coreBuffs.selectFortuneFocus(island, focuses.get((current + 1) % focuses.size()));
+    }
+
+    private String branchAt(final int slot) {
+        return switch (slot) {
+            case IslandLayout.MASTERY_FARMING -> "farming";
+            case IslandLayout.MASTERY_MINING -> "mining";
+            case IslandLayout.MASTERY_FISHING -> "fishing";
+            case IslandLayout.MASTERY_SLAYER -> "slayer";
+            case IslandLayout.MASTERY_INDUSTRY -> "industry";
+            default -> null;
+        };
     }
 
     // ------------------------------------------------------------------

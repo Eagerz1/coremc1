@@ -10,7 +10,7 @@ website: https://github.com/Eagerz1/coremc1
 commands:
   island:
     description: CoreMC Skyblock island commands.
-    usage: /is [menu|create|go|leave|delete|invite|join|kick|help]
+    usage: /is [menu|create|go|leave|delete|invite|join|kick|top|upgrades|core|buffs|help]
     permission: coremc.command.island
     permission-message: You do not have permission to use this command.
     aliases: [is, isle, block]
@@ -66,6 +66,12 @@ commands:
     permission: coremc.command.essence
     permission-message: You do not have permission to use this command.
     aliases: [essences, ess]
+  coreevent:
+    description: "CoreMC hourly server events."
+    usage: /coreevent [start <event>|stop|status|next]
+    permission: coremc.command.coreevent
+    permission-message: You do not have permission to use this command.
+    aliases: [cevent]
 
 permissions:
   coremc.*:
@@ -82,6 +88,8 @@ permissions:
       coremc.command.echest: true
       coremc.command.season: true
       coremc.command.essence: true
+      coremc.command.coreevent: true
+      coremc.event.admin: true
       coremc.rank.admin: true
       coremc.season.admin: true
       coremc.island.bypass: true
@@ -119,6 +127,12 @@ permissions:
   coremc.command.essence:
     description: Allows using /essence to view balances.
     default: true
+  coremc.command.coreevent:
+    description: Allows viewing CoreMC event status.
+    default: true
+  coremc.event.admin:
+    description: Allows starting and stopping CoreMC server events.
+    default: op
   coremc.admin.essence:
     description: Allows /essence give|take|set <player> <type> <amount>.
     default: op

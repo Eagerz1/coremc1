@@ -1,0 +1,169 @@
+# ============================================================
+#  CoreMC — island-buffs.yml
+#  Persistent Island Core buffs. Islands can unlock many buffs but
+#  equip only their Island Core module slots (progression.yml: 5/15/25).
+#
+#  These are build choices, not hourly events and not flat money buffs.
+#  Balance numbers live here; bad entries disable the Core Buff system
+#  loudly rather than half-working.
+# ============================================================
+
+settings:
+  swap-cooldown-hours: 12
+  fortune-cycle:
+    cooldown-hours: 24
+  momentum:
+    max: 100
+  clamps:
+    kill-progression-max: 2.0
+    omnitool-output-max: 2.0
+    discovery-max: 3.0
+    generator-speed-max: 3.0
+    island-xp-max: 2.0
+    role-xp-max: 2.0
+    omnitool-progress-max: 2.0
+    special-frequency-max: 3.0
+
+buffs:
+  rich-veins:
+    name: "Rich Veins"
+    icon: RAW_GOLD
+    lore:
+      - "&7ᴀʟʟᴏᴡs ʀᴀʀᴇ ᴠᴇɪɴs ᴛᴏ"
+      - "&7ᴀᴘᴘᴇᴀʀ ɪɴ ᴛʜᴇ ᴍɪɴɪɴɢ ᴄᴜʙᴇ."
+    unlock: {island-level: 7, mastery: [mining.rich-veins], money: 25000, sky-tokens: 125}
+    settings:
+      proc-chance: 0.035
+      cooldown-seconds: 180
+      size-min: 6
+      size-max: 14
+      core-fragment-chance: 0.08
+    rewards:
+      table:
+        - {material: DIAMOND_ORE, weight: 8, min: 1, max: 3}
+        - {material: EMERALD_ORE, weight: 5, min: 1, max: 2}
+        - {material: ANCIENT_DEBRIS, weight: 1, min: 1, max: 1, discovery: ancient-ore}
+
+  slayer-frenzy:
+    name: "Slayer Frenzy"
+    icon: NETHERITE_SWORD
+    lore:
+      - "&7ᴍᴀɴᴜᴀʟ sʟᴀʏᴇʀ ᴋɪʟʟs ᴄᴀɴ"
+      - "&7ᴇɴᴛᴇʀ ᴀ sʜᴏʀᴛ ꜰʀᴇɴᴢʏ."
+    unlock: {island-level: 12, mastery: [slayer.elite-mobs], money: 75000, sky-tokens: 300}
+    settings:
+      proc-chance: 0.025
+      duration-seconds: 30
+      cooldown-seconds: 240
+      kill-progression-multiplier: 2.0
+      omnitool-output-multiplier: 2.0
+
+  deep-waters:
+    name: "Deep Waters"
+    icon: HEART_OF_THE_SEA
+    lore:
+      - "&7ᴀᴄᴛɪᴠᴇ ꜰɪsʜɪɴɢ ᴄᴀɴ ᴏᴘᴇɴ"
+      - "&7ᴛᴇᴍᴘᴏʀᴀʀʏ ᴅᴇᴇᴘ ᴡᴀᴛᴇʀs."
+    unlock: {island-level: 13, mastery: [fishing.sunken-cache], money: 65000, sky-tokens: 260}
+    settings:
+      proc-chance: 0.035
+      duration-seconds: 120
+      cooldown-seconds: 300
+      radius: 8
+      discovery-multiplier: 1.5
+      treasure-tier: 1
+    rewards:
+      table:
+        - {material: PRISMARINE_CRYSTALS, weight: 8, min: 2, max: 6}
+        - {material: NAUTILUS_SHELL, weight: 4, min: 1, max: 2, discovery: sunken-cache}
+        - {material: AMETHYST_SHARD, weight: 1, min: 1, max: 1, discovery: core-fragment}
+
+  generator-overdrive:
+    name: "Generator Overdrive"
+    icon: REDSTONE_BLOCK
+    lore:
+      - "&7ᴇʟɪɢɪʙʟᴇ ɢᴇɴᴇʀᴀᴛᴏʀs ᴄᴀɴ"
+      - "&7ᴏᴠᴇʀᴅʀɪᴠᴇ ᴛᴇᴍᴘᴏʀᴀʀɪʟʏ."
+    unlock: {island-level: 10, mastery: [industry.generator-bays], money: 80000, sky-tokens: 300}
+    settings:
+      proc-chance: 0.025
+      duration-seconds: 90
+      cooldown-seconds: 300
+      speed-multiplier: 1.5
+      eligible-tiers: [advanced, ancient, mythic]
+
+  core-discovery:
+    name: "Core Discovery"
+    icon: AMETHYST_CLUSTER
+    lore:
+      - "&7ᴀᴄᴛɪᴠᴇ ɢᴀᴍᴇᴘʟᴀʏ ᴄᴀɴ"
+      - "&7ᴜɴᴄᴏᴠᴇʀ ʙʀᴀɴᴄʜ ᴅɪsᴄᴏᴠᴇʀɪᴇs."
+    unlock: {island-level: 10, money: 50000, sky-tokens: 250}
+    settings:
+      proc-chance: 0.015
+      passive-enabled: 0
+      discovery-multiplier: 1.35
+
+  role-synergy:
+    name: "Role Synergy"
+    icon: NAME_TAG
+    lore:
+      - "&7ᴅɪꜰꜰᴇʀᴇɴᴛ ᴀᴄᴛɪᴠᴇ ʀᴏʟᴇs"
+      - "&7ʙᴜɪʟᴅ ᴛᴇᴀᴍ sʏɴᴇʀɢʏ."
+    unlock: {island-level: 15, money: 100000, sky-tokens: 425}
+    settings:
+      recent-window-seconds: 180
+      minimum-distinct-roles: 2
+      duration-seconds: 180
+      island-xp-multiplier: 1.10
+      role-xp-multiplier: 1.20
+      discovery-multiplier: 1.15
+      omnitool-progress-multiplier: 1.10
+
+  momentum:
+    name: "Momentum"
+    icon: CLOCK
+    lore:
+      - "&7ᴀᴄᴛɪᴠᴇ ɪsʟᴀɴᴅ ᴘʟᴀʏ ꜰɪʟʟs"
+      - "&7ᴀ sʜᴀʀᴇᴅ ᴇᴍᴘᴏᴡᴇʀᴇᴅ ᴍᴇᴛᴇʀ."
+    unlock: {island-level: 15, money: 125000, sky-tokens: 450}
+    settings:
+      duration-seconds: 600
+      island-xp-multiplier: 1.15
+      role-xp-multiplier: 1.15
+      discovery-multiplier: 1.25
+      special-frequency-multiplier: 1.20
+      mining-fill: 1.0
+      farming-fill: 1.0
+      fishing-fill: 4.0
+      slayer-fill: 1.5
+      spawner-fill: 6.0
+      industry-fill: 5.0
+      passive-fill: 0.0
+
+  fortune-cycle:
+    name: "Fortune Cycle"
+    icon: SUNFLOWER
+    lore:
+      - "&7ᴄʜᴏᴏsᴇ ᴏɴᴇ ᴅᴀɪʟʏ ꜰᴏᴄᴜs."
+      - "&7ʙᴏᴏsᴛs sᴘᴇᴄɪᴀʟ ᴍᴇᴄʜᴀɴɪᴄs."
+    unlock: {island-level: 18, money: 160000, sky-tokens: 600}
+    settings:
+      special-frequency-multiplier: 1.30
+      discovery-multiplier: 1.20
+      focuses: [farming, mining, fishing, slayer, industry]
+
+  core-surge:
+    name: "Core Surge"
+    icon: BEACON
+    lore:
+      - "&7ʟᴀᴛᴇ ᴄᴏʀᴇ ᴘᴏᴡᴇʀ ᴄᴀɴ"
+      - "&7sᴜʀɢᴇ ᴀᴄʀᴏss ᴛʜᴇ ɪsʟᴀɴᴅ."
+    unlock: {island-level: 25, money: 300000, sky-tokens: 1000}
+    settings:
+      proc-chance: 0.012
+      duration-seconds: 300
+      cooldown-seconds: 900
+      discovery-multiplier: 1.75
+      special-frequency-multiplier: 1.60
+      generator-speed-multiplier: 1.25

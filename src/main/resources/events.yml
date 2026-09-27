@@ -1,0 +1,92 @@
+# ============================================================
+#  CoreMC — events.yml
+#  Hourly server-wide events. These are temporary, 15-minute events;
+#  they are not persistent island build choices.
+# ============================================================
+
+settings:
+  interval-minutes: 60
+  duration-minutes: 15
+  avoid-immediate-repeats: true
+
+events:
+  mining-frenzy:
+    name: "Mining Frenzy"
+    bossbar-color: BLUE
+    lore:
+      - "&7ʀɪᴄʜ ᴠᴇɪɴs ᴀɴᴅ ᴍɪɴɪɴɢ ᴅɪsᴄᴏᴠᴇʀɪᴇs ɪɴᴄʀᴇᴀsᴇ."
+    effects:
+      discovery-multiplier: 1.75
+      special-frequency-multiplier: 1.50
+      mining-xp-multiplier: 1.25
+
+  slayer-frenzy:
+    name: "Slayer Frenzy"
+    bossbar-color: RED
+    lore:
+      - "&7ᴍᴀɴᴜᴀʟ ᴋɪʟʟ ᴘʀᴏɢʀᴇss ᴀɴᴅ ᴏᴍɴɪᴛᴏᴏʟ ᴏᴜᴛᴘᴜᴛs ᴅᴏᴜʙʟᴇ."
+    effects:
+      kill-progression-multiplier: 2.0
+      omnitool-output-multiplier: 2.0
+
+  fishing-rush:
+    name: "Fishing Rush"
+    bossbar-color: BLUE
+    lore:
+      - "&7ʜᴏᴛsᴘᴏᴛs, ᴛʀᴇᴀsᴜʀᴇ ᴀɴᴅ ᴅɪsᴄᴏᴠᴇʀɪᴇs ɪᴍᴘʀᴏᴠᴇ."
+    effects:
+      discovery-multiplier: 1.75
+      special-frequency-multiplier: 1.60
+
+  generator-overdrive:
+    name: "Generator Overdrive"
+    bossbar-color: YELLOW
+    lore:
+      - "&7ᴇʟɪɢɪʙʟᴇ ɢᴇɴᴇʀᴀᴛᴏʀs ʀᴜɴ ꜰᴀsᴛᴇʀ ᴛᴇᴍᴘᴏʀᴀʀɪʟʏ."
+    effects:
+      generator-speed-multiplier: 1.5
+      special-frequency-multiplier: 1.25
+
+  2x-island-xp:
+    name: "2x Island XP"
+    bossbar-color: GREEN
+    lore:
+      - "&7ᴀᴄᴛɪᴠᴇ ɪsʟᴀɴᴅ xᴘ ᴅᴏᴜʙʟᴇs."
+    effects:
+      island-xp-multiplier: 2.0
+
+  2x-omnitool-progress:
+    name: "2x OmniTool Progress"
+    bossbar-color: PURPLE
+    lore:
+      - "&7ᴏᴍɴɪᴛᴏᴏʟ ᴘʀᴏɢʀᴇssɪᴏɴ xᴘ ᴅᴏᴜʙʟᴇs."
+    effects:
+      omnitool-progress-multiplier: 2.0
+
+  role-xp-rush:
+    name: "Role XP Rush"
+    bossbar-color: GREEN
+    lore:
+      - "&7ʀᴏʟᴇ xᴘ ᴅᴏᴜʙʟᴇs."
+    effects:
+      role-xp-multiplier: 2.0
+
+  core-surge:
+    name: "Core Surge"
+    bossbar-color: PURPLE
+    lore:
+      - "&7ʀᴀʀᴇ ᴍᴇᴄʜᴀɴɪᴄs ᴀɴᴅ ᴅɪsᴄᴏᴠᴇʀɪᴇs sᴜʀɢᴇ."
+    effects:
+      discovery-multiplier: 2.0
+      special-frequency-multiplier: 1.8
+      generator-speed-multiplier: 1.25
+
+  farming-festival:
+    name: "Farming Festival"
+    bossbar-color: GREEN
+    lore:
+      - "&7ꜰᴀʀᴍɪɴɢ ᴅɪsᴄᴏᴠᴇʀɪᴇs ᴀɴᴅ ᴍᴜᴛᴀᴛɪᴏɴs ɪɴᴄʀᴇᴀsᴇ."
+    effects:
+      discovery-multiplier: 1.75
+      special-frequency-multiplier: 1.50
+      role-xp-multiplier: 1.25

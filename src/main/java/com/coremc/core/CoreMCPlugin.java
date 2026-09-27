@@ -34,6 +34,17 @@ import com.coremc.core.essence.PlacedBlockTracker;
 import com.coremc.core.essence.YamlEssenceStore;
 import com.coremc.core.placeholder.CoremcExpansion;
 import com.coremc.core.placeholder.XCurrencyExpansion;
+import com.coremc.core.progression.CoreEventCommand;
+import com.coremc.core.progression.GameplayModifierService;
+import com.coremc.core.progression.IslandCoreBuffConfig;
+import com.coremc.core.progression.IslandCoreBuffService;
+import com.coremc.core.progression.IslandProgressionConfig;
+import com.coremc.core.progression.IslandProgressionService;
+import com.coremc.core.progression.ProgressionFishingListener;
+import com.coremc.core.progression.ServerEventConfig;
+import com.coremc.core.progression.ServerEventService;
+import com.coremc.core.progression.YamlIslandProgressionStore;
+import com.coremc.core.progression.YamlServerEventStore;
 import com.coremc.core.shop.EconomyService;
 import com.coremc.core.shop.VaultEconomy;
 import com.coremc.core.island.YamlBuffStore;
@@ -95,6 +106,13 @@ public final class CoreMCPlugin extends JavaPlugin {
     private EssenceManager essenceManager;
     private IslandUpgradeConfig upgradeConfig;
     private IslandBuffService buffService;
+    private IslandProgressionConfig progressionConfig;
+    private IslandProgressionService progressionService;
+    private IslandCoreBuffConfig coreBuffConfig;
+    private IslandCoreBuffService coreBuffService;
+    private GameplayModifierService gameplayModifiers;
+    private ServerEventConfig eventConfig;
+    private ServerEventService eventService;
     private RankConfig rankConfig;
     private RankService rankService;
 
@@ -236,60 +254,6 @@ public final class CoreMCPlugin extends JavaPlugin {
                 new PlacedBlockTracker(Path.of(getDataFolder().getPath(), "placed-blocks.yml"), getLogger());
         placedBlocks.load();
 
-        // Spawners: progression config (spawners.yml) + placed spawner
-        // registry (spawners-data.yml). A broken config disables the
-        // spawner system with a loud log line, never the plugin.
-        this.spawnerConfig = new SpawnerConfig(this);
-        this.spawnerService = null;
-        try {
-            spawnerConfig.load();
-            if (economy == null) {
-                getLogger().severe("Spawners disabled — no economy (the shop failed to load).");
-            } else if (essenceManager == null) {
-                getLogger().severe("Spawners disabled — no essence storage.");
-            } else {
-                this.spawnerService = new SpawnerService(
-                        this, spawnerConfig,
-                        new YamlSpawnerDataStore(
-                                Path.of(getDataFolder().getPath(), "spawners-data.yml"), getLogger()),
-                        economy, essenceManager, messages, islands);
-                spawnerService.load();
-                final SpawnerHolograms spawnerHolograms =
-                        new SpawnerHolograms(this, spawnerService);
-                spawnerService.attach(spawnerHolograms);
-                pluginManager.registerEvents(spawnerHolograms, this);
-                pluginManager.registerEvents(new SpawnerListener(spawnerService, messages), this);
-                islands.onDelete(spawnerService::onIslandDeleted);
-            }
-        } catch (final RuntimeException exception) {
-            getLogger().severe("Spawners disabled — " + exception.getMessage());
-            this.spawnerService = null;
-        }
-
-        // Essence earning + the /essence command run independently of the
-        // spawner system (mining/farming pay even with spawners off).
-        if (essenceManager != null) {
-            try {
-                essenceConfig.load();
-                pluginManager.registerEvents(
-                        new EssenceListener(essenceManager, essenceConfig, placedBlocks, spawnerService),
-                        this);
-            } catch (final RuntimeException exception) {
-                getLogger().severe("Essence earning disabled — " + exception.getMessage());
-            }
-            registerSimpleCommand("essence", new EssenceCommand(essenceManager, messages));
-        }
-
-        // Menus: /is opens the double-chest island menu (members-only), its
-        // sub-menus (upgrades, buffs, members, invite) are small chests, and
-        // /spawner opens the spawner menu. Purchases reuse the command flows.
-        this.buffService = new IslandBuffService(this,
-                new YamlBuffStore(Path.of(getDataFolder().getPath(), "buffs.yml"), getLogger()),
-                spawnerService, upgradeConfig);
-        buffService.load();
-        islands.onDelete(buffService::onIslandDeleted);
-        pluginManager.registerEvents(new BuffListener(islands, buffService, upgradeConfig), this);
-
         // Island points: blocks broken/placed, play time and upgrades earn
         // points for the island top leaderboards (Solos / Duos / Teams).
         this.islandPoints = new IslandPointsService(
@@ -318,6 +282,121 @@ public final class CoreMCPlugin extends JavaPlugin {
             }
         }, 20L * 60, 20L * 60);
 
+        this.gameplayModifiers = new GameplayModifierService();
+
+        // Island Level + Island Mastery (progression.yml). A broken config
+        // disables the mastery GUI loudly, but active CoreMC gameplay remains up.
+        this.progressionConfig = IslandProgressionConfig.disabled();
+        this.progressionService = null;
+        try {
+            final IslandProgressionConfig parsed = new IslandProgressionConfig(this);
+            parsed.load();
+            this.progressionConfig = parsed;
+            this.progressionService = new IslandProgressionService(this, progressionConfig,
+                    new YamlIslandProgressionStore(
+                            Path.of(getDataFolder().getPath(), "island-progression.yml"), getLogger()),
+                    islands, economy, messages, islandPoints, upgradeConfig, coreConfig);
+            progressionService.load();
+            progressionService.attachModifiers(gameplayModifiers);
+            islands.onDelete(progressionService::onIslandDeleted);
+            pluginManager.registerEvents(new ProgressionFishingListener(progressionService), this);
+        } catch (final RuntimeException exception) {
+            getLogger().severe("Island progression disabled — " + exception.getMessage());
+        }
+
+        // Persistent Island Core buffs (island-buffs.yml). These are equipped
+        // through the Island Core module slots from progression.yml.
+        this.coreBuffConfig = IslandCoreBuffConfig.disabled();
+        this.coreBuffService = null;
+        if (progressionService != null) {
+            try {
+                final IslandCoreBuffConfig parsed = new IslandCoreBuffConfig(this);
+                parsed.load();
+                this.coreBuffConfig = parsed;
+                gameplayModifiers.setClamps(coreBuffConfig.clamps());
+                this.coreBuffService = new IslandCoreBuffService(this, coreBuffConfig,
+                        progressionService, islands, economy, messages, gameplayModifiers);
+                progressionService.attachCoreBuffs(coreBuffService);
+                gameplayModifiers.attachCoreBuffs(coreBuffService);
+                islands.onDelete(coreBuffService::onIslandDeleted);
+            } catch (final RuntimeException exception) {
+                getLogger().severe("Island Core buffs disabled — " + exception.getMessage());
+            }
+        }
+
+        // Hourly server events (events.yml). Manual starts do not corrupt the
+        // automatic schedule; event effects flow through GameplayModifierService.
+        this.eventConfig = ServerEventConfig.disabled();
+        this.eventService = null;
+        try {
+            final ServerEventConfig parsed = new ServerEventConfig(this);
+            parsed.load();
+            this.eventConfig = parsed;
+            this.eventService = new ServerEventService(this, eventConfig,
+                    new YamlServerEventStore(Path.of(getDataFolder().getPath(), "events-state.yml"), getLogger()),
+                    messages, getLogger());
+            eventService.load();
+            gameplayModifiers.attachEvents(eventService);
+        } catch (final RuntimeException exception) {
+            getLogger().severe("Core events disabled — " + exception.getMessage());
+        }
+        registerSimpleCommand("coreevent", new CoreEventCommand(eventConfig, eventService, messages));
+
+        // Spawners: progression config (spawners.yml) + placed spawner
+        // registry (spawners-data.yml). A broken config disables the
+        // spawner system with a loud log line, never the plugin.
+        this.spawnerConfig = new SpawnerConfig(this);
+        this.spawnerService = null;
+        try {
+            spawnerConfig.load();
+            if (economy == null) {
+                getLogger().severe("Spawners disabled — no economy (the shop failed to load).");
+            } else if (essenceManager == null) {
+                getLogger().severe("Spawners disabled — no essence storage.");
+            } else {
+                this.spawnerService = new SpawnerService(
+                        this, spawnerConfig,
+                        new YamlSpawnerDataStore(
+                                Path.of(getDataFolder().getPath(), "spawners-data.yml"), getLogger()),
+                        economy, essenceManager, messages, islands, progressionService);
+                spawnerService.load();
+                final SpawnerHolograms spawnerHolograms =
+                        new SpawnerHolograms(this, spawnerService);
+                spawnerService.attach(spawnerHolograms);
+                pluginManager.registerEvents(spawnerHolograms, this);
+                pluginManager.registerEvents(new SpawnerListener(spawnerService, messages), this);
+                islands.onDelete(spawnerService::onIslandDeleted);
+            }
+        } catch (final RuntimeException exception) {
+            getLogger().severe("Spawners disabled — " + exception.getMessage());
+            this.spawnerService = null;
+        }
+
+        // Essence earning + the /essence command run independently of the
+        // spawner system (mining/farming pay even with spawners off).
+        if (essenceManager != null) {
+            try {
+                essenceConfig.load();
+                pluginManager.registerEvents(
+                        new EssenceListener(essenceManager, essenceConfig, placedBlocks,
+                                spawnerService, progressionService),
+                        this);
+            } catch (final RuntimeException exception) {
+                getLogger().severe("Essence earning disabled — " + exception.getMessage());
+            }
+            registerSimpleCommand("essence", new EssenceCommand(essenceManager, messages));
+        }
+
+        // Menus: /is opens the double-chest island menu (members-only), its
+        // sub-menus (upgrades, buffs, members, invite) are small chests, and
+        // /spawner opens the spawner menu. Purchases reuse the command flows.
+        this.buffService = new IslandBuffService(this,
+                new YamlBuffStore(Path.of(getDataFolder().getPath(), "buffs.yml"), getLogger()),
+                spawnerService, upgradeConfig);
+        buffService.load();
+        islands.onDelete(buffService::onIslandDeleted);
+        pluginManager.registerEvents(new BuffListener(islands, buffService, upgradeConfig), this);
+
         final IslandUpgradeService upgradeService = new IslandUpgradeService(
                 upgradeConfig, islands, buffService, economy, messages, islandPoints);
         SpawnerMenuGui spawnerMenuGui = null;
@@ -331,9 +410,11 @@ public final class CoreMCPlugin extends JavaPlugin {
             pluginManager.registerEvents(
                     new SpawnerUpgradeListener(spawnerService, spawnerUpgradeGui), this);
         }
-        final IslandGui islandGui = new IslandGui(islands, upgradeConfig, buffService, spawnerMenuGui);
+        final IslandGui islandGui = new IslandGui(islands, upgradeConfig, buffService,
+                spawnerMenuGui, progressionService, coreBuffService, economy);
         pluginManager.registerEvents(
-                new IslandMenuListener(islands, islandGui, upgradeService, upgradeConfig, messages),
+                new IslandMenuListener(islands, islandGui, upgradeService, upgradeConfig,
+                        progressionService, coreBuffService, messages),
                 this);
 
         final IsTopGui isTopGui = new IsTopGui(islands, islandPoints);
@@ -442,6 +523,15 @@ public final class CoreMCPlugin extends JavaPlugin {
             } catch (final java.io.IOException exception) {
                 getLogger().warning("Could not save island points: " + exception.getMessage());
             }
+        }
+        if (eventService != null) {
+            eventService.shutdown();
+        }
+        if (coreBuffService != null) {
+            coreBuffService.shutdown();
+        }
+        if (progressionService != null) {
+            progressionService.shutdown();
         }
         if (essenceManager != null) {
             essenceManager.shutdown();

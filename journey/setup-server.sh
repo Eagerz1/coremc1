@@ -82,4 +82,28 @@ cat > "$SERVER/plugins/CoreMC/balances.yml" <<EOF
 $JOOWNER: 500000
 EOF
 
+# Journey-specific balance knobs: keep the production defaults in src/main/resources,
+# but make Core Buff GUI flows reachable quickly in this live test server.
+cp "$ROOT/src/main/resources/progression.yml" "$SERVER/plugins/CoreMC/progression.yml"
+python3 - "$SERVER/plugins/CoreMC/progression.yml" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1])
+s = p.read_text()
+s = s.replace('module-slot-levels: [5, 15, 25]', 'module-slot-levels: [1, 2, 3]')
+p.write_text(s)
+PY
+cp "$ROOT/src/main/resources/island-buffs.yml" "$SERVER/plugins/CoreMC/island-buffs.yml"
+python3 - "$SERVER/plugins/CoreMC/island-buffs.yml" <<'PY'
+import pathlib, re, sys
+p = pathlib.Path(sys.argv[1])
+s = p.read_text()
+s = s.replace('swap-cooldown-hours: 12', 'swap-cooldown-hours: 0')
+s = re.sub(r'island-level: [0-9]+', 'island-level: 1', s)
+s = re.sub(r'money: [0-9]+', 'money: 0', s)
+s = re.sub(r'sky-tokens: [0-9]+', 'sky-tokens: 0', s)
+s = re.sub(r', mastery: \[[^\]]*\]', '', s)
+p.write_text(s)
+PY
+cp "$ROOT/src/main/resources/events.yml" "$SERVER/plugins/CoreMC/events.yml"
+
 echo "journey-server ready at $SERVER"

@@ -15,7 +15,7 @@ import org.bukkit.entity.Player;
  * in {@link IslandService}.
  *
  * Subcommands: menu (default), create, go, leave, delete [confirm],
- * invite <player>, join, kick <player>, top, help. With no arguments the
+ * invite <player>, join, kick <player>, top, upgrades/mastery, core, help. With no arguments the
  * command opens the island menu GUI — but only for island holders.
  * Unknown subcommands get a branded "does not exist" line followed
  * by the help overview.
@@ -23,7 +23,8 @@ import org.bukkit.entity.Player;
 public final class IslandCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBCOMMANDS =
-            List.of("menu", "create", "go", "invite", "join", "leave", "delete", "kick", "top", "help");
+            List.of("menu", "create", "go", "invite", "join", "leave", "delete", "kick",
+                    "top", "upgrades", "mastery", "core", "buffs", "help");
 
     private final IslandService islands;
     private final MessageService messages;
@@ -61,6 +62,9 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             case "join", "accept" -> islands.join(player);
             case "kick" -> kick(player, args);
             case "top" -> topGui.open(player);
+            case "upgrades", "mastery" -> openUpgrades(player);
+            case "core" -> openCore(player);
+            case "buffs" -> openCoreBuffs(player);
             default -> {
                 messages.sendPrefixed(player, "island.unknown-subcommand");
                 messages.sendList(player, "island.help");
@@ -77,6 +81,30 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             return;
         }
         gui.openIslandMenu(player);
+    }
+
+    private void openUpgrades(final Player player) {
+        if (islands.islandOf(player.getUniqueId()) == null) {
+            messages.sendPrefixed(player, "island.no-island");
+            return;
+        }
+        gui.openUpgrades(player);
+    }
+
+    private void openCore(final Player player) {
+        if (islands.islandOf(player.getUniqueId()) == null) {
+            messages.sendPrefixed(player, "island.no-island");
+            return;
+        }
+        gui.openCore(player);
+    }
+
+    private void openCoreBuffs(final Player player) {
+        if (islands.islandOf(player.getUniqueId()) == null) {
+            messages.sendPrefixed(player, "island.no-island");
+            return;
+        }
+        gui.openCoreBuffs(player);
     }
 
     /** /is kick <player> — owner-only, removes a member (no confirmation needed). */
