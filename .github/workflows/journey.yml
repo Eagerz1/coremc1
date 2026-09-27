@@ -81,6 +81,29 @@ jobs:
         run: node ../journey/run.mjs
         timeout-minutes: 35
 
+      # Surface failures as workflow ANNOTATIONS as well as artifacts: the
+      # annotations are readable straight from the API/`gh run view`, which
+      # makes a failed run diagnosable without downloading the evidence zip.
+      - name: Annotate journey failures
+        if: failure()
+        working-directory: journey-server
+        run: |
+          set +e
+          if [ -f journey.log ]; then
+            grep -n "FAIL" journey.log | head -30 | while IFS= read -r line; do
+              echo "::error title=journey::${line}"
+            done
+            echo "::error title=journey-result::$(grep -E 'JOURNEY RESULT|failures:' journey.log | tail -2 | tr '\n' ' ')"
+            echo "::error title=journey-tail::$(tail -25 journey.log | tr '\n' ' | ' | cut -c1-3000)"
+          else
+            echo "::error title=journey::journey.log missing — the harness never started"
+          fi
+          if [ -f server.log ]; then
+            echo "::error title=server-errors::$(grep -E '\] ERROR\]:|Exception' server.log | head -5 | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error title=coremc-warnings::$(grep -iE 'coremc.*(warn|error|exception)' server.log | head -5 | tr '\n' ' | ' | cut -c1-3000)"
+          fi
+          exit 0
+
       - name: Upload journey evidence
         if: always()
         uses: actions/upload-artifact@v4
