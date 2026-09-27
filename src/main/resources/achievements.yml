@@ -1,0 +1,523 @@
+# ============================================================
+#  Achievements — permanent, season-proof milestones.
+#
+#  Achievement Points are PRESTIGE ONLY. They are never spent,
+#  never traded and never converted into currency; they are a
+#  lifetime score that survives every season reset.
+#
+#  Per achievement:
+#    category     island, economy, combat, gathering,
+#                 progression, mastery, social, events,
+#                 seasonal, secret
+#    display      menu name
+#    description  one short line saying what to do
+#    icon         menu icon
+#    difficulty   common, rare, epic, legendary, prestige
+#    points       optional override of the difficulty points
+#    action       the authoritative action it listens to
+#    keys         which subjects count (empty = every subject)
+#    mode         total (sum), max (high-water mark),
+#                 unique (distinct subjects)
+#    requirement  how much is needed
+#    secret       true = hidden as ??? until earned
+#    seasonal     true = stamped with the season it was earned in
+#    rewards      same reward types as collections.yml
+#
+#  Rewards that are items or currencies are claimed by hand in
+#  the menu; unlocks, titles and cosmetics apply instantly.
+# ============================================================
+
+settings:
+  announce: true
+  broadcast-rare: true
+  points:
+    common: 5
+    rare: 15
+    epic: 30
+    legendary: 50
+    prestige: 100
+
+achievements:
+
+  # ---------------- gathering ----------------
+  first_strike:
+    category: gathering
+    display: "First Strike"
+    description: "Break your first resource block."
+    icon: WOODEN_PICKAXE
+    difficulty: common
+    action: mine_block
+    mode: total
+    requirement: 1
+    rewards:
+      - {type: coins, amount: 1000}
+
+  quarry_hand:
+    category: gathering
+    display: "Quarry Hand"
+    description: "Mine 10,000 resource blocks."
+    icon: STONE_PICKAXE
+    difficulty: rare
+    action: mine_block
+    mode: total
+    requirement: 10000
+    rewards:
+      - {type: coins, amount: 25000}
+
+  quarry_master:
+    category: gathering
+    display: "Quarry Master"
+    description: "Mine 250,000 resource blocks."
+    icon: NETHERITE_PICKAXE
+    difficulty: legendary
+    action: mine_block
+    mode: total
+    requirement: 250000
+    rewards:
+      - {type: title, id: quarrymaster, display: "Quarry Master"}
+      - {type: sky_tokens, amount: 25}
+
+  deep_carat:
+    category: gathering
+    display: "Deep Carat"
+    description: "Mine 1,000 diamond ore."
+    icon: DIAMOND
+    difficulty: epic
+    action: mine_block
+    keys: [diamond_ore, deepslate_diamond_ore]
+    mode: total
+    requirement: 1000
+    rewards:
+      - {type: item, id: DIAMOND, amount: 32}
+
+  green_thumb:
+    category: gathering
+    display: "Green Thumb"
+    description: "Harvest 10,000 fully grown crops."
+    icon: WHEAT
+    difficulty: rare
+    action: harvest_crop
+    mode: total
+    requirement: 10000
+    rewards:
+      - {type: coins, amount: 25000}
+
+  master_angler:
+    category: gathering
+    display: "Master Angler"
+    description: "Catch 2,500 fish."
+    icon: FISHING_ROD
+    difficulty: epic
+    action: fish_catch
+    mode: total
+    requirement: 2500
+    rewards:
+      - {type: title, id: masterangler, display: "Master Angler"}
+
+  varied_diet:
+    category: gathering
+    display: "Varied Diet"
+    description: "Catch four different kinds of fish."
+    icon: TROPICAL_FISH
+    difficulty: common
+    action: fish_catch
+    keys: [cod, salmon, tropical_fish, pufferfish]
+    mode: unique
+    requirement: 4
+    rewards:
+      - {type: coins, amount: 7500}
+
+  # ---------------- combat ----------------
+  first_blood:
+    category: combat
+    display: "First Blood"
+    description: "Defeat your first mob."
+    icon: WOODEN_SWORD
+    difficulty: common
+    action: slayer_kill
+    mode: total
+    requirement: 1
+    rewards:
+      - {type: coins, amount: 1000}
+
+  monster_hunter:
+    category: combat
+    display: "Monster Hunter"
+    description: "Defeat 10,000 mobs."
+    icon: IRON_SWORD
+    difficulty: rare
+    action: slayer_kill
+    mode: total
+    requirement: 10000
+    rewards:
+      - {type: coins, amount: 30000}
+
+  legend_of_the_isles:
+    category: combat
+    display: "Legend of the Isles"
+    description: "Defeat 250,000 mobs."
+    icon: NETHERITE_SWORD
+    difficulty: legendary
+    action: slayer_kill
+    mode: total
+    requirement: 250000
+    rewards:
+      - {type: title, id: isleslegend, display: "Legend of the Isles"}
+      - {type: sky_tokens, amount: 25}
+
+  bestiary:
+    category: combat
+    display: "Bestiary"
+    description: "Defeat fifteen different kinds of mob."
+    icon: BOOK
+    difficulty: epic
+    action: slayer_kill
+    mode: unique
+    requirement: 15
+    rewards:
+      - {type: cosmetic, id: bestiary_sigil, display: "Bestiary Sigil"}
+
+  elite_contract:
+    category: combat
+    display: "Elite Contract"
+    description: "Defeat 100 elite mobs."
+    icon: DIAMOND_SWORD
+    difficulty: epic
+    action: elite_kill
+    mode: total
+    requirement: 100
+    rewards:
+      - {type: coins, amount: 75000}
+
+  champion_felled:
+    category: combat
+    display: "Champion Felled"
+    description: "Defeat a champion."
+    icon: NETHER_STAR
+    difficulty: prestige
+    action: champion_kill
+    mode: total
+    requirement: 1
+    rewards:
+      - {type: title, id: championbane, display: "Champion Bane"}
+
+  # ---------------- progression ----------------
+  power_on:
+    category: progression
+    display: "Power On"
+    description: "Place your first generator."
+    icon: IRON_BLOCK
+    difficulty: common
+    action: generator_place
+    mode: total
+    requirement: 1
+    rewards:
+      - {type: coins, amount: 2500}
+
+  industrialist:
+    category: progression
+    display: "Industrialist"
+    description: "Place 100 generators."
+    icon: GOLD_BLOCK
+    difficulty: rare
+    action: generator_place
+    mode: total
+    requirement: 100
+    rewards:
+      - {type: coins, amount: 50000}
+
+  overengineered:
+    category: progression
+    display: "Overengineered"
+    description: "Upgrade generators 50 times."
+    icon: ANVIL
+    difficulty: epic
+    action: generator_upgrade
+    mode: total
+    requirement: 50
+    rewards:
+      - {type: title, id: overengineered, display: "Overengineered"}
+
+  mob_rancher:
+    category: progression
+    display: "Mob Rancher"
+    description: "Place 25 spawners."
+    icon: SPAWNER
+    difficulty: rare
+    action: spawner_place
+    mode: total
+    requirement: 25
+    rewards:
+      - {type: coins, amount: 40000}
+
+  mythic_keeper:
+    category: progression
+    display: "Mythic Keeper"
+    description: "Upgrade spawners 25 times."
+    icon: NETHER_STAR
+    difficulty: epic
+    action: spawner_upgrade
+    mode: total
+    requirement: 25
+    rewards:
+      - {type: cosmetic, id: mythic_sparks, display: "Mythic Sparks"}
+
+  # ---------------- island ----------------
+  homestead:
+    category: island
+    display: "Homestead"
+    description: "Reach island level 5."
+    icon: GRASS_BLOCK
+    difficulty: common
+    action: island_level
+    mode: max
+    requirement: 5
+    rewards:
+      - {type: coins, amount: 10000}
+
+  skyline:
+    category: island
+    display: "Skyline"
+    description: "Reach island level 15."
+    icon: OAK_SAPLING
+    difficulty: rare
+    action: island_level
+    mode: max
+    requirement: 15
+    rewards:
+      - {type: coins, amount: 40000}
+
+  sky_metropolis:
+    category: island
+    display: "Sky Metropolis"
+    description: "Reach island level 30."
+    icon: BEACON
+    difficulty: epic
+    action: island_level
+    mode: max
+    requirement: 30
+    rewards:
+      - {type: title, id: skyarchitect, display: "Sky Architect"}
+
+  expansionist:
+    category: island
+    display: "Expansionist"
+    description: "Buy 10 island upgrades."
+    icon: GRASS_BLOCK
+    difficulty: rare
+    action: island_upgrade
+    mode: total
+    requirement: 10
+    rewards:
+      - {type: coins, amount: 35000}
+
+  # ---------------- economy ----------------
+  passive_income:
+    category: economy
+    display: "Passive Income"
+    description: "Bank 10,000 generator payouts."
+    icon: HOPPER
+    difficulty: rare
+    action: generator_output
+    mode: total
+    requirement: 10000
+    rewards:
+      - {type: coins, amount: 30000}
+
+  tycoon:
+    category: economy
+    display: "Tycoon"
+    description: "Bank 250,000 generator payouts."
+    icon: GOLD_INGOT
+    difficulty: legendary
+    action: generator_output
+    mode: total
+    requirement: 250000
+    rewards:
+      - {type: title, id: tycoon, display: "Tycoon"}
+      - {type: sky_tokens, amount: 20}
+
+  # ---------------- social ----------------
+  open_door:
+    category: social
+    display: "Open Door"
+    description: "Buy your first island member slot."
+    icon: OAK_DOOR
+    difficulty: common
+    action: island_upgrade
+    keys: [member-slots]
+    mode: total
+    requirement: 1
+    rewards:
+      - {type: coins, amount: 5000}
+
+  full_house:
+    category: social
+    display: "Full House"
+    description: "Buy three island member slots."
+    icon: PLAYER_HEAD
+    difficulty: rare
+    action: island_upgrade
+    keys: [member-slots]
+    mode: total
+    requirement: 3
+    rewards:
+      - {type: title, id: hostwitha, display: "Host"}
+
+  # ---------------- mastery ----------------
+  toolbound:
+    category: mastery
+    display: "Toolbound"
+    description: "Unlock your first OmniTool."
+    icon: NETHERITE_PICKAXE
+    difficulty: rare
+    action: omnitool_unlock
+    mode: total
+    requirement: 1
+    rewards:
+      - {type: coins, amount: 25000}
+
+  enchant_scholar:
+    category: mastery
+    display: "Enchant Scholar"
+    description: "Unlock 20 OmniTool enchants."
+    icon: ENCHANTED_BOOK
+    difficulty: epic
+    action: omnitool_enchant_unlock
+    mode: total
+    requirement: 20
+    rewards:
+      - {type: cosmetic, id: scholar_wisps, display: "Scholar Wisps"}
+
+  role_devotee:
+    category: mastery
+    display: "Role Devotee"
+    description: "Reach 25 role milestones."
+    icon: PAPER
+    difficulty: epic
+    action: role_milestone
+    mode: total
+    requirement: 25
+    rewards:
+      - {type: title, id: roledevotee, display: "Role Devotee"}
+
+  beast_bonded:
+    category: mastery
+    display: "Beast Bonded"
+    description: "Max out a companion."
+    icon: BONE
+    difficulty: epic
+    action: companion_maxed
+    mode: total
+    requirement: 1
+    rewards:
+      - {type: cosmetic, id: bonded_aura, display: "Bonded Aura"}
+
+  # ---------------- events ----------------
+  showing_up:
+    category: events
+    display: "Showing Up"
+    description: "Join 10 server events."
+    icon: FIREWORK_ROCKET
+    difficulty: common
+    action: event_participate
+    mode: total
+    requirement: 10
+    rewards:
+      - {type: coins, amount: 10000}
+
+  questbound:
+    category: events
+    display: "Questbound"
+    description: "Complete 100 quests."
+    icon: WRITABLE_BOOK
+    difficulty: rare
+    action: quest_complete
+    mode: total
+    requirement: 100
+    rewards:
+      - {type: coins, amount: 40000}
+
+  # ---------------- seasonal ----------------
+  season_regular:
+    category: seasonal
+    display: "Season Regular"
+    description: "Reach season level 25."
+    icon: CLOCK
+    difficulty: rare
+    action: season_level
+    mode: max
+    requirement: 25
+    seasonal: true
+    rewards:
+      - {type: coins, amount: 35000}
+
+  season_champion:
+    category: seasonal
+    display: "Season Champion"
+    description: "Reach season level 100."
+    icon: GOLDEN_APPLE
+    difficulty: legendary
+    action: season_level
+    mode: max
+    requirement: 100
+    seasonal: true
+    rewards:
+      - {type: title, id: seasonchampion, display: "Season Champion"}
+      - {type: sky_tokens, amount: 25}
+
+  # ---------------- secret ----------------
+  the_deep_end:
+    category: secret
+    display: "The Deep End"
+    description: "You went looking where the world ends."
+    icon: ANCIENT_DEBRIS
+    difficulty: epic
+    action: mine_block
+    keys: [ancient_debris]
+    mode: total
+    requirement: 64
+    secret: true
+    rewards:
+      - {type: cosmetic, id: deep_echo, display: "Deep Echo"}
+
+  something_in_the_water:
+    category: secret
+    display: "Something in the Water"
+    description: "You pulled something that was not a fish."
+    icon: NAUTILUS_SHELL
+    difficulty: rare
+    action: fish_treasure
+    mode: total
+    requirement: 1
+    secret: true
+    rewards:
+      - {type: coins, amount: 15000}
+
+  stared_back:
+    category: secret
+    display: "Stared Back"
+    description: "You held an Enderman's gaze 500 times."
+    icon: ENDER_EYE
+    difficulty: epic
+    action: slayer_kill
+    keys: [enderman]
+    mode: total
+    requirement: 500
+    secret: true
+    rewards:
+      - {type: title, id: staredback, display: "Stared Back"}
+
+  curator:
+    category: secret
+    display: "Curator"
+    description: "You found ten hidden things."
+    icon: AMETHYST_SHARD
+    difficulty: legendary
+    action: discovery
+    mode: total
+    requirement: 10
+    secret: true
+    rewards:
+      - {type: cosmetic, id: curator_halo, display: "Curator Halo"}
+      - {type: sky_tokens, amount: 15}

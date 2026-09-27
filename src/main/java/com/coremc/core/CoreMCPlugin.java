@@ -1,6 +1,33 @@
 package com.coremc.core;
 
+import com.coremc.core.achievements.AchievementConfig;
+import com.coremc.core.achievements.AchievementNotifier;
+import com.coremc.core.achievements.AchievementService;
+import com.coremc.core.achievements.AchievementsCommand;
+import com.coremc.core.achievements.AchievementsGui;
+import com.coremc.core.achievements.AchievementsListener;
+import com.coremc.core.achievements.CoreAchievementsCommand;
+import com.coremc.core.achievements.YamlAchievementStore;
+import com.coremc.core.collections.CollectionConfig;
+import com.coremc.core.collections.CollectionNotifier;
+import com.coremc.core.collections.CollectionService;
+import com.coremc.core.collections.CollectionsCommand;
+import com.coremc.core.collections.CollectionsGui;
+import com.coremc.core.collections.CollectionsListener;
+import com.coremc.core.collections.CoreCollectionsCommand;
+import com.coremc.core.collections.YamlCollectionStore;
 import com.coremc.core.config.CoreConfig;
+import com.coremc.core.progress.CoreProgressBridge;
+import com.coremc.core.progress.ProgressAction;
+import com.coremc.core.progress.ProgressBus;
+import com.coremc.core.progress.ProgressEvent;
+import com.coremc.core.progress.ProgressSource;
+import com.coremc.core.progress.ProfileSummaryService;
+import com.coremc.core.progress.adapter.ExternalSystems;
+import com.coremc.core.progress.adapter.PointsIslandProgressionAdapter;
+import com.coremc.core.progress.reward.PendingRewardListener;
+import com.coremc.core.progress.reward.PendingRewardStore;
+import com.coremc.core.progress.reward.RewardService;
 import com.coremc.core.config.MessageService;
 import com.coremc.core.island.BuffListener;
 import com.coremc.core.rank.EchestCommand;
@@ -107,6 +134,9 @@ public final class CoreMCPlugin extends JavaPlugin {
     private IslandBuffService buffService;
     private RankConfig rankConfig;
     private RankService rankService;
+    private CollectionService collectionService;
+    private AchievementService achievementService;
+    private PendingRewardStore pendingRewards;
     private GeneratorConfig generatorConfig;
     private GeneratorService generatorService;
 
@@ -402,6 +432,112 @@ public final class CoreMCPlugin extends JavaPlugin {
                 new IslandMenuListener(islands, islandGui, upgradeService, upgradeConfig, messages),
                 this);
 
+        // ------------------------------------------------------------------
+        // Permanent progression: Collections + Achievements
+        //
+        // One authoritative event bus feeds both systems. Gameplay is
+        // translated into events exactly once by the bridge (and by the
+        // generator/spawner/island services through their optional sink),
+        // then Collections and Achievements consume them. Their data files
+        // are deliberately outside everything seasonal: a season reset
+        // changes ranks and seasonal stats and never touches these.
+        // ------------------------------------------------------------------
+        final ProgressBus progressBus = new ProgressBus(getLogger());
+        final ExternalSystems externals = new ExternalSystems();
+        externals.islands(new PointsIslandProgressionAdapter(islands, islandPoints));
+        this.pendingRewards = new PendingRewardStore(
+                Path.of(getDataFolder().getPath(), "pending-rewards.yml"), getLogger());
+        pendingRewards.load();
+        final RewardService rewardService =
+                new RewardService(economy, externals, pendingRewards, getLogger());
+
+        CollectionConfig collectionConfig = CollectionConfig.disabled();
+        try {
+            final CollectionConfig parsed = new CollectionConfig(this);
+            parsed.load();
+            collectionConfig = parsed;
+        } catch (final RuntimeException exception) {
+            getLogger().severe("Collections disabled — " + exception.getMessage());
+        }
+        this.collectionService = new CollectionService(collectionConfig,
+                new YamlCollectionStore(
+                        Path.of(getDataFolder().getPath(), "collections-data.yml"), getLogger()),
+                rewardService, getLogger());
+        collectionService.load();
+        collectionService.notifier(
+                new CollectionNotifier(messages, collectionConfig.announceMilestones()));
+
+        AchievementConfig achievementConfig = AchievementConfig.disabled();
+        try {
+            final AchievementConfig parsed = new AchievementConfig(this);
+            parsed.load();
+            achievementConfig = parsed;
+        } catch (final RuntimeException exception) {
+            getLogger().severe("Achievements disabled — " + exception.getMessage());
+        }
+        this.achievementService = new AchievementService(achievementConfig,
+                new YamlAchievementStore(
+                        Path.of(getDataFolder().getPath(), "achievements-data.yml"), getLogger()),
+                rewardService, getLogger());
+        achievementService.load();
+        achievementService.seasonSupplier(
+                () -> rankService == null ? -1 : rankService.season());
+        achievementService.notifier(new AchievementNotifier(messages,
+                achievementConfig.announce(), achievementConfig.broadcastRare()));
+
+        progressBus.register(collectionService::accept);
+        progressBus.register(achievementService::accept);
+
+        // real gameplay -> authoritative events (mining, farming, fishing, slayer)
+        pluginManager.registerEvents(
+                new CoreProgressBridge(progressBus, essenceConfig, placedBlocks), this);
+        pluginManager.registerEvents(
+                new PendingRewardListener(this, rewardService, messages), this);
+        if (generatorService != null) {
+            generatorService.progress(progressBus);
+        }
+        if (spawnerService != null) {
+            spawnerService.progress(progressBus);
+        }
+        upgradeService.progress(progressBus);
+
+        final CollectionsGui collectionsGui =
+                new CollectionsGui(collectionConfig, collectionService, rewardService);
+        final AchievementsGui achievementsGui =
+                new AchievementsGui(achievementConfig, achievementService, rewardService);
+        islandGui.collectionsGui(collectionsGui);
+        islandGui.achievementsGui(achievementsGui);
+        pluginManager.registerEvents(new CollectionsListener(collectionConfig, collectionService,
+                collectionsGui, rewardService, messages, islandGui), this);
+        pluginManager.registerEvents(new AchievementsListener(achievementConfig, achievementService,
+                achievementsGui, collectionsGui, messages, islandGui), this);
+
+        final CollectionsCommand collectionsCommand = new CollectionsCommand(collectionConfig,
+                collectionService, collectionsGui, messages);
+        registerSimpleCommand("collections", collectionsCommand);
+        registerSimpleCommand("corecollections",
+                new CoreCollectionsCommand(collectionConfig, collectionService, messages));
+        final AchievementsCommand achievementsCommand = new AchievementsCommand(achievementConfig,
+                achievementService, achievementsGui, messages);
+        registerSimpleCommand("achievements", achievementsCommand);
+        registerSimpleCommand("coreachievements",
+                new CoreAchievementsCommand(achievementConfig, achievementService, messages));
+
+        // Island level is derived from island points until the Island
+        // Progression branch lands; posting it on a slow heartbeat keeps
+        // level achievements honest without a per-tick cost. MAX-mode
+        // achievements ignore repeats, so re-posting is free.
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            for (final org.bukkit.entity.Player online : getServer().getOnlinePlayers()) {
+                final int level = externals.islands().islandLevel(online.getUniqueId());
+                if (level > 0) {
+                    progressBus.post(ProgressEvent.of(online.getUniqueId(),
+                            ProgressAction.ISLAND_LEVEL, "island", level, ProgressSource.WORLD,
+                            "level:" + level));
+                }
+            }
+        }, 20L * 30, 20L * 300);
+
         final IsTopGui isTopGui = new IsTopGui(islands, islandPoints);
         final IsTopBoardGui isTopBoardGui = new IsTopBoardGui(islands, islandPoints);
         pluginManager.registerEvents(new IsTopListener(isTopGui, isTopBoardGui), this);
@@ -442,7 +578,8 @@ public final class CoreMCPlugin extends JavaPlugin {
         if (essenceManager != null
                 && getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             try {
-                new CoremcExpansion(essenceManager, economy).register();
+                new CoremcExpansion(essenceManager, economy, new ProfileSummaryService(
+                        collectionService, achievementService, rewardService)).register();
                 new XCurrencyExpansion(essenceManager, coreConfig).register();
                 getLogger().info("PlaceholderAPI expansions registered (coremc, x).");
             } catch (final Throwable error) {
@@ -511,6 +648,15 @@ public final class CoreMCPlugin extends JavaPlugin {
         }
         if (generatorService != null) {
             generatorService.shutdown();
+        }
+        if (collectionService != null) {
+            collectionService.save();
+        }
+        if (achievementService != null) {
+            achievementService.save();
+        }
+        if (pendingRewards != null) {
+            pendingRewards.persist();
         }
         if (essenceManager != null) {
             essenceManager.shutdown();

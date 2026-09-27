@@ -8,3 +8,7 @@ commands:
     description: Print resolved CoreMC placeholders for a player.
     usage: /papicheck [player]
     permission: coremc.admin
+  papiprogress:
+    description: Print resolved CoreMC progression placeholders for a player.
+    usage: /papiprogress [player]
+    permission: coremc.admin

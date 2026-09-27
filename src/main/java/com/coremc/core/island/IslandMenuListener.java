@@ -130,6 +130,14 @@ public final class IslandMenuListener implements Listener {
                 clickSound(player);
                 gui.openGensMenu(player);
             }
+            case IslandLayout.MENU_COLLECTIONS -> {
+                clickSound(player);
+                gui.openCollections(player);
+            }
+            case IslandLayout.MENU_ACHIEVEMENTS -> {
+                clickSound(player);
+                gui.openAchievements(player);
+            }
             case IslandLayout.MENU_DELETE -> {
                 clickSound(player);
                 // Reuses the /is delete arming: first click arms, the

@@ -6,8 +6,9 @@ world, schematic-based generation, borders and the core island commands,
 a coin economy with a chest-GUI shop, the mob-spawner progression system
 (essences, unique drops, relics, four spawner variants, island luck), and
 chest-GUI menus for it all — the double-chest island menu with upgrades,
-buffs, members and invites, plus the double-chest spawner menu, and the
-Core / Core+ / Core++ rank ladder.
+buffs, members and invites, plus the double-chest spawner menu, the
+Core / Core+ / Core++ rank ladder, and the permanent Collections and
+Achievements progression that survives every season reset.
 
 ## Feature set (v1.0.0)
 
@@ -27,7 +28,12 @@ Core / Core+ / Core++ rank ladder.
 | Island top rewards | When a new season starts (`/season set <n>`), the island top leaders are paid in webstore gift cards — always to the island owner. Teams pay five places (100 / 75 / 50 / 35 / 25 GC), Duos three (100 / 75 / 50 GC), Solos five (100 / 75 / 50 / 30 / 25 GC). Each card is created through the Tebex Plugin API, linked to the owner (`/gc` shows it) and messaged to online owners immediately; a season is only ever paid once (`island-rewards.yml` remembers the last paid season), and an unconfigured Tebex leaves the season unpaid with a loud log line instead of eating the rewards. |
 | Sell window | `/sell` opens an empty double chest: drop anything in and close it to get paid. Every listed item pays its shop sell price (times the rank multiplier), any other ordinary block pays `default-sell-price`, and custom progression items (unique drops, relics, spawner items) are returned untouched. A restart settles open windows, so items are never lost. |
 | Vault economy | With [Vault](https://github.com/MilkBowl/VaultAPI) installed, CoreMC registers its coins as a Vault economy provider: any Vault-aware plugin (placeholders, shops, scoreboards, …) reads and spends the same `balances.yml` coins through the standard ServicesManager. Without Vault everything works unchanged (soft-depend; graceful no-op with a log line). |
-| Placeholders | With [PlaceholderAPI](https://github.com/PlaceholderAPI/PlaceholderAPI) installed, CoreMC registers two expansions: `coremc` (`%coremc_slayer_essence%`, `%coremc_mining_essence%`, `%coremc_farming_essence%`, `%coremc_essence_total%`, `%coremc_mob_kills%`, `%coremc_coins%` — all comma-formatted) and `x` (`%x_currency%`, configurable via `x-currency` in config.yml). Without PAPI everything works unchanged (soft-depend). |
+| Placeholders | With [PlaceholderAPI](https://github.com/PlaceholderAPI/PlaceholderAPI) installed, CoreMC registers two expansions: `coremc` (`%coremc_slayer_essence%`, `%coremc_mining_essence%`, `%coremc_farming_essence%`, `%coremc_essence_total%`, `%coremc_mob_kills%`, `%coremc_coins%`, plus the permanent-progression set
+`%coremc_collection_percent%`, `%coremc_collections_complete%`,
+`%coremc_collections_total%`, `%coremc_achievement_points%`,
+`%coremc_achievements_earned%`, `%coremc_achievements_total%`,
+`%coremc_rewards_waiting%`, `%coremc_rewards_held%` — all
+comma-formatted) and `x` (`%x_currency%`, configurable via `x-currency` in config.yml). Without PAPI everything works unchanged (soft-depend). |
 | Essence | Three virtual account currencies earned through active play (never items, never negative, persisted in `essence-balances.yml`): **Slayer** for mobs you kill yourself (melee or your own projectiles — passive deaths, Mythic auto-kill and `/kill` pay nothing; Normal 1 / Advanced 2 / Ancient 3 / Mythic 5 per mob, and a killed "4x Pig" stack pays 4x), **Mining** for natural ores, deepslate ores, obsidian and generator blocks (player-placed blocks are tracked in `placed-blocks.yml` and never pay — no place-mine loops), **Farming** for fully-grown wheat, carrots, potatoes, beetroot and nether wart, plus sugar cane, melons and pumpkins. Every kill also feeds a lifetime mob-kill counter. Rates live in `essences.yml`. |
 | Spawner variants | normal → advanced → ancient → mythic. Each variant spawns faster and in bigger bursts (rate 1–4×, count 2–6, nearby cap 8–24); Mythic spawners auto-kill their spawns and credit the drops to the island owner (but pay no Slayer Essence — that needs a player's own hand). `/spawner upgrade` opens the Upgrade GUI: a checklist of that tier's requirements with live ✔ / ✖ ticks and `(You have N)` shortfalls; clicking the button with every ✔ consumes money → essence → unique drops in that order (mob kills are a lifetime threshold, never spent), applies the upgrade and refreshes the hologram with the stack preserved. A ✖ click plays an error sound and names exactly what's missing. Requirements are lists of typed entries (`money`, `kills`, `essence`, `drop`) in `spawners.yml` — `upgrade-defaults`, with optional per-group and per-mob overrides — and scale per spawner in the stack, so a 2x stack pays twice. |
 | Spawner items | Spawners are real items (BlockStateMeta + PDC): recoverable by breaking, re-placeable, variant preserved. Custom items match by PDC tag with a display-name fallback, and are never sellable in the shop as raw materials. |
@@ -48,6 +54,13 @@ Core / Core+ / Core++ rank ladder.
 | Generator stacking | Sneak-click an identical generator onto a placed one to stack it (up to `settings.max-stack` = 64). Value, output and upgrade cost all scale with the stack, and a text-display hologram (`8x ɪʀᴏɴ ɢᴇɴᴇʀᴀᴛᴏʀ`) floats above it. A normal break takes one generator out of the stack, a sneak-break takes the whole stack straight into your inventory — never a ground drop that can bounce into the void. |
 | Generator management | Right-click a placed generator (or `/gens info`) for its window: name, tier, stack size, rate, current value and per-hour income, owner and island, an upgrade button that previews the new rate, new value and scaled cost with a live ✔ / ✖, and a pick-up button that names exactly what you get back. The top tier says so instead of offering an upgrade. |
 | Generator menu | `/gens` opens a double chest: your balance, island points, generator count and income per hour, then the whole ladder in tier order. Affordable tiers glow with a green ✔ price and `ᴄʟɪᴄᴋ ᴛᴏ ᴘᴜʀᴄʜᴀsᴇ`; unaffordable ones show the red ✖ price; locked ones are grey panes that name the missing island points. |
+| Collections | Permanent, season-proof gathering progress across eleven categories (mining, farming, fishing, slayer, generators, spawners, companions, omnitools, discoveries, events, seasonal). Every entry counts a lifetime amount, climbs numbered milestone tiers and shows a completion percentage; tiers pay recipes, unlocks, cosmetics, titles, currencies and items. Hidden entries stay `? ? ?` with a vague hint until you find one — never the drop chance, never the method. Amounts only ever grow, and a season reset never touches them (`collections-data.yml`). |
+| Achievements | Permanent achievements in ten categories with five difficulties — Common 5, Rare 15, Epic 30, Legendary 50, Prestige 100 points. Points are prestige only: they are never a currency and can never be spent. Secret achievements reveal themselves the moment they are earned, seasonal ones are stamped with the season they were earned in, and rewards are either automatic (permanent unlocks) or manually claimed (items, coins, keys). Epic and above are broadcast to the server (`achievements-data.yml`). |
+| Progression events | One authoritative internal event (`ProgressEvent`: player, action, key, amount, source) feeds both systems, so a real action is counted exactly once no matter which system saw it. Action ids are stable strings (`mine_block`, `harvest_crop`, `slayer_kill`, `generator_output`, `spawner_kill`, `discovery`, …), sources are typed, and adapters bridge the systems that already exist. Where a system is not on this branch yet, the adapter interface is there waiting for it. |
+| Anti-exploit | Progress only counts real play: player-placed blocks never pay (shared placement memory with the essence system, order-independent between listeners), creative and spectator are ignored, display entities and non-player kills are ignored, crops must be fully grown, and the same action in the same spot cannot be re-counted inside its dedupe window. Passive output (generators) is weighted to 10% and capped per event, so an AFK farm can never out-earn a player. |
+| Held rewards | A reward whose owning system is not installed — Sky Tokens, credits, keys from another branch — is never dropped and never silently lost. It is parked in `pending-rewards.yml`, shown in `/collections held` and on the menu panel, and handed over as soon as the system arrives. |
+| Collections menu | `/collections` opens a double chest: your panel (completion bar, completed count, waiting rewards, held rewards), the eleven category buttons, a recipe book (slot 53) and the held-rewards view (slot 48). A category page lists its entries with amounts, tier and the road to the next tier; clicking an entry shows every milestone tier as its own item — grey pane + red `ʟᴏᴄᴋᴇᴅ ✖` when unreached, green when unlocked, a glowing chest with `ᴄʟɪᴄᴋ ᴛᴏ ᴄʟᴀɪᴍ` when a reward is waiting. Undiscovered entries are dull grey dye named `? ? ?`. |
+| Achievements menu | `/achievements` opens the matching double chest: your panel (points, earned fraction, completion bar, prestige reminder), the category buttons and a secrets view (slot 53). Each achievement shows its difficulty colour, its points, its requirement with the live ✔ / ✖ marker and — once earned — when it was earned and in which season. Unearned secrets show no hints at all. |
 | GUI design language | Every CoreMC menu speaks one visual language: `&` colour codes only (never MiniMessage), small-caps lore (`ᴘʀɪᴄᴇ`, `ᴛɪᴇʀ`, `ᴄʟɪᴄᴋ ᴛᴏ ᴜᴘɢʀᴀᴅᴇ`), short blocks separated by blank lines, values coloured by meaning, tier-coloured names, and a dynamic affordability marker wherever a cost exists — `&7ᴘʀɪᴄᴇ: &a$25,000 &a✔` when you can pay, `&c$25,000 &c✖` when you cannot. Locked and unavailable entries never look like purchasable ones (grey panes, `&8&l` names, a red `ʟᴏᴄᴋᴇᴅ` line). The shared helpers live in `util/SmallCaps`, `util/GuiText` and `util/GuiItems`. |
 | Rank pricing | Core $75k (x1.05 sells, $100k/season, 2 keys), Core+ $250k (x1.2, $250k/season, 5 keys), Core++ $750k (x1.5, $500k/season, 12 keys) — each rank pays for itself within a season or two. Admins grant/clear with `/rank set <player> <rank\|none>`. |
 
@@ -81,6 +94,17 @@ Core / Core+ / Core++ rank ladder.
 | `/gens buy <generator> [amount]` | Buys generators with coins (island points gate the higher tiers). |
 | `/gens info` | Opens the management window for the generator you look at (owner/member of its island only). |
 | `/gens give <player> <generator> [amount]` | Admin (`coremc.gens.admin`): hand out generator items. |
+| `/collections` | Opens the Collections menu (double chest). Aliases `/coll`, `/collection`. |
+| `/collections list\|info [id]` | Your completion per category, or one Collection's amount, tier and percentage in chat. |
+| `/collections claim <collection> <tier>` | Claims a reached milestone's manual reward — exactly once, ever. |
+| `/collections recipes` | The Collection-locked recipe book: what each recipe needs and whether you have unlocked it. |
+| `/collections held` | Rewards that are waiting for their system to arrive (nothing is ever dropped). |
+| `/achievements` | Opens the Achievements menu (double chest). Aliases `/ach`, `/achievement`. |
+| `/achievements list\|points` | Your achievements per category, or your prestige points and earned fraction. |
+| `/achievements claim <achievement>` | Claims a manual achievement reward. |
+| `/achievements secrets` | The secret achievements — earned ones only; the rest stay secret. |
+| `/corecollections info\|add\|set\|reload` | Admin (`coremc.collections.admin`): inspect a player, add to or set a Collection amount, reload `collections.yml`. |
+| `/coreachievements info\|grant\|reload` | Admin (`coremc.achievements.admin`): inspect a player, grant an achievement, reload `achievements.yml`. |
 | `/rank` | Shows your rank: multiplier, season payout, River keys, perks, and the next rank with its price. |
 | `/rank list` | The whole ladder with prices and perks. |
 | `/rank buy` | Buys the next rank with coins (upgrade steps only), granting its River keys and perks. |
@@ -99,11 +123,15 @@ Aliases: `/island`, `/isle`, `/block`; `/store` for `/shop`; `/sp` for
 `/spawner`; `/gen` and `/generators` for `/gens`; `/ranks` and `/tier`
 for `/rank`; `/ec` and `/enderchest` for `/echest`; `/gc` for
 `/giftcard`. Everyone may use `/is`, `/shop`, `/sell`, `/giftcard`,
-`/spawner`, `/gens`, `/rank`, `/fly`, `/echest` and `/season`
-(`coremc.command.*`); the spawner admin tools need
+`/spawner`, `/gens`, `/collections`, `/achievements`, `/rank`, `/fly`,
+`/echest` and `/season` (`coremc.command.*`); the spawner admin tools need
 `coremc.spawner.admin` (op), generator admin `coremc.gens.admin` (op),
-rank admin `coremc.rank.admin` (op) and season admin
-`coremc.season.admin` (op).
+rank admin `coremc.rank.admin` (op), season admin `coremc.season.admin`
+(op), and the progression admin tools `coremc.collections.admin` /
+`coremc.achievements.admin` (op).
+
+Aliases for the progression commands: `/coll` and `/collection` for
+`/collections`; `/ach` and `/achievement` for `/achievements`.
 
 ## Configuration
 
@@ -174,6 +202,27 @@ rank admin `coremc.rank.admin` (op) and season admin
   uncapped behaviour) rather than half-working.
 - `buffs.yml` — active island buffs and their expiries (written atomically
   on every change).
+- `collections.yml` — the Collections content: `settings` (entries per
+  page, tier colours), the category list, every Collection entry (id,
+  display, icon, category, action + key it listens to, hidden flag and
+  hint, milestone tiers with their amounts and rewards) and the
+  Collection-locked recipes (ingredients, result, the Collection and
+  tier that unlock them). Validated as a whole at startup: every
+  problem is listed in one log line and the system refuses to load
+  half-broken content.
+- `achievements.yml` — the Achievements content: `settings` (points per
+  difficulty, broadcast threshold), every achievement (id, name,
+  description, category, difficulty, action + key, counting mode
+  `total`/`max`/`unique`, requirement, rewards, secret and seasonal
+  flags). Same all-or-nothing validation.
+- `collections-data.yml` — per player: lifetime amounts, claimed tiers,
+  permanent unlocks and discovery timestamps. Permanent — season resets
+  never touch it. Atomic writes, corrupt rows skipped with a warning.
+- `achievements-data.yml` — per player: earned achievements with their
+  timestamp and season, claimed rewards and granted unlocks. Permanent,
+  atomic, same corrupt-row handling.
+- `pending-rewards.yml` — rewards held safely because the system that
+  owns them is not installed yet; delivered when it is.
 - `ranks.yml` — the rank ladder (order, prices, multipliers, season money,
   River keys, coming-soon chat perk flags). Validated as a whole at
   startup: a broken file disables ranks loudly (no perks, x1.0 sells) with
@@ -192,14 +241,20 @@ mvn package          # produces target/CoreMC-<version>.jar
 `paper-api` is a `provided` dependency; tests run via JUnit 5 (Surefire on
 Maven, or the curated `TestRunner` used by the offline/CI builds).
 
-Two scripted live journeys drive a real Paper server from this checkout
-with mineflayer bots + RCON (`bash journey/setup-server.sh`, then
-`node journey/run.mjs` or `node journey/gens-journey.mjs` from
-`journey-server/`): the headline flows, and the generator system
-end-to-end (menu, buy, place, produce, stack, upgrade, pick up,
-anti-exploit guards, restart persistence and a zero-error log audit).
-The last green runs are committed as `journey/last-green-run.log` and
-`journey/last-green-gens-run.log`.
+Three scripted live journeys drive a real Paper server from this
+checkout with mineflayer bots + RCON (`bash journey/setup-server.sh`,
+then `node journey/run.mjs`, `node journey/gens-journey.mjs` or
+`node journey/progress-journey.mjs` from `journey-server/`): the
+headline flows; the generator system end-to-end (menu, buy, place,
+produce, stack, upgrade, pick up, anti-exploit guards, restart
+persistence and a zero-error log audit); and the permanent progression
+(chat commands, both menus, real mining feeding a Collection and
+earning an Achievement, the place-mine guard, milestones and
+exactly-once claiming, recipe unlocks, hidden entries and secrets, held
+rewards, the island-menu links and a restart round-trip). The last
+green runs are committed as `journey/last-green-run.log`,
+`journey/last-green-gens-run.log` and
+`journey/last-green-progress-run.log`.
 
 CI (`.github/workflows/build.yml`) compiles, tests and packages on every
 push to `arena/**` branches, then commits build status and artifacts back
@@ -215,6 +270,9 @@ development sandbox; it is not a second build system.
 | `src/main/java/com/coremc/core/shop` | Coin economy + chest-GUI shop |
 | `src/main/java/com/coremc/core/spawner` | Spawner progression: config, service, command, listener, store, menu GUI |
 | `src/main/java/com/coremc/core/gens` | Generators: config, tiers, entries, store, service, lore, layout, holograms, menu + management GUIs, listeners, command |
+| `src/main/java/com/coremc/core/progress` | Progression core: `ProgressEvent`/`ProgressBus`/`ProgressGuards`, the dedupe window, the Bukkit bridge, system adapters and the reward service (including held rewards) |
+| `src/main/java/com/coremc/core/collections` | Collections: config, model, progress maths, store, service, lore, layout, menus, player + admin commands |
+| `src/main/java/com/coremc/core/achievements` | Achievements: config, model, store, service, lore, layout, menus, player + admin commands |
 | `src/main/java/com/coremc/core/util` | Shared GUI language: `ColorUtil`, `SmallCaps`, `GuiText`, `GuiItems` |
 | `src/main/java/com/coremc/core/rank` | Rank ladder: config, store, service, commands, join listener |
 | `src/main/java/com/coremc/core/island` (menus) | Island menu GUI, upgrade + buff services, buff listener, buff store |

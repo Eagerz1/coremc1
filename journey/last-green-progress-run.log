@@ -1,0 +1,135 @@
+[server] booting (boot1)...
+[server] boot1 ready
+[rcon] connected
+  PASS  boot1: zero server ERROR lines (excl. platform noise)
+  PASS  boot1: zero CoreMC warn/error/exception lines
+
+=== PHASE 1: join + /is create ===
+  PASS  owner spawns
+  PASS  /is create pastes an island
+  PASS  owner is in the island world
+  PASS  island has ground under the spawn position
+[island] home=0,67,2
+
+=== PHASE 2: the chat commands ===
+  PASS  /collections help lists the claim command
+  PASS  /collections list says progress is permanent
+  PASS  the category list is rendered in small caps
+  PASS  a fresh player is at 0%
+  PASS  an unknown collection is refused
+  PASS  /achievements help lists the claim command
+  PASS  a fresh player has zero achievement points
+  PASS  the achievement list states the prestige rule
+
+=== PHASE 3: the /collections and /achievements menus ===
+  PASS  /collections opens a menu
+  PASS  window title is "COREMC — Collections"
+  PASS  the menu is a double chest
+  PASS  slot 4 is the player panel
+  PASS  the panel promises permanence
+  PASS  the panel draws a progress bar
+  PASS  slot 10 is the Mining category
+  PASS  category lore spells out the click
+  PASS  slot 53 is the recipe book
+  PASS  slot 48 is the held-rewards button
+  PASS  back and close sit in the bottom row
+  PASS  clicking Mining opens the mining page
+  PASS  the first mining collection is Cobblestone
+  PASS  entries show what you have collected
+  PASS  the detail view lists tier I
+  PASS  an unreached tier is a dull grey pane, never a chest
+  PASS  and it is marked LOCKED with a red cross
+  PASS  /achievements opens a menu
+  PASS  window title is "COREMC — Achievements"
+  PASS  the achievement panel states the prestige rule
+  PASS  slot 53 is the secrets button
+
+=== PHASE 4: real play feeds a Collection and earns an Achievement ===
+  PASS  the bot mined a natural cobblestone block
+  PASS  breaking the first block earns "First Strike"
+  PASS  the announcement names the points
+  PASS  the Cobblestone Collection counted exactly one
+  PASS  the player now has 5 points
+  PASS  the bot has a cobblestone to place
+  PASS  breaking your OWN placed block adds nothing (anti place-mine loop)
+
+=== PHASE 5: milestones, rewards and exactly-once claiming ===
+  PASS  crossing tier I announces the milestone
+  PASS  and points the player at the claim command
+  PASS  the milestone reward can be claimed
+  PASS  the 2,500 coin reward actually arrived
+  PASS  a second claim is refused (exactly once)
+  PASS  an unreached tier cannot be claimed
+  PASS  the mining page shows the new total
+  PASS  and the tier plus the road to the next one
+
+=== PHASE 6: collection-locked recipes ===
+  PASS  /collections recipes opens the recipe book
+  PASS  the first recipe is the Cobble Compressor
+  PASS  a recipe you have not earned is clearly locked
+  PASS  locked recipes never look like unlocked ones
+  PASS  reaching tier III unlocks it permanently
+  PASS  and it renders as its own icon again
+
+=== PHASE 7: hidden collections and secret achievements ===
+  PASS  the Discoveries category is on the root menu
+  PASS  an undiscovered entry shows as ???
+  PASS  its lore says undiscovered
+  PASS  it never leaks amounts, tiers or odds
+  PASS  hidden entries are deliberately dull
+  PASS  /achievements secrets opens the secret list
+  PASS  an unearned secret stays secret
+  PASS  and gives nothing away
+  PASS  even /collections info keeps a hidden entry hidden
+
+=== PHASE 8: rewards that cannot be delivered are held, never dropped ===
+  PASS  a reward with no delivery system is held safely
+  PASS  /collections held opens the held-rewards view
+  PASS  the held reward is listed with its label
+  PASS  it remembers where it came from
+  PASS  pending-rewards.yml exists on disk
+  PASS  and the parked reward is written to it
+
+=== PHASE 9: admin tools and the island menu links ===
+  PASS  an admin grant announces the achievement
+  PASS  /coreachievements info prints a summary
+  PASS  /corecollections reload works
+  PASS  /coreachievements reload works
+  PASS  /is opens the island menu
+  PASS  slot 30 is the Collections button
+  PASS  slot 32 is the Achievements button
+  PASS  it opens the Collections menu
+  PASS  and slot 32 opens the Achievements menu
+
+=== PHASE 10: restart persistence ===
+  PASS  the Collection total reads back before the restart
+  PASS  the placeholders report live progress
+  PASS  achievement points are in the placeholders
+  PASS  held rewards are in the placeholders
+[JOwner] connection ended
+[server] stopping...
+[server] exited
+  PASS  collections-data.yml stored the lifetime total
+  PASS  and the claims that were already paid
+  PASS  and the permanent recipe unlock
+  PASS  achievements-data.yml stored the earned achievements
+[server] booting (boot2)...
+[server] boot2 ready
+[rcon] connected
+  PASS  boot2: zero server ERROR lines (excl. platform noise)
+  PASS  boot2: zero CoreMC warn/error/exception lines
+  PASS  owner spawns after the restart
+  PASS  every permanent number survived the restart exactly
+  PASS  the Collection total came back (105,250)
+  PASS  a claim from before the restart is still exactly once
+  PASS  the unlocked recipe is still unlocked
+  PASS  the held reward is still waiting safely
+
+=== PHASE 11: final audit ===
+[JOwner] connection ended
+[server] stopping...
+[server] exited
+  PASS  final: zero server ERROR lines (excl. platform noise)
+  PASS  final: zero CoreMC warn/error/exception lines
+
+RESULT  pass=98 fail=0

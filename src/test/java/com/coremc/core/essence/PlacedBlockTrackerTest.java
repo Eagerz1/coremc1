@@ -67,4 +67,29 @@ class PlacedBlockTrackerTest {
         assertFalse(tracker.isPlayerPlaced("world", 1, 1, 1));
         assertEquals(0, Files.exists(dir.resolve("placed-blocks.yml")) ? 1 : 0);
     }
+
+    @Test
+    void aJustBrokenPlacementIsStillReportedAsPlaced(@TempDir final Path dir) {
+        final PlacedBlockTracker tracker =
+                new PlacedBlockTracker(dir.resolve("placed-blocks.yml"), Logger.getLogger("test"));
+        tracker.add("coremc_islands", 4, 70, 4);
+        tracker.remove("coremc_islands", 4, 70, 4);
+
+        // the listener that removed the marker may run before the ones
+        // that still have to decide whether the break pays out
+        assertFalse(tracker.isPlayerPlaced("coremc_islands", 4, 70, 4));
+        assertTrue(tracker.wasPlayerPlaced("coremc_islands", 4, 70, 4));
+        assertFalse(tracker.wasPlayerPlaced("coremc_islands", 5, 70, 4));
+    }
+
+    @Test
+    void replacingAForgottenPositionClearsTheRemovalMemory(@TempDir final Path dir) {
+        final PlacedBlockTracker tracker =
+                new PlacedBlockTracker(dir.resolve("placed-blocks.yml"), Logger.getLogger("test"));
+        tracker.add("world", 1, 2, 3);
+        tracker.remove("world", 1, 2, 3);
+        tracker.add("world", 1, 2, 3);
+        tracker.remove("world", 1, 2, 3);
+        assertTrue(tracker.wasPlayerPlaced("world", 1, 2, 3));
+    }
 }

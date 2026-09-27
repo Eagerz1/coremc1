@@ -1,0 +1,960 @@
+# ============================================================
+#  Collections — permanent, season-proof progression.
+#
+#  A Collection counts one authoritative progression action and
+#  pays out at its own milestone tiers. Nothing in here is
+#  seasonal: totals live in collections-data.yml and a season
+#  reset never touches them.
+#
+#  Per collection:
+#    category    mining, farming, fishing, slayer, generators,
+#                spawners, companions, omnitools, discoveries,
+#                events, seasonal
+#    display     menu name (rendered in small caps)
+#    icon        menu icon
+#    action      the authoritative action that feeds it
+#    keys        which subjects count (empty = every subject)
+#    sources     optional source filter (world, generator, ...)
+#    hidden      true = shown as ??? until the first one is found
+#    hint        vague source hint for hidden entries (never odds)
+#    milestones  ascending amounts, each with its own rewards
+#
+#  Reward types:
+#    automatic (applied instantly, permanent):
+#      recipe, unlock, cosmetic, title, tag, collection_tier, stat
+#    hand-claimed (claimed in the GUI, parked safely if they
+#    cannot be delivered):
+#      item, coins, sky_tokens, credits, key, journey_xp
+#
+#  Collections for systems that live on other branches
+#  (companions, omnitools) are configured and tested here; they
+#  start filling the moment those systems post their events.
+# ============================================================
+
+settings:
+  entries-per-page: 28
+  announce-milestones: true
+
+# ------------------------------------------------------------
+#  Collection-locked recipes
+# ------------------------------------------------------------
+recipes:
+  cobble_compressor:
+    display: "Cobble Compressor"
+    icon: STONE
+    requires: {collection: cobblestone, tier: 3}
+    ingredients:
+      - COBBLESTONE:64
+    result: STONE
+    result-amount: 64
+    description: "Compresses raw cobblestone without fuel."
+
+  raw_iron_press:
+    display: "Raw Iron Press"
+    icon: IRON_BLOCK
+    requires: {collection: iron, tier: 3}
+    ingredients:
+      - RAW_IRON:9
+    result: RAW_IRON_BLOCK
+    result-amount: 1
+    description: "Presses raw iron into a block by hand."
+
+  emerald_lens:
+    display: "Emerald Lens"
+    icon: SPYGLASS
+    requires: {collection: emerald, tier: 2}
+    ingredients:
+      - EMERALD:4
+      - GLASS:1
+    result: SPYGLASS
+    result-amount: 1
+    description: "A prospector's glass cut from emerald."
+
+  blaze_kiln:
+    display: "Blaze Kiln"
+    icon: BLAST_FURNACE
+    requires: {collection: blaze, tier: 3}
+    ingredients:
+      - BLAZE_ROD:8
+      - FURNACE:1
+    result: BLAST_FURNACE
+    result-amount: 1
+    description: "Blaze rods fold heat into a blast furnace."
+
+  anglers_charm:
+    display: "Angler's Charm"
+    icon: HEART_OF_THE_SEA
+    requires: {collection: cod, tier: 4}
+    ingredients:
+      - NAUTILUS_SHELL:2
+      - PRISMARINE_SHARD:16
+    result: HEART_OF_THE_SEA
+    result-amount: 1
+    description: "The sea gives one back to a patient angler."
+
+# ------------------------------------------------------------
+#  Collections
+# ------------------------------------------------------------
+collections:
+
+  # ---------------- mining ----------------
+  cobblestone:
+    category: mining
+    display: "Cobblestone"
+    icon: COBBLESTONE
+    action: mine_block
+    keys: [cobblestone, stone]
+    milestones:
+      - amount: 250
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 1000
+        rewards:
+          - {type: item, id: IRON_PICKAXE, amount: 1}
+      - amount: 5000
+        rewards:
+          - {type: recipe, id: cobble_compressor}
+      - amount: 25000
+        rewards:
+          - {type: coins, amount: 50000}
+          - {type: title, id: stonebreaker, display: "Stonebreaker"}
+      - amount: 100000
+        rewards:
+          - {type: cosmetic, id: cobble_aura, display: "Cobble Aura"}
+          - {type: sky_tokens, amount: 5}
+
+  coal:
+    category: mining
+    display: "Coal"
+    icon: COAL
+    action: mine_block
+    keys: [coal_ore, deepslate_coal_ore]
+    milestones:
+      - amount: 100
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 500
+        rewards:
+          - {type: item, id: COAL_BLOCK, amount: 8}
+      - amount: 2500
+        rewards:
+          - {type: coins, amount: 25000}
+      - amount: 10000
+        rewards:
+          - {type: title, id: collier, display: "Collier"}
+
+  iron:
+    category: mining
+    display: "Iron"
+    icon: IRON_INGOT
+    action: mine_block
+    keys: [iron_ore, deepslate_iron_ore]
+    milestones:
+      - amount: 100
+        rewards:
+          - {type: coins, amount: 5000}
+      - amount: 500
+        rewards:
+          - {type: item, id: IRON_BLOCK, amount: 4}
+      - amount: 2500
+        rewards:
+          - {type: recipe, id: raw_iron_press}
+      - amount: 10000
+        rewards:
+          - {type: coins, amount: 75000}
+          - {type: title, id: ironbound, display: "Ironbound"}
+
+  gold:
+    category: mining
+    display: "Gold"
+    icon: GOLD_INGOT
+    action: mine_block
+    keys: [gold_ore, deepslate_gold_ore, nether_gold_ore]
+    milestones:
+      - amount: 100
+        rewards:
+          - {type: coins, amount: 7500}
+      - amount: 500
+        rewards:
+          - {type: item, id: GOLD_BLOCK, amount: 4}
+      - amount: 2500
+        rewards:
+          - {type: coins, amount: 40000}
+      - amount: 10000
+        rewards:
+          - {type: cosmetic, id: midas_trail, display: "Midas Trail"}
+
+  redstone:
+    category: mining
+    display: "Redstone"
+    icon: REDSTONE
+    action: mine_block
+    keys: [redstone_ore, deepslate_redstone_ore]
+    milestones:
+      - amount: 250
+        rewards:
+          - {type: coins, amount: 5000}
+      - amount: 1500
+        rewards:
+          - {type: item, id: REDSTONE_BLOCK, amount: 8}
+      - amount: 7500
+        rewards:
+          - {type: title, id: circuitwright, display: "Circuitwright"}
+
+  lapis:
+    category: mining
+    display: "Lapis"
+    icon: LAPIS_LAZULI
+    action: mine_block
+    keys: [lapis_ore, deepslate_lapis_ore]
+    milestones:
+      - amount: 250
+        rewards:
+          - {type: coins, amount: 5000}
+      - amount: 1500
+        rewards:
+          - {type: item, id: BOOKSHELF, amount: 8}
+      - amount: 7500
+        rewards:
+          - {type: coins, amount: 60000}
+
+  diamond:
+    category: mining
+    display: "Diamond"
+    icon: DIAMOND
+    action: mine_block
+    keys: [diamond_ore, deepslate_diamond_ore]
+    milestones:
+      - amount: 50
+        rewards:
+          - {type: coins, amount: 15000}
+      - amount: 250
+        rewards:
+          - {type: item, id: DIAMOND, amount: 16}
+      - amount: 1000
+        rewards:
+          - {type: title, id: deepcarat, display: "Deep Carat"}
+      - amount: 5000
+        rewards:
+          - {type: cosmetic, id: diamond_halo, display: "Diamond Halo"}
+          - {type: sky_tokens, amount: 10}
+
+  emerald:
+    category: mining
+    display: "Emerald"
+    icon: EMERALD
+    action: mine_block
+    keys: [emerald_ore, deepslate_emerald_ore]
+    milestones:
+      - amount: 25
+        rewards:
+          - {type: coins, amount: 15000}
+      - amount: 150
+        rewards:
+          - {type: recipe, id: emerald_lens}
+      - amount: 750
+        rewards:
+          - {type: title, id: gemcutter, display: "Gemcutter"}
+
+  quartz:
+    category: mining
+    display: "Nether Quartz"
+    icon: QUARTZ
+    action: mine_block
+    keys: [nether_quartz_ore]
+    milestones:
+      - amount: 250
+        rewards:
+          - {type: coins, amount: 7500}
+      - amount: 1500
+        rewards:
+          - {type: item, id: QUARTZ_BLOCK, amount: 16}
+      - amount: 7500
+        rewards:
+          - {type: coins, amount: 60000}
+
+  obsidian:
+    category: mining
+    display: "Obsidian"
+    icon: OBSIDIAN
+    action: mine_block
+    keys: [obsidian, crying_obsidian]
+    milestones:
+      - amount: 64
+        rewards:
+          - {type: coins, amount: 10000}
+      - amount: 512
+        rewards:
+          - {type: item, id: OBSIDIAN, amount: 32}
+      - amount: 2048
+        rewards:
+          - {type: title, id: voidforged, display: "Voidforged"}
+
+  ancient_debris:
+    category: mining
+    display: "Ancient Debris"
+    icon: ANCIENT_DEBRIS
+    action: mine_block
+    keys: [ancient_debris]
+    milestones:
+      - amount: 10
+        rewards:
+          - {type: coins, amount: 25000}
+      - amount: 64
+        rewards:
+          - {type: item, id: NETHERITE_SCRAP, amount: 4}
+      - amount: 256
+        rewards:
+          - {type: cosmetic, id: debris_dust, display: "Debris Dust"}
+          - {type: sky_tokens, amount: 15}
+
+  # ---------------- farming ----------------
+  wheat:
+    category: farming
+    display: "Wheat"
+    icon: WHEAT
+    action: harvest_crop
+    keys: [wheat]
+    milestones:
+      - amount: 500
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 2500
+        rewards:
+          - {type: item, id: HAY_BLOCK, amount: 16}
+      - amount: 10000
+        rewards:
+          - {type: title, id: harvester, display: "Harvester"}
+      - amount: 50000
+        rewards:
+          - {type: coins, amount: 100000}
+
+  carrot:
+    category: farming
+    display: "Carrot"
+    icon: CARROT
+    action: harvest_crop
+    keys: [carrots]
+    milestones:
+      - amount: 500
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 2500
+        rewards:
+          - {type: item, id: GOLDEN_CARROT, amount: 16}
+      - amount: 10000
+        rewards:
+          - {type: coins, amount: 40000}
+
+  potato:
+    category: farming
+    display: "Potato"
+    icon: POTATO
+    action: harvest_crop
+    keys: [potatoes]
+    milestones:
+      - amount: 500
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 2500
+        rewards:
+          - {type: item, id: BAKED_POTATO, amount: 32}
+      - amount: 10000
+        rewards:
+          - {type: coins, amount: 40000}
+
+  beetroot:
+    category: farming
+    display: "Beetroot"
+    icon: BEETROOT
+    action: harvest_crop
+    keys: [beetroots]
+    milestones:
+      - amount: 500
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 2500
+        rewards:
+          - {type: coins, amount: 15000}
+      - amount: 10000
+        rewards:
+          - {type: title, id: rootmonger, display: "Rootmonger"}
+
+  nether_wart:
+    category: farming
+    display: "Nether Wart"
+    icon: NETHER_WART
+    action: harvest_crop
+    keys: [nether_wart]
+    milestones:
+      - amount: 250
+        rewards:
+          - {type: coins, amount: 5000}
+      - amount: 1500
+        rewards:
+          - {type: item, id: BREWING_STAND, amount: 1}
+      - amount: 7500
+        rewards:
+          - {type: title, id: alchemist, display: "Alchemist"}
+
+  sugar_cane:
+    category: farming
+    display: "Sugar Cane"
+    icon: SUGAR_CANE
+    action: harvest_crop
+    keys: [sugar_cane]
+    milestones:
+      - amount: 1000
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 5000
+        rewards:
+          - {type: item, id: PAPER, amount: 64}
+      - amount: 25000
+        rewards:
+          - {type: coins, amount: 60000}
+
+  melon:
+    category: farming
+    display: "Melon"
+    icon: MELON
+    action: harvest_crop
+    keys: [melon]
+    milestones:
+      - amount: 500
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 2500
+        rewards:
+          - {type: item, id: GLISTERING_MELON_SLICE, amount: 16}
+      - amount: 10000
+        rewards:
+          - {type: coins, amount: 40000}
+
+  pumpkin:
+    category: farming
+    display: "Pumpkin"
+    icon: PUMPKIN
+    action: harvest_crop
+    keys: [pumpkin]
+    milestones:
+      - amount: 500
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 2500
+        rewards:
+          - {type: item, id: JACK_O_LANTERN, amount: 16}
+      - amount: 10000
+        rewards:
+          - {type: cosmetic, id: harvest_glow, display: "Harvest Glow"}
+
+  # ---------------- fishing ----------------
+  cod:
+    category: fishing
+    display: "Cod"
+    icon: COD
+    action: fish_catch
+    keys: [cod]
+    milestones:
+      - amount: 100
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 500
+        rewards:
+          - {type: item, id: FISHING_ROD, amount: 1}
+      - amount: 2500
+        rewards:
+          - {type: title, id: angler, display: "Angler"}
+      - amount: 10000
+        rewards:
+          - {type: recipe, id: anglers_charm}
+
+  salmon:
+    category: fishing
+    display: "Salmon"
+    icon: SALMON
+    action: fish_catch
+    keys: [salmon]
+    milestones:
+      - amount: 100
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 500
+        rewards:
+          - {type: item, id: COOKED_SALMON, amount: 32}
+      - amount: 2500
+        rewards:
+          - {type: coins, amount: 35000}
+
+  tropical_fish:
+    category: fishing
+    display: "Tropical Fish"
+    icon: TROPICAL_FISH
+    action: fish_catch
+    keys: [tropical_fish]
+    milestones:
+      - amount: 50
+        rewards:
+          - {type: coins, amount: 5000}
+      - amount: 250
+        rewards:
+          - {type: item, id: SEA_LANTERN, amount: 8}
+      - amount: 1000
+        rewards:
+          - {type: cosmetic, id: reef_trail, display: "Reef Trail"}
+
+  pufferfish:
+    category: fishing
+    display: "Pufferfish"
+    icon: PUFFERFISH
+    action: fish_catch
+    keys: [pufferfish]
+    milestones:
+      - amount: 50
+        rewards:
+          - {type: coins, amount: 5000}
+      - amount: 250
+        rewards:
+          - {type: coins, amount: 20000}
+      - amount: 1000
+        rewards:
+          - {type: title, id: pufferhand, display: "Pufferhand"}
+
+  sea_treasure:
+    category: fishing
+    display: "Sea Treasure"
+    icon: NAUTILUS_SHELL
+    action: fish_treasure
+    milestones:
+      - amount: 5
+        rewards:
+          - {type: coins, amount: 10000}
+      - amount: 25
+        rewards:
+          - {type: item, id: HEART_OF_THE_SEA, amount: 1}
+      - amount: 100
+        rewards:
+          - {type: title, id: treasurehunter, display: "Treasure Hunter"}
+          - {type: sky_tokens, amount: 10}
+
+  # ---------------- slayer ----------------
+  zombie:
+    category: slayer
+    display: "Zombie"
+    icon: ZOMBIE_HEAD
+    action: slayer_kill
+    keys: [zombie]
+    milestones:
+      - amount: 250
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 2500
+        rewards:
+          - {type: item, id: IRON_SWORD, amount: 1}
+      - amount: 25000
+        rewards:
+          - {type: title, id: gravekeeper, display: "Gravekeeper"}
+
+  skeleton:
+    category: slayer
+    display: "Skeleton"
+    icon: SKELETON_SKULL
+    action: slayer_kill
+    keys: [skeleton]
+    milestones:
+      - amount: 250
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 2500
+        rewards:
+          - {type: item, id: BOW, amount: 1}
+      - amount: 25000
+        rewards:
+          - {type: coins, amount: 75000}
+
+  spider:
+    category: slayer
+    display: "Spider"
+    icon: SPIDER_EYE
+    action: slayer_kill
+    keys: [spider, cave_spider]
+    milestones:
+      - amount: 250
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 2500
+        rewards:
+          - {type: item, id: STRING, amount: 64}
+      - amount: 25000
+        rewards:
+          - {type: title, id: webcutter, display: "Webcutter"}
+
+  creeper:
+    category: slayer
+    display: "Creeper"
+    icon: CREEPER_HEAD
+    action: slayer_kill
+    keys: [creeper]
+    milestones:
+      - amount: 100
+        rewards:
+          - {type: coins, amount: 5000}
+      - amount: 1000
+        rewards:
+          - {type: item, id: TNT, amount: 8}
+      - amount: 10000
+        rewards:
+          - {type: cosmetic, id: fuse_spark, display: "Fuse Spark"}
+
+  enderman:
+    category: slayer
+    display: "Enderman"
+    icon: ENDER_PEARL
+    action: slayer_kill
+    keys: [enderman]
+    milestones:
+      - amount: 100
+        rewards:
+          - {type: coins, amount: 7500}
+      - amount: 1000
+        rewards:
+          - {type: item, id: ENDER_CHEST, amount: 1}
+      - amount: 10000
+        rewards:
+          - {type: title, id: voidtouched, display: "Voidtouched"}
+
+  blaze:
+    category: slayer
+    display: "Blaze"
+    icon: BLAZE_ROD
+    action: slayer_kill
+    keys: [blaze]
+    milestones:
+      - amount: 100
+        rewards:
+          - {type: coins, amount: 7500}
+      - amount: 1000
+        rewards:
+          - {type: item, id: BLAZE_ROD, amount: 16}
+      - amount: 10000
+        rewards:
+          - {type: recipe, id: blaze_kiln}
+
+  wither_skeleton:
+    category: slayer
+    display: "Wither Skeleton"
+    icon: WITHER_SKELETON_SKULL
+    action: slayer_kill
+    keys: [wither_skeleton]
+    milestones:
+      - amount: 50
+        rewards:
+          - {type: coins, amount: 15000}
+      - amount: 500
+        rewards:
+          - {type: item, id: COAL_BLOCK, amount: 16}
+      - amount: 5000
+        rewards:
+          - {type: title, id: witherborn, display: "Witherborn"}
+          - {type: sky_tokens, amount: 10}
+
+  elite_hunter:
+    category: slayer
+    display: "Elite Hunter"
+    icon: DIAMOND_SWORD
+    action: elite_kill
+    milestones:
+      - amount: 10
+        rewards:
+          - {type: coins, amount: 25000}
+      - amount: 100
+        rewards:
+          - {type: title, id: elitehunter, display: "Elite Hunter"}
+      - amount: 1000
+        rewards:
+          - {type: cosmetic, id: elite_crest, display: "Elite Crest"}
+
+  champion_slayer:
+    category: slayer
+    display: "Champion Slayer"
+    icon: NETHERITE_SWORD
+    action: champion_kill
+    milestones:
+      - amount: 1
+        rewards:
+          - {type: coins, amount: 50000}
+      - amount: 25
+        rewards:
+          - {type: title, id: championslayer, display: "Champion Slayer"}
+      - amount: 250
+        rewards:
+          - {type: cosmetic, id: champion_crown, display: "Champion Crown"}
+          - {type: sky_tokens, amount: 25}
+
+  # ---------------- generators ----------------
+  generators_placed:
+    category: generators
+    display: "Generators Placed"
+    icon: IRON_BLOCK
+    action: generator_place
+    milestones:
+      - amount: 1
+        rewards:
+          - {type: coins, amount: 2500}
+      - amount: 25
+        rewards:
+          - {type: coins, amount: 25000}
+      - amount: 100
+        rewards:
+          - {type: title, id: generatorbaron, display: "Generator Baron"}
+      - amount: 500
+        rewards:
+          - {type: cosmetic, id: gen_hum, display: "Generator Hum"}
+
+  generator_upgrades:
+    category: generators
+    display: "Generator Upgrades"
+    icon: ANVIL
+    action: generator_upgrade
+    milestones:
+      - amount: 1
+        rewards:
+          - {type: coins, amount: 5000}
+      - amount: 25
+        rewards:
+          - {type: coins, amount: 50000}
+      - amount: 100
+        rewards:
+          - {type: title, id: overengineer, display: "Overengineer"}
+
+  generator_output:
+    category: generators
+    display: "Generator Output"
+    icon: HOPPER
+    action: generator_output
+    milestones:
+      - amount: 1000
+        rewards:
+          - {type: coins, amount: 10000}
+      - amount: 25000
+        rewards:
+          - {type: coins, amount: 100000}
+      - amount: 100000
+        rewards:
+          - {type: cosmetic, id: output_sparks, display: "Output Sparks"}
+
+  # ---------------- spawners ----------------
+  spawners_placed:
+    category: spawners
+    display: "Spawners Placed"
+    icon: SPAWNER
+    action: spawner_place
+    milestones:
+      - amount: 1
+        rewards:
+          - {type: coins, amount: 5000}
+      - amount: 10
+        rewards:
+          - {type: coins, amount: 35000}
+      - amount: 50
+        rewards:
+          - {type: title, id: mobrancher, display: "Mob Rancher"}
+
+  spawner_upgrades:
+    category: spawners
+    display: "Spawner Upgrades"
+    icon: NETHER_STAR
+    action: spawner_upgrade
+    milestones:
+      - amount: 1
+        rewards:
+          - {type: coins, amount: 10000}
+      - amount: 10
+        rewards:
+          - {type: coins, amount: 75000}
+      - amount: 40
+        rewards:
+          - {type: cosmetic, id: mythic_glow, display: "Mythic Glow"}
+          - {type: sky_tokens, amount: 15}
+
+  # ---------------- companions (adapter) ----------------
+  companions_found:
+    category: companions
+    display: "Companions Found"
+    icon: BONE
+    action: companion_discover
+    milestones:
+      - amount: 1
+        rewards:
+          - {type: coins, amount: 5000}
+      - amount: 5
+        rewards:
+          - {type: title, id: companionkeeper, display: "Companion Keeper"}
+      - amount: 15
+        rewards:
+          - {type: cosmetic, id: companion_halo, display: "Companion Halo"}
+
+  companion_milestones:
+    category: companions
+    display: "Companion Milestones"
+    icon: LEAD
+    action: companion_milestone
+    milestones:
+      - amount: 5
+        rewards:
+          - {type: coins, amount: 15000}
+      - amount: 25
+        rewards:
+          - {type: title, id: beastbonded, display: "Beast Bonded"}
+
+  # ---------------- omnitools (adapter) ----------------
+  omnitools_unlocked:
+    category: omnitools
+    display: "OmniTools Unlocked"
+    icon: NETHERITE_PICKAXE
+    action: omnitool_unlock
+    milestones:
+      - amount: 1
+        rewards:
+          - {type: coins, amount: 10000}
+      - amount: 3
+        rewards:
+          - {type: title, id: toolwright, display: "Toolwright"}
+
+  omnitool_enchants:
+    category: omnitools
+    display: "OmniTool Enchants"
+    icon: ENCHANTED_BOOK
+    action: omnitool_enchant_unlock
+    milestones:
+      - amount: 5
+        rewards:
+          - {type: coins, amount: 20000}
+      - amount: 20
+        rewards:
+          - {type: cosmetic, id: enchant_wisps, display: "Enchant Wisps"}
+
+  role_milestones:
+    category: omnitools
+    display: "Role Milestones"
+    icon: PAPER
+    action: role_milestone
+    milestones:
+      - amount: 5
+        rewards:
+          - {type: coins, amount: 20000}
+      - amount: 25
+        rewards:
+          - {type: title, id: specialist, display: "Specialist"}
+
+  # ---------------- discoveries (hidden) ----------------
+  ancient_find:
+    category: discoveries
+    display: "Ancient Find"
+    icon: ANCIENT_DEBRIS
+    action: discovery
+    keys: [ancient_debris]
+    hidden: true
+    hint: "Something very old waits under the Nether."
+    milestones:
+      - amount: 1
+        rewards:
+          - {type: coins, amount: 25000}
+      - amount: 10
+        rewards:
+          - {type: title, id: relichunter, display: "Relic Hunter"}
+      - amount: 50
+        rewards:
+          - {type: cosmetic, id: ancient_echo, display: "Ancient Echo"}
+
+  emerald_vein:
+    category: discoveries
+    display: "Emerald Vein"
+    icon: EMERALD_ORE
+    action: discovery
+    keys: [emerald_ore, deepslate_emerald_ore]
+    hidden: true
+    hint: "Green glimmers hide deep in the stone."
+    milestones:
+      - amount: 1
+        rewards:
+          - {type: coins, amount: 15000}
+      - amount: 25
+        rewards:
+          - {type: title, id: veinseeker, display: "Vein Seeker"}
+
+  sunken_relic:
+    category: discoveries
+    display: "Sunken Relic"
+    icon: HEART_OF_THE_SEA
+    action: discovery
+    keys: [nautilus_shell, enchanted_book, name_tag, saddle, bow, fishing_rod]
+    hidden: true
+    hint: "The water sometimes gives more than fish."
+    milestones:
+      - amount: 1
+        rewards:
+          - {type: coins, amount: 15000}
+      - amount: 25
+        rewards:
+          - {type: cosmetic, id: tide_mark, display: "Tide Mark"}
+
+  # ---------------- events + seasonal (adapters) ----------------
+  events_joined:
+    category: events
+    display: "Events Joined"
+    icon: FIREWORK_ROCKET
+    action: event_participate
+    milestones:
+      - amount: 1
+        rewards:
+          - {type: coins, amount: 10000}
+      - amount: 10
+        rewards:
+          - {type: title, id: eventgoer, display: "Eventgoer"}
+      - amount: 50
+        rewards:
+          - {type: cosmetic, id: confetti_step, display: "Confetti Step"}
+
+  quests_completed:
+    category: events
+    display: "Quests Completed"
+    icon: WRITABLE_BOOK
+    action: quest_complete
+    milestones:
+      - amount: 10
+        rewards:
+          - {type: coins, amount: 15000}
+      - amount: 100
+        rewards:
+          - {type: title, id: questbound, display: "Questbound"}
+
+  island_challenges:
+    category: events
+    display: "Island Challenges"
+    icon: TARGET
+    action: island_challenge
+    milestones:
+      - amount: 5
+        rewards:
+          - {type: coins, amount: 15000}
+      - amount: 50
+        rewards:
+          - {type: cosmetic, id: challenge_banner, display: "Challenge Banner"}
+
+  season_levels:
+    category: seasonal
+    display: "Season Levels"
+    icon: CLOCK
+    action: season_level
+    milestones:
+      - amount: 10
+        rewards:
+          - {type: coins, amount: 25000}
+      - amount: 50
+        rewards:
+          - {type: title, id: seasonveteran, display: "Season Veteran"}
+      - amount: 200
+        rewards:
+          - {type: cosmetic, id: season_crown, display: "Season Crown"}
+          - {type: sky_tokens, amount: 25}

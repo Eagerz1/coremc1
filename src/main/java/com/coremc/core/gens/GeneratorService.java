@@ -123,9 +123,20 @@ public final class GeneratorService {
     }
 
     /** Attaches the hologram renderer (after construction, like the spawners). */
+    /**
+     * Optional progression sink (Collections / Achievements). The
+     * generator system does not know what is on the other side: it
+     * posts facts and moves on, and a null sink costs one null check.
+     */
+    public void progress(final com.coremc.core.progress.ProgressSink sink) {
+        this.progress = sink;
+    }
+
     public void attach(final GeneratorHolograms attached) {
         this.holograms = attached;
     }
+
+    private com.coremc.core.progress.ProgressSink progress;
 
     public GeneratorConfig config() {
         return config;
@@ -292,6 +303,8 @@ public final class GeneratorService {
                 "amount", String.valueOf(adding),
                 "value", GuiText.money(tier.value() * adding),
                 "interval", GuiText.seconds(tier.intervalSeconds())));
+        postProgress(com.coremc.core.progress.ProgressAction.GENERATOR_PLACE, player.getUniqueId(),
+                tier.id(), adding, entry.key());
         return true;
     }
 
@@ -469,6 +482,9 @@ public final class GeneratorService {
                 "cost", GuiText.money(cost),
                 "value", GuiText.money(next.value() * upgraded.amount()),
                 "interval", GuiText.seconds(next.intervalSeconds())));
+        postProgress(com.coremc.core.progress.ProgressAction.GENERATOR_UPGRADE,
+                player.getUniqueId(), next.id(), 1,
+                upgraded.key() + ":" + next.id() + ":" + System.currentTimeMillis());
         return true;
     }
 
@@ -520,6 +536,10 @@ public final class GeneratorService {
         final UUID payee = payeeOf(entry);
         if (payee != null && tier.value() > 0) {
             economy.deposit(payee, tier.value() * entry.amount());
+            // passive output: the bus weights and caps it so idle income
+            // can never out-earn active play in a Collection
+            postProgress(com.coremc.core.progress.ProgressAction.GENERATOR_OUTPUT, payee,
+                    tier.id(), Math.max(1, Math.round(tier.value() * entry.amount())), null);
         }
         if (config.produceItems() && tier.output() != null && block != null
                 && block.getChunk().isLoaded()) {
@@ -549,6 +569,17 @@ public final class GeneratorService {
                 remaining += rest.getAmount();
             }
         }
+    }
+
+    /** Posts one generator fact to the progression sink, if there is one. */
+    private void postProgress(final com.coremc.core.progress.ProgressAction action,
+                              final UUID player, final String key, final long amount,
+                              final String dedupeKey) {
+        if (progress == null || player == null || amount <= 0) {
+            return;
+        }
+        progress.post(com.coremc.core.progress.ProgressEvent.of(player, action, key, amount,
+                com.coremc.core.progress.ProgressSource.GENERATOR, dedupeKey));
     }
 
     /** Who a generator pays: its placer, falling back to the island owner. */

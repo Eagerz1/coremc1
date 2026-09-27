@@ -32,6 +32,22 @@ public final class IslandUpgradeService {
         this.points = points;
     }
 
+    /** Optional progression sink: island upgrades feed Achievements. */
+    public void progress(final com.coremc.core.progress.ProgressSink sink) {
+        this.progress = sink;
+    }
+
+    private com.coremc.core.progress.ProgressSink progress;
+
+    private void postUpgrade(final Player player, final String upgradeId, final int level) {
+        if (progress == null) {
+            return;
+        }
+        progress.post(com.coremc.core.progress.ProgressEvent.of(player.getUniqueId(),
+                com.coremc.core.progress.ProgressAction.ISLAND_UPGRADE, upgradeId, 1,
+                com.coremc.core.progress.ProgressSource.WORLD, upgradeId + ":" + level));
+    }
+
     /** Buys the next claim-size level for the player's island. */
     public void buyClaimSize(final Player player) {
         final Island island = ownIslandOrComplain(player);
@@ -55,6 +71,7 @@ public final class IslandUpgradeService {
         messages.sendPrefixed(player, "island.upgrade.claim-bought", Map.of(
                 "size", String.valueOf(island.borderSize()),
                 "cost", Money.format(price, "$")));
+        postUpgrade(player, "claim-size", level + 1);
     }
 
     /** Buys the next member-slots level for the player's island. */
@@ -80,6 +97,7 @@ public final class IslandUpgradeService {
         messages.sendPrefixed(player, "island.upgrade.slots-bought", Map.of(
                 "slots", String.valueOf(config.memberLimit(level + 1)),
                 "cost", Money.format(price, "$")));
+        postUpgrade(player, "member-slots", level + 1);
     }
 
     /** Starts (or restarts) a timed buff for the player's island. */

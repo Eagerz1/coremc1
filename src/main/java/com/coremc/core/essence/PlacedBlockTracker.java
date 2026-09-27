@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -19,9 +21,20 @@ import org.bukkit.configuration.file.YamlConfiguration;
  */
 public final class PlacedBlockTracker {
 
+    /** How long a just-broken placement is still reported as player-placed. */
+    private static final long REMOVAL_MEMORY_MS = 5_000L;
+    /** Upper bound on the removal memory, so a mining rampage cannot grow it. */
+    private static final int MAX_REMEMBERED = 512;
+
     private final Path file;
     private final Logger logger;
     private final Set<String> positions = new HashSet<>();
+    private final Map<String, Long> recentlyRemoved = new LinkedHashMap<>() {
+        @Override
+        protected boolean removeEldestEntry(final Map.Entry<String, Long> eldest) {
+            return size() > MAX_REMEMBERED;
+        }
+    };
 
     public PlacedBlockTracker(final Path file, final Logger logger) {
         this.file = file;
@@ -49,8 +62,30 @@ public final class PlacedBlockTracker {
         return positions.contains(key(world, x, y, z));
     }
 
+    /**
+     * True when a player placed a block here, including one broken a
+     * moment ago — the order in which MONITOR listeners see a break is
+     * not defined, so every listener must get the same answer.
+     */
+    public boolean wasPlayerPlaced(final String world, final int x, final int y, final int z) {
+        final String key = key(world, x, y, z);
+        if (positions.contains(key)) {
+            return true;
+        }
+        final Long removedAt = recentlyRemoved.get(key);
+        if (removedAt == null) {
+            return false;
+        }
+        if (System.currentTimeMillis() - removedAt > REMOVAL_MEMORY_MS) {
+            recentlyRemoved.remove(key);
+            return false;
+        }
+        return true;
+    }
+
     /** Records a player placement. */
     public void add(final String world, final int x, final int y, final int z) {
+        recentlyRemoved.remove(key(world, x, y, z));
         if (positions.add(key(world, x, y, z))) {
             persist();
         }
@@ -59,6 +94,7 @@ public final class PlacedBlockTracker {
     /** Forgets a position (the placed block was broken). */
     public void remove(final String world, final int x, final int y, final int z) {
         if (positions.remove(key(world, x, y, z))) {
+            recentlyRemoved.put(key(world, x, y, z), System.currentTimeMillis());
             persist();
         }
     }

@@ -87,6 +87,18 @@ public final class SpawnerService {
         this.mobStacks = new MobStacks(plugin, config, this);
     }
 
+    /**
+     * Optional progression sink (Collections / Achievements). The
+     * spawner system posts facts and never depends on what consumes
+     * them; kills are deliberately NOT posted here — the progression
+     * bridge counts every mob death once, from the death event.
+     */
+    public void progress(final com.coremc.core.progress.ProgressSink sink) {
+        this.progress = sink;
+    }
+
+    private com.coremc.core.progress.ProgressSink progress;
+
     /** Loads persisted state (call once, after the island service). */
     public void load() {
         try {
@@ -362,6 +374,19 @@ public final class SpawnerService {
             messages.sendPrefixed(player, "spawner.placed", Map.of(
                     "mob", mob.name(), "variant", variant.display()));
         }
+        postProgress(com.coremc.core.progress.ProgressAction.SPAWNER_PLACE, player.getUniqueId(),
+                mobId, Math.max(1, amount), entry.key());
+    }
+
+    /** Posts one spawner fact to the progression sink, if there is one. */
+    private void postProgress(final com.coremc.core.progress.ProgressAction action,
+                              final java.util.UUID player, final String key, final long amount,
+                              final String dedupeKey) {
+        if (progress == null || player == null || amount <= 0) {
+            return;
+        }
+        progress.post(com.coremc.core.progress.ProgressEvent.of(player, action, key, amount,
+                com.coremc.core.progress.ProgressSource.SPAWNER, dedupeKey));
     }
 
     /** True when the player may place a spawner at that block: own island, inside the border. */
@@ -670,6 +695,9 @@ public final class SpawnerService {
                         + settings.count() + " per cycle"
                         + (settings.autoKill() ? ", auto-kill" : "")
                         + (stackScale > 1 ? ", x" + stackScale + " stack" : "")));
+        postProgress(com.coremc.core.progress.ProgressAction.SPAWNER_UPGRADE, player.getUniqueId(),
+                entry.mobId(), 1,
+                upgraded.key() + ":" + next.name() + ":" + System.currentTimeMillis());
         return true;
     }
 

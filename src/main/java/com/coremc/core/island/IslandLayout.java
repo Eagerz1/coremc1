@@ -9,6 +9,7 @@ package com.coremc.core.island;
  *   [4]  island info
  *   [10] go home   [12] invite     [14] members     [16] border
  *   [19] upgrades  [21] buffs      [23] spawners    [25] generators
+ *   [30] collections               [32] achievements
  *   [45] delete    [49] close      everything else filler.
  * Sub-menus (small chest, 27):
  *   Upgrades: [11] claim size, [15] member slots, [18] back, [26] close.
@@ -33,6 +34,8 @@ public final class IslandLayout {
     public static final int MENU_BUFFS = 21;
     public static final int MENU_SPAWNERS = 23;
     public static final int MENU_GENERATORS = 25;
+    public static final int MENU_COLLECTIONS = 30;
+    public static final int MENU_ACHIEVEMENTS = 32;
     public static final int MENU_DELETE = 45;
     public static final int MENU_CLOSE = 49;
 

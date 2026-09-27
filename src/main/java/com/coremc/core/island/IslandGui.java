@@ -37,6 +37,10 @@ public final class IslandGui {
     private final SpawnerMenuGui spawnerMenu;
     private final GensMenuGui gensMenu;
     private final EconomyService economy;
+    // set after construction: the progression menus link back here, so
+    // they are built once this menu exists
+    private com.coremc.core.collections.CollectionsGui collectionsGui;
+    private com.coremc.core.achievements.AchievementsGui achievementsGui;
 
     public IslandGui(final IslandService islands, final IslandUpgradeConfig config,
                      final IslandBuffService buffs, final SpawnerMenuGui spawnerMenu,
@@ -47,6 +51,16 @@ public final class IslandGui {
         this.spawnerMenu = spawnerMenu;
         this.gensMenu = gensMenu;
         this.economy = economy;
+    }
+
+    /** Links the Collections menu into the island menu (may be null). */
+    public void collectionsGui(final com.coremc.core.collections.CollectionsGui gui) {
+        this.collectionsGui = gui;
+    }
+
+    /** Links the Achievements menu into the island menu (may be null). */
+    public void achievementsGui(final com.coremc.core.achievements.AchievementsGui gui) {
+        this.achievementsGui = gui;
     }
 
     // ------------------------------------------------------------------
@@ -85,6 +99,8 @@ public final class IslandGui {
         inventory.setItem(IslandLayout.MENU_BUFFS, buffNavItem(island));
         inventory.setItem(IslandLayout.MENU_SPAWNERS, spawnerNavItem());
         inventory.setItem(IslandLayout.MENU_GENERATORS, generatorNavItem());
+        inventory.setItem(IslandLayout.MENU_COLLECTIONS, collectionsNavItem());
+        inventory.setItem(IslandLayout.MENU_ACHIEVEMENTS, achievementsNavItem());
         inventory.setItem(IslandLayout.MENU_DELETE, GuiItems.item(Material.TNT,
                 "&c&l" + GuiText.caps("Delete Island"),
                 "&7" + GuiText.caps("Deletes your island and"),
@@ -179,6 +195,28 @@ public final class IslandGui {
         return GuiItems.item(Material.IRON_BLOCK, "&b&l" + GuiText.caps("Generators"),
                 "&7" + GuiText.caps("Buy, place, stack and"),
                 "&7" + GuiText.caps("upgrade your generators."),
+                GuiText.blank(),
+                GuiText.click("Click to open"));
+    }
+
+    private ItemStack collectionsNavItem() {
+        if (collectionsGui == null) {
+            return unavailableItem(Material.BOOKSHELF, "Collections");
+        }
+        return GuiItems.item(Material.BOOKSHELF, "&b&l" + GuiText.caps("Collections"),
+                "&7" + GuiText.caps("Everything you gather,"),
+                "&7" + GuiText.caps("tracked forever."),
+                GuiText.blank(),
+                GuiText.click("Click to open"));
+    }
+
+    private ItemStack achievementsNavItem() {
+        if (achievementsGui == null) {
+            return unavailableItem(Material.NETHER_STAR, "Achievements");
+        }
+        return GuiItems.item(Material.NETHER_STAR, "&d&l" + GuiText.caps("Achievements"),
+                "&7" + GuiText.caps("Permanent milestones and"),
+                "&7" + GuiText.caps("prestige points."),
                 GuiText.blank(),
                 GuiText.click("Click to open"));
     }
@@ -418,6 +456,20 @@ public final class IslandGui {
     public void openGensMenu(final Player player) {
         if (gensMenu != null) {
             gensMenu.open(player);
+        }
+    }
+
+    /** Opens the Collections menu (the island menu's cross-link). */
+    public void openCollections(final Player player) {
+        if (collectionsGui != null) {
+            collectionsGui.openRoot(player);
+        }
+    }
+
+    /** Opens the Achievements menu (the island menu's cross-link). */
+    public void openAchievements(final Player player) {
+        if (achievementsGui != null) {
+            achievementsGui.openRoot(player);
         }
     }
 }

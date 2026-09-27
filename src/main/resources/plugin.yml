@@ -43,6 +43,30 @@ commands:
     permission: coremc.command.gens
     permission-message: You do not have permission to use this command.
     aliases: [gen, generator, generators]
+  collections:
+    description: "CoreMC collections - permanent gathering progression."
+    usage: /collections [menu|list|info|claim <collection> <tier>|recipes|held]
+    permission: coremc.command.collections
+    permission-message: You do not have permission to use this command.
+    aliases: [collection, coll, cols]
+  corecollections:
+    description: "CoreMC collections admin - inspect, add, set, reload."
+    usage: /corecollections [info|add|set|reload]
+    permission: coremc.collections.admin
+    permission-message: You do not have permission to use this command.
+    aliases: [corecollection, cadmin]
+  achievements:
+    description: "CoreMC achievements - permanent prestige milestones."
+    usage: /achievements [menu|list|points|claim <achievement>|secrets]
+    permission: coremc.command.achievements
+    permission-message: You do not have permission to use this command.
+    aliases: [achievement, ach, achiev]
+  coreachievements:
+    description: "CoreMC achievements admin - inspect, grant, reload."
+    usage: /coreachievements [info|grant|reload]
+    permission: coremc.achievements.admin
+    permission-message: You do not have permission to use this command.
+    aliases: [coreachievement, aadmin]
   rank:
     description: "CoreMC rank ladder - view, list, buy, admin set."
     usage: /rank [view|list|buy|set <player> <rank>]
@@ -94,6 +118,10 @@ permissions:
       coremc.island.bypass: true
       coremc.spawner.admin: true
       coremc.gens.admin: true
+      coremc.command.collections: true
+      coremc.command.achievements: true
+      coremc.collections.admin: true
+      coremc.achievements.admin: true
   coremc.command.island:
     description: Allows using /is.
     default: true
@@ -117,6 +145,18 @@ permissions:
     default: true
   coremc.gens.admin:
     description: Allows the admin tool /gens give.
+    default: op
+  coremc.command.collections:
+    description: Allows using /collections.
+    default: true
+  coremc.collections.admin:
+    description: Allows the admin tool /corecollections.
+    default: op
+  coremc.command.achievements:
+    description: Allows using /achievements.
+    default: true
+  coremc.achievements.admin:
+    description: Allows the admin tool /coreachievements.
     default: op
   coremc.command.rank:
     description: Allows using /rank.

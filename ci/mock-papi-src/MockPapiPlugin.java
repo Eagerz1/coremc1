@@ -22,6 +22,13 @@ public final class MockPapiPlugin extends JavaPlugin {
             "%coremc_slayer_essence%|%coremc_mining_essence%|%coremc_farming_essence%"
                     + "|%coremc_essence_total%|%coremc_mob_kills%|%coremc_coins%|%x_currency%";
 
+    /** The permanent-progression placeholders (Collections + Achievements). */
+    private static final String PROGRESS_TEMPLATE =
+            "%coremc_collection_percent%|%coremc_collections_complete%"
+                    + "|%coremc_collections_total%|%coremc_achievement_points%"
+                    + "|%coremc_achievements_earned%|%coremc_achievements_total%"
+                    + "|%coremc_rewards_waiting%|%coremc_rewards_held%";
+
     @Override
     public void onEnable() {
         getLogger().info("Mock PlaceholderAPI up (setPlaceholders + expansion registry).");
@@ -36,9 +43,12 @@ public final class MockPapiPlugin extends JavaPlugin {
             sender.sendMessage("papicheck: player not found");
             return true;
         }
-        final String resolved = PlaceholderAPI.setPlaceholders(target, TEMPLATE);
+        final boolean progression = "papiprogress".equalsIgnoreCase(command.getName());
+        final String resolved = PlaceholderAPI.setPlaceholders(target,
+                progression ? PROGRESS_TEMPLATE : TEMPLATE);
         // marker the journey suite greps for, on console and in chat
-        final String line = "PAPIRESULT " + target.getName() + " " + resolved;
+        final String line = (progression ? "PROGRESSRESULT " : "PAPIRESULT ")
+                + target.getName() + " " + resolved;
         sender.sendMessage(line);
         getServer().getConsoleSender().sendMessage(line);
         return true;
