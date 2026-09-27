@@ -73,12 +73,68 @@ commands:
     permission: coremc.command.tokenshop
     permission-message: "&cYou do not have permission to use this command."
 
+  vanish:
+    description: Toggle staff vanish.
+    usage: /vanish
+    aliases: [v]
+  spectate:
+    description: Spectate a player and restore your previous state when finished.
+    usage: /spectate <player>
+    aliases: [spec]
+  cps:
+    description: Measure arm-swing CPS for a short window.
+    usage: /cps <player>
+  rotate:
+    description: Rotate a player's point of view.
+    usage: /rotate <player> [degrees]
+  freeze:
+    description: Toggle movement freeze for a player.
+    usage: /freeze <player> [reason]
+  kick:
+    description: Kick an online player with an audit record.
+    usage: /kick <player> [reason]
+  mute:
+    description: Mute an online or offline player.
+    usage: /mute <player> <duration|permanent> [reason]
+  ban:
+    description: Ban an online or offline player.
+    usage: /ban <player> <duration|permanent> [reason]
+  unmute:
+    description: Revoke an active CoreMC mute.
+    usage: /unmute <player> [reason]
+  unban:
+    description: Revoke an active CoreMC ban.
+    usage: /unban <player> [reason]
+  t1:
+    description: Apply a configured Tier 1 moderation action.
+    usage: /t1 <rule> <player> [custom reason]
+  t2:
+    description: Apply a configured Tier 2 moderation action.
+    usage: /t2 <rule> <player> [custom reason]
+  t3:
+    description: Apply a configured Tier 3 moderation action.
+    usage: /t3 <rule> <player> [custom reason]
+  t4:
+    description: Apply a configured Tier 4 moderation action.
+    usage: /t4 <rule> <player> [custom reason]
+  t5:
+    description: Apply a configured Tier 5 moderation action.
+    usage: /t5 <rule> <player> [custom reason]
+  history:
+    description: View a player's CoreMC moderation history.
+    usage: /history <player> [page]
+    aliases: [modhistory]
+  tiercorrect:
+    description: Correct a player's tier offence counters with an audit record.
+    usage: /tiercorrect <player> <tier> <set|add> <amount> [reason]
+
 permissions:
   coremc.*:
     description: Grants all CoreMC permissions.
     default: op
     children:
       coremc.command.*: true
+      coremc.moderation.*: true
   coremc.command.*:
     description: Grants all CoreMC command permissions.
     children:
@@ -102,6 +158,109 @@ permissions:
       coremc.admin.skytokens: true
       coremc.admin.money: true
       coremc.island.bypass: true
+  coremc.moderation.*:
+    description: Grants all CoreMC moderation permissions.
+    default: op
+    children:
+      coremc.moderation.vanish: true
+      coremc.moderation.vanish.see: true
+      coremc.moderation.spectate: true
+      coremc.moderation.cps: true
+      coremc.moderation.rotate: true
+      coremc.moderation.freeze: true
+      coremc.moderation.freeze.bypass: true
+      coremc.moderation.kick: true
+      coremc.moderation.mute: true
+      coremc.moderation.ban: true
+      coremc.moderation.unmute: true
+      coremc.moderation.unban: true
+      coremc.moderation.tier.1: true
+      coremc.moderation.tier.2: true
+      coremc.moderation.tier.3: true
+      coremc.moderation.tier.4: true
+      coremc.moderation.tier.5: true
+      coremc.moderation.history: true
+      coremc.moderation.correction: true
+      coremc.moderation.override: true
+      coremc.staff.rank.manager: true
+  coremc.moderation.vanish:
+    description: Allows toggling staff vanish.
+    default: op
+  coremc.moderation.vanish.see:
+    description: Allows seeing vanished staff.
+    default: op
+  coremc.moderation.spectate:
+    description: Allows spectating players.
+    default: op
+  coremc.moderation.cps:
+    description: Allows CPS checks.
+    default: op
+  coremc.moderation.rotate:
+    description: Allows rotating player POV.
+    default: op
+  coremc.moderation.freeze:
+    description: Allows freezing and unfreezing players.
+    default: op
+  coremc.moderation.freeze.bypass:
+    description: Allows bypassing freeze restrictions.
+    default: op
+  coremc.moderation.kick:
+    description: Allows kicking players.
+    default: op
+  coremc.moderation.mute:
+    description: Allows muting players.
+    default: op
+  coremc.moderation.ban:
+    description: Allows banning players.
+    default: op
+  coremc.moderation.unmute:
+    description: Allows revoking CoreMC mutes.
+    default: op
+  coremc.moderation.unban:
+    description: Allows revoking CoreMC bans.
+    default: op
+  coremc.moderation.tier.1:
+    description: Allows Tier 1 rule actions.
+    default: op
+  coremc.moderation.tier.2:
+    description: Allows Tier 2 rule actions.
+    default: op
+  coremc.moderation.tier.3:
+    description: Allows Tier 3 rule actions.
+    default: op
+  coremc.moderation.tier.4:
+    description: Allows Tier 4 rule actions.
+    default: op
+  coremc.moderation.tier.5:
+    description: Allows Tier 5 rule actions.
+    default: op
+  coremc.moderation.history:
+    description: Allows viewing moderation history.
+    default: op
+  coremc.moderation.correction:
+    description: Allows correcting tier counters.
+    default: op
+  coremc.moderation.override:
+    description: Allows acting on equal/higher rank staff.
+    default: op
+  coremc.staff.rank.helper:
+    description: Marks a player as Helper for CoreMC moderation.
+    default: false
+  coremc.staff.rank.mod:
+    description: Marks a player as Mod for CoreMC moderation.
+    default: false
+  coremc.staff.rank.srmod:
+    description: Marks a player as SrMod for CoreMC moderation.
+    default: false
+  coremc.staff.rank.jr_admin:
+    description: Marks a player as Jr Admin for CoreMC moderation.
+    default: false
+  coremc.staff.rank.admin:
+    description: Marks a player as Admin for CoreMC moderation.
+    default: false
+  coremc.staff.rank.manager:
+    description: Marks a player as Manager for CoreMC moderation.
+    default: op
   coremc.command.coremc:
     description: Allows using /coremc.
     default: true

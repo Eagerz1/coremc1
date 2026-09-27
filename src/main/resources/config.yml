@@ -690,3 +690,150 @@ spawners:
       - { display: "&7Wither Skeleton Spawner III", required-kills: 1100, price: 560, spawn-count: 3, spawn-delay-ticks: 240 }
       - { display: "&7Wither Skeleton Spawner IV",  required-kills: 1750, price: 900, spawn-count: 4, spawn-delay-ticks: 160 }
       - { display: "&7&lAncient Wither Skeleton Spawner", required-kills: 2400, price: 1800, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+
+# ======================================================
+#  Staff tools + moderation (UUID based, CoreMC only)
+# ======================================================
+moderation:
+  cps:
+    # Length of /cps checks in seconds. Uses normal arm-swing events only.
+    window-seconds: 10
+  mute:
+    # Commands blocked while muted (covers common private/island/party paths).
+    blocked-command-aliases: [msg, tell, w, whisper, r, reply, pm, m, me, islandchat, ic, party, pc]
+  freeze:
+    # Persist active freezes across restart. If false, active freeze state is runtime-only.
+    persist-on-restart: true
+    # none | staff_alert. No option auto-bans; staff policy stays manual.
+    disconnect-action: staff_alert
+    # Commands frozen players may still use unless they have coremc.moderation.freeze.bypass.
+    allowed-commands: [msg, tell, w, whisper, r, reply, help, rules]
+  staff-ranks:
+    helper:
+      display: Helper
+      weight: 10
+      capabilities: [vanish, vanish.see, spectate, cps, freeze, kick, mute, unmute, tier.1, history]
+    mod:
+      display: Mod
+      weight: 20
+      capabilities: [vanish, vanish.see, spectate, cps, rotate, freeze, kick, mute, unmute, ban, unban, tier.1, tier.2, history]
+    srmod:
+      display: SrMod
+      weight: 30
+      capabilities: [vanish, vanish.see, spectate, cps, rotate, freeze, kick, mute, unmute, ban, unban, tier.1, tier.2, tier.3, history, correction]
+    jr_admin:
+      display: Jr Admin
+      weight: 40
+      capabilities: [vanish, vanish.see, spectate, cps, rotate, freeze, kick, mute, unmute, ban, unban, tier.1, tier.2, tier.3, tier.4, history, correction]
+    admin:
+      display: Admin
+      weight: 50
+      capabilities: [vanish, vanish.see, spectate, cps, rotate, freeze, kick, mute, unmute, ban, unban, tier.1, tier.2, tier.3, tier.4, tier.5, history, correction, override]
+    manager:
+      display: Manager
+      weight: 60
+      capabilities: ['*']
+  tiers:
+    t1:
+      progression:
+        - { min: 1, max: 1, action: warn }
+        - { min: 2, max: 2, action: warn }
+        - { min: 3, max: 3, action: mute, duration: 5m }
+        - { min: 4, max: 4, action: mute, duration: 15m }
+        - { min: 5, max: 5, action: mute, duration: 30m }
+        - { min: 6, max: 6, action: mute, duration: 1h }
+        - { min: 7, max: 7, action: mute, duration: 6h }
+        - { min: 8, max: 8, action: mute, duration: 12h }
+        - { min: 9, max: 24, action: mute, duration: 1d }
+        - { min: 25, max: 29, action: mute, duration: 3d }
+        - { min: 30, max: 39, action: mute, duration: 7d }
+        - { min: 40, max: 49, action: mute, duration: 30d }
+        - { min: 50, max: '+', action: mute, duration: permanent }
+      rules:
+        chat_spam: "Chat Spam"
+        symbols: "Symbols"
+        filter_bypass: "Filter Bypass"
+        inappropriate_chat: "Inappropriate Chat"
+        disrespect: "Disrespect"
+        fake_messages: "Fake Messages"
+        hackusating: "Hackusating"
+        excessive_caps: "Excessive Caps"
+        rule_breaking_encouragement: "Rule Breaking Encouragement"
+        non_english:
+          display: "Non-English Chat"
+          enabled: false
+    t2:
+      progression:
+        - { min: 1, max: 1, action: warn }
+        - { min: 2, max: 2, action: ban, duration: 1d }
+        - { min: 3, max: 3, action: ban, duration: 3d }
+        - { min: 4, max: 4, action: ban, duration: 7d }
+        - { min: 5, max: 5, action: ban, duration: 14d }
+        - { min: 6, max: '+', action: ban, duration: 30d }
+      rules:
+        light_advertising: "Light Advertising"
+        impersonation: "Impersonation"
+        minor_glitch_abuse: "Minor Glitch Abuse"
+        event_abuse: "Event Abuse"
+        lag_machines: "Lag Machines"
+        player_casinos: "Player Casinos"
+        inappropriate_builds: "Inappropriate Builds"
+        kill_boosting: "Kill Boosting"
+        item_name_abuse: "Item Name Abuse"
+        nickname_abuse: "Nickname Abuse"
+        report_misuse: "Report Misuse"
+        claim_trapping: "Claim Trapping"
+        tp_trapping: "TP Trapping"
+        in_game_scamming: "In-Game Scamming"
+        inventory_flooding: "Inventory Flooding"
+        unauthorized_entry: "Unauthorized Entry"
+        command_abuse: "Command Abuse"
+    t3:
+      progression:
+        - { min: 1, max: 1, action: ban, duration: 1d }
+        - { min: 2, max: 2, action: ban, duration: 7d }
+        - { min: 3, max: 3, action: ban, duration: 30d }
+        - { min: 4, max: '+', action: ban, duration: permanent }
+      rules:
+        harassment: "Harassment"
+        toxicity: "Toxicity"
+        non_pvp_autoclicking: "Non-PvP Autoclicking"
+        afk_grinding: "AFK Grinding"
+        excessive_alts: "Excessive Alts"
+        alt_abuse: "Alt Abuse"
+        banning_staff: "Banning Staff"
+        account_sharing: "Account Sharing"
+        disallowed_modification: "Disallowed Modification"
+    t4:
+      progression:
+        - { min: 1, max: 1, action: ban, duration: 7d }
+        - { min: 2, max: 2, action: ban, duration: 30d }
+        - { min: 3, max: '+', action: ban, duration: permanent }
+      rules:
+        major_toxicity: "Major Toxicity"
+        hacked_client: "Hacked Client"
+        threats: "Threats"
+        griefing: "Griefing"
+        irl_trading: "IRL Trading"
+        irl_scamming: "IRL Scamming"
+        island_insiding: "Island Insiding"
+        pvp_autoclicking: "PvP Autoclicking"
+        disallowed_macros: "Disallowed Macros"
+    t5:
+      progression:
+        - { min: 1, max: '+', action: ban, duration: permanent }
+      rules:
+        advertising_ip: "Advertising IP"
+        harmful_links: "Harmful Links"
+        duping: "Duping"
+        major_glitch_abuse: "Major Glitch Abuse"
+        botting: "Botting"
+        leaking_personal_information: "Leaking Personal Information"
+        inappropriate_skin:
+          display: "Inappropriate Skin"
+          enabled: true
+          requires-acknowledgement: true
+        inappropriate_ign:
+          display: "Inappropriate IGN"
+          enabled: true
+          requires-acknowledgement: true

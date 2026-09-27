@@ -84,6 +84,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private com.coremc.core.island.IslandActivityEffects islandActivityEffects;
     private com.coremc.core.island.IslandProgressService islandProgressService;
     private com.coremc.core.island.IslandBuffService islandBuffService;
+    private com.coremc.core.moderation.ModerationService moderationService;
 
     /**
      * Creates (or attaches to) the dedicated island world. Islands live in
@@ -142,6 +143,10 @@ public final class CoreMCPlugin extends JavaPlugin {
 
         // 3b. Economy (pure service over player profiles; no I/O of its own).
         this.economyService = new EconomyService(playerDataService);
+
+        // 3b-2. Staff tools and moderation (loads its own UUID-based records).
+        this.moderationService = new com.coremc.core.moderation.ModerationService(this);
+        this.moderationService.load();
 
         // 3c. Island registry (loads async from plugins/CoreMC/islands/) inside
         //     the DEDICATED island world (created as void terrain when absent).
@@ -205,6 +210,10 @@ public final class CoreMCPlugin extends JavaPlugin {
         final PluginManager pluginManager = getServer().getPluginManager();
         pluginManager.registerEvents(
                 new PlayerListener(playerDataService, messageService, coreConfig, islandService), this);
+        pluginManager.registerEvents(moderationService.listener(), this);
+        pluginManager.registerEvents(moderationService.visibility(), this);
+        pluginManager.registerEvents(moderationService.spectate(), this);
+        pluginManager.registerEvents(moderationService.cps(), this);
         pluginManager.registerEvents(new IslandProtectionListener(this), this);
         pluginManager.registerEvents(new IslandVoidRescueListener(this), this);
         pluginManager.registerEvents(islandUpgradeEffects, this);
@@ -243,7 +252,11 @@ public final class CoreMCPlugin extends JavaPlugin {
     }
 
     private void shutdownServices() {
-        // Stop scheduled work first so nothing touches dead services.
+        // Restore staff state before scheduled work is cancelled.
+        if (moderationService != null) {
+            moderationService.shutdown();
+        }
+        // Stop scheduled work so nothing touches dead services.
         if (taskService != null) {
             taskService.cancelAll();
         }
@@ -278,6 +291,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.guiService = null;
         this.omniToolService = null;
         this.roleService = null;
+        this.moderationService = null;
         getLogger().info("CoreMC disabled — all player data saved, all tasks cancelled.");
     }
 
@@ -297,6 +311,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         keyService.load();
         crateService.load();
         islandActivityEffects.clearCaches();
+        moderationService.reload();
     }
 
     private void registerCommands() {
@@ -371,6 +386,62 @@ public final class CoreMCPlugin extends JavaPlugin {
             cmd.setExecutor(shopCommand);
             cmd.setTabCompleter(shopCommand);
         }
+
+        registerModerationCommands();
+    }
+
+    private void registerModerationCommands() {
+        final com.coremc.core.moderation.StaffToolCommand staffTools =
+                new com.coremc.core.moderation.StaffToolCommand(this);
+        for (final String name : new String[] {"vanish", "spectate", "cps", "rotate", "freeze"}) {
+            final PluginCommand command = getCommand(name);
+            if (command == null) {
+                throw new IllegalStateException("Command '" + name + "' missing from plugin.yml");
+            }
+            command.setExecutor(staffTools);
+            command.setTabCompleter(staffTools);
+        }
+
+        final com.coremc.core.moderation.PunishmentCommand punishments =
+                new com.coremc.core.moderation.PunishmentCommand(this);
+        for (final String name : new String[] {"kick", "mute", "ban", "unmute", "unban"}) {
+            final PluginCommand command = getCommand(name);
+            if (command == null) {
+                throw new IllegalStateException("Command '" + name + "' missing from plugin.yml");
+            }
+            command.setExecutor(punishments);
+            command.setTabCompleter(punishments);
+        }
+
+        for (int tier = 1; tier <= 5; tier++) {
+            final String name = "t" + tier;
+            final PluginCommand command = getCommand(name);
+            if (command == null) {
+                throw new IllegalStateException("Command '" + name + "' missing from plugin.yml");
+            }
+            final com.coremc.core.moderation.TierCommand handler =
+                    new com.coremc.core.moderation.TierCommand(this, tier);
+            command.setExecutor(handler);
+            command.setTabCompleter(handler);
+        }
+
+        final PluginCommand history = getCommand("history");
+        if (history == null) {
+            throw new IllegalStateException("Command 'history' missing from plugin.yml");
+        }
+        final com.coremc.core.moderation.HistoryCommand historyCommand =
+                new com.coremc.core.moderation.HistoryCommand(this);
+        history.setExecutor(historyCommand);
+        history.setTabCompleter(historyCommand);
+
+        final PluginCommand tierCorrect = getCommand("tiercorrect");
+        if (tierCorrect == null) {
+            throw new IllegalStateException("Command 'tiercorrect' missing from plugin.yml");
+        }
+        final com.coremc.core.moderation.TierCorrectionCommand correctionCommand =
+                new com.coremc.core.moderation.TierCorrectionCommand(this);
+        tierCorrect.setExecutor(correctionCommand);
+        tierCorrect.setTabCompleter(correctionCommand);
     }
 
     private void registerCurrencyCommand(final String name, final Currency currency) {
@@ -496,5 +567,10 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Crate lineup, rolls and pity. */
     public CrateService crates() {
         return crateService;
+    }
+
+    /** Staff tools, punishments and moderation persistence. */
+    public com.coremc.core.moderation.ModerationService moderation() {
+        return moderationService;
     }
 }
