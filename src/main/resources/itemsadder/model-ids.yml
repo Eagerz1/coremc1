@@ -1,0 +1,888 @@
+# Stable CoreMC custom model-data allocation.
+# Ranges are intentionally disjoint from vanilla and from each other.
+# Do not renumber: old stacks use these visual IDs when the pack is present.
+namespace: coremc
+base_material_fallback: true
+ranges:
+  fish_common:
+    start: 20000
+    end: 20023
+  fish_uncommon:
+    start: 20100
+    end: 20123
+  fish_rare:
+    start: 20200
+    end: 20223
+  fish_epic:
+    start: 20300
+    end: 20323
+  fish_mythic:
+    start: 20400
+    end: 20423
+  key:
+    start: 21000
+    end: 21009
+  lootbox:
+    start: 21100
+    end: 21108
+  progression:
+    start: 21200
+    end: 21218
+  omnitool:
+    start: 21400
+    end: 21405
+  skin:
+    start: 21500
+    end: 21512
+
+items:
+  fish_common_creek_dart:
+    model_id: 20000
+    model_path: fish/common/creek_dart
+    fallback_material: COD
+    category: common
+  fish_common_reed_pikelet:
+    model_id: 20001
+    model_path: fish/common/reed_pikelet
+    fallback_material: COD
+    category: common
+  fish_common_pebble_loach:
+    model_id: 20002
+    model_path: fish/common/pebble_loach
+    fallback_material: COD
+    category: common
+  fish_common_willow_bream:
+    model_id: 20003
+    model_path: fish/common/willow_bream
+    fallback_material: COD
+    category: common
+  fish_common_mudskipper:
+    model_id: 20004
+    model_path: fish/common/mudskipper
+    fallback_material: COD
+    category: common
+  fish_common_glass_minnow:
+    model_id: 20005
+    model_path: fish/common/glass_minnow
+    fallback_material: COD
+    category: common
+  fish_common_sunscale:
+    model_id: 20006
+    model_path: fish/common/sunscale
+    fallback_material: COD
+    category: common
+  fish_common_marsh_killifish:
+    model_id: 20007
+    model_path: fish/common/marsh_killifish
+    fallback_material: COD
+    category: common
+  fish_common_sand_goby:
+    model_id: 20008
+    model_path: fish/common/sand_goby
+    fallback_material: COD
+    category: common
+  fish_common_rainbarb:
+    model_id: 20009
+    model_path: fish/common/rainbarb
+    fallback_material: COD
+    category: common
+  fish_common_moss_tetra:
+    model_id: 20010
+    model_path: fish/common/moss_tetra
+    fallback_material: COD
+    category: common
+  fish_common_drift_dace:
+    model_id: 20011
+    model_path: fish/common/drift_dace
+    fallback_material: COD
+    category: common
+  fish_common_lantern_anchovy:
+    model_id: 20012
+    model_path: fish/common/lantern_anchovy
+    fallback_material: COD
+    category: common
+  fish_common_kelp_sardine:
+    model_id: 20013
+    model_path: fish/common/kelp_sardine
+    fallback_material: COD
+    category: common
+  fish_common_shellback_sculpin:
+    model_id: 20014
+    model_path: fish/common/shellback_sculpin
+    fallback_material: COD
+    category: common
+  fish_common_frost_ide:
+    model_id: 20015
+    model_path: fish/common/frost_ide
+    fallback_material: COD
+    category: common
+  fish_common_copper_roe:
+    model_id: 20016
+    model_path: fish/common/copper_roe
+    fallback_material: COD
+    category: common
+  fish_common_tide_mullet:
+    model_id: 20017
+    model_path: fish/common/tide_mullet
+    fallback_material: COD
+    category: common
+  fish_common_bluegill:
+    model_id: 20018
+    model_path: fish/common/bluegill
+    fallback_material: COD
+    category: common
+  fish_common_pond_perch:
+    model_id: 20019
+    model_path: fish/common/pond_perch
+    fallback_material: COD
+    category: common
+  fish_common_brook_trout:
+    model_id: 20020
+    model_path: fish/common/brook_trout
+    fallback_material: COD
+    category: common
+  fish_common_ember_guppy:
+    model_id: 20021
+    model_path: fish/common/ember_guppy
+    fallback_material: COD
+    category: common
+  fish_common_willow_carp:
+    model_id: 20022
+    model_path: fish/common/willow_carp
+    fallback_material: COD
+    category: common
+  fish_common_salt_sprat:
+    model_id: 20023
+    model_path: fish/common/salt_sprat
+    fallback_material: COD
+    category: common
+  fish_uncommon_moonfin:
+    model_id: 20100
+    model_path: fish/uncommon/moonfin
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_coral_snapper:
+    model_id: 20101
+    model_path: fish/uncommon/coral_snapper
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_dusk_koi:
+    model_id: 20102
+    model_path: fish/uncommon/dusk_koi
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_silverneedle:
+    model_id: 20103
+    model_path: fish/uncommon/silverneedle
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_thunder_tench:
+    model_id: 20104
+    model_path: fish/uncommon/thunder_tench
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_lantern_loach:
+    model_id: 20105
+    model_path: fish/uncommon/lantern_loach
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_mangrove_bass:
+    model_id: 20106
+    model_path: fish/uncommon/mangrove_bass
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_aurora_char:
+    model_id: 20107
+    model_path: fish/uncommon/aurora_char
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_glasscat:
+    model_id: 20108
+    model_path: fish/uncommon/glasscat
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_tide_runner:
+    model_id: 20109
+    model_path: fish/uncommon/tide_runner
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_ribbon_eel:
+    model_id: 20110
+    model_path: fish/uncommon/ribbon_eel
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_speckled_mandarin:
+    model_id: 20111
+    model_path: fish/uncommon/speckled_mandarin
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_cloud_darter:
+    model_id: 20112
+    model_path: fish/uncommon/cloud_darter
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_storm_goby:
+    model_id: 20113
+    model_path: fish/uncommon/storm_goby
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_jade_codlet:
+    model_id: 20114
+    model_path: fish/uncommon/jade_codlet
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_firetail_minnow:
+    model_id: 20115
+    model_path: fish/uncommon/firetail_minnow
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_brine_puffer:
+    model_id: 20116
+    model_path: fish/uncommon/brine_puffer
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_reed_needlefish:
+    model_id: 20117
+    model_path: fish/uncommon/reed_needlefish
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_opal_bream:
+    model_id: 20118
+    model_path: fish/uncommon/opal_bream
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_dusk_swordlet:
+    model_id: 20119
+    model_path: fish/uncommon/dusk_swordlet
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_crystal_molly:
+    model_id: 20120
+    model_path: fish/uncommon/crystal_molly
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_mossy_pike:
+    model_id: 20121
+    model_path: fish/uncommon/mossy_pike
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_bluewater_hake:
+    model_id: 20122
+    model_path: fish/uncommon/bluewater_hake
+    fallback_material: COD
+    category: uncommon
+  fish_uncommon_copperhead_dace:
+    model_id: 20123
+    model_path: fish/uncommon/copperhead_dace
+    fallback_material: COD
+    category: uncommon
+  fish_rare_abyssal_lanternfish:
+    model_id: 20200
+    model_path: fish/rare/abyssal_lanternfish
+    fallback_material: COD
+    category: rare
+  fish_rare_sunken_sawfish:
+    model_id: 20201
+    model_path: fish/rare/sunken_sawfish
+    fallback_material: COD
+    category: rare
+  fish_rare_sapphire_stingray:
+    model_id: 20202
+    model_path: fish/rare/sapphire_stingray
+    fallback_material: COD
+    category: rare
+  fish_rare_ghost_koi:
+    model_id: 20203
+    model_path: fish/rare/ghost_koi
+    fallback_material: COD
+    category: rare
+  fish_rare_prism_tetra:
+    model_id: 20204
+    model_path: fish/rare/prism_tetra
+    fallback_material: COD
+    category: rare
+  fish_rare_ironjaw_barracuda:
+    model_id: 20205
+    model_path: fish/rare/ironjaw_barracuda
+    fallback_material: COD
+    category: rare
+  fish_rare_pearl_seahorse:
+    model_id: 20206
+    model_path: fish/rare/pearl_seahorse
+    fallback_material: COD
+    category: rare
+  fish_rare_emberfin_salmon:
+    model_id: 20207
+    model_path: fish/rare/emberfin_salmon
+    fallback_material: COD
+    category: rare
+  fish_rare_void_catfish:
+    model_id: 20208
+    model_path: fish/rare/void_catfish
+    fallback_material: COD
+    category: rare
+  fish_rare_thunder_manta:
+    model_id: 20209
+    model_path: fish/rare/thunder_manta
+    fallback_material: COD
+    category: rare
+  fish_rare_frostbite_pike:
+    model_id: 20210
+    model_path: fish/rare/frostbite_pike
+    fallback_material: COD
+    category: rare
+  fish_rare_bloodscale_tuna:
+    model_id: 20211
+    model_path: fish/rare/bloodscale_tuna
+    fallback_material: COD
+    category: rare
+  fish_rare_moonlit_angler:
+    model_id: 20212
+    model_path: fish/rare/moonlit_angler
+    fallback_material: COD
+    category: rare
+  fish_rare_coral_crownfish:
+    model_id: 20213
+    model_path: fish/rare/coral_crownfish
+    fallback_material: COD
+    category: rare
+  fish_rare_stormglass_eel:
+    model_id: 20214
+    model_path: fish/rare/stormglass_eel
+    fallback_material: COD
+    category: rare
+  fish_rare_blackwater_ray:
+    model_id: 20215
+    model_path: fish/rare/blackwater_ray
+    fallback_material: COD
+    category: rare
+  fish_rare_golden_grouper:
+    model_id: 20216
+    model_path: fish/rare/golden_grouper
+    fallback_material: COD
+    category: rare
+  fish_rare_deepforge_ide:
+    model_id: 20217
+    model_path: fish/rare/deepforge_ide
+    fallback_material: COD
+    category: rare
+  fish_rare_amethyst_betta:
+    model_id: 20218
+    model_path: fish/rare/amethyst_betta
+    fallback_material: COD
+    category: rare
+  fish_rare_tempest_mackerel:
+    model_id: 20219
+    model_path: fish/rare/tempest_mackerel
+    fallback_material: COD
+    category: rare
+  fish_rare_obsidian_gar:
+    model_id: 20220
+    model_path: fish/rare/obsidian_gar
+    fallback_material: COD
+    category: rare
+  fish_rare_starfall_fangfish:
+    model_id: 20221
+    model_path: fish/rare/starfall_fangfish
+    fallback_material: COD
+    category: rare
+  fish_rare_royal_discus:
+    model_id: 20222
+    model_path: fish/rare/royal_discus
+    fallback_material: COD
+    category: rare
+  fish_rare_rift_skate:
+    model_id: 20223
+    model_path: fish/rare/rift_skate
+    fallback_material: COD
+    category: rare
+  fish_epic_celestial_koi:
+    model_id: 20300
+    model_path: fish/epic/celestial_koi
+    fallback_material: COD
+    category: epic
+  fish_epic_leviathan_sardine:
+    model_id: 20301
+    model_path: fish/epic/leviathan_sardine
+    fallback_material: COD
+    category: epic
+  fish_epic_phoenix_betta:
+    model_id: 20302
+    model_path: fish/epic/phoenix_betta
+    fallback_material: COD
+    category: epic
+  fish_epic_astral_swordfish:
+    model_id: 20303
+    model_path: fish/epic/astral_swordfish
+    fallback_material: COD
+    category: epic
+  fish_epic_nebula_ray:
+    model_id: 20304
+    model_path: fish/epic/nebula_ray
+    fallback_material: COD
+    category: epic
+  fish_epic_eclipse_angelfish:
+    model_id: 20305
+    model_path: fish/epic/eclipse_angelfish
+    fallback_material: COD
+    category: epic
+  fish_epic_comet_tail:
+    model_id: 20306
+    model_path: fish/epic/comet_tail
+    fallback_material: COD
+    category: epic
+  fish_epic_aurora_arowana:
+    model_id: 20307
+    model_path: fish/epic/aurora_arowana
+    fallback_material: COD
+    category: epic
+  fish_epic_chronicle_sturgeon:
+    model_id: 20308
+    model_path: fish/epic/chronicle_sturgeon
+    fallback_material: COD
+    category: epic
+  fish_epic_voidfin_shark:
+    model_id: 20309
+    model_path: fish/epic/voidfin_shark
+    fallback_material: COD
+    category: epic
+  fish_epic_tempest_dragonfish:
+    model_id: 20310
+    model_path: fish/epic/tempest_dragonfish
+    fallback_material: COD
+    category: epic
+  fish_epic_sunflare_mola:
+    model_id: 20311
+    model_path: fish/epic/sunflare_mola
+    fallback_material: COD
+    category: epic
+  fish_epic_deepcrown_seahorse:
+    model_id: 20312
+    model_path: fish/epic/deepcrown_seahorse
+    fallback_material: COD
+    category: epic
+  fish_epic_prism_wing:
+    model_id: 20313
+    model_path: fish/epic/prism_wing
+    fallback_material: COD
+    category: epic
+  fish_epic_obsidian_orca:
+    model_id: 20314
+    model_path: fish/epic/obsidian_orca
+    fallback_material: COD
+    category: epic
+  fish_epic_moonbreaker_tuna:
+    model_id: 20315
+    model_path: fish/epic/moonbreaker_tuna
+    fallback_material: COD
+    category: epic
+  fish_epic_rift_wyrm:
+    model_id: 20316
+    model_path: fish/epic/rift_wyrm
+    fallback_material: COD
+    category: epic
+  fish_epic_sapphire_marlin:
+    model_id: 20317
+    model_path: fish/epic/sapphire_marlin
+    fallback_material: COD
+    category: epic
+  fish_epic_thunderhead_manta:
+    model_id: 20318
+    model_path: fish/epic/thunderhead_manta
+    fallback_material: COD
+    category: epic
+  fish_epic_gilded_coelacanth:
+    model_id: 20319
+    model_path: fish/epic/gilded_coelacanth
+    fallback_material: COD
+    category: epic
+  fish_epic_starforge_puffer:
+    model_id: 20320
+    model_path: fish/epic/starforge_puffer
+    fallback_material: COD
+    category: epic
+  fish_epic_bloodmoon_barracuda:
+    model_id: 20321
+    model_path: fish/epic/bloodmoon_barracuda
+    fallback_material: COD
+    category: epic
+  fish_epic_crystal_krakenfish:
+    model_id: 20322
+    model_path: fish/epic/crystal_krakenfish
+    fallback_material: COD
+    category: epic
+  fish_epic_skyvault_flyfish:
+    model_id: 20323
+    model_path: fish/epic/skyvault_flyfish
+    fallback_material: COD
+    category: epic
+  fish_mythic_worldroot_koi:
+    model_id: 20400
+    model_path: fish/mythic/worldroot_koi
+    fallback_material: COD
+    category: mythic
+  fish_mythic_elder_leviathan:
+    model_id: 20401
+    model_path: fish/mythic/elder_leviathan
+    fallback_material: COD
+    category: mythic
+  fish_mythic_astral_whalelet:
+    model_id: 20402
+    model_path: fish/mythic/astral_whalelet
+    fallback_material: COD
+    category: mythic
+  fish_mythic_void_emperor:
+    model_id: 20403
+    model_path: fish/mythic/void_emperor
+    fallback_material: COD
+    category: mythic
+  fish_mythic_solar_sawfish:
+    model_id: 20404
+    model_path: fish/mythic/solar_sawfish
+    fallback_material: COD
+    category: mythic
+  fish_mythic_lunar_seraph:
+    model_id: 20405
+    model_path: fish/mythic/lunar_seraph
+    fallback_material: COD
+    category: mythic
+  fish_mythic_genesis_ray:
+    model_id: 20406
+    model_path: fish/mythic/genesis_ray
+    fallback_material: COD
+    category: mythic
+  fish_mythic_rift_angler:
+    model_id: 20407
+    model_path: fish/mythic/rift_angler
+    fallback_material: COD
+    category: mythic
+  fish_mythic_timeworn_sturgeon:
+    model_id: 20408
+    model_path: fish/mythic/timeworn_sturgeon
+    fallback_material: COD
+    category: mythic
+  fish_mythic_crownfire_arowana:
+    model_id: 20409
+    model_path: fish/mythic/crownfire_arowana
+    fallback_material: COD
+    category: mythic
+  fish_mythic_stormking_marlin:
+    model_id: 20410
+    model_path: fish/mythic/stormking_marlin
+    fallback_material: COD
+    category: mythic
+  fish_mythic_auric_dragonfish:
+    model_id: 20411
+    model_path: fish/mythic/auric_dragonfish
+    fallback_material: COD
+    category: mythic
+  fish_mythic_abyss_crown_shark:
+    model_id: 20412
+    model_path: fish/mythic/abyss_crown_shark
+    fallback_material: COD
+    category: mythic
+  fish_mythic_starheart_betta:
+    model_id: 20413
+    model_path: fish/mythic/starheart_betta
+    fallback_material: COD
+    category: mythic
+  fish_mythic_eternal_coelacanth:
+    model_id: 20414
+    model_path: fish/mythic/eternal_coelacanth
+    fallback_material: COD
+    category: mythic
+  fish_mythic_nebula_manta:
+    model_id: 20415
+    model_path: fish/mythic/nebula_manta
+    fallback_material: COD
+    category: mythic
+  fish_mythic_nightveil_eel:
+    model_id: 20416
+    model_path: fish/mythic/nightveil_eel
+    fallback_material: COD
+    category: mythic
+  fish_mythic_dawnbringer_tuna:
+    model_id: 20417
+    model_path: fish/mythic/dawnbringer_tuna
+    fallback_material: COD
+    category: mythic
+  fish_mythic_prismatic_mola:
+    model_id: 20418
+    model_path: fish/mythic/prismatic_mola
+    fallback_material: COD
+    category: mythic
+  fish_mythic_obsidian_leviathan:
+    model_id: 20419
+    model_path: fish/mythic/obsidian_leviathan
+    fallback_material: COD
+    category: mythic
+  fish_mythic_celestial_seahorse:
+    model_id: 20420
+    model_path: fish/mythic/celestial_seahorse
+    fallback_material: COD
+    category: mythic
+  fish_mythic_frostnova_pike:
+    model_id: 20421
+    model_path: fish/mythic/frostnova_pike
+    fallback_material: COD
+    category: mythic
+  fish_mythic_crimson_cometfish:
+    model_id: 20422
+    model_path: fish/mythic/crimson_cometfish
+    fallback_material: COD
+    category: mythic
+  fish_mythic_skyfather_orca:
+    model_id: 20423
+    model_path: fish/mythic/skyfather_orca
+    fallback_material: COD
+    category: mythic
+  vote_key:
+    model_id: 21000
+    model_path: keys/vote_key
+    fallback_material: PAPER
+    category: progression
+  river_key:
+    model_id: 21001
+    model_path: keys/river_key
+    fallback_material: TRIPWIRE_HOOK
+    category: progression
+  sky_key:
+    model_id: 21002
+    model_path: keys/sky_key
+    fallback_material: TRIPWIRE_HOOK
+    category: progression
+  crimson_key:
+    model_id: 21003
+    model_path: keys/crimson_key
+    fallback_material: BLAZE_POWDER
+    category: progression
+  boost_key:
+    model_id: 21004
+    model_path: keys/boost_key
+    fallback_material: AMETHYST_SHARD
+    category: progression
+  ember_key:
+    model_id: 21005
+    model_path: keys/ember_key
+    fallback_material: BLAZE_POWDER
+    category: progression
+  rune_key:
+    model_id: 21006
+    model_path: keys/rune_key
+    fallback_material: AMETHYST_SHARD
+    category: progression
+  titan_key:
+    model_id: 21007
+    model_path: keys/titan_key
+    fallback_material: NETHERITE_SCRAP
+    category: progression
+  mythic_key:
+    model_id: 21008
+    model_path: keys/mythic_key
+    fallback_material: NETHER_STAR
+    category: progression
+  daily_key:
+    model_id: 21009
+    model_path: keys/daily_key
+    fallback_material: CLOCK
+    category: progression
+  core_lootbox:
+    model_id: 21100
+    model_path: lootboxes/core
+    fallback_material: CHEST
+    category: progression
+  monthly_lootbox:
+    model_id: 21101
+    model_path: lootboxes/monthly
+    fallback_material: ENDER_CHEST
+    category: progression
+  seasonal_lootbox:
+    model_id: 21102
+    model_path: lootboxes/seasonal
+    fallback_material: SHULKER_BOX
+    category: progression
+  sky_crate:
+    model_id: 21103
+    model_path: lootboxes/sky
+    fallback_material: ENDER_CHEST
+    category: progression
+  ember_crate:
+    model_id: 21104
+    model_path: lootboxes/ember
+    fallback_material: ENDER_CHEST
+    category: progression
+  rune_crate:
+    model_id: 21105
+    model_path: lootboxes/rune
+    fallback_material: ENDER_CHEST
+    category: progression
+  titan_crate:
+    model_id: 21106
+    model_path: lootboxes/titan
+    fallback_material: ENDER_CHEST
+    category: progression
+  mythic_crate:
+    model_id: 21107
+    model_path: lootboxes/mythic
+    fallback_material: ENDER_CHEST
+    category: progression
+  daily_crate:
+    model_id: 21108
+    model_path: lootboxes/daily
+    fallback_material: CHEST
+    category: progression
+  core_fragment:
+    model_id: 21200
+    model_path: progression/core_fragment
+    fallback_material: AMETHYST_SHARD
+    category: progression
+  generator_core:
+    model_id: 21201
+    model_path: progression/generator_core
+    fallback_material: HEART_OF_THE_SEA
+    category: progression
+  ancient_seed:
+    model_id: 21202
+    model_path: progression/ancient_seed
+    fallback_material: WHEAT_SEEDS
+    category: progression
+  ancient_ore:
+    model_id: 21203
+    model_path: progression/ancient_ore
+    fallback_material: ANCIENT_DEBRIS
+    category: progression
+  sunken_cache:
+    model_id: 21204
+    model_path: progression/sunken_cache
+    fallback_material: CHEST
+    category: progression
+  monster_relic:
+    model_id: 21205
+    model_path: progression/monster_relic
+    fallback_material: WITHER_SKELETON_SKULL
+    category: progression
+  rift_shard:
+    model_id: 21206
+    model_path: progression/rift_shard
+    fallback_material: ECHO_SHARD
+    category: progression
+  rift_crystal:
+    model_id: 21207
+    model_path: progression/rift_crystal
+    fallback_material: AMETHYST_CLUSTER
+    category: progression
+  rift_essence:
+    model_id: 21208
+    model_path: progression/rift_essence
+    fallback_material: DRAGON_BREATH
+    category: progression
+  island_module_frame:
+    model_id: 21209
+    model_path: progression/island_module_frame
+    fallback_material: IRON_BLOCK
+    category: progression
+  island_module_core:
+    model_id: 21210
+    model_path: progression/island_module_core
+    fallback_material: NETHER_STAR
+    category: progression
+  island_module_wiring:
+    model_id: 21211
+    model_path: progression/island_module_wiring
+    fallback_material: REDSTONE
+    category: progression
+  companion_evolution_stone:
+    model_id: 21212
+    model_path: progression/companion_evolution_stone
+    fallback_material: GLOWSTONE_DUST
+    category: progression
+  companion_evolution_shard:
+    model_id: 21213
+    model_path: progression/companion_evolution_shard
+    fallback_material: PRISMARINE_CRYSTALS
+    category: progression
+  companion_memory:
+    model_id: 21214
+    model_path: progression/companion_memory
+    fallback_material: KNOWLEDGE_BOOK
+    category: progression
+  spring_token:
+    model_id: 21215
+    model_path: seasonal/spring_token
+    fallback_material: PINK_TULIP
+    category: progression
+  summer_token:
+    model_id: 21216
+    model_path: seasonal/summer_token
+    fallback_material: SUNFLOWER
+    category: progression
+  autumn_token:
+    model_id: 21217
+    model_path: seasonal/autumn_token
+    fallback_material: ORANGE_DYE
+    category: progression
+  winter_token:
+    model_id: 21218
+    model_path: seasonal/winter_token
+    fallback_material: SNOWBALL
+    category: progression
+  omnitool_miner:
+    model_id: 21400
+    model_path: tools/omnitool_miner
+    fallback_material: NETHERITE_PICKAXE
+    category: progression
+  omnitool_farmer:
+    model_id: 21401
+    model_path: tools/omnitool_farmer
+    fallback_material: NETHERITE_PICKAXE
+    category: progression
+  omnitool_fisher:
+    model_id: 21402
+    model_path: tools/omnitool_fisher
+    fallback_material: NETHERITE_PICKAXE
+    category: progression
+  omnitool_slayer:
+    model_id: 21403
+    model_path: tools/omnitool_slayer
+    fallback_material: NETHERITE_PICKAXE
+    category: progression
+  omnitool_logger:
+    model_id: 21404
+    model_path: tools/omnitool_logger
+    fallback_material: NETHERITE_PICKAXE
+    category: progression
+  omnitool_universal:
+    model_id: 21405
+    model_path: tools/omnitool_universal
+    fallback_material: NETHERITE_PICKAXE
+    category: progression
+  generator_skin_cobble:
+    model_id: 21500
+    model_path: skins/generator/cinderstone
+    fallback_material: PAPER
+    category: progression
+  generator_skin_ice:
+    model_id: 21501
+    model_path: skins/generator/glacial_relay
+    fallback_material: PAPER
+    category: progression
+  generator_skin_rift:
+    model_id: 21502
+    model_path: skins/generator/rift_prism
+    fallback_material: PAPER
+    category: progression
+  companion_skin_emberfox:
+    model_id: 21510
+    model_path: skins/companion/emberfox
+    fallback_material: PAPER
+    category: progression
+  companion_skin_moonmoth:
+    model_id: 21511
+    model_path: skins/companion/moonmoth
+    fallback_material: PAPER
+    category: progression
+  companion_skin_starseed:
+    model_id: 21512
+    model_path: skins/companion/starseed
+    fallback_material: PAPER
+    category: progression

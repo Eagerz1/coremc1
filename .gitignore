@@ -11,6 +11,7 @@ journey-server/
 node_modules/
 
 # Editor / OS noise
+__pycache__/
 *.class
 .idea/
 *.iml

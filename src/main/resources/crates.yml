@@ -35,6 +35,15 @@ keys:
   vote:
     display: "&eVote Key"
     icon: PAPER
+  river:
+    display: "&bRiver Key"
+    icon: HEART_OF_THE_SEA
+  crimson:
+    display: "&cCrimson Key"
+    icon: CRIMSON_FUNGUS
+  boost:
+    display: "&dBoost Key"
+    icon: ECHO_SHARD
 
 crates:
   sky:

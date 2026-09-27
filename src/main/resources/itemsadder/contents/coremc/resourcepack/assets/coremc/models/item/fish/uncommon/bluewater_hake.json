@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "coremc:item/fish/uncommon/bluewater_hake"
+  }
+}

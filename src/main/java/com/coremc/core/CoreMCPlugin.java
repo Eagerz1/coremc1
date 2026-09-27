@@ -4,6 +4,7 @@ import com.coremc.core.command.CoreMCCommand;
 import com.coremc.core.command.CurrencyAdminCommand;
 import com.coremc.core.command.HealCommand;
 import com.coremc.core.command.ProfileCommand;
+import com.coremc.core.cosmetic.CosmeticSkinService;
 import com.coremc.core.config.CoreConfig;
 import com.coremc.core.config.MessageService;
 import com.coremc.core.crate.CrateService;
@@ -68,6 +69,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private EconomyService economyService;
     private IslandService islandService;
     private GuiService guiService;
+    private CosmeticSkinService cosmeticSkinService;
     private OmniToolService omniToolService;
     private RoleService roleService;
     private PlaceableService placeableService;
@@ -171,6 +173,9 @@ public final class CoreMCPlugin extends JavaPlugin {
 
         // 3d. GUI runtime (holder-bound menus; no per-player tracking maps).
         this.guiService = new GuiService(this);
+        // Cosmetic skins are a presentation-only layer over generators and
+        // future companions; they never own or mutate progression data.
+        this.cosmeticSkinService = new CosmeticSkinService(this);
 
         // 3e. Roles + OmniTool (profile-driven progression).
         this.omniToolService = new OmniToolService(this);
@@ -276,6 +281,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.islandActivityEffects = null;
         this.islandProgressService = null;
         this.guiService = null;
+        this.cosmeticSkinService = null;
         this.omniToolService = null;
         this.roleService = null;
         getLogger().info("CoreMC disabled — all player data saved, all tasks cancelled.");
@@ -446,6 +452,11 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** GUI runtime. */
     public GuiService gui() {
         return guiService;
+    }
+
+    /** Visual-only generator/companion skin layer. */
+    public CosmeticSkinService cosmeticSkins() {
+        return cosmeticSkinService;
     }
 
     /** OmniTool service. */
