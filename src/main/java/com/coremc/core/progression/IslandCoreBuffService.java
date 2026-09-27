@@ -4,6 +4,8 @@ import com.coremc.core.config.MessageService;
 import com.coremc.core.island.Island;
 import com.coremc.core.island.IslandService;
 import com.coremc.core.quest.QuestProgressService;
+import com.coremc.core.season.SeasonJourneyService;
+import com.coremc.core.season.SeasonXpSource;
 import com.coremc.core.shop.EconomyService;
 import com.coremc.core.shop.Money;
 import com.coremc.core.util.ColorUtil;
@@ -57,6 +59,7 @@ public final class IslandCoreBuffService {
     private GeneratorIntegration generators = GeneratorIntegration.none();
     private RoleIntegration roles = RoleIntegration.fallback();
     private QuestProgressService quests;
+    private SeasonJourneyService seasonJourney;
     private final Map<UUID, Hotspot> hotspots = new LinkedHashMap<>();
     private final Map<UUID, Map<UUID, RecentRole>> recentRoles = new LinkedHashMap<>();
     private final Map<UUID, Map<String, BossBar>> bossBars = new LinkedHashMap<>();
@@ -103,6 +106,10 @@ public final class IslandCoreBuffService {
 
     public void attachQuests(final QuestProgressService quests) {
         this.quests = quests;
+    }
+
+    public void attachSeasonJourney(final SeasonJourneyService seasonJourney) {
+        this.seasonJourney = seasonJourney;
     }
 
     public boolean isUnlocked(final Island island, final String buffId) {
@@ -211,6 +218,10 @@ public final class IslandCoreBuffService {
         }
         progression.profile(island).takeSkyTokens(buff.skyTokens());
         progression.profile(island).addOwnedModule(buff.id());
+        if (seasonJourney != null && player != null) {
+            seasonJourney.addConfiguredXpOnce(player.getUniqueId(), SeasonXpSource.CORE_UNLOCK,
+                    "core-unlock:" + island.id() + ":" + buff.id());
+        }
         progression.saveNow();
         if (messages != null && player != null) {
             messages.sendPrefixed(player, "core-buff.unlocked", Map.of("buff", buff.name()));

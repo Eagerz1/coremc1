@@ -7,6 +7,8 @@ import com.coremc.core.island.IslandPointsService;
 import com.coremc.core.island.IslandService;
 import com.coremc.core.island.IslandUpgradeConfig;
 import com.coremc.core.quest.QuestProgressService;
+import com.coremc.core.season.SeasonJourneyService;
+import com.coremc.core.season.SeasonXpSource;
 import com.coremc.core.shop.EconomyService;
 import com.coremc.core.shop.Money;
 import java.io.IOException;
@@ -40,6 +42,7 @@ public final class IslandProgressionService {
     private GameplayModifierService modifiers;
     private IslandCoreBuffService coreBuffs;
     private QuestProgressService quests;
+    private SeasonJourneyService seasonJourney;
     private final Logger logger;
     private final Map<UUID, IslandProgressionProfile> profiles = new LinkedHashMap<>();
 
@@ -87,6 +90,10 @@ public final class IslandProgressionService {
 
     public void attachQuests(final QuestProgressService quests) {
         this.quests = quests;
+    }
+
+    public void attachSeasonJourney(final SeasonJourneyService seasonJourney) {
+        this.seasonJourney = seasonJourney;
     }
 
     public void saveNow() {
@@ -301,6 +308,13 @@ public final class IslandProgressionService {
         if (islandPoints != null && config.levelUpIslandTopPoints() > 0.0D) {
             islandPoints.add(island, config.levelUpIslandTopPoints() * (newLevel - oldLevel));
         }
+        if (seasonJourney != null) {
+            final UUID recipient = actor == null ? island.owner() : actor.getUniqueId();
+            for (int level = oldLevel + 1; level <= newLevel; level++) {
+                seasonJourney.addConfiguredXpOnce(recipient, SeasonXpSource.ISLAND_MILESTONE,
+                        "island-level:" + island.id() + ":" + level);
+            }
+        }
         if (actor != null && actor.isOnline()) {
             final int gainedPoints = config.totalMasteryPoints(newLevel) - config.totalMasteryPoints(oldLevel);
             final IslandProgressionConfig.LevelDef def = config.levelDef(newLevel);
@@ -348,6 +362,10 @@ public final class IslandProgressionService {
         final IslandProgressionProfile profile = profile(island);
         profile.takeSkyTokens(upgrade.skyTokens());
         profile.setMasteryLevel(upgrade.branchId(), upgrade.id(), 1);
+        if (seasonJourney != null) {
+            seasonJourney.addConfiguredXpOnce(player.getUniqueId(), SeasonXpSource.MASTERY_MILESTONE,
+                    "mastery:" + island.id() + ":" + upgrade.branchId() + ":" + upgrade.id());
+        }
         applyUnlockEffects(island, upgrade);
         if (islandPoints != null) {
             islandPoints.add(island, IslandPointsService.UPGRADE_POINTS);

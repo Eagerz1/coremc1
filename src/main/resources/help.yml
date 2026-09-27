@@ -137,6 +137,18 @@ categories:
     shortcut: "quests"
     plugin-command: quests
 
+  season-journey:
+    title: "Season Journey"
+    icon: NETHER_STAR
+    lines:
+      - "&7ᴛʜᴇ 7-ᴡᴇᴇᴋ ᴊᴏᴜʀɴᴇʏ ᴛɪᴇs"
+      - "&7ǫᴜᴇsᴛs, ɪsʟᴀɴᴅ ᴍɪʟᴇsᴛᴏɴᴇs"
+      - "&7ᴄᴏʀᴇ ᴜɴʟᴏᴄᴋs ᴀɴᴅ ᴇᴠᴇɴᴛs."
+      - "&7ɴᴏ ᴀꜰᴋ ᴏʀ ᴘᴀssɪᴠᴇ xᴘ."
+      - "&eᴄᴏᴍᴍᴀɴᴅ: &f/journey"
+    shortcut: "journey"
+    plugin-command: journey
+
   events:
     title: "Events"
     icon: BELL
@@ -189,6 +201,10 @@ commands:
       display: "/quests"
       plugin-command: quests
       description: "daily, weekly and island goals"
+    journey:
+      display: "/journey"
+      plugin-command: journey
+      description: "Season Journey rewards"
     events:
       display: "/coreevent status"
       plugin-command: coreevent

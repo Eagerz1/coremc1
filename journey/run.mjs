@@ -400,6 +400,27 @@ function checkEssence(got, want, label) {
     + ` got S${got.slayer}/M${got.mining}/F${got.farming}/K${got.kills}`)
 }
 
+function journeyYaml() {
+  const file = path.join(PLUGIN_DIR, 'season-journey.yml')
+  if (!fs.existsSync(file)) return {}
+  return yamlLoad(fs.readFileSync(file, 'utf8')) || {}
+}
+function journeyProfiles() {
+  return Object.values((journeyYaml().players) || {})
+}
+function journeyOwnerProfile() {
+  const profiles = journeyProfiles()
+  return profiles.find((p) => (p.xp || 0) > 0 || p.completed || p['season-id']) || profiles[0] || null
+}
+async function fillInventory(name, material = 'minecraft:stone') {
+  for (let i = 0; i < 36; i++) {
+    await rc(`item replace entity ${name} container.${i} with ${material} 64`)
+  }
+}
+function pendingJourneyRewards(profile) {
+  return Object.keys((profile && profile['pending-rewards']) || {}).length
+}
+
 // ------------------------------------------------------------------- main
 let owner = null
 let guest = null
@@ -442,8 +463,18 @@ async function main() {
   HOME = owner.entity.position.clone()
   HX = Math.floor(HOME.x); HZ = Math.floor(HOME.z); GY = settled
   log(`[island] home=${HOME.x.toFixed(1)},${HOME.y.toFixed(1)},${HOME.z.toFixed(1)} groundY=${GY}`)
+  helpWin = await openWindow(owner, '/help season-journey')
+  check(!!helpWin && /(season journey|sᴇᴀsᴏɴ|ᴊᴏᴜʀɴᴇʏ)/i.test(slotJson(helpWin, 13)), '/help season-journey opens the Journey guide page', helpWin ? slotJson(helpWin, 13).slice(0, 220) : 'no window')
+  await closeWin(owner)
+  let journeyWin = await openWindow(owner, '/journey')
+  check(!!journeyWin && /(season journey|coremc season|level)/i.test(slotJson(journeyWin, 4)), '/journey opens Season Journey GUI', journeyWin ? slotJson(journeyWin, 4).slice(0, 260) : 'no window')
+  await closeWin(owner)
+  journeyWin = await openWindow(owner, '/season')
+  check(!!journeyWin && /(season journey|coremc season|level)/i.test(slotJson(journeyWin, 4)), '/season opens the Journey alias without breaking the command', journeyWin ? slotJson(journeyWin, 4).slice(0, 260) : 'no window')
+  await closeWin(owner)
   let questWin = await openWindow(owner, '/quests')
   check(!!questWin && /(daily|ᴅᴀɪʟʏ)/i.test(slotJson(questWin, 20)) && /(weekly|ᴡᴇᴇᴋʟʏ)/i.test(slotJson(questWin, 22)), '/quests opens root with Daily and Weekly entries', questWin ? (slotJson(questWin, 20) + ' | ' + slotJson(questWin, 22)).slice(0, 260) : 'no window')
+  check(!!questWin && /(season journey|sᴇᴀsᴏɴ)/i.test(slotJson(questWin, 48)), '/quests root includes a Season Journey shortcut', questWin ? slotJson(questWin, 48).slice(0, 220) : 'no window')
   await click(owner, 20)
   await sleep(500)
   questWin = owner.currentWindow
@@ -890,6 +921,15 @@ async function main() {
   await digAt(owner, farmX, GY + 2, farmZ)
   await sleep(1500)
   check(await waitChat(owner, /quest complete.*farming daily/i, 5000), 'real crop harvest completes the Daily Quest', recentChat(owner))
+  check(await waitChat(owner, /season journey level/i, 5000), 'Quest completion grants Season XP and levels once', recentChat(owner))
+  let journeyProfile = journeyOwnerProfile()
+  const questXpKeys = (journeyProfile && journeyProfile['xp-award-keys']) || []
+  const uniqueQuestXpKeys = new Set(questXpKeys.filter((k) => /quest:/.test(k)))
+  check(journeyProfile && journeyProfile.xp >= 570 && journeyProfile['highest-level'] >= 5
+      && questXpKeys.length === new Set(questXpKeys).size
+      && questXpKeys.some((k) => /daily-quest:quest:daily:.*daily-farm/.test(k))
+      && uniqueQuestXpKeys.size >= 2,
+    'Season Journey XP is persisted from quest completions with stable exact-once keys', JSON.stringify(journeyProfile).slice(0, 420))
   e = await essenceOf(owner)
   check(e && e.farming === 77, 'harvesting ripe wheat pays +2 Farming Essence', String(e && e.farming))
 
@@ -939,6 +979,27 @@ async function main() {
   const eventProgress = Object.values((qEventYaml && qEventYaml.players) || {})
     .some((p) => p.weekly && p.weekly['weekly-event'] && p.weekly['weekly-event'].progress && p.weekly['weekly-event'].progress.main >= 1)
   check(eventProgress, 'active gameplay during an Hourly Event publishes quest participation', JSON.stringify(qEventYaml).slice(0, 360))
+  let beforeEventJourney = journeyOwnerProfile()
+  const xpBeforeMeaningfulEvent = Number((beforeEventJourney && beforeEventJourney.xp) || 0)
+  const eventKeysBefore = ((beforeEventJourney && beforeEventJourney['xp-award-keys']) || [])
+    .filter((k) => /event:event-participation/.test(k)).length
+  check(xpBeforeMeaningfulEvent >= 0 && eventKeysBefore === 0,
+    'One tiny event action does not grant Season Event XP', JSON.stringify(beforeEventJourney).slice(0, 260))
+  if (pick) await owner.equip(pick, 'hand')
+  for (let i = 0; i < 4; i++) {
+    const x = eventFarmX + 1; const z = eventFarmZ
+    await rc(`execute in ${DIM} run setblock ${x} ${GY + 1} ${z} minecraft:diamond_ore`)
+    await waitBlockReady(owner, x, GY + 1, z, true)
+    await digAt(owner, x, GY + 1, z)
+    await sleep(700)
+  }
+  await sleep(1000)
+  let afterEventJourney = journeyOwnerProfile()
+  const eventKeysAfter = ((afterEventJourney && afterEventJourney['xp-award-keys']) || [])
+    .filter((k) => /event:event-participation/.test(k)).length
+  check(afterEventJourney && eventKeysAfter === eventKeysBefore + 1 && Number(afterEventJourney.xp) >= xpBeforeMeaningfulEvent + 200,
+    'Season Event XP is awarded once only after meaningful active contribution',
+    `${xpBeforeMeaningfulEvent} -> ${afterEventJourney && afterEventJourney.xp}, event keys ${eventKeysBefore}->${eventKeysAfter}`)
   out = await rc('coreevent status')
   check(/active event.*slayer frenzy|slayer frenzy/i.test(out), 'event status shows active timer', out.trim())
   out = await rc('coreevent stop')
@@ -1001,10 +1062,41 @@ async function main() {
   check(afterClaimTokens === midTokens, 'second claim attempt does not duplicate delivered rewards', `${midTokens} -> ${afterClaimTokens}`)
   await closeWin(owner)
 
+  await fillInventory(OWNER)
+  journeyWin = await openWindow(owner, '/journey')
+  check(!!journeyWin && /(level|ʟᴇᴠᴇʟ).*2/i.test(slotJson(journeyWin, 11)), 'Journey page shows unlocked level 2 reward', journeyWin ? slotJson(journeyWin, 11).slice(0, 220) : 'no window')
+  const pendingBeforeJourneyClaim = pendingJourneyRewards(journeyOwnerProfile())
+  clearChat(owner)
+  if (journeyWin) await click(owner, 11)
+  check(await waitChat(owner, /journey level.*pending|rewards were reserved/i, 8000),
+    'full inventory keeps Journey item reward safely pending', recentChat(owner))
+  await sleep(1000)
+  let afterJourneyClaim = journeyOwnerProfile()
+  check(afterJourneyClaim && pendingJourneyRewards(afterJourneyClaim) === pendingBeforeJourneyClaim + 1,
+    'Journey pending reward storage records the full-inventory item', JSON.stringify(afterJourneyClaim).slice(0, 300))
+  clearChat(owner)
+  if (owner.currentWindow) await click(owner, 11)
+  check(await waitChat(owner, /already claimed/i, 5000), 're-clicking Journey level 2 does not duplicate the claim', recentChat(owner))
+  await sleep(800)
+  afterJourneyClaim = journeyOwnerProfile()
+  check(afterJourneyClaim && pendingJourneyRewards(afterJourneyClaim) === pendingBeforeJourneyClaim + 1,
+    'Journey repeated click leaves pending reward count unchanged', JSON.stringify(afterJourneyClaim).slice(0, 300))
+  await closeWin(owner)
+  await rc(`clear ${OWNER}`)
+  await rc(`give ${OWNER} iron_pickaxe 1`)
+
+  out = await rc(`coreseason xp ${OWNER} 999999`)
+  check(/granted.*season xp/i.test(out), '/coreseason xp grants audited admin Season XP', out.trim())
+  await sleep(1000)
+  const completedJourney = journeyOwnerProfile()
+  check(completedJourney && completedJourney.completed === true && completedJourney['highest-level'] === 50
+      && completedJourney.history && completedJourney.history['season-2026-01'],
+    'Season Journey level 50 completion and history are persisted', JSON.stringify(completedJourney).slice(0, 420))
+
   helpWin = await openWindow(owner, '/help commands')
   const commandsJson = helpWin ? Array.from({ length: 54 }, (_, i) => slotJson(helpWin, i)).join(' ') : ''
-  check(!!helpWin && /\/quests/i.test(commandsJson) && !/\/gens/i.test(commandsJson) && !/\/ah/i.test(commandsJson),
-    'commands guide shows registered player commands and hides absent shortcuts', commandsJson.slice(0, 400))
+  check(!!helpWin && /\/quests/i.test(commandsJson) && /\/journey/i.test(commandsJson) && !/\/gens/i.test(commandsJson) && !/\/ah/i.test(commandsJson),
+    'commands guide shows registered player commands including Journey and hides absent shortcuts', commandsJson.slice(0, 400))
   await closeWin(owner)
 
   // ------------------------------------------- P9 restart persistence
@@ -1033,6 +1125,12 @@ async function main() {
     'placed-blocks.yml has no stale entries (the placed stone was consumed)',
     JSON.stringify(placedYaml).slice(0, 200))
 
+  const seasonConfigFile = path.join(PLUGIN_DIR, 'season.yml')
+  let seasonText = fs.readFileSync(seasonConfigFile, 'utf8')
+  seasonText = seasonText.replace('id: season-2026-01', 'id: season-2026-02')
+    .replace('name: "CoreMC Season I"', 'name: "CoreMC Season II"')
+  fs.writeFileSync(seasonConfigFile, seasonText)
+
   await startServer('boot2')
   await connectRcon()
   auditLog('boot2')
@@ -1042,6 +1140,11 @@ async function main() {
   await waitUntil(() => String(owner.__world || '').endsWith(WORLD_ISLANDS), 60000)
   await sleep(2500)
   check(!/welcome.*\/help/i.test(recentChat(owner)), 'first-join guidance does not spam after restart', recentChat(owner))
+  const transitionedJourney = journeyOwnerProfile()
+  check(transitionedJourney && transitionedJourney['season-id'] === 'season-2026-02'
+      && Number(transitionedJourney.xp || 0) === 0
+      && transitionedJourney.history && transitionedJourney.history['season-2026-01'],
+    'new Season ID resets only current Journey state while preserving old history', JSON.stringify(transitionedJourney).slice(0, 420))
   const eAfter = await essenceOf(owner)
   checkEssence(eAfter, eFinal, 'balances survived the restart exactly')
 
@@ -1076,6 +1179,7 @@ async function main() {
   }
 
   // placed-block guard persists: place + break a stone again, still no pay
+  await rc('give JOwner iron_pickaxe 1')
   await rc('give JOwner stone 1')
   await sleep(800)
   const stoneItem2 = owner.inventory.items().find((i) => i.name === 'stone')

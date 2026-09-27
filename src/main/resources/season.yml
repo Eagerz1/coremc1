@@ -1,0 +1,665 @@
+# CoreMC Season Journey — default 7-week season. All timestamps are absolute ISO-8601 instants.
+season:
+  id: season-2026-01
+  name: "CoreMC Season I"
+  start: "2026-09-27T00:00:00Z"
+  end: "2026-11-15T00:00:00Z"
+
+levels:
+  max-level: 50
+  xp-required:
+    1: 0
+    2: 100
+    3: 225
+    4: 375
+    5: 550
+    6: 750
+    7: 1000
+    8: 1300
+    9: 1650
+    10: 2050
+    11: 2550
+    12: 3100
+    13: 3700
+    14: 4350
+    15: 5050
+    16: 5800
+    17: 6600
+    18: 7450
+    19: 8350
+    20: 9300
+    21: 10300
+    22: 11350
+    23: 12450
+    24: 13600
+    25: 14800
+    26: 16050
+    27: 17350
+    28: 18700
+    29: 20100
+    30: 21550
+    31: 23150
+    32: 24900
+    33: 26800
+    34: 28850
+    35: 31050
+    36: 33400
+    37: 35900
+    38: 38550
+    39: 41350
+    40: 44300
+    41: 47400
+    42: 50650
+    43: 54050
+    44: 57600
+    45: 61300
+    46: 65300
+    47: 69800
+    48: 74800
+    49: 80800
+    50: 88800
+
+# Stable source awards. Gameplay code deduplicates with achievement keys; passive/AFK loops should not call Season XP.
+sources:
+  daily-quest: 120
+  weekly-quest: 450
+  island-challenge: 350
+  island-milestone: 250
+  mastery-milestone: 300
+  core-unlock: 400
+  role-milestone: 250
+  omnitool-milestone: 250
+  mining-milestone: 200
+  farming-milestone: 200
+  fishing-milestone: 200
+  slayer-milestone: 200
+  generator-milestone: 250
+  event: 200
+  admin: 0
+
+anti-afk:
+  event-meaningful-actions: 5
+  disallow-passive-generator-output: true
+  disallow-passive-spawner-output: true
+  disallow-online-time-xp: true
+
+premium:
+  enabled: false
+  ownership-hook: "store-or-credits-branch"
+
+rewards:
+  levels:
+    1:
+      icon: CHEST
+      free:
+        free-1-1:
+          type: sky-tokens
+          amount: 25
+      premium:
+        premium-1-1:
+          type: credits
+          amount: 25
+    2:
+      icon: CHEST
+      free:
+        free-2-1:
+          type: item
+          amount: 8
+          item: IRON_INGOT
+      premium:
+        premium-2-1:
+          type: key
+          amount: 1
+          display: "River Key"
+    3:
+      icon: CHEST
+      free:
+        free-3-1:
+          type: key
+          amount: 1
+      premium:
+        premium-3-1:
+          type: item
+          amount: 2
+          item: DIAMOND
+    4:
+      icon: CHEST
+      free:
+        free-4-1:
+          type: core-fragments
+          amount: 3
+      premium:
+        premium-4-1:
+          type: lootbox
+          amount: 1
+          display: "Premium Cache"
+    5:
+      icon: CHEST
+      free:
+        free-5-1:
+          type: item
+          amount: 4
+          item: EXPERIENCE_BOTTLE
+      premium:
+        premium-5-1:
+          type: cosmetic
+          amount: 1
+          display: "Premium Cosmetic"
+    6:
+      icon: CHEST
+      free:
+        free-6-1:
+          type: credits
+          amount: 15
+      premium:
+        premium-6-1:
+          type: credits
+          amount: 25
+    7:
+      icon: CHEST
+      free:
+        free-7-1:
+          type: generator-material
+          amount: 2
+      premium:
+        premium-7-1:
+          type: key
+          amount: 1
+          display: "River Key"
+    8:
+      icon: CHEST
+      free:
+        free-8-1:
+          type: companion-material
+          amount: 2
+      premium:
+        premium-8-1:
+          type: item
+          amount: 2
+          item: DIAMOND
+    9:
+      icon: CHEST
+      free:
+        free-9-1:
+          type: omnitool-material
+          amount: 2
+      premium:
+        premium-9-1:
+          type: lootbox
+          amount: 1
+          display: "Premium Cache"
+    10:
+      icon: AMETHYST_CLUSTER
+      free:
+        free-10-1:
+          type: sky-tokens
+          amount: 150
+        free-10-2:
+          type: key
+          amount: 2
+          display: "Vote Key"
+      premium:
+        premium-10-1:
+          type: cosmetic
+          amount: 1
+          display: "Premium Cosmetic"
+    11:
+      icon: CHEST
+      free:
+        free-11-1:
+          type: sky-tokens
+          amount: 30
+      premium:
+        premium-11-1:
+          type: credits
+          amount: 25
+    12:
+      icon: CHEST
+      free:
+        free-12-1:
+          type: item
+          amount: 8
+          item: IRON_INGOT
+      premium:
+        premium-12-1:
+          type: key
+          amount: 1
+          display: "River Key"
+    13:
+      icon: CHEST
+      free:
+        free-13-1:
+          type: key
+          amount: 1
+      premium:
+        premium-13-1:
+          type: item
+          amount: 2
+          item: DIAMOND
+    14:
+      icon: CHEST
+      free:
+        free-14-1:
+          type: core-fragments
+          amount: 3
+      premium:
+        premium-14-1:
+          type: lootbox
+          amount: 1
+          display: "Premium Cache"
+    15:
+      icon: CHEST
+      free:
+        free-15-1:
+          type: item
+          amount: 4
+          item: EXPERIENCE_BOTTLE
+      premium:
+        premium-15-1:
+          type: cosmetic
+          amount: 1
+          display: "Premium Cosmetic"
+    16:
+      icon: CHEST
+      free:
+        free-16-1:
+          type: credits
+          amount: 15
+      premium:
+        premium-16-1:
+          type: credits
+          amount: 25
+    17:
+      icon: CHEST
+      free:
+        free-17-1:
+          type: generator-material
+          amount: 2
+      premium:
+        premium-17-1:
+          type: key
+          amount: 1
+          display: "River Key"
+    18:
+      icon: CHEST
+      free:
+        free-18-1:
+          type: companion-material
+          amount: 2
+      premium:
+        premium-18-1:
+          type: item
+          amount: 2
+          item: DIAMOND
+    19:
+      icon: CHEST
+      free:
+        free-19-1:
+          type: omnitool-material
+          amount: 2
+      premium:
+        premium-19-1:
+          type: lootbox
+          amount: 1
+          display: "Premium Cache"
+    20:
+      icon: EMERALD
+      free:
+        free-20-1:
+          type: credits
+          amount: 100
+        free-20-2:
+          type: lootbox
+          amount: 1
+          display: "Journey Cache"
+      premium:
+        premium-20-1:
+          type: cosmetic
+          amount: 1
+          display: "Premium Cosmetic"
+    21:
+      icon: CHEST
+      free:
+        free-21-1:
+          type: sky-tokens
+          amount: 35
+      premium:
+        premium-21-1:
+          type: credits
+          amount: 25
+    22:
+      icon: CHEST
+      free:
+        free-22-1:
+          type: item
+          amount: 8
+          item: IRON_INGOT
+      premium:
+        premium-22-1:
+          type: key
+          amount: 1
+          display: "River Key"
+    23:
+      icon: CHEST
+      free:
+        free-23-1:
+          type: key
+          amount: 1
+      premium:
+        premium-23-1:
+          type: item
+          amount: 2
+          item: DIAMOND
+    24:
+      icon: CHEST
+      free:
+        free-24-1:
+          type: core-fragments
+          amount: 3
+      premium:
+        premium-24-1:
+          type: lootbox
+          amount: 1
+          display: "Premium Cache"
+    25:
+      icon: CHEST
+      free:
+        free-25-1:
+          type: item
+          amount: 4
+          item: EXPERIENCE_BOTTLE
+      premium:
+        premium-25-1:
+          type: cosmetic
+          amount: 1
+          display: "Premium Cosmetic"
+    26:
+      icon: CHEST
+      free:
+        free-26-1:
+          type: credits
+          amount: 15
+      premium:
+        premium-26-1:
+          type: credits
+          amount: 25
+    27:
+      icon: CHEST
+      free:
+        free-27-1:
+          type: generator-material
+          amount: 2
+      premium:
+        premium-27-1:
+          type: key
+          amount: 1
+          display: "River Key"
+    28:
+      icon: CHEST
+      free:
+        free-28-1:
+          type: companion-material
+          amount: 2
+      premium:
+        premium-28-1:
+          type: item
+          amount: 2
+          item: DIAMOND
+    29:
+      icon: CHEST
+      free:
+        free-29-1:
+          type: omnitool-material
+          amount: 2
+      premium:
+        premium-29-1:
+          type: lootbox
+          amount: 1
+          display: "Premium Cache"
+    30:
+      icon: DIAMOND
+      free:
+        free-30-1:
+          type: core-fragments
+          amount: 20
+        free-30-2:
+          type: key
+          amount: 2
+          display: "Sky Key"
+      premium:
+        premium-30-1:
+          type: cosmetic
+          amount: 1
+          display: "Premium Cosmetic"
+    31:
+      icon: CHEST
+      free:
+        free-31-1:
+          type: sky-tokens
+          amount: 40
+      premium:
+        premium-31-1:
+          type: credits
+          amount: 25
+    32:
+      icon: CHEST
+      free:
+        free-32-1:
+          type: item
+          amount: 8
+          item: IRON_INGOT
+      premium:
+        premium-32-1:
+          type: key
+          amount: 1
+          display: "River Key"
+    33:
+      icon: CHEST
+      free:
+        free-33-1:
+          type: key
+          amount: 1
+      premium:
+        premium-33-1:
+          type: item
+          amount: 2
+          item: DIAMOND
+    34:
+      icon: CHEST
+      free:
+        free-34-1:
+          type: core-fragments
+          amount: 3
+      premium:
+        premium-34-1:
+          type: lootbox
+          amount: 1
+          display: "Premium Cache"
+    35:
+      icon: CHEST
+      free:
+        free-35-1:
+          type: item
+          amount: 4
+          item: EXPERIENCE_BOTTLE
+      premium:
+        premium-35-1:
+          type: cosmetic
+          amount: 1
+          display: "Premium Cosmetic"
+    36:
+      icon: CHEST
+      free:
+        free-36-1:
+          type: credits
+          amount: 15
+      premium:
+        premium-36-1:
+          type: credits
+          amount: 25
+    37:
+      icon: CHEST
+      free:
+        free-37-1:
+          type: generator-material
+          amount: 2
+      premium:
+        premium-37-1:
+          type: key
+          amount: 1
+          display: "River Key"
+    38:
+      icon: CHEST
+      free:
+        free-38-1:
+          type: companion-material
+          amount: 2
+      premium:
+        premium-38-1:
+          type: item
+          amount: 2
+          item: DIAMOND
+    39:
+      icon: CHEST
+      free:
+        free-39-1:
+          type: omnitool-material
+          amount: 2
+      premium:
+        premium-39-1:
+          type: lootbox
+          amount: 1
+          display: "Premium Cache"
+    40:
+      icon: NETHER_STAR
+      free:
+        free-40-1:
+          type: seasonal-collectible
+          amount: 1
+          display: "Season Banner"
+        free-40-2:
+          type: credits
+          amount: 200
+      premium:
+        premium-40-1:
+          type: cosmetic
+          amount: 1
+          display: "Premium Cosmetic"
+    41:
+      icon: CHEST
+      free:
+        free-41-1:
+          type: sky-tokens
+          amount: 45
+      premium:
+        premium-41-1:
+          type: credits
+          amount: 25
+    42:
+      icon: CHEST
+      free:
+        free-42-1:
+          type: item
+          amount: 8
+          item: IRON_INGOT
+      premium:
+        premium-42-1:
+          type: key
+          amount: 1
+          display: "River Key"
+    43:
+      icon: CHEST
+      free:
+        free-43-1:
+          type: key
+          amount: 1
+      premium:
+        premium-43-1:
+          type: item
+          amount: 2
+          item: DIAMOND
+    44:
+      icon: CHEST
+      free:
+        free-44-1:
+          type: core-fragments
+          amount: 3
+      premium:
+        premium-44-1:
+          type: lootbox
+          amount: 1
+          display: "Premium Cache"
+    45:
+      icon: CHEST
+      free:
+        free-45-1:
+          type: item
+          amount: 4
+          item: EXPERIENCE_BOTTLE
+      premium:
+        premium-45-1:
+          type: cosmetic
+          amount: 1
+          display: "Premium Cosmetic"
+    46:
+      icon: CHEST
+      free:
+        free-46-1:
+          type: credits
+          amount: 15
+      premium:
+        premium-46-1:
+          type: credits
+          amount: 25
+    47:
+      icon: CHEST
+      free:
+        free-47-1:
+          type: generator-material
+          amount: 2
+      premium:
+        premium-47-1:
+          type: key
+          amount: 1
+          display: "River Key"
+    48:
+      icon: CHEST
+      free:
+        free-48-1:
+          type: companion-material
+          amount: 2
+      premium:
+        premium-48-1:
+          type: item
+          amount: 2
+          item: DIAMOND
+    49:
+      icon: CHEST
+      free:
+        free-49-1:
+          type: omnitool-material
+          amount: 2
+      premium:
+        premium-49-1:
+          type: lootbox
+          amount: 1
+          display: "Premium Cache"
+    50:
+      icon: DRAGON_EGG
+      free:
+        free-50-1:
+          type: title
+          amount: 1
+          display: "Season Finisher Title"
+        free-50-2:
+          type: trophy
+          amount: 1
+          display: "Season Trophy"
+        free-50-3:
+          type: sky-tokens
+          amount: 500
+      premium:
+        premium-50-1:
+          type: cosmetic
+          amount: 1
+          display: "Premium Cosmetic"

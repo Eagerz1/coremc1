@@ -59,6 +59,14 @@ import com.coremc.core.quest.QuestOnboardingListener;
 import com.coremc.core.quest.QuestProgressService;
 import com.coremc.core.quest.QuestService;
 import com.coremc.core.quest.YamlQuestStore;
+import com.coremc.core.season.CoreSeasonCommand;
+import com.coremc.core.season.SeasonAliasCommand;
+import com.coremc.core.season.SeasonConfig;
+import com.coremc.core.season.SeasonJourneyCommand;
+import com.coremc.core.season.SeasonJourneyGui;
+import com.coremc.core.season.SeasonJourneyListener;
+import com.coremc.core.season.SeasonJourneyService;
+import com.coremc.core.season.YamlSeasonJourneyStore;
 import com.coremc.core.shop.EconomyService;
 import com.coremc.core.shop.VaultEconomy;
 import com.coremc.core.island.YamlBuffStore;
@@ -130,6 +138,8 @@ public final class CoreMCPlugin extends JavaPlugin {
     private QuestConfig questConfig;
     private QuestService questService;
     private QuestProgressService questProgress;
+    private SeasonConfig seasonConfig;
+    private SeasonJourneyService seasonJourneyService;
     private HelpConfig helpConfig;
     private HelpGui helpGui;
     private RankConfig rankConfig;
@@ -365,6 +375,36 @@ public final class CoreMCPlugin extends JavaPlugin {
         }
         registerSimpleCommand("coreevent", new CoreEventCommand(eventConfig, eventService, messages));
 
+        // Season Journey: long-term per-player progression fed by quests,
+        // island milestones, core unlocks and meaningful hourly event play.
+        this.seasonConfig = SeasonConfig.disabled();
+        this.seasonJourneyService = null;
+        try {
+            final SeasonConfig parsed = loadSeasonJourneyConfig();
+            this.seasonConfig = parsed;
+            this.seasonJourneyService = new SeasonJourneyService(this, seasonConfig,
+                    new YamlSeasonJourneyStore(
+                            Path.of(getDataFolder().getPath(), "season-journey.yml"), getLogger()),
+                    islands, progressionService, messages, getLogger());
+            seasonJourneyService.load();
+            seasonJourneyService.transitionAllKnownProfiles();
+            questProgress.attachSeasonJourney(seasonJourneyService);
+            if (progressionService != null) {
+                progressionService.attachSeasonJourney(seasonJourneyService);
+            }
+            if (coreBuffService != null) {
+                coreBuffService.attachSeasonJourney(seasonJourneyService);
+            }
+            final SeasonJourneyGui seasonGui = new SeasonJourneyGui(seasonJourneyService);
+            final SeasonJourneyCommand journeyCommand = new SeasonJourneyCommand(seasonJourneyService, seasonGui, messages);
+            registerSimpleCommand("journey", journeyCommand);
+            registerSimpleCommand("coreseason", new CoreSeasonCommand(seasonJourneyService,
+                    this::loadSeasonJourneyConfig, messages, getLogger()));
+            pluginManager.registerEvents(new SeasonJourneyListener(seasonGui, seasonJourneyService), this);
+        } catch (final RuntimeException exception) {
+            getLogger().severe("Season Journey disabled — " + exception.getMessage());
+        }
+
         // Native quests: daily/weekly player quests and shared Island Challenges.
         this.questConfig = QuestConfig.disabled();
         this.questService = null;
@@ -377,6 +417,7 @@ public final class CoreMCPlugin extends JavaPlugin {
                     islands, progressionService, QuestIntegrationRegistry.defaults(progressionService),
                     messages, getLogger());
             questService.load();
+            questService.setSeasonJourney(seasonJourneyService);
             questProgress.attach(questService);
             islands.onCreate((player, island) -> questService.onIslandCreated(player));
         } catch (final RuntimeException exception) {
@@ -493,8 +534,15 @@ public final class CoreMCPlugin extends JavaPlugin {
                 tebexClient, giftcardStore, messages, getLogger(),
                 Path.of(getDataFolder().getPath(), "island-rewards.yml"));
         islandTopRewards.load();
-        registerSimpleCommand("season", new SeasonCommand(
-                rankService == null ? null : rankService, islandTopRewards, messages));
+        final SeasonCommand rankSeasonCommand = new SeasonCommand(
+                rankService == null ? null : rankService, islandTopRewards, messages);
+        if (seasonJourneyService != null) {
+            final SeasonJourneyGui seasonGui = new SeasonJourneyGui(seasonJourneyService);
+            registerSimpleCommand("season", new SeasonAliasCommand(
+                    new SeasonJourneyCommand(seasonJourneyService, seasonGui, messages), rankSeasonCommand));
+        } else {
+            registerSimpleCommand("season", rankSeasonCommand);
+        }
         final PluginCommand islandCommand = getCommand("island");
         if (islandCommand != null) {
             islandCommand.setExecutor(command);
@@ -532,6 +580,12 @@ public final class CoreMCPlugin extends JavaPlugin {
 
         getLogger().info("CoreMC enabled: " + islands.count() + " island(s), world '"
                 + worlds.islandWorld().getName() + "'.");
+    }
+
+    private SeasonConfig loadSeasonJourneyConfig() {
+        final SeasonConfig parsed = new SeasonConfig(this);
+        parsed.load();
+        return parsed;
     }
 
     /**
@@ -597,6 +651,9 @@ public final class CoreMCPlugin extends JavaPlugin {
         }
         if (questService != null) {
             questService.shutdown();
+        }
+        if (seasonJourneyService != null) {
+            seasonJourneyService.shutdown();
         }
         if (progressionService != null) {
             progressionService.shutdown();

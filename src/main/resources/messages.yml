@@ -100,6 +100,25 @@ quest:
   claimed: "&aClaimed quest rewards for &f{quest}&a."
   reward-pending: "&eSome rewards for &f{quest} &eare pending an integration and were kept safely queued."
 
+journey:
+  unavailable: "&cSeason Journey is not available right now."
+  xp-gained: "&b+{amount} Season XP &7({source})"
+  level-up: "&aSeason Journey level &f{level}&a reached! Open &b/journey &ato claim rewards."
+  claimed: "&aClaimed &f{track} &aJourney rewards for level &f{level}&a."
+  claim-pending: "&eJourney level &f{level} &erewards were reserved; unavailable/full-inventory rewards are safely pending."
+  claim-locked: "&cReach Journey level &f{level} &cto claim that reward."
+  already-claimed: "&7Journey level &f{level} &7{track} reward is already claimed."
+  premium-disabled: "&7The premium Journey track is disabled on this server."
+  premium-locked: "&cYou do not own the optional premium Journey track."
+
+coreseason:
+  usage: "&cUsage: &b/coreseason status &8| &b/coreseason xp <player> <amount> &8| &b/coreseason level <player> &8| &b/coreseason reload"
+  status: "&7Season Journey: &f{season} &8(&f{id}&8) &7remaining &f{remaining}&7."
+  xp: "&aGranted &f{amount} &aSeason XP to &f{player}&a."
+  level: "&7{player}: level &f{level}&7, XP &f{xp}&7."
+  reloaded: "&aReloaded &fseason.yml&a."
+  reload-failed: "&cSeason reload failed: &f{error}"
+
 corequest:
   usage: "&cUsage: &b/corequest reset <player> daily|weekly &8| &b/corequest complete <player> <quest> &8| &b/corequest reroll <player> &8| &b/corequest status <player>"
   reset: "&aReset &f{player}&a's &f{scope} &aquests."

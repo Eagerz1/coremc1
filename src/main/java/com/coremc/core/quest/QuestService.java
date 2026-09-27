@@ -4,6 +4,8 @@ import com.coremc.core.config.MessageService;
 import com.coremc.core.island.Island;
 import com.coremc.core.island.IslandService;
 import com.coremc.core.progression.IslandProgressionService;
+import com.coremc.core.season.SeasonJourneyService;
+import com.coremc.core.season.SeasonXpSource;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -47,6 +49,7 @@ public final class QuestService {
     private final MessageService messages;
     private final Logger logger;
     private final LongSupplier clock;
+    private SeasonJourneyService seasonJourney;
     private final Map<UUID, QuestState.PlayerState> players = new LinkedHashMap<>();
     private final Map<UUID, QuestState.IslandChallenges> islandChallenges = new LinkedHashMap<>();
 
@@ -97,6 +100,10 @@ public final class QuestService {
 
     public QuestIntegrationRegistry integrations() {
         return integrations;
+    }
+
+    public void setSeasonJourney(final SeasonJourneyService seasonJourney) {
+        this.seasonJourney = seasonJourney;
     }
 
     public QuestState.PlayerState playerState(final UUID playerId) {
@@ -184,6 +191,7 @@ public final class QuestService {
             }
         }
         for (final QuestState.Assignment assignment : newlyCompleted) {
+            awardSeasonQuestXp(state, assignment, daily ? QuestConfig.Scope.DAILY : QuestConfig.Scope.WEEKLY);
             if (daily && !assignment.completionCounted()) {
                 assignment.setCompletionCounted(true);
                 advanceStreak(state);
@@ -358,6 +366,7 @@ public final class QuestService {
         if (state.claimedBy(assignment.templateId()).contains(player.getUniqueId())) {
             return ClaimResult.ALREADY_CLAIMED;
         }
+        awardSeasonIslandChallengeXp(player.getUniqueId(), island, state, assignment);
         boolean pending = false;
         for (final QuestConfig.RewardDef reward : template.rewards()) {
             final boolean islandOnce = "island-once".equals(reward.scope()) || "shared".equals(reward.scope());
@@ -388,6 +397,28 @@ public final class QuestService {
         }
         persist();
         return ClaimResult.PENDING;
+    }
+
+    private void awardSeasonQuestXp(final QuestState.PlayerState state, final QuestState.Assignment assignment,
+                                    final QuestConfig.Scope scope) {
+        if (seasonJourney == null || assignment == null) {
+            return;
+        }
+        final SeasonXpSource source = scope == QuestConfig.Scope.WEEKLY
+                ? SeasonXpSource.WEEKLY_QUEST : SeasonXpSource.DAILY_QUEST;
+        final long cycle = scope == QuestConfig.Scope.WEEKLY ? state.weeklyCycle() : state.dailyCycle();
+        seasonJourney.addConfiguredXpOnce(state.playerId(), source,
+                "quest:" + scope.name().toLowerCase(Locale.ROOT) + ":" + cycle + ":" + assignment.templateId());
+    }
+
+    private void awardSeasonIslandChallengeXp(final UUID playerId, final Island island,
+                                               final QuestState.IslandChallenges state,
+                                               final QuestState.Assignment assignment) {
+        if (seasonJourney == null || playerId == null || island == null || assignment == null) {
+            return;
+        }
+        seasonJourney.addConfiguredXpOnce(playerId, SeasonXpSource.ISLAND_CHALLENGE,
+                "island-challenge:" + island.id() + ":" + state.cycle() + ":" + assignment.templateId() + ":" + playerId);
     }
 
     public void reset(final UUID playerId, final QuestConfig.Scope scope) {

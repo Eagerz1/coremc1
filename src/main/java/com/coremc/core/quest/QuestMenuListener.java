@@ -70,6 +70,7 @@ public final class QuestMenuListener implements Listener {
                 case QuestGui.SLOT_WEEKLY -> gui.openWeekly(player);
                 case QuestGui.SLOT_ISLAND -> gui.openIsland(player);
                 case QuestGui.SLOT_COMPLETED -> gui.openCompleted(player);
+                case QuestGui.SLOT_JOURNEY -> { player.closeInventory(); player.performCommand("journey"); }
                 default -> { return; }
             }
             click(player);

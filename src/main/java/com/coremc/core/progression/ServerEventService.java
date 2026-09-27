@@ -143,6 +143,10 @@ public final class ServerEventService {
         return active;
     }
 
+    public String activeInstanceKey() {
+        return active == null ? "" : active.id() + ":" + activeStartedAt;
+    }
+
     public long remainingMillis() {
         return active == null ? 0L : Math.max(0L, activeEndsAt - now());
     }

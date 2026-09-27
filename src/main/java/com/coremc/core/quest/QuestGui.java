@@ -23,6 +23,7 @@ public final class QuestGui {
     public static final int SLOT_WEEKLY = 22;
     public static final int SLOT_ISLAND = 24;
     public static final int SLOT_COMPLETED = 40;
+    public static final int SLOT_JOURNEY = 48;
     public static final int SLOT_BACK = 45;
     public static final int SLOT_CLOSE = 49;
     public static final int SLOT_HELP = 53;
@@ -56,6 +57,10 @@ public final class QuestGui {
                 "&e&lᴄᴏᴍᴘʟᴇᴛᴇᴅ / ᴄʟᴀɪᴍᴀʙʟᴇ",
                 "&7ᴠɪᴇᴡ ǫᴜᴇsᴛs ʀᴇᴀᴅʏ ᴛᴏ ᴄʟᴀɪᴍ.",
                 "&eClick to view"));
+        inv.setItem(SLOT_JOURNEY, GuiItems.item(Material.NETHER_STAR, "&b&lSeason Journey",
+                "&7ǫᴜᴇsᴛ ᴄᴏᴍᴘʟᴇᴛɪᴏɴs ᴇᴀʀɴ",
+                "&7sᴇᴀsᴏɴ xᴘ ᴇxᴀᴄᴛʟʏ ᴏɴᴄᴇ.",
+                "&eClick for /journey"));
         inv.setItem(SLOT_HELP, HelpLinks.icon("quests"));
         inv.setItem(SLOT_CLOSE, GuiItems.close());
         GuiItems.fillEmpty(inv);
