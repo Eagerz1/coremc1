@@ -387,6 +387,172 @@ async function killMob(bot, initial, timeoutMs = 90000) {
   return false
 }
 
+
+// ---------------------------------------------------------- moderation journey
+function playerInfoVisible(bot, name) {
+  return !!(bot.players && bot.players[name])
+}
+function playerEntityVisible(bot, name) {
+  return Object.values(bot.entities || {}).some((e) => e.username === name)
+}
+async function waitPlayerInfo(bot, name, wantVisible, timeoutMs = 15000) {
+  return waitUntil(() => playerInfoVisible(bot, name) === wantVisible, timeoutMs, 250)
+}
+async function waitPlayerEntity(bot, name, wantVisible, timeoutMs = 15000) {
+  return waitUntil(() => playerEntityVisible(bot, name) === wantVisible, timeoutMs, 250)
+}
+async function waitKickOrSpawn(bot, timeoutMs = 20000) {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve('timeout'), timeoutMs)
+    bot.once('kicked', () => { clearTimeout(t); resolve('kicked') })
+    bot.once('spawn', () => { clearTimeout(t); resolve('spawn') })
+  })
+}
+async function reconnectGuest(label = 'guest reconnects') {
+  expectedQuit.delete(GUEST)
+  guest = makeBot(GUEST)
+  const spawned = await waitSpawn(guest, 60000)
+  check(spawned, label)
+  if (spawned) {
+    await waitUntil(() => guest.__world !== null, 30000)
+    await rc(`execute in ${DIM} run tp ${GUEST} ${HX + 1.5} ${GY + 1} ${HZ + 0.5}`)
+    await waitUntil(() => guest.entity && guest.entity.position.distanceTo(v3(HX + 1.5, GY + 1, HZ + 0.5)) < 8, 30000)
+    await sleep(1000)
+  }
+  return guest
+}
+async function moderationJourney() {
+  await rc(`op ${OWNER}`)
+  await reconnectGuest('moderation guest joins')
+  await rc(`op ${GUEST}`)
+  await rc(`execute in ${DIM} run tp ${OWNER} ${HX + 0.5} ${GY + 1} ${HZ + 0.5}`)
+  await rc(`execute in ${DIM} run tp ${GUEST} ${HX + 2.5} ${GY + 1} ${HZ + 0.5}`)
+  await sleep(2000)
+
+  clearChat(owner)
+  owner.chat('/vanish')
+  check(await waitChat(owner, /vanish enabled/i, 10000), '/vanish enables for staff')
+  check(await waitPlayerInfo(guest, OWNER, true, 10000), 'staff viewer keeps vanished staff in tab')
+  check(await waitPlayerEntity(guest, OWNER, true, 10000), 'staff viewer keeps vanished staff entity visible')
+
+  await rc(`deop ${GUEST}`)
+  clearChat(owner)
+  owner.chat('/vanish')
+  check(await waitChat(owner, /vanish disabled/i, 10000), '/vanish disables cleanly')
+  clearChat(owner)
+  owner.chat('/vanish')
+  check(await waitChat(owner, /vanish enabled/i, 10000), '/vanish re-enables for nonstaff visibility check')
+  check(await waitPlayerInfo(guest, OWNER, false, 10000), 'nonstaff viewer loses vanished staff from tab')
+  check(await waitPlayerEntity(guest, OWNER, false, 10000), 'nonstaff viewer loses vanished staff entity')
+
+  clearChat(owner)
+  owner.chat('/spectate JGuest')
+  check(await waitChat(owner, /now spectating/i, 10000), '/spectate <player> starts')
+  clearChat(owner)
+  owner.chat('/spectate')
+  check(await waitChat(owner, /spectate ended/i, 10000), '/spectate exits and restores')
+  check(await waitPlayerInfo(guest, OWNER, false, 10000), 'spectate exit restores prior vanished tab state')
+  clearChat(owner)
+  owner.chat('/vanish')
+  check(await waitChat(owner, /vanish disabled/i, 10000), '/vanish disables after spectate restore')
+
+  clearChat(owner)
+  owner.chat('/cps JGuest')
+  check(await waitChat(owner, /measuring arm-swing cps/i, 10000), '/cps starts privately')
+  for (let i = 0; i < 30; i++) {
+    try { guest.swingArm('right') } catch { /* noop */ }
+    await sleep(150)
+  }
+  check(await waitChat(owner, /cps result.*not proof/i, 15000), '/cps reports current/average/peak without proof claim')
+
+  clearChat(owner)
+  owner.chat('/rotate JGuest 90')
+  check(await waitChat(owner, /rotated .*90/i, 10000), '/rotate applies a normalized yaw change')
+
+  clearChat(guest)
+  clearChat(owner)
+  owner.chat('/freeze JGuest Journey freeze')
+  check(await waitChat(owner, /froze .*JGuest/i, 10000), '/freeze toggles on')
+  check(await waitChat(guest, /you have been frozen/i, 10000), 'freeze target receives clear message')
+  quitBot(guest, GUEST)
+  await sleep(2000)
+  clearChat(owner)
+  owner.chat('/freeze JGuest Offline unfreeze')
+  check(await waitChat(owner, /unfroze .*JGuest/i, 10000), 'staff can unfreeze an offline target')
+  await reconnectGuest('guest rejoins after offline unfreeze')
+
+  clearChat(owner)
+  clearChat(guest)
+  owner.chat('/mute JGuest 1s Short mute')
+  check(await waitChat(owner, /muted .*JGuest.*1s/i, 10000), '/mute accepts second durations')
+  guest.chat('muted_message_should_block')
+  check(await waitChat(guest, /you are muted/i, 10000), 'mute blocks public chat')
+  await sleep(1800)
+  clearChat(owner)
+  guest.chat('mute_expired_message')
+  check(await waitChat(owner, /mute_expired_message/i, 10000), 'mute expiry allows chat again')
+
+  clearChat(owner)
+  owner.chat('/tiercorrect JGuest 1 set 2 journey setup')
+  check(await waitChat(owner, /T1 counter to .*2/i, 10000), '/tiercorrect updates persistent counters')
+  clearChat(owner)
+  clearChat(guest)
+  owner.chat('/t1 chat_spam JGuest Custom tier spam')
+  check(await waitChat(owner, /T1 .*offense .*#3.*mute 5m/i, 10000), '/t1 escalates offense #3 to 5m mute with custom reason')
+  check(await waitChat(guest, /custom tier spam/i, 10000), 'tier custom reason shown to player')
+  clearChat(owner)
+  owner.chat('/unmute JGuest tier test clear')
+  check(await waitChat(owner, /revoked active mute/i, 10000), '/unmute revokes CoreMC mute')
+
+  clearChat(owner)
+  clearChat(guest)
+  owner.chat('/t2 light_advertising JGuest')
+  check(await waitChat(owner, /T2 .*offense .*#1.*warn/i, 10000), '/t2 first offense warns')
+  check(await waitChat(guest, /Reason: .*Light Advertising/i, 10000), 'tier default human-readable reason shown')
+
+  clearChat(owner)
+  clearChat(guest)
+  owner.chat('/t5 inappropriate_skin JGuest')
+  check(await waitChat(owner, /warning\/change workflow/i, 10000), 'T5 skin rule requires acknowledgement before ban')
+  check(await waitChat(guest, /warning.*inappropriate skin/i, 10000), 'T5 exception initially warns target')
+
+  clearChat(owner)
+  expectedQuit.add(GUEST)
+  owner.chat('/t5 inappropriate_skin JGuest --ack Skin acknowledged')
+  check(await waitChat(owner, /T5 .*offense .*#2.*ban permanent/i, 10000), 'T5 acknowledged action records permanent ban')
+  await sleep(2500)
+  clearChat(owner)
+  owner.chat('/unban JGuest journey unban')
+  check(await waitChat(owner, /revoked active ban/i, 10000), '/unban revokes CoreMC ban')
+  await reconnectGuest('guest rejoins after T5 unban')
+
+  clearChat(owner)
+  expectedQuit.add(GUEST)
+  owner.chat('/ban JGuest 5m Login enforcement test')
+  check(await waitChat(owner, /banned .*JGuest.*5m/i, 10000), '/ban records and kicks')
+  await sleep(2500)
+  expectedQuit.add(GUEST)
+  const denied = makeBot(GUEST)
+  check(await waitKickOrSpawn(denied, 20000) === 'kicked', 'active CoreMC ban blocks login')
+  try { denied.quit() } catch { /* noop */ }
+  clearChat(owner)
+  owner.chat('/unban JGuest login enforcement clear')
+  check(await waitChat(owner, /revoked active ban/i, 10000), '/unban clears offline target')
+  await reconnectGuest('guest rejoins after offline unban')
+
+  clearChat(owner)
+  expectedQuit.add(GUEST)
+  owner.chat('/kick JGuest Journey kick')
+  check(await waitChat(owner, /kicked .*JGuest/i, 10000), '/kick audits and removes an online player')
+  await sleep(2500)
+  await reconnectGuest('guest rejoins after kick')
+
+  clearChat(owner)
+  owner.chat('/history JGuest')
+  check(await waitChat(owner, /MOD HISTORY/i, 10000), '/history displays CoreMC moderation records')
+  check(await waitChat(owner, /T5|BAN|MUTE|KICK/i, 10000), '/history includes tier/direct punishment records')
+}
+
 // ------------------------------------------------------------------- main
 let owner = null
 let guest = null
@@ -1135,6 +1301,10 @@ async function main() {
   // ------------------------------------------------ P12 audit
   phase(12, 'full-session log audit')
   auditLog('session')
+
+  // ------------------------------------------------ P13 moderation
+  phase(13, 'staff moderation: vanish/spectate/cps/freeze/mute/ban/tier/history')
+  await moderationJourney()
 }
 
 try {
