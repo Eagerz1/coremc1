@@ -84,6 +84,16 @@ jobs:
       # Surface failures as workflow ANNOTATIONS as well as artifacts: the
       # annotations are readable straight from the API/`gh run view`, which
       # makes a failed run diagnosable without downloading the evidence zip.
+      # The pass/fail tally is always surfaced as an annotation so a run can
+      # be summarised (and compared) straight from the API.
+      - name: Annotate journey result
+        if: always()
+        working-directory: journey-server
+        run: |
+          if [ -f journey.log ]; then
+            echo "::notice title=journey-result::$(grep -E 'JOURNEY RESULT' journey.log | tail -1)"
+          fi
+
       - name: Annotate journey failures
         if: failure()
         working-directory: journey-server
