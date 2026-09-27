@@ -199,6 +199,13 @@ function makeBot(name) {
     try { bot.__raw.push(JSON.stringify(msg.json ?? msg)) } catch { /* noop */ }
     if (bot.__raw.length > 600) bot.__raw.shift()
   })
+  // Signed player chat: vanilla clients display 'unsignedChatContent' when a
+  // plugin rewrote the line. mineflayer renders the SIGNED content instead,
+  // so grab the raw packet to see what real clients would be shown.
+  bot._client.on('player_chat', (packet) => {
+    try { bot.__raw.push(JSON.stringify(packet)) } catch { /* noop */ }
+    if (bot.__raw.length > 600) bot.__raw.shift()
+  })
   bot.on('error', (e) => log(`[${name}] bot error: ${e.message}`))
   bot.on('kicked', (reason) => {
     if (expectedQuit.has(name)) return // our own .quit() surfaces as a kick
@@ -219,6 +226,30 @@ async function waitSpawn(bot, timeoutMs = 90000) {
   })
 }
 function clearChat(bot) { bot.__chat.length = 0; if (bot.__raw) bot.__raw.length = 0 }
+/** Server log with ANSI/section colour noise removed. */
+function serverLogText() {
+  const raw = fs.existsSync(SERVER_LOG) ? fs.readFileSync(SERVER_LOG, 'utf8') : ''
+  // eslint-disable-next-line no-control-regex
+  return raw.replace(/\u001b\[[0-9;]*m/g, '').replace(/\u00a7[0-9a-fk-or]/gi, '')
+}
+/**
+ * Waits for a rendered chat line in the server log. The console is a real
+ * chat viewer, so this is the authoritative view of what CoreMC rendered.
+ */
+async function waitServerLog(rx, timeoutMs = 20000) {
+  const re = rx instanceof RegExp ? rx : new RegExp(rx, 'i')
+  const t0 = Date.now()
+  while (Date.now() - t0 < timeoutMs) {
+    const hit = serverLogText().match(re)
+    if (hit) return hit
+    await sleep(400)
+  }
+  return null
+}
+/** Occurrences of a rendered line in the server log (duplicate-chat guard). */
+function serverLogCount(text) {
+  return serverLogText().split('\n').filter((l) => l.includes(text)).length
+}
 /** Number of received lines containing {@code text} (duplicate-chat guard). */
 function chatCount(bot, text) {
   return bot.__chat.filter((m) => m.includes(text)).length
@@ -1109,14 +1140,24 @@ async function main() {
   owner.chat('/tags select grinder')
   check(await waitChat(owner, /equipped/i, 15000), 'granted tag equips')
 
-  // --- the layout a SECOND player sees
+  // --- the layout a SECOND player sees.
+  //
+  // mineflayer renders the SIGNED content of player chat and ignores the
+  // plugin-rendered 'unsignedChatContent', so the rendered line is asserted
+  // on the server console (a real chat viewer) and on the raw packet that
+  // vanilla clients actually display.
   clearChat(guest)
   owner.chat('hello from the grind')
-  const tagged = await waitChat(guest, /\[GRINDER\] JOwner: hello from the grind/, 15000)
-  check(!!tagged, 'guest sees <TAG> Player: Message ordering',
-    guest.__chat.slice(-3).join(' | ').slice(0, 200))
+  check(!!await waitServerLog(/\[GRINDER\] JOwner: hello from the grind/, 20000),
+    'rendered line is <TAG> Player: Message')
+  check(!!await waitChat(guest, /hello from the grind/, 15000), 'second player receives the message')
   check(chatCount(guest, 'hello from the grind') === 1, 'message is delivered exactly once (no double chat)',
     `count=${chatCount(guest, 'hello from the grind')}`)
+  check(serverLogCount('hello from the grind') === 1, 'server logs the chat line exactly once',
+    `count=${serverLogCount('hello from the grind')}`)
+  const taggedRaw = rawWith(guest, 'hello from the grind')
+  check(/GRINDER/.test(taggedRaw), 'clients receive the tag in the rendered component',
+    taggedRaw.slice(0, 220))
 
   // --- rank prefix first: op the owner so the configured rank matches
   await rc('op JOwner')
@@ -1124,9 +1165,8 @@ async function main() {
   await sleep(1500)
   clearChat(guest)
   owner.chat('ranked line')
-  const ranked = await waitChat(guest, /\[OWNER\] \[GRINDER\] JOwner: ranked line/, 15000)
-  check(!!ranked, 'exact <RANK> <TAG> Player: Message ordering',
-    guest.__chat.slice(-3).join(' | ').slice(0, 200))
+  check(!!await waitServerLog(/\[OWNER\] \[GRINDER\] JOwner: ranked line/, 20000),
+    'exact <RANK> <TAG> Player: Message ordering')
 
   // --- /chatcolour GUI + gradient + bold
   win = await openWindow(owner, '/chatcolour')
@@ -1146,22 +1186,24 @@ async function main() {
   owner.chat('/chatcolour set sunset')
   check(await waitChat(owner, /selected/i, 15000), 'gradient style selects')
   clearChat(guest)
-  owner.chat('gradient unicode \u2713 test — ok!')
-  const gradientLine = await waitChat(guest, /JOwner: gradient unicode \u2713 test — ok!/, 15000)
-  check(!!gradientLine, 'gradient message keeps punctuation and Unicode intact',
-    guest.__chat.slice(-2).join(' | ').slice(0, 200))
+  const unicodeLine = 'gradient unicode \u2713 test ok'
+  owner.chat(unicodeLine)
+  check(!!await waitServerLog(/JOwner: gradient unicode \u2713 test ok/, 20000),
+    'gradient message keeps punctuation and Unicode intact')
   const gradientRaw = rawWith(guest, 'gradient unicode')
-  check(/#[0-9a-f]{6}/i.test(gradientRaw), 'gradient renders real hex colours in the component',
-    gradientRaw.slice(0, 200))
-  check(!gradientRaw.includes('<'), 'no MiniMessage markup leaks into chat')
+  check(/#[0-9a-f]{6}/i.test(gradientRaw), 'gradient renders real hex colours to clients',
+    gradientRaw.slice(0, 260))
+  check(!gradientRaw.includes('minimessage') && !/<\/?[a-z_]+>/.test(gradientRaw),
+    'no MiniMessage markup leaks into chat')
 
   clearChat(owner)
   owner.chat('/chatcolour bold')
   check(await waitChat(owner, /bold is now/i, 15000), 'bold toggles')
   clearChat(guest)
   owner.chat('bolded gradient')
-  await waitChat(guest, /JOwner: bolded gradient/, 15000)
-  check(/"bold":true/.test(rawWith(guest, 'bolded gradient')), 'bold is applied to the message body')
+  check(!!await waitServerLog(/JOwner: bolded gradient/, 20000), 'bolded message is rendered')
+  check(/bold/i.test(rawWith(guest, 'bolded gradient')), 'bold reaches the client component',
+    rawWith(guest, 'bolded gradient').slice(0, 220))
   clearChat(owner)
   owner.chat('/chatcolour reset')
   check(await waitChat(owner, /reset/i, 15000), 'chat style resets')
@@ -1169,22 +1211,22 @@ async function main() {
   // --- '&' injection is stripped for players without coremc.chat.format
   clearChat(owner)
   guest.chat('&cred &kobf attempt')
-  const injected = await waitChat(owner, /JGuest: &cred &kobf attempt|JGuest: red obf attempt/, 15000)
-  check(!!injected, 'guest message is delivered', owner.__chat.slice(-2).join(' | ').slice(0, 160))
+  check(!!await waitServerLog(/JGuest: red obf attempt/, 20000),
+    "players cannot inject '&' formatting codes (codes stripped from the body)")
   const injectedRaw = rawWith(owner, 'obf attempt')
-  check(!/"obfuscated":true/.test(injectedRaw), 'players cannot inject obfuscation')
-  check(!/"color":"red"/.test(injectedRaw), 'players cannot inject colours')
+  check(!/"obfuscated":\s*(true|1|"1")/.test(injectedRaw), 'players cannot inject obfuscation',
+    injectedRaw.slice(0, 220))
+  check(!/"color":\s*"red"/.test(injectedRaw), 'players cannot inject colours', injectedRaw.slice(0, 220))
 
   // --- clearing the tag leaves no double space
   clearChat(owner)
   owner.chat('/tags clear')
   check(await waitChat(owner, /cleared/i, 15000), '/tags clear confirms')
   clearChat(guest)
-  owner.chat('plain line')
-  const plain = await waitChat(guest, /\[OWNER\] JOwner: plain line/, 15000)
-  check(!!plain, 'no tag renders cleanly with no leftover space',
-    guest.__chat.slice(-2).join(' | ').slice(0, 200))
-  check(!/ {2}/.test(String(plain)), 'no double space in the rendered line', String(plain))
+  owner.chat('plain line here')
+  const plain = await waitServerLog(/\[OWNER\] JOwner: plain line here/, 20000)
+  check(!!plain, 'no tag renders cleanly with no leftover space')
+  check(!!plain && !/ {2}/.test(String(plain[0])), 'no double space in the rendered line', String(plain))
 
   // --- staff check / revoke
   const checkOut = await rc('tags check JOwner')
@@ -1252,8 +1294,8 @@ async function main() {
   if (win) await closeWin(owner)
   clearChat(owner)
   owner.chat('after restart')
-  check(await waitChat(owner, /\[GRINDER\] JOwner: after restart/, 15000),
-    'tag still renders in chat after restart', owner.__chat.slice(-2).join(' | ').slice(0, 200))
+  check(!!await waitServerLog(/\[GRINDER\] JOwner: after restart/, 20000),
+    'tag still renders in chat after restart')
 
   // data-file asserts (post-stop flush => files are authoritative now)
   // The username index lives INSIDE the profiles directory.

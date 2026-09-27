@@ -235,16 +235,25 @@ public final class ChatColourCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         final UUID uuid = target.get();
+        final PlayerProfile cached = plugin.playerData().profileOf(uuid).orElse(null);
+        if (cached != null) {
+            reportStyles(sender, args[1], cached);
+            return true;
+        }
         plugin.playerData().ioExecute(() -> {
             final PlayerProfile profile = plugin.playerData().cachedOrLoad(uuid).orElse(null);
-            final String owned = profile == null || profile.ownedChatStyles().isEmpty()
-                    ? "none" : String.join(", ", new java.util.TreeSet<>(profile.ownedChatStyles()));
-            final String selected = profile == null ? "none" : profile.chatColor();
-            final String bold = profile != null && profile.chatBold() ? "on" : "off";
-            plugin.tasks().runLater(() -> messages.sendPrefixed(sender, "chatcolour.admin-check", Map.of(
-                    "player", args[1], "owned", owned, "selected", selected, "bold", bold)), 1L);
+            plugin.tasks().runLater(() -> reportStyles(sender, args[1], profile), 1L);
         });
         return true;
+    }
+
+    private void reportStyles(final CommandSender sender, final String name, final PlayerProfile profile) {
+        final String owned = profile == null || profile.ownedChatStyles().isEmpty()
+                ? "none" : String.join(", ", new java.util.TreeSet<>(profile.ownedChatStyles()));
+        final String selected = profile == null ? "none" : profile.chatColor();
+        final String bold = profile != null && profile.chatBold() ? "on" : "off";
+        messages.sendPrefixed(sender, "chatcolour.admin-check", Map.of(
+                "player", name, "owned", owned, "selected", selected, "bold", bold));
     }
 
     private Optional<UUID> resolve(final String name) {

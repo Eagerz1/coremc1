@@ -235,15 +235,26 @@ public final class TagsCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         final UUID uuid = target.get();
+        // Online/cached profiles answer immediately (console and RCON see the
+        // reply in the same command response); only offline lookups hit I/O.
+        final PlayerProfile cached = plugin.playerData().profileOf(uuid).orElse(null);
+        if (cached != null) {
+            reportTags(sender, args[1], cached);
+            return true;
+        }
         plugin.playerData().ioExecute(() -> {
             final PlayerProfile profile = plugin.playerData().cachedOrLoad(uuid).orElse(null);
-            final String owned = profile == null || profile.ownedTags().isEmpty()
-                    ? "none" : String.join(", ", new java.util.TreeSet<>(profile.ownedTags()));
-            final String equipped = profile == null ? "none" : profile.equippedTag();
-            plugin.tasks().runLater(() -> messages.sendPrefixed(sender, "tags.admin-check", Map.of(
-                    "player", args[1], "owned", owned, "selected", equipped)), 1L);
+            plugin.tasks().runLater(() -> reportTags(sender, args[1], profile), 1L);
         });
         return true;
+    }
+
+    private void reportTags(final CommandSender sender, final String name, final PlayerProfile profile) {
+        final String owned = profile == null || profile.ownedTags().isEmpty()
+                ? "none" : String.join(", ", new java.util.TreeSet<>(profile.ownedTags()));
+        final String equipped = profile == null ? "none" : profile.equippedTag();
+        messages.sendPrefixed(sender, "tags.admin-check", Map.of(
+                "player", name, "owned", owned, "selected", equipped));
     }
 
     private boolean reload(final CommandSender sender) {
