@@ -1,0 +1,320 @@
+# ============================================================
+#  CoreMC — quests.yml
+#  Native progression-aware Daily, Weekly and Island Challenge templates.
+#  Later branch systems should plug into QuestProgressService and reward
+#  integrations instead of duplicating quest logic.
+# ============================================================
+
+settings:
+  daily:
+    count: 4
+    reset-hours: 24
+  weekly:
+    count: 4
+    reset-hours: 168
+  island-challenges:
+    count: 3
+    reset-hours: 168
+  streak:
+    enabled: true
+    milestones:
+      3:
+        rewards:
+          credits:
+            type: credits
+            amount: 10
+
+templates:
+  daily-farm-harvest:
+    type: daily
+    name: "Farming Daily"
+    icon: WHEAT
+    weight: 30
+    lore:
+      - "&7ʜᴀʀᴠᴇsᴛ &f150 &7ɢʀᴏᴡɴ ᴄʀᴏᴘs."
+      - "&7ꜰᴀʀᴍɪɴɢ ᴋᴇᴇᴘs ɪsʟᴀɴᴅ xᴘ ᴍᴏᴠɪɴɢ."
+    requirements:
+      systems: [farming]
+    objective:
+      action: crop-harvested
+      target: 150
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 150}
+      credits: {type: credits, amount: 25}
+
+  daily-fishing-catches:
+    type: daily
+    name: "Fishing Daily"
+    icon: FISHING_ROD
+    weight: 25
+    lore:
+      - "&7ᴄᴀᴛᴄʜ &f30 &7ꜰɪsʜ."
+      - "&7ʜᴏᴛsᴘᴏᴛs ᴀɴᴅ ᴄᴀᴄʜᴇs ᴄᴀɴ ʜᴇʟᴘ."
+    requirements:
+      systems: [fishing]
+    objective:
+      action: fish-caught
+      target: 30
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 150}
+      credits: {type: credits, amount: 25}
+
+  daily-slayer-hunts:
+    type: daily
+    name: "Slayer Daily"
+    icon: IRON_SWORD
+    weight: 25
+    lore:
+      - "&7ᴅᴇꜰᴇᴀᴛ &f75 &7ᴠᴀʟɪᴅ ᴍᴏʙs."
+      - "&7ᴍᴀɴᴜᴀʟ ᴋɪʟʟs ᴏɴʟʏ."
+    requirements:
+      systems: [slayer]
+    objective:
+      action: valid-mob-killed
+      target: 75
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 150}
+      credits: {type: credits, amount: 25}
+
+  daily-spawner-workshop:
+    type: daily
+    name: "Industry Daily"
+    icon: SPAWNER
+    weight: 18
+    lore:
+      - "&7ᴘʟᴀᴄᴇ ᴏʀ ᴜᴘɢʀᴀᴅᴇ &f1 &7sᴘᴀᴡɴᴇʀ."
+      - "&7ɪɴᴅᴜsᴛʀʏ ꜰᴇᴇᴅs ᴘʀᴏɢʀᴇssɪᴏɴ."
+    requirements:
+      systems: [spawners]
+    objectives:
+      placed:
+        action: spawner-placed
+        target: 1
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 150}
+      credits: {type: credits, amount: 25}
+
+  daily-mining-cube:
+    type: daily
+    name: "Mining Cube Daily"
+    icon: DIAMOND_PICKAXE
+    weight: 20
+    lore:
+      - "&7ᴍɪɴᴇ &f1,000 &7ʙʟᴏᴄᴋs"
+      - "&7ɪɴ ᴛʜᴇ ᴍɪɴɪɴɢ ᴄᴜʙᴇ."
+    requirements:
+      systems: [mining-cube]
+    objective:
+      action: mining-cube-block-mined
+      target: 1000
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 150}
+      credits: {type: credits, amount: 25}
+
+  daily-rich-vein:
+    type: daily
+    name: "Rich Vein Daily"
+    icon: AMETHYST_CLUSTER
+    weight: 10
+    lore:
+      - "&7ᴛʀɪɢɢᴇʀ &f1 &7ʀɪᴄʜ ᴠᴇɪɴ."
+      - "&7ʀᴇǫᴜɪʀᴇs ᴄᴏʀᴇ ʙᴜꜰꜰ sʏɴᴇʀɢʏ."
+    requirements:
+      systems: [mining-cube, core-buffs]
+    objective:
+      action: island-buff-triggered
+      target: 1
+      filters: {buff: rich-veins}
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 150}
+      credits: {type: credits, amount: 25}
+
+  weekly-island-xp:
+    type: weekly
+    name: "Island XP Push"
+    icon: NETHER_STAR
+    weight: 30
+    lore:
+      - "&7ɢᴀɪɴ &f5,000 &7ɪsʟᴀɴᴅ xᴘ."
+      - "&7ᴀɴʏ ᴀᴄᴛɪᴠᴇ ᴘʀᴏɢʀᴇssɪᴏɴ ᴄᴏᴜɴᴛs."
+    requirements:
+      systems: [progression]
+    objective:
+      action: island-xp-gained
+      target: 5000
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 1500}
+      credits: {type: credits, amount: 100}
+      material: {type: item, item: AMETHYST_SHARD, amount: 8}
+
+  weekly-daily-finisher:
+    type: weekly
+    name: "Daily Finisher"
+    icon: BOOK
+    weight: 25
+    lore:
+      - "&7ᴄᴏᴍᴘʟᴇᴛᴇ &f5 &7ᴅᴀɪʟʏ ǫᴜᴇsᴛs."
+      - "&7sᴛᴇᴀᴅʏ ᴘʟᴀʏ ᴡɪɴs."
+    objective:
+      action: daily-completed
+      target: 5
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 1500}
+      credits: {type: credits, amount: 100}
+      material: {type: item, item: AMETHYST_SHARD, amount: 8}
+
+  weekly-event-participant:
+    type: weekly
+    name: "Event Participant"
+    icon: BELL
+    weight: 22
+    lore:
+      - "&7ᴘᴀʀᴛɪᴄɪᴘᴀᴛᴇ ɪɴ &f3 &7ʜᴏᴜʀʟʏ ᴇᴠᴇɴᴛ ᴀᴄᴛɪᴏɴs."
+      - "&7ᴀᴄᴛɪᴠᴇ ᴘʟᴀʏ ᴅᴜʀɪɴɢ ᴇᴠᴇɴᴛs ᴄᴏᴜɴᴛs."
+    requirements:
+      systems: [events]
+    objective:
+      action: hourly-event-participation
+      target: 3
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 1500}
+      credits: {type: credits, amount: 100}
+      material: {type: item, item: AMETHYST_SHARD, amount: 8}
+
+  weekly-mixed-roles:
+    type: weekly
+    name: "Mixed Role Week"
+    icon: COMPASS
+    weight: 20
+    lore:
+      - "&7ᴄᴏᴍᴘʟᴇᴛᴇ ꜰᴀʀᴍɪɴɢ, ꜰɪsʜɪɴɢ"
+      - "&7ᴀɴᴅ sʟᴀʏᴇʀ ᴏʙᴊᴇᴄᴛɪᴠᴇs."
+    objectives:
+      farming: {action: crop-harvested, target: 150}
+      fishing: {action: fish-caught, target: 30}
+      slayer: {action: valid-mob-killed, target: 75}
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 1500}
+      credits: {type: credits, amount: 100}
+      material: {type: item, item: AMETHYST_SHARD, amount: 8}
+
+  weekly-omnitool-upgrade:
+    type: weekly
+    name: "OmniTool Upgrade"
+    icon: DIAMOND_PICKAXE
+    weight: 20
+    lore:
+      - "&7ᴜᴘɢʀᴀᴅᴇ ᴀɴ ᴏᴍɴɪᴛᴏᴏʟ."
+      - "&7ᴜsᴇs ᴛʜᴇ ᴏᴍɴɪᴛᴏᴏʟ ʙʀᴀɴᴄʜ ʜᴏᴏᴋ."
+    requirements:
+      systems: [omnitools]
+    objective:
+      action: omnitool-upgraded
+      target: 1
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 1500}
+      credits: {type: credits, amount: 100}
+      material: {type: omnitool-material, item: upgrade-core, amount: 1}
+
+  island-farming-stockpile:
+    type: island
+    name: "Island Harvest"
+    icon: HAY_BLOCK
+    weight: 25
+    lore:
+      - "&7ᴀs ᴀɴ ɪsʟᴀɴᴅ, ʜᴀʀᴠᴇsᴛ"
+      - "&f500 &7ɢʀᴏᴡɴ ᴄʀᴏᴘs."
+    objective:
+      action: crop-harvested
+      target: 500
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 500, scope: island-once}
+      credits: {type: credits, amount: 25, scope: contributor}
+
+  island-slayer-defense:
+    type: island
+    name: "Island Defense"
+    icon: IRON_SWORD
+    weight: 25
+    lore:
+      - "&7ᴅᴇꜰᴇᴀᴛ &f250 &7ᴠᴀʟɪᴅ ᴍᴏʙs"
+      - "&7ᴡɪᴛʜ ɪsʟᴀɴᴅ ᴍᴇᴍʙᴇʀs."
+    objective:
+      action: valid-mob-killed
+      target: 250
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 500, scope: island-once}
+      credits: {type: credits, amount: 25, scope: contributor}
+
+  island-level-drive:
+    type: island
+    name: "Island XP Drive"
+    icon: EXPERIENCE_BOTTLE
+    weight: 25
+    lore:
+      - "&7ɢᴀɪɴ &f10,000 &7ɪsʟᴀɴᴅ xᴘ"
+      - "&7ᴀs ᴀ ᴛᴇᴀᴍ."
+    requirements:
+      systems: [progression]
+    objective:
+      action: island-xp-gained
+      target: 10000
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 500, scope: island-once}
+      credits: {type: credits, amount: 25, scope: contributor}
+
+  island-mining-cube-push:
+    type: island
+    name: "Mining Cube Push"
+    icon: DIAMOND_PICKAXE
+    weight: 20
+    lore:
+      - "&7ᴍɪɴᴇ &f5,000 &7ᴍɪɴɪɴɢ ᴄᴜʙᴇ ʙʟᴏᴄᴋs"
+      - "&7ᴀs ᴀɴ ɪsʟᴀɴᴅ."
+    requirements:
+      systems: [mining-cube]
+    objective:
+      action: mining-cube-block-mined
+      target: 5000
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 500, scope: island-once}
+      credits: {type: credits, amount: 25, scope: contributor}
+
+  island-event-rally:
+    type: island
+    name: "Event Rally"
+    icon: BELL
+    weight: 15
+    lore:
+      - "&7ᴄᴏᴍᴘʟᴇᴛᴇ &f10 &7ᴀᴄᴛɪᴏɴs"
+      - "&7ᴅᴜʀɪɴɢ ʜᴏᴜʀʟʏ ᴇᴠᴇɴᴛs."
+    requirements:
+      systems: [events]
+    objective:
+      action: hourly-event-participation
+      target: 10
+    rewards:
+      sky-tokens: {type: sky-tokens, amount: 500, scope: island-once}
+      credits: {type: credits, amount: 25, scope: contributor}
+
+  seasonal-placeholder:
+    type: seasonal
+    name: "Seasonal Quest Hook"
+    icon: CLOCK
+    weight: 0
+    lore:
+      - "&7ᴇxᴛᴇɴsɪᴏɴ ᴘᴏɪɴᴛ ꜰᴏʀ sᴇᴀsᴏɴs."
+    objective: {action: seasonal-progress, target: 1}
+    rewards:
+      seasonal: {type: seasonal-xp, amount: 1}
+
+  contract-placeholder:
+    type: contract
+    name: "Competitive Contract Hook"
+    icon: WRITABLE_BOOK
+    weight: 0
+    lore:
+      - "&7ᴇxᴛᴇɴsɪᴏɴ ᴘᴏɪɴᴛ ꜰᴏʀ ᴄᴏɴᴛʀᴀᴄᴛs."
+    objective: {action: contract-progress, target: 1}
+    rewards:
+      credits: {type: credits, amount: 1}

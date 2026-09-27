@@ -1,5 +1,6 @@
 package com.coremc.core.island;
 
+import com.coremc.core.guide.HelpLinks;
 import com.coremc.core.progression.IslandCoreBuffConfig;
 import com.coremc.core.progression.IslandCoreBuffService;
 import com.coremc.core.progression.IslandProgressionConfig;
@@ -164,6 +165,7 @@ public final class IslandGui {
         }
         inventory.setItem(IslandLayout.MASTERY_BACK, GuiItems.back());
         inventory.setItem(IslandLayout.MASTERY_CLOSE, GuiItems.close());
+        inventory.setItem(53, HelpLinks.icon("island-level-mastery"));
         GuiItems.fillEmpty(inventory);
 
         player.openInventory(inventory);
@@ -392,6 +394,7 @@ public final class IslandGui {
                 "&7ᴍɪɴɪɴɢ, ꜰɪsʜɪɴɢ, sʟᴀʏᴇʀ ᴀɴᴅ ᴇᴠᴇɴᴛs."));
         inventory.setItem(IslandLayout.SUB_BACK, GuiItems.back());
         inventory.setItem(IslandLayout.SUB_CLOSE, GuiItems.close());
+        inventory.setItem(22, HelpLinks.icon("island-level-mastery"));
         GuiItems.fillEmpty(inventory);
         player.openInventory(inventory);
     }

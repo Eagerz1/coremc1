@@ -1,0 +1,237 @@
+# ============================================================
+#  CoreMC — help.yml
+#  Polished /help guide pages. Short, progressive and GUI-first.
+# ============================================================
+
+categories:
+  getting-started:
+    title: "Getting Started"
+    icon: COMPASS
+    lines:
+      - "&71. Create your island with &e/is create&7."
+      - "&72. Choose a Role when roles are available."
+      - "&73. Receive and use your OmniTool."
+      - "&74. Complete your first Daily Quest."
+      - "&75. Start Mining, Farming, Fishing or Slayer."
+      - "&76. Buy and place your first Generator."
+      - "&77. Gain Island XP."
+      - "&78. Unlock Island Mastery."
+    shortcut: "is create"
+    plugin-command: island
+
+  islands:
+    title: "Islands"
+    icon: GRASS_BLOCK
+    lines:
+      - "&7ʏᴏᴜʀ ɪsʟᴀɴᴅ ɪs ʏᴏᴜʀ ᴍᴀɪɴ ʙᴀsᴇ."
+      - "&7ɪɴᴠɪᴛᴇ ᴍᴇᴍʙᴇʀs, ʙᴜɪʟᴅ ꜰᴀʀᴍs"
+      - "&7ᴀɴᴅ ᴘʀᴏɢʀᴇss ᴛᴏɢᴇᴛʜᴇʀ."
+      - "&eᴄᴏᴍᴍᴀɴᴅ: &f/is"
+    shortcut: "is"
+    plugin-command: island
+
+  island-level-mastery:
+    title: "Island Level / Mastery"
+    icon: NETHER_STAR
+    lines:
+      - "&7ᴀᴄᴛɪᴠᴇ ᴘʟᴀʏ ᴇᴀʀɴs ɪsʟᴀɴᴅ xᴘ."
+      - "&7ʟᴇᴠᴇʟs ɢʀᴀɴᴛ ᴍᴀsᴛᴇʀʏ ᴘᴏɪɴᴛs"
+      - "&7ᴀɴᴅ sᴋʏ ᴛᴏᴋᴇɴs."
+      - "&eᴄᴏᴍᴍᴀɴᴅ: &f/is upgrades"
+    shortcut: "is upgrades"
+    plugin-command: island
+
+  roles:
+    title: "Roles"
+    icon: PLAYER_HEAD
+    lines:
+      - "&7ʀᴏʟᴇs ᴅɪʀᴇᴄᴛ ʏᴏᴜʀ ᴘʟᴀʏsᴛʏʟᴇ."
+      - "&7ǫᴜᴇsᴛs ᴀɴᴅ ʙᴜꜰꜰs ᴀʀᴇ ʀᴇᴀᴅʏ"
+      - "&7ꜰᴏʀ ᴛʜᴇ ʀᴏʟᴇ ʙʀᴀɴᴄʜ ʜᴏᴏᴋ."
+    shortcut: "roles"
+    plugin-command: roles
+
+  omnitools:
+    title: "OmniTools"
+    icon: DIAMOND_PICKAXE
+    lines:
+      - "&7ᴏᴍɴɪᴛᴏᴏʟs ᴘʀᴏɢʀᴇss ᴀs ʏᴏᴜ ᴘʟᴀʏ."
+      - "&7ǫᴜᴇsᴛs ᴀɴᴅ ᴇᴠᴇɴᴛs ᴇxᴘᴏsᴇ"
+      - "&7ᴏᴍɴɪᴛᴏᴏʟ ᴘʀᴏɢʀᴇss ʜᴏᴏᴋs."
+    shortcut: "omnitool"
+    plugin-command: omnitool
+
+  mining-cube:
+    title: "Mining Cube"
+    icon: DIAMOND_ORE
+    lines:
+      - "&7ᴛʜᴇ ᴍɪɴɪɴɢ ᴄᴜʙᴇ ɪs ᴛʜᴇ"
+      - "&7sᴀꜰᴇ ᴘʟᴀᴄᴇ ꜰᴏʀ ʀɪᴄʜ ᴠᴇɪɴs."
+      - "&7ᴏʀᴅɪɴᴀʀʏ ᴘʟᴀᴄᴇᴅ ʙʟᴏᴄᴋs ᴅᴏ ɴᴏᴛ ᴄᴏᴜɴᴛ."
+    shortcut: "mine"
+    plugin-command: mine
+
+  generators:
+    title: "Generators"
+    icon: FURNACE
+    lines:
+      - "&7ɢᴇɴᴇʀᴀᴛᴏʀs ᴘʀᴏᴅᴜᴄᴇ"
+      - "&7ʀᴇsᴏᴜʀᴄᴇs ᴏɴ ʏᴏᴜʀ ɪsʟᴀɴᴅ."
+      - "&7ᴜᴘɢʀᴀᴅᴇ ʏᴏᴜʀ ɪsʟᴀɴᴅ"
+      - "&7ᴛᴏ ᴜɴʟᴏᴄᴋ ʙᴇᴛᴛᴇʀ ɢᴇɴs."
+      - "&eᴄʟɪᴄᴋ ᴛᴏ ᴏᴘᴇɴ /ɢᴇɴs"
+    shortcut: "gens"
+    plugin-command: gens
+
+  spawners:
+    title: "Spawners"
+    icon: SPAWNER
+    lines:
+      - "&7ʙᴜʏ, ᴘʟᴀᴄᴇ ᴀɴᴅ ᴜᴘɢʀᴀᴅᴇ sᴘᴀᴡɴᴇʀs."
+      - "&7ᴍᴀɴᴜᴀʟ ᴋɪʟʟs ꜰᴇᴇᴅ sʟᴀʏᴇʀ."
+      - "&eᴄᴏᴍᴍᴀɴᴅ: &f/spawner"
+    shortcut: "spawner"
+    plugin-command: spawner
+
+  farming:
+    title: "Farming"
+    icon: WHEAT
+    lines:
+      - "&7ʜᴀʀᴠᴇsᴛ ɢʀᴏᴡɴ ᴄʀᴏᴘs ꜰᴏʀ"
+      - "&7ꜰᴀʀᴍɪɴɢ ᴇssᴇɴᴄᴇ ᴀɴᴅ ɪsʟᴀɴᴅ xᴘ."
+      - "&7ᴅᴀɪʟɪᴇs ᴏꜰᴛᴇɴ sᴛᴀʀᴛ ʜᴇʀᴇ."
+
+  fishing:
+    title: "Fishing"
+    icon: FISHING_ROD
+    lines:
+      - "&7ᴄᴀᴛᴄʜ ꜰɪsʜ ꜰᴏʀ ɪsʟᴀɴᴅ xᴘ."
+      - "&7ᴅᴇᴇᴘ ᴡᴀᴛᴇʀs ᴀɴᴅ ᴇᴠᴇɴᴛs"
+      - "&7ᴄᴀɴ ɪᴍᴘʀᴏᴠᴇ ᴛʜᴇ ᴀᴄᴛɪᴠɪᴛʏ."
+
+  slayer:
+    title: "Slayer"
+    icon: IRON_SWORD
+    lines:
+      - "&7ᴠᴀʟɪᴅ ᴍᴀɴᴜᴀʟ ᴋɪʟʟs ᴇᴀʀɴ"
+      - "&7sʟᴀʏᴇʀ ᴇssᴇɴᴄᴇ ᴀɴᴅ ᴘʀᴏɢʀᴇss."
+      - "&7ᴀᴜᴛᴏ-ᴋɪʟʟ ᴅᴏᴇs ɴᴏᴛ ᴄᴏᴜɴᴛ."
+
+  companions:
+    title: "Companions"
+    icon: WOLF_SPAWN_EGG
+    lines:
+      - "&7ᴄᴏᴍᴘᴀɴɪᴏɴs ᴡɪʟʟ ᴜsᴇ ᴀ"
+      - "&7ɴᴀʀʀᴏᴡ ǫᴜᴇsᴛ ʀᴇᴡᴀʀᴅ ᴀᴅᴀᴘᴛᴇʀ."
+      - "&7ɴᴏ ᴅᴜᴘʟɪᴄᴀᴛᴇ sʏsᴛᴇᴍ ʜᴇʀᴇ."
+    shortcut: "companions"
+    plugin-command: companions
+
+  quests:
+    title: "Quests"
+    icon: WRITABLE_BOOK
+    lines:
+      - "&7ᴅᴀɪʟɪᴇs, ᴡᴇᴇᴋʟɪᴇs ᴀɴᴅ"
+      - "&7ɪsʟᴀɴᴅ ᴄʜᴀʟʟᴇɴɢᴇs ɢᴜɪᴅᴇ ᴘʀᴏɢʀᴇss."
+      - "&eᴄᴏᴍᴍᴀɴᴅ: &f/quests"
+    shortcut: "quests"
+    plugin-command: quests
+
+  events:
+    title: "Events"
+    icon: BELL
+    lines:
+      - "&7ʜᴏᴜʀʟʏ ᴇᴠᴇɴᴛs ʟᴀsᴛ 15 ᴍɪɴᴜᴛᴇs."
+      - "&7ᴘʟᴀʏ ᴀᴄᴛɪᴠᴇʟʏ ᴅᴜʀɪɴɢ ᴛʜᴇᴍ"
+      - "&7ᴛᴏ ᴘʀᴏɢʀᴇss ᴇᴠᴇɴᴛ ǫᴜᴇsᴛs."
+      - "&eᴄᴏᴍᴍᴀɴᴅ: &f/coreevent status"
+    shortcut: "coreevent status"
+    plugin-command: coreevent
+
+  credits-store:
+    title: "Credits / Store"
+    icon: EMERALD
+    lines:
+      - "&7ᴄʀᴇᴅɪᴛ ʀᴇᴡᴀʀᴅs ǫᴜᴇᴜᴇ"
+      - "&7ᴜɴᴛɪʟ ᴛʜᴇ sᴛᴏʀᴇ ᴄʀᴇᴅɪᴛs"
+      - "&7ᴀᴅᴀᴘᴛᴇʀ ɪs ᴘʀᴇsᴇɴᴛ."
+      - "&eᴄᴏᴍᴍᴀɴᴅ: &f/shop"
+    shortcut: "shop"
+    plugin-command: shop
+
+  commands:
+    title: "Commands"
+    icon: COMMAND_BLOCK
+    lines:
+      - "&7ʀᴇᴀʟ ᴘʟᴀʏᴇʀ ᴄᴏᴍᴍᴀɴᴅs ᴏɴʟʏ."
+      - "&7sᴛᴀꜰꜰ ᴄᴏᴍᴍᴀɴᴅs ᴀʀᴇ ʜɪᴅᴅᴇɴ."
+
+commands:
+  island:
+    is:
+      display: "/is"
+      plugin-command: island
+      description: "open island menu"
+    upgrades:
+      display: "/is upgrades"
+      plugin-command: island
+      description: "open Island Mastery"
+    buffs:
+      display: "/is buffs"
+      plugin-command: island
+      description: "manage Core Buffs"
+    top:
+      display: "/is top"
+      plugin-command: island
+      description: "view island leaderboards"
+  progression:
+    quests:
+      display: "/quests"
+      plugin-command: quests
+      description: "daily, weekly and island goals"
+    events:
+      display: "/coreevent status"
+      plugin-command: coreevent
+      description: "active/next hourly event"
+    roles:
+      display: "/roles"
+      plugin-command: roles
+      description: "role menu"
+    gens:
+      display: "/gens"
+      plugin-command: gens
+      description: "generator menu"
+  economy:
+    shop:
+      display: "/shop"
+      plugin-command: shop
+      description: "buy and sell blocks"
+    sell:
+      display: "/sell"
+      plugin-command: sell
+      description: "sell inventory items"
+    store:
+      display: "/store"
+      plugin-command: shop
+      description: "shop alias"
+    ah:
+      display: "/ah"
+      plugin-command: ah
+      description: "auction house"
+  utility:
+    help:
+      display: "/help"
+      plugin-command: help
+      description: "open this guide"
+    spawner:
+      display: "/spawner"
+      plugin-command: spawner
+      description: "spawner menu"
+    rtp:
+      display: "/rtp"
+      plugin-command: rtp
+      description: "random teleport"
+    afk:
+      display: "/afk"
+      plugin-command: afk
+      description: "toggle away status"

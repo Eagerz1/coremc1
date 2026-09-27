@@ -6,6 +6,7 @@ import com.coremc.core.essence.EssenceType;
 import com.coremc.core.island.Island;
 import com.coremc.core.island.IslandService;
 import com.coremc.core.progression.IslandProgressionService;
+import com.coremc.core.quest.QuestProgressService;
 import com.coremc.core.shop.EconomyService;
 import com.coremc.core.util.ColorUtil;
 import java.io.IOException;
@@ -52,6 +53,7 @@ public final class SpawnerService {
     private final MessageService messages;
     private final IslandService islands;
     private final IslandProgressionService progression;
+    private QuestProgressService quests;
     private final Logger logger;
     private final Random random = new Random();
 
@@ -89,6 +91,10 @@ public final class SpawnerService {
         this.amountKey = new NamespacedKey(plugin, "coremc_spawner_amount");
         this.variantKey = new NamespacedKey(plugin, "coremc_variant");
         this.mobStacks = new MobStacks(plugin, config, this);
+    }
+
+    public void attachQuests(final QuestProgressService quests) {
+        this.quests = quests;
     }
 
     /** Loads persisted state (call once, after the island service). */
@@ -362,6 +368,10 @@ public final class SpawnerService {
         persist();
         applySpawnerState(block, mob, variant, boostOf(island.id()), entry.amount());
         refreshHologram(entry);
+        if (quests != null) {
+            quests.publish(player, island, "spawner-placed", Math.max(1, amount), Map.of("mob", mobId,
+                    "variant", variant.name().toLowerCase(java.util.Locale.ROOT)));
+        }
         if (entry.amount() > 1) {
             messages.sendPrefixed(player, "spawner.stacked", Map.of(
                     "amount", String.valueOf(entry.amount()),
@@ -674,11 +684,13 @@ public final class SpawnerService {
         applySpawnerState(blockOf(upgraded), mob, next, boostOf(entry.islandId()), upgraded.amount());
         refreshHologram(upgraded);
 
-        if (progression != null) {
-            final Island island = islands.islandById(entry.islandId());
-            if (island != null) {
-                progression.recordActivity(player, island, "spawner", Math.max(2L, 2L * stackScale));
-            }
+        final Island island = islands.islandById(entry.islandId());
+        if (progression != null && island != null) {
+            progression.recordActivity(player, island, "spawner", Math.max(2L, 2L * stackScale));
+        }
+        if (quests != null && island != null) {
+            quests.publish(player, island, "spawner-upgraded", 1L, Map.of("mob", entry.mobId(),
+                    "variant", next.name().toLowerCase(java.util.Locale.ROOT)));
         }
 
         final SpawnerVariantSettings settings = config.variantSettings(next);

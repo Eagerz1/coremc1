@@ -1,6 +1,8 @@
 package com.coremc.core.essence;
 
+import com.coremc.core.island.IslandService;
 import com.coremc.core.progression.IslandProgressionService;
+import com.coremc.core.quest.QuestProgressService;
 import com.coremc.core.spawner.SpawnerService;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -38,15 +40,26 @@ public final class EssenceListener implements Listener {
     private final PlacedBlockTracker placedBlocks;
     private final SpawnerService spawners;
     private final IslandProgressionService progression;
+    private final QuestProgressService quests;
+    private final IslandService islands;
 
     public EssenceListener(final EssenceManager essences, final EssenceConfig config,
                            final PlacedBlockTracker placedBlocks, final SpawnerService spawners,
                            final IslandProgressionService progression) {
+        this(essences, config, placedBlocks, spawners, progression, null, null);
+    }
+
+    public EssenceListener(final EssenceManager essences, final EssenceConfig config,
+                           final PlacedBlockTracker placedBlocks, final SpawnerService spawners,
+                           final IslandProgressionService progression, final QuestProgressService quests,
+                           final IslandService islands) {
         this.essences = essences;
         this.config = config;
         this.placedBlocks = placedBlocks;
         this.spawners = spawners;
         this.progression = progression;
+        this.quests = quests;
+        this.islands = islands;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -71,6 +84,11 @@ public final class EssenceListener implements Listener {
                 SlayerRewards.slayerFor(activeKill, variant, mobCount, config));
         if (progression != null) {
             progression.recordActivity(killer, entity.getLocation(), "slayer", mobCount);
+        }
+        if (quests != null) {
+            quests.publish(killer, islands == null ? null : islands.islandOf(killer.getUniqueId()),
+                    "valid-mob-killed", mobCount,
+                    java.util.Map.of("variant", variant.name().toLowerCase(java.util.Locale.ROOT)));
         }
     }
 
@@ -106,6 +124,10 @@ public final class EssenceListener implements Listener {
                 if (progression != null) {
                     progression.recordActivity(event.getPlayer(), block.getLocation(), "mining", 1L);
                 }
+                if (quests != null) {
+                    quests.publish(event.getPlayer(), islands == null ? null : islands.islandOf(event.getPlayer().getUniqueId()),
+                            "mining-block-mined", 1L, java.util.Map.of("material", material.name().toLowerCase(java.util.Locale.ROOT)));
+                }
             }
         }
 
@@ -116,6 +138,10 @@ public final class EssenceListener implements Listener {
             essences.give(event.getPlayer().getUniqueId(), EssenceType.FARMING, farming);
             if (progression != null) {
                 progression.recordActivity(event.getPlayer(), block.getLocation(), "farming", 1L);
+            }
+            if (quests != null) {
+                quests.publish(event.getPlayer(), islands == null ? null : islands.islandOf(event.getPlayer().getUniqueId()),
+                        "crop-harvested", 1L, java.util.Map.of("material", material.name().toLowerCase(java.util.Locale.ROOT)));
             }
         }
     }

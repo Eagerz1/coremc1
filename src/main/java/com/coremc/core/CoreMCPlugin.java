@@ -2,6 +2,10 @@ package com.coremc.core;
 
 import com.coremc.core.config.CoreConfig;
 import com.coremc.core.config.MessageService;
+import com.coremc.core.guide.HelpCommand;
+import com.coremc.core.guide.HelpConfig;
+import com.coremc.core.guide.HelpGui;
+import com.coremc.core.guide.HelpMenuListener;
 import com.coremc.core.island.BuffListener;
 import com.coremc.core.rank.EchestCommand;
 import com.coremc.core.rank.FlyCommand;
@@ -45,6 +49,16 @@ import com.coremc.core.progression.ServerEventConfig;
 import com.coremc.core.progression.ServerEventService;
 import com.coremc.core.progression.YamlIslandProgressionStore;
 import com.coremc.core.progression.YamlServerEventStore;
+import com.coremc.core.quest.CoreQuestCommand;
+import com.coremc.core.quest.QuestCommand;
+import com.coremc.core.quest.QuestConfig;
+import com.coremc.core.quest.QuestGui;
+import com.coremc.core.quest.QuestIntegrationRegistry;
+import com.coremc.core.quest.QuestMenuListener;
+import com.coremc.core.quest.QuestOnboardingListener;
+import com.coremc.core.quest.QuestProgressService;
+import com.coremc.core.quest.QuestService;
+import com.coremc.core.quest.YamlQuestStore;
 import com.coremc.core.shop.EconomyService;
 import com.coremc.core.shop.VaultEconomy;
 import com.coremc.core.island.YamlBuffStore;
@@ -113,6 +127,11 @@ public final class CoreMCPlugin extends JavaPlugin {
     private GameplayModifierService gameplayModifiers;
     private ServerEventConfig eventConfig;
     private ServerEventService eventService;
+    private QuestConfig questConfig;
+    private QuestService questService;
+    private QuestProgressService questProgress;
+    private HelpConfig helpConfig;
+    private HelpGui helpGui;
     private RankConfig rankConfig;
     private RankService rankService;
 
@@ -283,6 +302,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         }, 20L * 60, 20L * 60);
 
         this.gameplayModifiers = new GameplayModifierService();
+        this.questProgress = new QuestProgressService();
 
         // Island Level + Island Mastery (progression.yml). A broken config
         // disables the mastery GUI loudly, but active CoreMC gameplay remains up.
@@ -298,8 +318,9 @@ public final class CoreMCPlugin extends JavaPlugin {
                     islands, economy, messages, islandPoints, upgradeConfig, coreConfig);
             progressionService.load();
             progressionService.attachModifiers(gameplayModifiers);
+            progressionService.attachQuests(questProgress);
             islands.onDelete(progressionService::onIslandDeleted);
-            pluginManager.registerEvents(new ProgressionFishingListener(progressionService), this);
+            pluginManager.registerEvents(new ProgressionFishingListener(progressionService, islands, questProgress), this);
         } catch (final RuntimeException exception) {
             getLogger().severe("Island progression disabled — " + exception.getMessage());
         }
@@ -316,6 +337,7 @@ public final class CoreMCPlugin extends JavaPlugin {
                 gameplayModifiers.setClamps(coreBuffConfig.clamps());
                 this.coreBuffService = new IslandCoreBuffService(this, coreBuffConfig,
                         progressionService, islands, economy, messages, gameplayModifiers);
+                coreBuffService.attachQuests(questProgress);
                 progressionService.attachCoreBuffs(coreBuffService);
                 gameplayModifiers.attachCoreBuffs(coreBuffService);
                 islands.onDelete(coreBuffService::onIslandDeleted);
@@ -337,10 +359,52 @@ public final class CoreMCPlugin extends JavaPlugin {
                     messages, getLogger());
             eventService.load();
             gameplayModifiers.attachEvents(eventService);
+            questProgress.attachEvents(eventService);
         } catch (final RuntimeException exception) {
             getLogger().severe("Core events disabled — " + exception.getMessage());
         }
         registerSimpleCommand("coreevent", new CoreEventCommand(eventConfig, eventService, messages));
+
+        // Native quests: daily/weekly player quests and shared Island Challenges.
+        this.questConfig = QuestConfig.disabled();
+        this.questService = null;
+        try {
+            final QuestConfig parsed = new QuestConfig(this);
+            parsed.load();
+            this.questConfig = parsed;
+            this.questService = new QuestService(this, questConfig,
+                    new YamlQuestStore(Path.of(getDataFolder().getPath(), "quests-data.yml"), getLogger()),
+                    islands, progressionService, QuestIntegrationRegistry.defaults(progressionService),
+                    messages, getLogger());
+            questService.load();
+            questProgress.attach(questService);
+            islands.onCreate((player, island) -> questService.onIslandCreated(player));
+        } catch (final RuntimeException exception) {
+            getLogger().severe("Quests disabled — " + exception.getMessage());
+        }
+
+        // /help CoreMC Guide. Missing later-branch shortcuts are hidden at render time.
+        this.helpConfig = HelpConfig.disabled();
+        this.helpGui = null;
+        try {
+            final HelpConfig parsed = new HelpConfig(this);
+            parsed.load();
+            this.helpConfig = parsed;
+            this.helpGui = new HelpGui(this, helpConfig);
+        } catch (final RuntimeException exception) {
+            getLogger().severe("CoreMC guide disabled — " + exception.getMessage());
+        }
+        if (helpGui != null) {
+            registerSimpleCommand("help", new HelpCommand(helpConfig, helpGui, messages));
+            pluginManager.registerEvents(new HelpMenuListener(helpGui, helpConfig), this);
+        }
+        if (questService != null) {
+            final QuestGui questGui = new QuestGui(questService, islands);
+            registerSimpleCommand("quests", new QuestCommand(questService, questGui, messages));
+            registerSimpleCommand("corequest", new CoreQuestCommand(questService, messages, getLogger()));
+            pluginManager.registerEvents(new QuestMenuListener(questGui, questService), this);
+            pluginManager.registerEvents(new QuestOnboardingListener(questService), this);
+        }
 
         // Spawners: progression config (spawners.yml) + placed spawner
         // registry (spawners-data.yml). A broken config disables the
@@ -360,6 +424,7 @@ public final class CoreMCPlugin extends JavaPlugin {
                                 Path.of(getDataFolder().getPath(), "spawners-data.yml"), getLogger()),
                         economy, essenceManager, messages, islands, progressionService);
                 spawnerService.load();
+                spawnerService.attachQuests(questProgress);
                 final SpawnerHolograms spawnerHolograms =
                         new SpawnerHolograms(this, spawnerService);
                 spawnerService.attach(spawnerHolograms);
@@ -379,7 +444,7 @@ public final class CoreMCPlugin extends JavaPlugin {
                 essenceConfig.load();
                 pluginManager.registerEvents(
                         new EssenceListener(essenceManager, essenceConfig, placedBlocks,
-                                spawnerService, progressionService),
+                                spawnerService, progressionService, questProgress, islands),
                         this);
             } catch (final RuntimeException exception) {
                 getLogger().severe("Essence earning disabled — " + exception.getMessage());
@@ -529,6 +594,9 @@ public final class CoreMCPlugin extends JavaPlugin {
         }
         if (coreBuffService != null) {
             coreBuffService.shutdown();
+        }
+        if (questService != null) {
+            questService.shutdown();
         }
         if (progressionService != null) {
             progressionService.shutdown();

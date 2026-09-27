@@ -7,6 +7,7 @@
 # ============================================================
 
 prefix: "&b&lCOREMC >>> &f"
+no-permission: "&cYou do not have permission to do that."
 
 island:
   only-players: "&cOnly players can use this command."
@@ -92,6 +93,27 @@ core-buff:
   unequipped: "&eUnequipped Core Buff: &f{buff}&e."
   cooldown: "&cCore Buffs can be swapped again in &f{time}&c."
   no-slot: "&cNo free Island Core slots. Unlock more at Island Levels 5, 15 and 25."
+
+quest:
+  unavailable: "&cQuests are not available right now."
+  completed: "&aQuest complete: &f{quest}&a. Claim it in &b/quests&a."
+  claimed: "&aClaimed quest rewards for &f{quest}&a."
+  reward-pending: "&eSome rewards for &f{quest} &eare pending an integration and were kept safely queued."
+
+corequest:
+  usage: "&cUsage: &b/corequest reset <player> daily|weekly &8| &b/corequest complete <player> <quest> &8| &b/corequest reroll <player> &8| &b/corequest status <player>"
+  reset: "&aReset &f{player}&a's &f{scope} &aquests."
+  completed: "&aCompleted &f{quest} &afor &f{player}&a."
+  missing: "&cCould not find active quest &f{quest} &cfor &f{player}&c."
+  rerolled: "&aRerolled quests for &f{player}&a."
+  status: "&7Quest status for &f{player}&7: &f{status}"
+
+guide:
+  unavailable: "&cThe CoreMC guide is not available right now."
+
+onboarding:
+  welcome: "&b&lCOREMC &8» &fWelcome! Start with &e/help&f."
+  next: "&7Next: &f{action}"
 
 event:
   unavailable: "&cCore events are not available right now."

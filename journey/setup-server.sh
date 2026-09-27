@@ -105,5 +105,70 @@ s = re.sub(r', mastery: \[[^\]]*\]', '', s)
 p.write_text(s)
 PY
 cp "$ROOT/src/main/resources/events.yml" "$SERVER/plugins/CoreMC/events.yml"
+cp "$ROOT/src/main/resources/help.yml" "$SERVER/plugins/CoreMC/help.yml"
+cat > "$SERVER/plugins/CoreMC/quests.yml" <<'EOF'
+settings:
+  daily: {count: 3, reset-hours: 24}
+  weekly: {count: 3, reset-hours: 168}
+  island-challenges: {count: 1, reset-hours: 168}
+  streak: {enabled: true}
+templates:
+  daily-farm:
+    type: daily
+    name: "Farming Daily"
+    icon: WHEAT
+    weight: 10
+    lore:
+      - "&7ʜᴀʀᴠᴇsᴛ &f1 &7ɢʀᴏᴡɴ ᴄʀᴏᴘ."
+      - "&7ɪɴ ʏᴏᴜʀ ɪsʟᴀɴᴅ ꜰᴀʀᴍ."
+    objective: {action: crop-harvested, target: 1}
+    rewards:
+      sky: {type: sky-tokens, amount: 150}
+      credits: {type: credits, amount: 25}
+  weekly-dailies:
+    type: weekly
+    name: "Daily Finisher"
+    icon: BOOK
+    weight: 10
+    lore:
+      - "&7ᴄᴏᴍᴘʟᴇᴛᴇ &f1 &7ᴅᴀɪʟʏ ǫᴜᴇsᴛ."
+    objective: {action: daily-completed, target: 1}
+    rewards:
+      sky: {type: sky-tokens, amount: 1500}
+      credits: {type: credits, amount: 100}
+  weekly-xp:
+    type: weekly
+    name: "Island XP Push"
+    icon: NETHER_STAR
+    weight: 10
+    lore:
+      - "&7ɢᴀɪɴ &f1 &7ɪsʟᴀɴᴅ xᴘ."
+    objective: {action: island-xp-gained, target: 1}
+    rewards:
+      sky: {type: sky-tokens, amount: 1500}
+      credits: {type: credits, amount: 100}
+  weekly-event:
+    type: weekly
+    name: "Event Participant"
+    icon: BELL
+    weight: 10
+    lore:
+      - "&7ᴘʟᴀʏ ᴅᴜʀɪɴɢ &f1 &7ʜᴏᴜʀʟʏ ᴇᴠᴇɴᴛ."
+    objective: {action: hourly-event-participation, target: 1}
+    rewards:
+      sky: {type: sky-tokens, amount: 1500}
+      credits: {type: credits, amount: 100}
+  island-harvest:
+    type: island
+    name: "Island Harvest"
+    icon: HAY_BLOCK
+    weight: 10
+    lore:
+      - "&7ᴀs ᴀɴ ɪsʟᴀɴᴅ, ʜᴀʀᴠᴇsᴛ &f3 &7ᴄʀᴏᴘs."
+    objective: {action: crop-harvested, target: 3}
+    rewards:
+      sky: {type: sky-tokens, amount: 500, scope: island-once}
+      credits: {type: credits, amount: 25, scope: contributor}
+EOF
 
 echo "journey-server ready at $SERVER"

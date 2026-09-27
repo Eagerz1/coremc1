@@ -416,6 +416,13 @@ async function main() {
   phase(1, 'join + /is create')
   owner = makeBot(OWNER)
   check(await waitSpawn(owner), 'owner spawns on first boot')
+  check(await waitChat(owner, /welcome.*\/help/i, 15000), 'first-join onboarding points to /help', recentChat(owner))
+  let helpWin = await openWindow(owner, '/help')
+  check(!!helpWin && /getting started/i.test(slotJson(helpWin, 10)), '/help opens the CoreMC Guide')
+  await closeWin(owner)
+  helpWin = await openWindow(owner, '/help quests')
+  check(!!helpWin && /(quests|ǫᴜᴇsᴛ|ᴅᴀɪʟ)/i.test(slotJson(helpWin, 13)), '/help quests opens the Quests guide page', helpWin ? slotJson(helpWin, 13).slice(0, 220) : 'no window')
+  await closeWin(owner)
   clearChat(owner)
   owner.chat('/is create')
   check(await waitChat(owner, /island created/i, 90000), '/is create pastes island')
@@ -435,6 +442,13 @@ async function main() {
   HOME = owner.entity.position.clone()
   HX = Math.floor(HOME.x); HZ = Math.floor(HOME.z); GY = settled
   log(`[island] home=${HOME.x.toFixed(1)},${HOME.y.toFixed(1)},${HOME.z.toFixed(1)} groundY=${GY}`)
+  let questWin = await openWindow(owner, '/quests')
+  check(!!questWin && /(daily|ᴅᴀɪʟʏ)/i.test(slotJson(questWin, 20)) && /(weekly|ᴡᴇᴇᴋʟʏ)/i.test(slotJson(questWin, 22)), '/quests opens root with Daily and Weekly entries', questWin ? (slotJson(questWin, 20) + ' | ' + slotJson(questWin, 22)).slice(0, 260) : 'no window')
+  await click(owner, 20)
+  await sleep(500)
+  questWin = owner.currentWindow
+  check(!!questWin && /farming daily/i.test(slotJson(questWin, 10)), 'Daily quest page shows the configured Farming Daily')
+  await closeWin(owner)
 
   // ------------------------------------------- P2 essence commands (admin)
   phase(2, 'virtual essence commands')
@@ -872,8 +886,10 @@ async function main() {
   await rc(`execute in ${DIM} run setblock ${farmX} ${GY + 1} ${farmZ} minecraft:farmland`)
   await rc(`execute in ${DIM} run setblock ${farmX} ${GY + 2} ${farmZ} minecraft:wheat[age=7]`)
   await waitBlockReady(owner, farmX, GY + 2, farmZ, true)
+  clearChat(owner)
   await digAt(owner, farmX, GY + 2, farmZ)
   await sleep(1500)
+  check(await waitChat(owner, /quest complete.*farming daily/i, 5000), 'real crop harvest completes the Daily Quest', recentChat(owner))
   e = await essenceOf(owner)
   check(e && e.farming === 77, 'harvesting ripe wheat pays +2 Farming Essence', String(e && e.farming))
 
@@ -913,6 +929,16 @@ async function main() {
 
   out = await rc('coreevent start slayer-frenzy')
   check(/started event|slayer-frenzy/i.test(out), 'manual /coreevent start works', out.trim())
+  const eventFarmX = HX + 5; const eventFarmZ = HZ - 2
+  await rc(`execute in ${DIM} run setblock ${eventFarmX} ${GY + 1} ${eventFarmZ} minecraft:farmland`)
+  await rc(`execute in ${DIM} run setblock ${eventFarmX} ${GY + 2} ${eventFarmZ} minecraft:wheat[age=7]`)
+  await waitBlockReady(owner, eventFarmX, GY + 2, eventFarmZ, true)
+  await digAt(owner, eventFarmX, GY + 2, eventFarmZ)
+  await sleep(1200)
+  let qEventYaml = yamlLoad(fs.readFileSync(path.join(PLUGIN_DIR, 'quests-data.yml'), 'utf8'))
+  const eventProgress = Object.values((qEventYaml && qEventYaml.players) || {})
+    .some((p) => p.weekly && p.weekly['weekly-event'] && p.weekly['weekly-event'].progress && p.weekly['weekly-event'].progress.main >= 1)
+  check(eventProgress, 'active gameplay during an Hourly Event publishes quest participation', JSON.stringify(qEventYaml).slice(0, 360))
   out = await rc('coreevent status')
   check(/active event.*slayer frenzy|slayer frenzy/i.test(out), 'event status shows active timer', out.trim())
   out = await rc('coreevent stop')
@@ -922,8 +948,67 @@ async function main() {
   out = await rc('coreevent next')
   check(/next automatic event/i.test(out), '/coreevent next reports the automatic schedule', out.trim())
 
-  // ------------------------------------------- P8 restart persistence
-  phase(8, 'restart persistence')
+  // ------------------------------------------- P8 quests, claiming and shared challenges
+  phase(8, 'quests, help shortcuts and shared island challenges')
+  clearChat(owner)
+  owner.chat('/is invite JGuest')
+  check(await waitChat(owner, /invite sent/i), 'owner can invite guest before shared challenge', recentChat(owner))
+  clearChat(guest)
+  guest.chat('/is join')
+  check(await waitChat(guest, /joined/i, 15000), 'guest joins the island for shared challenge contribution', recentChat(guest))
+  await waitUntil(() => String(guest.__world || '').endsWith(WORLD_ISLANDS), 60000)
+  await sleep(1000)
+  const guestFarmX = HX + 4; const guestFarmZ = HZ - 2
+  await rc(`execute in ${DIM} run setblock ${guestFarmX} ${GY + 1} ${guestFarmZ} minecraft:farmland`)
+  await rc(`execute in ${DIM} run setblock ${guestFarmX} ${GY + 2} ${guestFarmZ} minecraft:wheat[age=7]`)
+  await waitBlockReady(guest, guestFarmX, GY + 2, guestFarmZ, true)
+  const guestTool = guest.inventory.items().find((i) => i.name === 'iron_hoe' || i.name === 'wooden_hoe')
+  if (guestTool) await guest.equip(guestTool, 'hand')
+  await walkTo(guest, guestFarmX, guestFarmZ)
+  await digAt(guest, guestFarmX, GY + 2, guestFarmZ)
+  await sleep(1500)
+  const qYaml = yamlLoad(fs.readFileSync(path.join(PLUGIN_DIR, 'quests-data.yml'), 'utf8'))
+  const islandQuestStates = Object.values((qYaml && qYaml.islands) || {})
+  check(islandQuestStates.some((s) => s.challenges && s.challenges['island-harvest'] && s.challenges['island-harvest'].completed === true),
+    'shared Island Challenge completes from member contributions', JSON.stringify(qYaml).slice(0, 360))
+  check(islandQuestStates.some((s) => s.contributors && s.contributors['island-harvest']
+      && Object.keys(s.contributors['island-harvest']).length >= 2),
+    'Island Challenge stores contributors safely', JSON.stringify(qYaml).slice(0, 360))
+
+  let beforeTokens = 0
+  const beforeProg = yamlLoad(fs.readFileSync(path.join(PLUGIN_DIR, 'island-progression.yml'), 'utf8'))
+  const beforeProfile = Object.values((beforeProg && beforeProg.islands) || {})[0]
+  if (beforeProfile) beforeTokens = Number(beforeProfile['sky-tokens'] || 0)
+  questWin = await openWindow(owner, '/quests completed')
+  const ownerDailyCompleted = Object.values((qYaml && qYaml.players) || {})
+    .some((p) => p.daily && p.daily['daily-farm'] && p.daily['daily-farm'].completed === true)
+  check(!!questWin && ownerDailyCompleted && slotJson(questWin, 10) !== 'null',
+    '/quests completed shows the claimable Daily Quest', questWin ? slotJson(questWin, 10).slice(0, 220) : 'no window')
+  clearChat(owner)
+  if (questWin) await click(owner, 10)
+  check(await waitChat(owner, /pending an integration/i, 8000), 'claim keeps Credits reward pending instead of losing it', recentChat(owner))
+  await sleep(1000)
+  const midProg = yamlLoad(fs.readFileSync(path.join(PLUGIN_DIR, 'island-progression.yml'), 'utf8'))
+  const midProfile = Object.values((midProg && midProg.islands) || {})[0]
+  const midTokens = Number((midProfile && midProfile['sky-tokens']) || 0)
+  check(midTokens === beforeTokens + 150, 'claim grants Sky Tokens once while Credits remain pending', `${beforeTokens} -> ${midTokens}`)
+  clearChat(owner)
+  if (owner.currentWindow) await click(owner, 10)
+  await sleep(1000)
+  const afterClaimProg = yamlLoad(fs.readFileSync(path.join(PLUGIN_DIR, 'island-progression.yml'), 'utf8'))
+  const afterClaimProfile = Object.values((afterClaimProg && afterClaimProg.islands) || {})[0]
+  const afterClaimTokens = Number((afterClaimProfile && afterClaimProfile['sky-tokens']) || 0)
+  check(afterClaimTokens === midTokens, 'second claim attempt does not duplicate delivered rewards', `${midTokens} -> ${afterClaimTokens}`)
+  await closeWin(owner)
+
+  helpWin = await openWindow(owner, '/help commands')
+  const commandsJson = helpWin ? Array.from({ length: 54 }, (_, i) => slotJson(helpWin, i)).join(' ') : ''
+  check(!!helpWin && /\/quests/i.test(commandsJson) && !/\/gens/i.test(commandsJson) && !/\/ah/i.test(commandsJson),
+    'commands guide shows registered player commands and hides absent shortcuts', commandsJson.slice(0, 400))
+  await closeWin(owner)
+
+  // ------------------------------------------- P9 restart persistence
+  phase(9, 'restart persistence')
   const eFinal = await essenceOf(owner)
   await quitBot(owner, OWNER)
   await quitBot(guest, GUEST)
@@ -956,6 +1041,7 @@ async function main() {
   check(await waitSpawn(owner), 'owner spawns after restart')
   await waitUntil(() => String(owner.__world || '').endsWith(WORLD_ISLANDS), 60000)
   await sleep(2500)
+  check(!/welcome.*\/help/i.test(recentChat(owner)), 'first-join guidance does not spam after restart', recentChat(owner))
   const eAfter = await essenceOf(owner)
   checkEssence(eAfter, eFinal, 'balances survived the restart exactly')
 
@@ -966,6 +1052,14 @@ async function main() {
   buffWin = await openWindow(owner, '/is buffs')
   check(!!buffWin && /deep waters/i.test(slotJson(buffWin, 12)) && /(ᴇǫᴜɪᴘᴘᴇᴅ|✔|status)/i.test(slotJson(buffWin, 12)),
     'equipped Core Buff survives restart and renders as equipped', buffWin ? slotJson(buffWin, 12).slice(0, 220) : 'no window')
+  await closeWin(owner)
+  questWin = await openWindow(owner, '/quests completed')
+  const qAfterRestart = yamlLoad(fs.readFileSync(path.join(PLUGIN_DIR, 'quests-data.yml'), 'utf8'))
+  const pendingAfterRestart = Object.values((qAfterRestart && qAfterRestart.players) || {})
+    .some((p) => p.daily && p.daily['daily-farm'] && p.daily['daily-farm'].completed === true
+      && Array.isArray(p.daily['daily-farm']['delivered-rewards']) && p.daily['daily-farm']['delivered-rewards'].includes('sky'))
+  check(!!questWin && pendingAfterRestart && slotJson(questWin, 10) !== 'null',
+    'quest completion and pending reward state survive restart', questWin ? slotJson(questWin, 10).slice(0, 220) : 'no window')
   await closeWin(owner)
 
   // the mythic spawner is still mythic with its hologram
@@ -1002,8 +1096,8 @@ async function main() {
     }
   }
 
-  // ------------------------------------------------ P9 final audit
-  phase(9, 'final audit')
+  // ------------------------------------------------ P10 final audit
+  phase(10, 'final audit')
   await quitBot(owner, OWNER)
   await sleep(1500)
   await stopServer()

@@ -41,6 +41,8 @@ ladder.
 | Legacy island upgrades | `upgrades.yml` still supplies the persisted claim-size/member-slot fields and timed buffs. The old generic upgrade GUI has been replaced by Island Mastery; Industry mastery nodes can now drive claim/member infrastructure effects without resetting old island data. |
 | Core Buffs | Persistent Island Core module choices configured in `island-buffs.yml`, opened with `/is buffs` or from the Core GUI. Islands can unlock many buffs but only equip the active slots unlocked at Island Levels 5 / 15 / 25; swaps have a configurable cooldown (12h by default) and persist in `island-progression.yml`. The nine shipped buffs are Rich Veins, Slayer Frenzy, Deep Waters, Generator Overdrive, Core Discovery, Role Synergy, Momentum, Fortune Cycle and Core Surge. They use gameplay hooks rather than passive flat +5% stats: Rich Veins is Mining Cube-only, Slayer Frenzy doubles only safe kill progression/compatible OmniTool outputs, Momentum/Role Synergy require recent active play, and passive AFK automation does not trigger Core Discovery unless enabled in config. |
 | Hourly server events | `events.yml` schedules one temporary server event per hour: exactly 15 minutes active, then 45 minutes normal gameplay by default. Rotation avoids immediate repeats, prevents overlap, recovers active/next state after restart where practical, shows an active BossBar with remaining time, and sends start / 5-minute / 1-minute / end announcements. Admins can use `/coreevent start <event>`, `/coreevent stop`, `/coreevent status` and `/coreevent next`; manual starts do not corrupt the automatic schedule. Event effects flow through the same centralized modifier service as Core Buffs, so overlapping Slayer/OmniTool sources are maxed/clamped instead of x4/x8. |
+| CoreMC Quests | `quests.yml` defines native Daily Quests, Weekly Quests and shared Island Challenges. Players get a rotating, progression-aware set of active goals with stable template ids, absolute reset timestamps, incompatibility/system requirements and exactly-once reward claims. Progress is event-driven through `QuestProgressService` (crop harvests, valid kills, spawner actions, Island XP, hourly-event participation, buff/discovery triggers, and future Role/OmniTool/Generator hooks) rather than statistic polling. Rewards support Sky Tokens and Island XP now, while Credits, keys, generator, companion, OmniTool and Seasonal XP rewards use explicit pending integration adapters so unavailable branch rewards are never lost. |
+| CoreMC Guide | `/help` opens a GUI guide instead of a command dump. Pages explain Getting Started, Islands, Island Level/Mastery, Roles, OmniTools, Mining Cube, Generators, Spawners, Farming, Fishing, Slayer, Companions, Quests, Events, Credits/Store and Commands. Shortcuts only run when the target command exists, and the Commands page hides absent or staff-only commands. First join sends one persisted welcome directing new players to `/help` and the next recommended objective. |
 | Legacy island buffs | Timed island-wide boosts, owner-only (`upgrades.yml`): Green Thumb (crops grow ×2), Spawner Overdrive (spawner delays ÷2 — re-tunes placed spawners the moment it starts) and XP Surge (kill XP ×2), 30 min each for $1,500/$2,500/$1,000. Active buffs persist with their remaining time; expiry reverts lasting effects. |
 | Member caps + kick | The member limit counts everyone on the island (owner included). A full island keeps pending invites alive, so a rejected joiner can join once a slot frees up. `/is kick <player>` and the members menu's two-click kick evict the member to the main world. |
 | Spawner menu | `/spawner` opens a double chest (54 slots): the guide book, the island's luck upgrade, and all 15 mob spawners laid out by group. Clicking a mob buys it through the same flow as `/spawner buy`. |
@@ -91,14 +93,19 @@ ladder.
 | `/spawner setluck <player> <level>` | Admin: set a player's island luck. |
 | `/coreevent status` `/coreevent next` | Shows the active server event timer or the next automatic event window. |
 | `/coreevent start <event>` `/coreevent stop` | Admin (`coremc.event.admin` / `coremc.command.coreevent`): manually start or stop a configured hourly event without corrupting the automatic rotation. |
+| `/quests` `/quest` `/q` | Opens Daily Quests, Weekly Quests, shared Island Challenges, claimable rewards and streak status. |
+| `/quests daily|weekly|island|completed` | Jumps directly to one quest page. Completed quests with unavailable integration rewards stay pending instead of re-paying delivered rewards. |
+| `/corequest reset|complete|reroll|status` | Staff quest debug tools (`coremc.quest.admin`) with audit logging. |
+| `/help [category]` | Opens the CoreMC Guide GUI; category shortcuts such as `/help quests` jump to a page. |
 
 Aliases: `/island`, `/isle`, `/block`; `/store` for `/shop`; `/sp` for
 `/spawner`; `/ranks` and `/tier` for `/rank`; `/ec` and `/enderchest` for
 `/echest`; `/gc` for `/giftcard`; `/cevent` for `/coreevent`. Everyone may use `/is`, `/shop`, `/sell`, `/giftcard`,
-`/spawner`, `/rank`, `/fly`, `/echest`, and read-only `/coreevent status` / `/coreevent next`
+`/spawner`, `/rank`, `/fly`, `/echest`, `/quests`, `/help`, and read-only `/coreevent status` / `/coreevent next`
 (`coremc.command.*`). The spawner admin tools need `coremc.spawner.admin` (op),
 rank admin `coremc.rank.admin` (op), season admin `coremc.season.admin` (op),
-and event start/stop needs `coremc.event.admin` (op).
+event start/stop needs `coremc.event.admin` (op), and quest debug tools need
+`coremc.quest.admin` (op).
 
 ## Configuration
 
@@ -150,6 +157,16 @@ and event start/stop needs `coremc.event.admin` (op).
   default duration, immediate-repeat avoidance, BossBar colours, messages and
   modifier values for the nine shipped temporary events. Invalid timing or
   missing required event ids disables the event service instead of half-loading.
+- `quests.yml` — Daily, Weekly, Island Challenge and extension-point quest
+  templates. Each template has a stable id, scope, weight, requirements,
+  incompatibilities, objective actions/targets/filters and rewards. Daily and
+  weekly reset intervals are absolute timestamps, not uptime counters. Credits,
+  keys, generator, companion, OmniTool and Seasonal XP rewards are adapters and
+  remain pending when their branch service is absent.
+- `help.yml` — `/help` guide categories, concise page copy, command shortcuts
+  and the Commands page entries. Entries are checked against real plugin
+  command registration, so absent `/gens`, `/roles`, `/ah`, `/rtp` or `/afk`
+  shortcuts stay hidden on this branch.
 - `essences-data` — balances live in `plugins/CoreMC/essence-balances.yml`
   (per player: slayer, mining, farming, lifetime kills), written
   atomically on every change, corrupt files start fresh. The store file
@@ -167,6 +184,9 @@ and event start/stop needs `coremc.event.admin` (op).
 - `server-events.yml` — active/next/last hourly event state, written atomically
   so restart recovery can resume an unexpired event and keep the next automatic
   start time stable.
+- `quests-data.yml` — assigned daily/weekly quests, shared island challenges,
+  progress, completion/claim state, delivered reward keys, pending rewards,
+  reset timestamps, contributor maps, streak and onboarding state.
 - `upgrades.yml` — island upgrades (claim size, member slots) and timed
   buffs (crop growth, spawner boost, XP boost): icons, level prices,
   durations and multipliers. The whole file is validated at startup —
@@ -208,6 +228,8 @@ development sandbox; it is not a second build system.
 | `src/main/java/com/coremc/core/shop` | Coin economy + chest-GUI shop |
 | `src/main/java/com/coremc/core/spawner` | Spawner progression: config, service, command, listener, store, menu GUI |
 | `src/main/java/com/coremc/core/progression` | Island Level/Mastery, persistent Core Buffs, centralized gameplay modifiers, integration seams and hourly server events |
+| `src/main/java/com/coremc/core/quest` | Native Daily/Weekly/Island Challenge quests, progress API, reward adapters, quest GUI and admin debug command |
+| `src/main/java/com/coremc/core/guide` | `/help` CoreMC Guide GUI, command filtering and contextual help link components |
 | `src/main/java/com/coremc/core/rank` | Rank ladder: config, store, service, commands, join listener |
 | `src/main/java/com/coremc/core/island` (menus) | Island menu GUI, upgrade + buff services, buff listener, buff store |
 | `src/main/java/com/coremc/core/config` | Typed config + message service |

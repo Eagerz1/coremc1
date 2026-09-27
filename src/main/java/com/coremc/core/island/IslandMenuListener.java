@@ -188,6 +188,12 @@ public final class IslandMenuListener implements Listener {
             gui.openIslandMenu(player);
             return;
         }
+        if (slot == 53) {
+            clickSound(player);
+            player.closeInventory();
+            player.performCommand("help island-level-mastery");
+            return;
+        }
         final String branchId = branchAt(slot);
         if (branchId != null) {
             clickSound(player);
@@ -243,6 +249,10 @@ public final class IslandMenuListener implements Listener {
         } else if (slot == 16) {
             clickSound(player);
             gui.openCoreBuffs(player);
+        } else if (slot == 22) {
+            clickSound(player);
+            player.closeInventory();
+            player.performCommand("help island-level-mastery");
         }
     }
 

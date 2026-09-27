@@ -72,6 +72,22 @@ commands:
     permission: coremc.command.coreevent
     permission-message: You do not have permission to use this command.
     aliases: [cevent]
+  quests:
+    description: "CoreMC daily, weekly and island quests."
+    usage: /quests [daily|weekly|island|completed]
+    permission: coremc.command.quests
+    permission-message: You do not have permission to use this command.
+    aliases: [quest, q]
+  corequest:
+    description: "CoreMC quest admin/debug tools."
+    usage: /corequest reset|complete|reroll|status
+    permission: coremc.quest.admin
+    permission-message: You do not have permission to use this command.
+  help:
+    description: "Open the CoreMC guide."
+    usage: /help [category]
+    permission: coremc.command.help
+    permission-message: You do not have permission to use this command.
 
 permissions:
   coremc.*:
@@ -89,6 +105,9 @@ permissions:
       coremc.command.season: true
       coremc.command.essence: true
       coremc.command.coreevent: true
+      coremc.command.quests: true
+      coremc.command.help: true
+      coremc.quest.admin: true
       coremc.event.admin: true
       coremc.rank.admin: true
       coremc.season.admin: true
@@ -130,6 +149,15 @@ permissions:
   coremc.command.coreevent:
     description: Allows viewing CoreMC event status.
     default: true
+  coremc.command.quests:
+    description: Allows using /quests.
+    default: true
+  coremc.command.help:
+    description: Allows using /help.
+    default: true
+  coremc.quest.admin:
+    description: Allows quest admin/debug commands.
+    default: op
   coremc.event.admin:
     description: Allows starting and stopping CoreMC server events.
     default: op

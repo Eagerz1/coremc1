@@ -3,6 +3,7 @@ package com.coremc.core.progression;
 import com.coremc.core.config.MessageService;
 import com.coremc.core.island.Island;
 import com.coremc.core.island.IslandService;
+import com.coremc.core.quest.QuestProgressService;
 import com.coremc.core.shop.EconomyService;
 import com.coremc.core.shop.Money;
 import com.coremc.core.util.ColorUtil;
@@ -55,6 +56,7 @@ public final class IslandCoreBuffService {
     private MiningCubeIntegration miningCubes = MiningCubeIntegration.none();
     private GeneratorIntegration generators = GeneratorIntegration.none();
     private RoleIntegration roles = RoleIntegration.fallback();
+    private QuestProgressService quests;
     private final Map<UUID, Hotspot> hotspots = new LinkedHashMap<>();
     private final Map<UUID, Map<UUID, RecentRole>> recentRoles = new LinkedHashMap<>();
     private final Map<UUID, Map<String, BossBar>> bossBars = new LinkedHashMap<>();
@@ -97,6 +99,10 @@ public final class IslandCoreBuffService {
 
     public void setRoles(final RoleIntegration roles) {
         this.roles = roles == null ? RoleIntegration.fallback() : roles;
+    }
+
+    public void attachQuests(final QuestProgressService quests) {
+        this.quests = quests;
     }
 
     public boolean isUnlocked(final Island island, final String buffId) {
@@ -368,6 +374,10 @@ public final class IslandCoreBuffService {
         final int size = min + random.nextInt(Math.max(1, max - min + 1));
         miningCubes.spawnRichVein(island, location, buff, size);
         setCooldown(island, "rich-veins", seconds(buff, "cooldown-seconds", 180));
+        if (quests != null) {
+            quests.publish(player, island, "island-buff-triggered", 1L, Map.of("buff", "rich-veins"));
+            quests.publish(player, island, "rich-vein-discovery", 1L);
+        }
         if (player != null) {
             feedback(player, Sound.BLOCK_AMETHYST_BLOCK_CHIME);
         }
@@ -386,6 +396,10 @@ public final class IslandCoreBuffService {
                 location.getZ(), radius, now() + duration));
         startState(island, "deep-waters", duration);
         setCooldown(island, "deep-waters", seconds(buff, "cooldown-seconds", 300));
+        if (quests != null) {
+            quests.publish(player, island, "island-buff-triggered", 1L, Map.of("buff", "deep-waters"));
+            quests.publish(player, island, "fishing-hotspot", 1L);
+        }
         if (player != null) {
             feedback(player, Sound.ENTITY_PLAYER_SPLASH_HIGH_SPEED);
         }
@@ -400,6 +414,10 @@ public final class IslandCoreBuffService {
         }
         startState(island, "slayer-frenzy", duration(buff, 30));
         setCooldown(island, "slayer-frenzy", seconds(buff, "cooldown-seconds", 240));
+        if (quests != null) {
+            quests.publish(player, island, "island-buff-triggered", 1L, Map.of("buff", "slayer-frenzy"));
+            quests.publish(player, island, "slayer-frenzy", 1L);
+        }
         if (player != null) {
             feedback(player, Sound.ENTITY_WITHER_SPAWN);
         }
@@ -421,6 +439,9 @@ public final class IslandCoreBuffService {
         }
         startState(island, "generator-overdrive", duration);
         setCooldown(island, "generator-overdrive", seconds(buff, "cooldown-seconds", 300));
+        if (quests != null) {
+            quests.publishIsland(island, "island-buff-triggered", 1L, Map.of("buff", "generator-overdrive"));
+        }
         return true;
     }
 
@@ -432,6 +453,9 @@ public final class IslandCoreBuffService {
         }
         startState(island, "core-surge", duration(buff, 300));
         setCooldown(island, "core-surge", seconds(buff, "cooldown-seconds", 900));
+        if (quests != null) {
+            quests.publishIsland(island, "island-buff-triggered", 1L, Map.of("buff", "core-surge"));
+        }
         return true;
     }
 

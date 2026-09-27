@@ -6,6 +6,7 @@ import com.coremc.core.island.Island;
 import com.coremc.core.island.IslandPointsService;
 import com.coremc.core.island.IslandService;
 import com.coremc.core.island.IslandUpgradeConfig;
+import com.coremc.core.quest.QuestProgressService;
 import com.coremc.core.shop.EconomyService;
 import com.coremc.core.shop.Money;
 import java.io.IOException;
@@ -38,6 +39,7 @@ public final class IslandProgressionService {
     private final CoreConfig coreConfig;
     private GameplayModifierService modifiers;
     private IslandCoreBuffService coreBuffs;
+    private QuestProgressService quests;
     private final Logger logger;
     private final Map<UUID, IslandProgressionProfile> profiles = new LinkedHashMap<>();
 
@@ -81,6 +83,10 @@ public final class IslandProgressionService {
 
     public void attachCoreBuffs(final IslandCoreBuffService coreBuffs) {
         this.coreBuffs = coreBuffs;
+    }
+
+    public void attachQuests(final QuestProgressService quests) {
+        this.quests = quests;
     }
 
     public void saveNow() {
@@ -196,6 +202,9 @@ public final class IslandProgressionService {
         if (coreBuffs != null) {
             coreBuffs.recordActiveGameplay(actor, island, source.id(), units, false);
         }
+        if (quests != null) {
+            quests.publish(actor, island, "island-xp-gained", awarded, Map.of("source", source.id()));
+        }
         persist();
         return awarded;
     }
@@ -224,6 +233,15 @@ public final class IslandProgressionService {
     /** Clean API for OmniTool level/progression XP. */
     public double omniToolProgressionMultiplier(final Island island) {
         return modifiers == null ? 1.0D : modifiers.omniToolProgressionMultiplier(island);
+    }
+
+    /** Grants Sky Tokens from systems such as quests. */
+    public void grantSkyTokens(final Island island, final long amount) {
+        if (!config.enabled() || island == null || amount <= 0L) {
+            return;
+        }
+        profile(island).addSkyTokens(amount);
+        persist();
     }
 
     /** Direct XP awards for non-repeatable milestones. */
@@ -423,6 +441,9 @@ public final class IslandProgressionService {
             return;
         }
         profile(island).addDiscovery(discoveryId, amount);
+        if (quests != null) {
+            quests.publishIsland(island, "discovery-found", amount, Map.of("discovery", discoveryId));
+        }
         persist();
     }
 

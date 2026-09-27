@@ -43,6 +43,8 @@ public final class IslandService {
     private long nextSlot;
     /** Systems that keep per-island state (e.g. spawners) and must clean up on delete. */
     private final List<Consumer<Island>> deleteListeners = new ArrayList<>();
+    /** Systems that react to new islands (quests/onboarding, later generators). */
+    private final List<java.util.function.BiConsumer<Player, Island>> createListeners = new ArrayList<>();
 
     public IslandService(final JavaPlugin plugin, final CoreConfig config, final MessageService messages,
                          final IslandWorldService worlds, final SchematicService schematics,
@@ -117,6 +119,11 @@ public final class IslandService {
         deleteListeners.add(listener);
     }
 
+    /** Registers a callback that runs after an island is created and registered. */
+    public void onCreate(final java.util.function.BiConsumer<Player, Island> listener) {
+        createListeners.add(listener);
+    }
+
     public int count() {
         return byOwner.size();
     }
@@ -180,6 +187,9 @@ public final class IslandService {
         final int pasted = schematics.paste(
                 world, schematic, centerX, baseY, centerZ, island.borderSize(), config.chestItems());
         register(island);
+        for (final java.util.function.BiConsumer<Player, Island> listener : createListeners) {
+            listener.accept(player, island);
+        }
         teleportHome(player, island);
         messages.sendPrefixed(player, "island.created");
         plugin.getLogger().info(player.getName() + " created island slot " + slot
