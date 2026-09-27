@@ -1,0 +1,177 @@
+# ======================================================
+#  CoreMC — chat format, ranks and chat colours
+#
+#  Final public-chat layout:
+#      <RANK> <TAG> Player: Message
+#
+#  Standard Minecraft formatting only: '&' colour codes and legacy hex
+#  (rendered as the §x§R§R§G§G§B§B form Paper understands).
+#  MiniMessage is intentionally NOT used.
+# ======================================================
+
+chat:
+  # Master switch for CoreMC chat formatting. false = Paper's default
+  # chat is left completely untouched.
+  enabled: true
+
+  # The format string. Tokens: {rank} {tag} {player} {message}
+  # Everything before {message} has its whitespace collapsed, so a
+  # missing rank or tag never leaves a double space behind.
+  # Change the separators here (e.g. "&8| " instead of "&7: ").
+  format: "{rank} {tag} {player}&7:&r {message}"
+
+  # true  = render the player's display name (keeps staff/nick colours)
+  # false = always render the plain account name
+  use-display-name: true
+
+  # Priority CoreMC hooks Paper's AsyncChatEvent at. CoreMC always
+  # registers with ignore-cancelled = true, so any moderation plugin
+  # (including the staff mute system) that cancels chat at an earlier
+  # priority stops the message BEFORE cosmetic formatting runs.
+  # LOWEST | LOW | NORMAL | HIGH | HIGHEST   (MONITOR is refused)
+  event-priority: HIGH
+
+  # ---- rank prefixes -------------------------------------------------
+  # Resolved on the MAIN thread and cached, so async chat never touches
+  # permissions. Highest weight with a matching permission wins; if none
+  # match, the player's persisted store rank id is looked up here.
+  rank:
+    default-prefix: ""
+    use-profile-rank: true
+    refresh-seconds: 60
+  ranks:
+    owner:
+      permission: "coremc.rank.owner"
+      prefix: "&4[OWNER]"
+      weight: 100
+    admin:
+      permission: "coremc.rank.admin"
+      prefix: "&c[ADMIN]"
+      weight: 90
+    mod:
+      permission: "coremc.rank.mod"
+      prefix: "&2[MOD]"
+      weight: 80
+    helper:
+      permission: "coremc.rank.helper"
+      prefix: "&a[HELPER]"
+      weight: 70
+    mvp:
+      permission: "coremc.rank.mvp"
+      prefix: "&b[MVP]"
+      weight: 40
+    vip:
+      permission: "coremc.rank.vip"
+      prefix: "&6[VIP]"
+      weight: 30
+    member:
+      permission: ""
+      prefix: ""
+      weight: 0
+
+  # ---- safety --------------------------------------------------------
+  settings:
+    # Messages longer than this are clamped before styling.
+    max-message-length: 256
+    # Maximum number of colour stops in a gradient (bounds the work and
+    # the packet size for very long messages).
+    max-gradient-segments: 64
+    # Permission required for the bold toggle.
+    bold-permission: "coremc.chatcolour.bold"
+    # true = everyone may use bold without the permission.
+    bold-free: false
+    # Players WITHOUT this permission cannot inject '&' colour codes into
+    # their own messages (they are stripped). '§' is always stripped.
+    format-permission: "coremc.chat.format"
+    # Sample text used by the /chatcolour previews.
+    preview-sample: "The quick brown fox!"
+
+  # ---- eight solid message colours ------------------------------------
+  # id (key) is the stable id persisted on the profile.
+  colours:
+    white:
+      display: "&fWhite"
+      colour: "&f"
+      material: WHITE_WOOL
+      default-owned: true
+    gray:
+      display: "&7Gray"
+      colour: "&7"
+      material: LIGHT_GRAY_WOOL
+      default-owned: true
+    red:
+      display: "&cRed"
+      colour: "&c"
+      material: RED_WOOL
+      default-owned: false
+    gold:
+      display: "&6Gold"
+      colour: "&6"
+      material: ORANGE_WOOL
+      default-owned: false
+    yellow:
+      display: "&eYellow"
+      colour: "&e"
+      material: YELLOW_WOOL
+      default-owned: false
+    green:
+      display: "&aGreen"
+      colour: "&a"
+      material: LIME_WOOL
+      default-owned: false
+    aqua:
+      display: "&bAqua"
+      colour: "&b"
+      material: LIGHT_BLUE_WOOL
+      default-owned: false
+    light_purple:
+      display: "&dLight Purple"
+      colour: "&d"
+      material: MAGENTA_WOOL
+      default-owned: false
+
+  # ---- five gradients (legacy hex output, never MiniMessage) ----------
+  gradients:
+    sunset:
+      display: "&cSun&6set"
+      from: "#ff5555"
+      to: "#ffaa00"
+      material: ORANGE_STAINED_GLASS
+      default-owned: false
+    ocean:
+      display: "&bOce&9an"
+      from: "#55ffff"
+      to: "#5555ff"
+      material: LIGHT_BLUE_STAINED_GLASS
+      default-owned: false
+    emerald:
+      display: "&2Eme&arald"
+      from: "#00aa00"
+      to: "#55ff55"
+      material: GREEN_STAINED_GLASS
+      default-owned: false
+    royal:
+      display: "&5Ro&dyal"
+      from: "#aa00aa"
+      to: "#ff55ff"
+      material: PURPLE_STAINED_GLASS
+      default-owned: false
+    crimson:
+      display: "&4Crim&cson"
+      from: "#aa0000"
+      to: "#ff5555"
+      material: RED_STAINED_GLASS
+      default-owned: false
+
+  # ---- /chatcolour GUI layout ----------------------------------------
+  gui:
+    title: "&b&lCOREMC &8» &fChat Colour"
+    size: 54
+    colour-slots: [10, 11, 12, 13, 14, 15, 16, 17]
+    gradient-slots: [29, 30, 31, 32, 33]
+    bold-slot: 48
+    reset-slot: 50
+    preview-slot: 22
+    close-slot: 53
+    locked-material: GRAY_DYE
+    sounds: true

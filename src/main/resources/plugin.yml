@@ -72,6 +72,17 @@ commands:
     usage: /tokenshop
     permission: coremc.command.tokenshop
     permission-message: "&cYou do not have permission to use this command."
+  tags:
+    description: Choose your cosmetic chat tag (staff can grant/revoke).
+    usage: /tags [select <id>|clear|list|grant <player> <id>|revoke <player> <id>|check <player>|reload]
+    permission: coremc.command.tags
+    permission-message: "&cYou do not have permission to use this command."
+  chatcolour:
+    description: Choose your chat message colour or gradient.
+    usage: /chatcolour [set <id>|bold|reset|list|grant <player> <id>|revoke <player> <id>|check <player>]
+    permission: coremc.command.chatcolour
+    permission-message: "&cYou do not have permission to use this command."
+    aliases: [chatcolor, cc]
 
 permissions:
   coremc.*:
@@ -98,6 +109,14 @@ permissions:
       coremc.command.crates: true
       coremc.command.shop: true
       coremc.command.tokenshop: true
+      coremc.command.tags: true
+      coremc.command.chatcolour: true
+      coremc.admin.tags: true
+      coremc.admin.chatcolour: true
+      coremc.tag.*: true
+      coremc.chatcolour.*: true
+      coremc.chatcolour.bold: true
+      coremc.chat.format: true
       coremc.admin.credits: true
       coremc.admin.skytokens: true
       coremc.admin.money: true
@@ -161,4 +180,28 @@ permissions:
     default: op
   coremc.island.bypass:
     description: Allows bypassing island border protection.
+    default: op
+  coremc.command.tags:
+    description: Allows opening the tag menu and equipping owned tags.
+    default: true
+  coremc.command.chatcolour:
+    description: Allows opening the chat colour menu.
+    default: true
+  coremc.admin.tags:
+    description: Allows granting, revoking, checking and clearing tags.
+    default: op
+  coremc.admin.chatcolour:
+    description: Allows granting, revoking, checking and resetting chat styles.
+    default: op
+  coremc.tag.*:
+    description: Grants every cosmetic tag.
+    default: false
+  coremc.chatcolour.*:
+    description: Grants every chat colour and gradient.
+    default: false
+  coremc.chatcolour.bold:
+    description: Allows toggling bold chat.
+    default: false
+  coremc.chat.format:
+    description: Allows typing '&' colour codes directly in chat.
     default: op

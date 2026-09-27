@@ -165,6 +165,18 @@ public final class CrateService {
                     return Optional.empty();
                 }
             }
+            case TAG -> {
+                if (plugin.tags().byId(refId).isEmpty()) {
+                    warn(crateId, "unknown cosmetic tag '" + refId + "'");
+                    return Optional.empty();
+                }
+            }
+            case CHAT_STYLE -> {
+                if (plugin.chatStyles().byId(refId).isEmpty()) {
+                    warn(crateId, "unknown chat style '" + refId + "'");
+                    return Optional.empty();
+                }
+            }
         }
         final CrateReward reward = new CrateReward(type, Math.max(0, weight), rarity, currency,
                 Math.max(1L, min), Math.max(1L, max), key, amount, refId, material, "");
@@ -212,6 +224,12 @@ public final class CrateService {
                             : stack.getItemMeta().getDisplayName())
                     .orElse(color + reward.refId());
             case ITEM -> color + prettify(reward.material()) + (reward.amount() > 1 ? " x" + reward.amount() : "");
+            case TAG -> plugin.tags().byId(reward.refId())
+                    .map(tag -> tag.display() + color + " tag")
+                    .orElse(color + reward.refId() + " tag");
+            case CHAT_STYLE -> plugin.chatStyles().byId(reward.refId())
+                    .map(style -> style.display() + color + " chat style")
+                    .orElse(color + reward.refId() + " chat style");
         };
     }
 
@@ -290,6 +308,18 @@ public final class CrateService {
                 final Material icon = Material.matchMaterial(reward.material());
                 yield icon == null || icon.isAir() ? Material.STONE : icon;
             }
+            case TAG -> plugin.tags().byId(reward.refId())
+                    .map(tag -> {
+                        final Material icon = Material.matchMaterial(tag.material());
+                        return icon == null || icon.isAir() ? Material.NAME_TAG : icon;
+                    })
+                    .orElse(Material.NAME_TAG);
+            case CHAT_STYLE -> plugin.chatStyles().byId(reward.refId())
+                    .map(style -> {
+                        final Material icon = Material.matchMaterial(style.material());
+                        return icon == null || icon.isAir() ? Material.WHITE_WOOL : icon;
+                    })
+                    .orElse(Material.WHITE_WOOL);
         };
     }
 
@@ -389,6 +419,18 @@ public final class CrateService {
             }
             case KEY -> {
                 plugin.keys().giveKeys(player, reward.key(), reward.amount());
+                return ColorUtil.colorize(reward.label());
+            }
+            case TAG -> {
+                // Cosmetic unlock: persisted by stable id, write-through.
+                plugin.tags().grant(player, reward.refId());
+                plugin.messages().sendPrefixed(player, "tags.unlocked", Map.of(
+                        "tag", plugin.tags().byId(reward.refId())
+                                .map(tag -> ColorUtil.colorize(tag.display())).orElse(reward.refId())));
+                return ColorUtil.colorize(reward.label());
+            }
+            case CHAT_STYLE -> {
+                plugin.chatStyles().grant(player, reward.refId());
                 return ColorUtil.colorize(reward.label());
             }
             default -> {

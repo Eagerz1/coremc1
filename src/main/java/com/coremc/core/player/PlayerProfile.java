@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Persistent per-player data for CoreMC (schema version 6).
+ * Persistent per-player data for CoreMC (schema version 7).
  *
  * Schema versions: 1 = join stats only; 2 = + currencies, single
  * role/omnitool slots, island association, placeholders; 3 = per-role
@@ -14,7 +14,8 @@ import java.util.UUID;
  * 4 = + spawner unlock kill counters;
  * 5 = + OmniTool purchased upgrade levels;
  * 6 = + custom enchant levels, souls, tags, companions, quests, playtime,
- * chat style, lifetime stats, subscription claims, store rank.
+ * chat style, lifetime stats, subscription claims, store rank;
+ * 7 = + owned chat styles (cosmetic chat colour/gradient ownership).
  * All loads are tolerant: unknown/missing fields become defaults.
  *
  * A profile is created the first time a player connects and survives
@@ -34,7 +35,7 @@ import java.util.UUID;
 public final class PlayerProfile {
 
     /** Current on-disk schema version. */
-    public static final int SCHEMA_VERSION = 6;
+    public static final int SCHEMA_VERSION = 7;
 
     private final UUID uuid;
 
@@ -99,6 +100,8 @@ public final class PlayerProfile {
     private String chatColor = "none";
     /** Whether the chat colour applies bold. */
     private boolean chatBold;
+    /** Owned chat style ids (solid colours and gradients), schema v7. */
+    private final java.util.Set<String> ownedChatStyles = new java.util.LinkedHashSet<>();
     /** Generic lifetime stats (blocks-mined, crops-harvested, ...). */
     private final Map<String, Long> stats = new LinkedHashMap<>();
     /** Subscription tier -> last reward-claim day-key (claim-once guard). */
@@ -198,10 +201,19 @@ public final class PlayerProfile {
         final Object tagsObject = map.get("owned-tags");
         if (tagsObject instanceof java.util.List<?> tagList) {
             for (final Object entry : tagList) {
-                profile.ownedTags.add(String.valueOf(entry));
+                final String id = String.valueOf(entry).trim();
+                if (!id.isEmpty()) {
+                    // Stable ids are lowercase; legacy mixed-case entries
+                    // migrate in place without losing ownership.
+                    profile.ownedTags.add(id.toLowerCase(java.util.Locale.ROOT));
+                }
             }
         }
-        profile.equippedTag = String.valueOf(map.getOrDefault("equipped-tag", "none"));
+        profile.equippedTag =
+                String.valueOf(map.getOrDefault("equipped-tag", "none")).trim().toLowerCase(java.util.Locale.ROOT);
+        if (profile.equippedTag.isEmpty()) {
+            profile.equippedTag = "none";
+        }
         loadStringObjectMap(map.get("companions"), profile.companions);
         profile.equippedCompanion = String.valueOf(map.getOrDefault("equipped-companion", "none"));
         profile.questDay = String.valueOf(map.getOrDefault("quest-day", ""));
@@ -219,8 +231,23 @@ public final class PlayerProfile {
                 profile.playtimeClaimed.add(String.valueOf(entry));
             }
         }
-        profile.chatColor = String.valueOf(map.getOrDefault("chat-color", "none"));
+        profile.chatColor =
+                String.valueOf(map.getOrDefault("chat-color", "none")).trim().toLowerCase(java.util.Locale.ROOT);
+        if (profile.chatColor.isEmpty()) {
+            profile.chatColor = "none";
+        }
         profile.chatBold = Boolean.parseBoolean(String.valueOf(map.getOrDefault("chat-bold", "false")));
+        // v7: owned chat styles. Absent on v6 files -> empty set, which the
+        // cosmetics services read as "config defaults + permissions only".
+        final Object chatStylesObject = map.get("owned-chat-styles");
+        if (chatStylesObject instanceof java.util.List<?> styleList) {
+            for (final Object entry : styleList) {
+                final String id = String.valueOf(entry).trim();
+                if (!id.isEmpty()) {
+                    profile.ownedChatStyles.add(id.toLowerCase(java.util.Locale.ROOT));
+                }
+            }
+        }
         final Object statsObject = map.get("stats");
         if (statsObject instanceof Map<?, ?> rawStats) {
             for (final Map.Entry<?, ?> entry : rawStats.entrySet()) {
@@ -289,6 +316,7 @@ public final class PlayerProfile {
         map.put("playtime-claimed", new java.util.ArrayList<>(playtimeClaimed));
         map.put("chat-color", chatColor);
         map.put("chat-bold", chatBold);
+        map.put("owned-chat-styles", new java.util.ArrayList<>(ownedChatStyles));
         map.put("stats", new LinkedHashMap<>(stats));
         map.put("subscription-claims", new LinkedHashMap<>(subscriptionClaims));
         map.put("rank", rankId);
@@ -499,7 +527,23 @@ public final class PlayerProfile {
     }
 
     public boolean addTag(final String tagId) {
-        return ownedTags.add(tagId);
+        if (tagId == null || tagId.isBlank()) {
+            return false;
+        }
+        return ownedTags.add(tagId.toLowerCase(java.util.Locale.ROOT).trim());
+    }
+
+    /** Revokes an owned tag id; returns false when it was not owned. */
+    public boolean removeTag(final String tagId) {
+        if (tagId == null) {
+            return false;
+        }
+        return ownedTags.remove(tagId.toLowerCase(java.util.Locale.ROOT).trim());
+    }
+
+    /** Whether this profile explicitly owns {@code tagId} (permissions aside). */
+    public boolean hasTag(final String tagId) {
+        return tagId != null && ownedTags.contains(tagId.toLowerCase(java.util.Locale.ROOT).trim());
     }
 
     public String equippedTag() {
@@ -507,7 +551,9 @@ public final class PlayerProfile {
     }
 
     public void equippedTag(final String tagId) {
-        this.equippedTag = tagId == null || tagId.isBlank() ? "none" : tagId;
+        this.equippedTag = tagId == null || tagId.isBlank()
+                ? "none"
+                : tagId.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     // --- companions ---
@@ -595,7 +641,9 @@ public final class PlayerProfile {
     }
 
     public void chatColor(final String chatColor) {
-        this.chatColor = chatColor == null || chatColor.isBlank() ? "none" : chatColor;
+        this.chatColor = chatColor == null || chatColor.isBlank()
+                ? "none"
+                : chatColor.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     public boolean chatBold() {
@@ -604,6 +652,35 @@ public final class PlayerProfile {
 
     public void chatBold(final boolean chatBold) {
         this.chatBold = chatBold;
+    }
+
+    // --- owned chat styles (schema v7) ---
+
+    /** Chat style ids this profile explicitly owns (grants/purchases). */
+    public java.util.Set<String> ownedChatStyles() {
+        return java.util.Set.copyOf(ownedChatStyles);
+    }
+
+    /** Grants a chat style id; returns false when already owned. */
+    public boolean addChatStyle(final String styleId) {
+        if (styleId == null || styleId.isBlank()) {
+            return false;
+        }
+        return ownedChatStyles.add(styleId.toLowerCase(java.util.Locale.ROOT).trim());
+    }
+
+    /** Revokes a chat style id; returns false when it was not owned. */
+    public boolean removeChatStyle(final String styleId) {
+        if (styleId == null) {
+            return false;
+        }
+        return ownedChatStyles.remove(styleId.toLowerCase(java.util.Locale.ROOT).trim());
+    }
+
+    /** Whether this profile explicitly owns {@code styleId} (permissions aside). */
+    public boolean hasChatStyle(final String styleId) {
+        return styleId != null
+                && ownedChatStyles.contains(styleId.toLowerCase(java.util.Locale.ROOT).trim());
     }
 
     // --- stats ---

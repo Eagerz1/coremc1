@@ -21,8 +21,11 @@ contains the complete from-scratch rebuild of the plugin.
 | Crates | Six config-driven crates with physical PDC-tagged keys, weighted rolls, pity counters, preview GUIs; keys are consumed exactly once per open. |
 | Shop & economy | Three currencies (Core money, Credits, Sky Tokens), `/shop` category GUIs, `/tokenshop` exchange, admin grant commands; every purchase is withdraw-then-deliver with overflow/refund safety. |
 | Protection & security | Island build/break/bucket/hanging/entity protection, ownership checks on registered blocks, GUI click/drag theft sweeps, soulbound item guards, kill-cap anti-abuse, economy overflow checks. |
+| Chat tags (`/tags`) | 20 config-driven cosmetic tags (`grinder`…`legend`) in a CoreMC GUI with owned/locked/selected/clear states. Ownership and selection persist by **stable id** (never display name); unlock hooks for crates (`TAG` reward), store and events; staff `/tags grant|revoke|check|clear|reload`. |
+| Chat colours (`/chatcolour`, `/chatcolor`) | Eight solid colours + five gradients (legacy `§x` hex — **no MiniMessage**), bold toggle, live preview and reset. Only stable style ids + a bold flag are persisted; ownership is grantable by crates (`CHAT_STYLE` reward), store or staff. |
+| Chat format | `<RANK> <TAG> Player: Message`, fully config-driven (`chat.yml`: format string, separators, rank table, GUI slots, safety limits). Rendered via Paper's async chat **renderer** at a configurable priority with `ignore-cancelled` — mutes/moderation always win, and chat is never duplicated. |
 | First-join welcome, `/coremc`, `/profile`, `/heal` | Branded welcome; `/coremc info|reload|help`; profiles; self/other heal. |
-| Branding | Standard Minecraft `&` colour codes only (MiniMessage is intentionally not used). Bundled YAML defaults merge into existing config files, preserving admin values. |
+| Branding | Standard Minecraft `&` colour codes and legacy hex only (MiniMessage is intentionally not used). Bundled YAML defaults merge into existing config files, preserving admin values. |
 
 Note on command permissions: on Paper, commands whose permission you lack
 (e.g. `/heal` for non-ops) are removed from the client command tree and

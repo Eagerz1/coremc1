@@ -47,6 +47,7 @@ server log, plugin data files) is uploaded as a workflow artifact named
 | 8 | Outsider cannot dig island blocks; block remains intact; branded protection denial |
 | 9 | `/gens` market, cobble generator purchase/placement/harvest |
 | 10 | Void rescue teleports the player home and prevents death |
+| 10b | Chat cosmetics: `/tags` 54-slot GUI with all 20 tags, locked → granted → selected states, `/chatcolour` GUI (8 solids, 5 gradients, preview, bold, reset), the exact `<RANK> <TAG> Player: Message` layout as seen by a **second player**, clean spacing with no tag/rank, gradient hex + Unicode/punctuation integrity, `&`-injection prevention, staff grant/revoke/check, and an explicit **no duplicate chat** assertion |
 | 11 | Graceful stop + clean boot: balances, role, kill stats, pity counter, dotted enchant id, island world/upgrades/buffs all persist byte-for-byte |
 | 12 | Full-session audit: zero server `ERROR` lines and zero CoreMC warnings/exceptions |
 
@@ -84,7 +85,7 @@ Notes / vanilla semantics the harness accounts for:
 ## Configuration / data compatibility
 
 - Bundled `config.yml`, `messages.yml`, `shop.yml`, `crates.yml`,
-  `enchants.yml` and `themes.yml` are **merged** into any existing disk
+  `enchants.yml`, `themes.yml`, `tags.yml` and `chat.yml` are **merged** into any existing disk
   file on load: new defaults appear, admin-set values are never
   overwritten.
 - Player profiles (`plugins/CoreMC/profiles/`), islands
@@ -92,3 +93,8 @@ Notes / vanilla semantics the harness accounts for:
   (`plugins/CoreMC/data/`) are YAML on disk with atomic temp-file writes;
   schema evolution is additive and legacy files continue to load
   (covered by the profile/datastore unit tests and by phase 11).
+- Cosmetics (tags, chat colours/gradients, bold) are stored as **stable
+  ids** plus a boolean — never as rendered output or display names — so
+  restyling a tag or gradient in config can never invalidate ownership.
+  `CosmeticMigration` maps legacy display-name values back onto ids and is
+  idempotent; unknown ids are kept, never deleted.
