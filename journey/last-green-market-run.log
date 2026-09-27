@@ -1,0 +1,135 @@
+[setup] black-market.yml written, first opening at offset minute 608
+[server] booting (boot1)...
+[server] boot1 ready
+[rcon] connected
+  PASS  boot1: zero server ERROR lines (excl. platform noise)
+  PASS  boot1: zero CoreMC warn/error/exception lines
+
+=== PHASE 1: closed board, /bm alias, /ah untouched ===
+  PASS  owner spawns
+  PASS  /ah is NOT a CoreMC command — the auction house is untouched
+  PASS  /blackmarket opens
+  PASS  the closed board says so
+  PASS  and shows the next opening time
+  PASS  and explains what this is
+  PASS  and has the recent-sales board
+  PASS  the /bm alias works
+  PASS  /coremarket status agrees
+
+=== PHASE 2: the scheduled opening (wall clock, deduplicated announcements) ===
+  PASS  the 1-minute opening warning arrives
+  PASS  the opening broadcast arrives
+  PASS  exactly ONE warning — no spam
+  PASS  exactly ONE opening broadcast
+  PASS  the rotation persisted with its grid id
+
+=== PHASE 3: the offers board: 6 offers, spec lore, locks ===
+  PASS  the open board renders
+  PASS  the header says OPEN with the closing time
+  PASS  exactly the configured 6 offers are on the board (5-7 rule)
+  PASS  the Generator Core offer is present
+  PASS  lore: sᴛᴏᴄᴋ: 5/5
+  PASS  lore: ʟɪᴍɪᴛ: 1 ᴘᴇʀ ᴘʟᴀʏᴇʀ
+  PASS  lore: ᴘʀɪᴄᴇ: $750,000 with the green ✔
+  PASS  lore: the click call to action
+  PASS  an unaffordable offer wears the red ✖
+  PASS  a requirement-gated offer fails closed: red ✖ + ʟᴏᴄᴋᴇᴅ
+  PASS  and names the missing collection
+
+=== PHASE 4: unaffordable purchase: loud failure, zero debit ===
+  PASS  the failure states itself
+  PASS  and debits nothing
+  PASS  a locked offer refuses with its reason
+  PASS  and also debits nothing
+
+=== PHASE 5: two clients contend for the final unit ===
+  PASS  the rival buyer joins
+  PASS  both see the 1-stock Core Fragment
+  PASS  EXACTLY one of them bought the last unit
+  PASS  the other was told it sold out
+  PASS  exactly one Core Fragment item exists between them
+  PASS  exactly one price left the two balances combined
+  PASS  the persisted stock hit 0
+
+=== PHASE 6: per-player limits under rapid clicks ===
+[JBuyer] connection ended
+  PASS  the limit of 2 allows exactly 2
+  PASS  the third click is refused with the limit
+  PASS  exactly two bait items delivered
+
+=== PHASE 7: full inventory: debit once, drop nothing, /rewards catches up ===
+  PASS  the purchase still succeeds
+  PASS  the reward is saved, never dropped
+  PASS  debited exactly once
+  PASS  the resin is NOT in the full inventory
+  PASS  /rewards delivers it
+  PASS  the resin arrived exactly once
+
+=== PHASE 8: restart mid-window: rotation, stock and limits survive ===
+  PASS  the rotation id is persisted
+[JOwner] connection ended
+[server] stopping...
+[server] exited
+[server] booting (boot2)...
+[server] boot2 ready
+[rcon] connected
+  PASS  boot2: zero server ERROR lines (excl. platform noise)
+  PASS  boot2: zero CoreMC warn/error/exception lines
+  PASS  owner rejoins after the restart
+  PASS  the SAME rotation survived — no duplicate roll
+  PASS  the sold-out stock stayed sold out
+  PASS  the balance survived
+  PASS  the market is still open mid-window
+  PASS  the board still shows 0/1 sold out
+  PASS  per-player limits survived the restart
+
+=== PHASE 9: Dark Auction: bids, anti-snipe, broke+offline winner fallback ===
+  PASS  the third bidder joins
+  PASS  admin starts the session
+  PASS  the session announces itself
+  PASS  lot 1 is called with item, rarity, bid and timer
+  PASS  a boss bar countdown appeared
+  PASS  a low bid names the next valid amount
+  PASS  an unbacked bid is refused
+  PASS  a valid bid lands (250k shorthand)
+  PASS  bidding charges NOTHING
+  PASS  the auction GUI shows the current bid
+  PASS  and the next valid bid
+  PASS  the configured bid buttons render
+  PASS  the snipe bid lands
+[JOwner] connection ended
+  PASS  the leader spent below their own bid
+  PASS  anti-snipe extended the lot past its nominal end
+  PASS  settlement fell back to the OFFLINE runner-up at THEIR bid
+  PASS  the broke leader was never charged for the lot
+  PASS  settled exactly once
+  PASS  the winner rejoins
+  PASS  the won lot delivers on login
+  PASS  the winner paid exactly the winning bid
+  PASS  the Generator Core is real and PDC-tagged
+  PASS  the next lot follows after the break
+  PASS  an unbid lot cancels with nobody charged
+  PASS  the session ends cleanly
+
+=== PHASE 10: admin stop mid-lot, audit trail, final checks ===
+  PASS  a second session can start (no overlap leak)
+  PASS  its first lot opens
+  PASS  admin stops the session mid-lot
+  PASS  the cancelled lot charged NOBODY
+  PASS  status shows no session
+  PASS  /ah is still untouched at the end
+  PASS  the audit log records MARKET_BUY
+  PASS  the audit log records AUCTION_WIN
+  PASS  the audit log records AUCTION_PASS
+  PASS  the audit log records AUCTION_CANCELLED
+  PASS  the audit log records ADMIN_MARKET
+  PASS  5 purchases audited: contested + 2 bait + resin + ghost bait — exactly as executed
+  PASS  sale and lot history persisted for support/balancing
+[JOwner] connection ended
+[JGhost] connection ended
+[server] stopping...
+[server] exited
+  PASS  final: zero server ERROR lines (excl. platform noise)
+  PASS  final: zero CoreMC warn/error/exception lines
+
+RESULT  pass=97 fail=0

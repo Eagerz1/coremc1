@@ -89,6 +89,17 @@ import com.coremc.core.reward.PendingRewards;
 import com.coremc.core.reward.RewardDeliverer;
 import com.coremc.core.reward.RewardType;
 import com.coremc.core.reward.YamlPendingStore;
+import com.coremc.core.market.BlackMarketConfig;
+import com.coremc.core.market.BukkitMarketEvents;
+import com.coremc.core.market.DarkAuctionService;
+import com.coremc.core.market.MarketAdminCommand;
+import com.coremc.core.market.MarketBank;
+import com.coremc.core.market.MarketCommand;
+import com.coremc.core.market.MarketGui;
+import com.coremc.core.market.MarketListener;
+import com.coremc.core.market.MarketRequirements;
+import com.coremc.core.market.MarketService;
+import com.coremc.core.market.MarketState;
 import com.coremc.core.store.BundleCommand;
 import com.coremc.core.store.BundleConfig;
 import com.coremc.core.store.PreviewGui;
@@ -145,6 +156,8 @@ public final class CoreMCPlugin extends JavaPlugin {
     private StoreConfig storeConfig;
     private PendingRewards pendingRewards;
     private LootboxService lootboxService;
+    private MarketService marketService;
+    private DarkAuctionService darkAuction;
 
     @Override
     public void onEnable() {
@@ -383,6 +396,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         }
         StoreGui storeGui = null;
         RewardDeliverer rewardDeliverer = null;
+        TransactionLog storeTransactionLog = null;
         if (creditService != null && economy != null && crateConfig.enabled()
                 && lootboxConfig.enabled() && bundleConfig != null) {
             try {
@@ -400,6 +414,7 @@ public final class CoreMCPlugin extends JavaPlugin {
                 final LootboxItems lootboxItems = new LootboxItems(itemTags);
                 final TransactionLog transactionLog = new TransactionLog(
                         Path.of(getDataFolder().getPath(), "store-transactions.log"), getLogger());
+                storeTransactionLog = transactionLog;
                 rewardDeliverer = new RewardDeliverer(economy, skyTokenService, creditService,
                         crateConfig, keyItems, lootboxConfig, lootboxItems, itemTags, getLogger());
                 final PurchaseService purchaseService = new PurchaseService(creditService,
@@ -478,6 +493,90 @@ public final class CoreMCPlugin extends JavaPlugin {
                 getLogger().warning("Could not save island points: " + exception.getMessage());
             }
         }, 20L * 60, 20L * 60);
+
+        // Black Market + Dark Auction: a wall-clock-scheduled rotating
+        // economy sink on top of the store's reward/pending pipeline.
+        // A broken black-market.yml disables the market with one loud
+        // line; /blackmarket then answers "unavailable" instead of
+        // crashing. Requirements are an adapter registry, so Quests /
+        // Season Journey / Collections (other branches) plug in later.
+        MarketGui marketGui = null;
+        MarketCommand marketCommand = null;
+        MarketAdminCommand marketAdminCommand = null;
+        if (pendingRewards != null && rewardDeliverer != null && storeTransactionLog != null
+                && economy != null) {
+            BlackMarketConfig marketConfig = BlackMarketConfig.disabled();
+            try {
+                final BlackMarketConfig parsedMarket = new BlackMarketConfig(this);
+                final java.util.Set<String> marketKeyIds = new java.util.LinkedHashSet<>();
+                for (final var key : crateConfig.keys()) {
+                    marketKeyIds.add(key.id());
+                }
+                final java.util.Set<String> marketBoxIds = new java.util.LinkedHashSet<>();
+                for (final var box : lootboxConfig.all()) {
+                    marketBoxIds.add(box.id());
+                }
+                parsedMarket.load(marketKeyIds, marketBoxIds);
+                marketConfig = parsedMarket;
+            } catch (final RuntimeException exception) {
+                getLogger().severe("Black Market disabled — " + exception.getMessage());
+                marketConfig = BlackMarketConfig.disabled();
+            }
+            if (marketConfig.enabled()) {
+                final MarketState marketState = new MarketState(
+                        Path.of(getDataFolder().getPath(), "black-market-data.yml"),
+                        marketConfig.historyLimit(), getLogger());
+                marketState.load();
+                final MarketBank marketBank =
+                        new MarketBank(economy, skyTokenService, creditService);
+                final MarketRequirements marketRequirements = new MarketRequirements();
+                // built-in progression gates on this branch; other
+                // branches register their own types on this registry
+                marketRequirements.register("island",
+                        (playerId, value) -> islands.islandOf(playerId) != null);
+                marketRequirements.register("island-points", (playerId, value) -> {
+                    final var island = islands.islandOf(playerId);
+                    return island != null
+                            && islandPoints.points(island) >= Double.parseDouble(value);
+                });
+                final com.coremc.core.market.MarketAnnouncer marketAnnouncer =
+                        (key, placeholders) -> getServer().broadcastMessage(
+                                com.coremc.core.util.ColorUtil.colorize(
+                                        messages.get(key, placeholders)));
+                this.marketService = new MarketService(marketConfig, marketState, marketBank,
+                        marketRequirements, pendingRewards, rewardDeliverer,
+                        storeTransactionLog, messages, marketAnnouncer,
+                        new BukkitMarketEvents(), new java.util.Random(),
+                        System::currentTimeMillis, getLogger());
+                this.darkAuction = new DarkAuctionService(this, marketConfig, marketState,
+                        economy, pendingRewards, rewardDeliverer, storeTransactionLog,
+                        messages, marketAnnouncer, new BukkitMarketEvents(),
+                        new java.util.Random(), System::currentTimeMillis, getLogger());
+                marketGui = new MarketGui(marketService, darkAuction);
+                pluginManager.registerEvents(new MarketListener(marketGui, marketService,
+                        darkAuction, System::currentTimeMillis), this);
+                marketService.start(this, darkAuction);
+                marketCommand = new MarketCommand(marketGui, marketService, darkAuction,
+                        messages, System::currentTimeMillis);
+                marketAdminCommand = new MarketAdminCommand(marketService, darkAuction,
+                        storeTransactionLog, messages, System::currentTimeMillis);
+                getLogger().info("Black Market active: " + marketConfig.offers().size()
+                        + " offers across the pools, " + marketConfig.lots().size()
+                        + " auction lots, opens every "
+                        + marketConfig.schedule().openEveryMillis() / 60_000 + "m for "
+                        + marketConfig.schedule().openForMillis() / 60_000 + "m.");
+            }
+        }
+        registerSimpleCommand("blackmarket", marketCommand != null ? marketCommand
+                : new MarketCommand(null, null, null, messages, System::currentTimeMillis));
+        if (marketAdminCommand != null) {
+            registerSimpleCommand("coremarket", marketAdminCommand);
+        } else {
+            registerSimpleCommand("coremarket", new MarketAdminCommand(null, null,
+                    new TransactionLog(Path.of(getDataFolder().getPath(),
+                            "store-transactions.log"), getLogger()),
+                    messages, System::currentTimeMillis));
+        }
 
         final IslandUpgradeService upgradeService = new IslandUpgradeService(
                 upgradeConfig, islands, buffService, economy, messages, islandPoints);
@@ -668,6 +767,12 @@ public final class CoreMCPlugin extends JavaPlugin {
         // rolled rewards are already pending and survive the restart
         if (lootboxService != null) {
             lootboxService.cleanupAll();
+        }
+        // Dark Auction: cancel any unresolved session — bids never
+        // reserved funds, so cancelling debits nobody; the boss bar
+        // and countdown die here, never a reconstructed settlement
+        if (darkAuction != null) {
+            darkAuction.shutdown();
         }
         if (pendingRewards != null) {
             pendingRewards.shutdown();

@@ -1,0 +1,440 @@
+# ============================================================
+#  CoreMC — Black Market + Dark Auction
+#
+#  A server-controlled rotating economy sink. Money is the
+#  primary currency; selected offers add Sky Tokens; Credits
+#  appear SPARINGLY and only on cosmetic/seasonal offers (the
+#  loader enforces this). Nothing here is exclusive best-in-slot
+#  power and every gameplay-affecting item is obtainable
+#  elsewhere (crates, lootboxes, progression) — the market only
+#  offers a faster, limited-stock path.
+#
+#  Prices are BANDS: each rotation picks a concrete price inside
+#  the band (rounded to a clean step). Stock is GLOBAL per
+#  rotation; per-player limits sit on top.
+#
+#  Offer shape (offers.<id>):
+#    pool:         common | rare | epic | legendary | cosmetic | seasonal
+#    reward:       the store reward shape (type/id/material/display/amount)
+#    description:  short lore lines (rendered small-caps)
+#    price:        money[-min/-max], tokens[-min/-max], credits[-min/-max]
+#    stock:        global units per rotation
+#    per-player:   personal cap per rotation
+#    requirements: ["island-points:250", "collection:...", ...]
+#                  unknown requirement types FAIL CLOSED (locked)
+#    discovery:    true only when buying may legitimately count as
+#                  item discovery/ownership for Collections
+# ============================================================
+
+schedule:
+  open-every-minutes: 360     # every 6 hours...
+  open-for-minutes: 30        # ...for 30 minutes
+  # openings sit on a grid shifted by this offset, so market
+  # announcements never collide with on-the-hour hourly events
+  anchor-offset-minutes: 15
+  # optional IANA zone for the Dark Auction daily times
+  # (empty = the server's zone)
+  timezone: ""
+
+warnings:
+  opening-minutes: 10         # "opens in 10 minutes"
+  closing-minutes: [5, 1]     # "closes in 5" / "closes in 1"
+
+selection:
+  common-min: 2
+  common-max: 3
+  rare: 2
+  epic: 1
+  legendary-chance: 0.2
+  cosmetic-chance: 0.5
+  seasonal-chance: 0.25
+
+history-limit: 200
+
+offers:
+  # ----- COMMON ------------------------------------------------
+  special-bait:
+    pool: common
+    reward:
+      type: item
+      id: special_bait
+      material: TROPICAL_FISH
+      display: "&bSpecial Bait"
+      amount: 4
+    description:
+      - "Irresistible to river fish."
+      - "Also caught while fishing."
+    price:
+      money-min: 50000
+      money-max: 90000
+    stock: 8
+    per-player: 2
+  crafting-resin:
+    pool: common
+    reward:
+      type: item
+      id: crafting_resin
+      material: HONEYCOMB
+      display: "&eCrafting Resin"
+      amount: 3
+    description:
+      - "A sticky crafting ingredient"
+      - "for module recipes."
+    price:
+      money-min: 40000
+      money-max: 80000
+    stock: 10
+    per-player: 3
+  generator-parts:
+    pool: common
+    reward:
+      type: item
+      id: generator_parts
+      material: IRON_BLOCK
+      display: "&fGenerator Parts"
+      amount: 1
+    description:
+      - "Spare parts for generator"
+      - "upgrades."
+    price:
+      money-min: 60000
+      money-max: 100000
+    stock: 6
+    per-player: 2
+  companion-treats:
+    pool: common
+    reward:
+      type: item
+      id: companion_material_common
+      material: BONE
+      display: "&fCompanion Treats"
+      amount: 2
+    description:
+      - "Everyday companion levelling"
+      - "material."
+    price:
+      money-min: 50000
+      money-max: 80000
+    stock: 8
+    per-player: 2
+  vote-key-pack:
+    pool: common
+    reward:
+      type: key
+      id: vote
+      display: "&a&lVote Key"
+      amount: 2
+    description:
+      - "Two Vote Keys - also earned"
+      - "by voting, of course."
+    price:
+      money-min: 120000
+      money-max: 160000
+    stock: 5
+    per-player: 1
+
+  # ----- RARE --------------------------------------------------
+  core-fragment:
+    pool: rare
+    reward:
+      type: item
+      id: core_fragment
+      material: ECHO_SHARD
+      display: "&5Core Fragment"
+      amount: 1
+    description:
+      - "A fragment of the island"
+      - "core. Rare crafting input."
+    price:
+      money-min: 350000
+      money-max: 500000
+    stock: 4
+    per-player: 1
+  companion-evolution:
+    pool: rare
+    reward:
+      type: item
+      id: companion_material_rare
+      material: GOLDEN_CARROT
+      display: "&dCompanion Evolution Material"
+      amount: 1
+    description:
+      - "Feeds a companion's next"
+      - "evolution."
+    price:
+      money-min: 250000
+      money-max: 400000
+      tokens-min: 1000
+      tokens-max: 2000
+    stock: 4
+    per-player: 1
+  module-component:
+    pool: rare
+    reward:
+      type: item
+      id: island_module_component
+      material: PRISMARINE_SHARD
+      display: "&bIsland Module Component"
+      amount: 1
+    description:
+      - "Builds island modules."
+      - "Sky Tokens only."
+    price:
+      tokens-min: 4000
+      tokens-max: 6000
+    stock: 5
+    per-player: 1
+  river-key:
+    pool: rare
+    reward:
+      type: key
+      id: river
+      display: "&b&lRiver Key"
+      amount: 1
+    description:
+      - "Opens the River Crate."
+    price:
+      money-min: 200000
+      money-max: 300000
+    stock: 6
+    per-player: 2
+
+  # ----- EPIC --------------------------------------------------
+  generator-core:
+    pool: epic
+    reward:
+      type: item
+      id: generator_core
+      material: LODESTONE
+      display: "&6Generator Core"
+      amount: 1
+    description:
+      - "A rare industrial"
+      - "progression material."
+    price:
+      money-min: 700000
+      money-max: 900000
+    stock: 5
+    per-player: 1
+  core-lootbox:
+    pool: epic
+    reward:
+      type: lootbox
+      id: core
+      display: "&b&lCore Lootbox"
+      amount: 1
+    description:
+      - "8 rewards + 1 guaranteed"
+      - "rare, at a market price."
+    price:
+      money-min: 600000
+      money-max: 800000
+    stock: 3
+    per-player: 1
+
+  # ----- LEGENDARY ---------------------------------------------
+  module-component-rare:
+    pool: legendary
+    reward:
+      type: item
+      id: island_module_component_rare
+      material: PRISMARINE_CRYSTALS
+      display: "&6Pristine Module Component"
+      amount: 1
+    description:
+      - "The finest module component"
+      - "money can buy."
+    price:
+      money-min: 1500000
+      money-max: 2000000
+      tokens-min: 5000
+      tokens-max: 8000
+    stock: 2
+    per-player: 1
+    requirements:
+      - "island-points:250"
+  companion-ascension:
+    pool: legendary
+    reward:
+      type: item
+      id: companion_upgrade_rare
+      material: GOLDEN_APPLE
+      display: "&6Companion Ascension Material"
+      amount: 1
+    description:
+      - "Unlocks a companion's final"
+      - "form."
+    price:
+      money-min: 1200000
+      money-max: 1800000
+    stock: 2
+    per-player: 1
+
+  # ----- COSMETIC (the only pools allowed to charge Credits) ---
+  shadow-tag:
+    pool: cosmetic
+    reward:
+      type: item
+      id: tag_shadow
+      material: NAME_TAG
+      display: "&8Shadow Tag"
+      amount: 1
+    description:
+      - "A chat tag for those who"
+      - "shop after dark. Cosmetic."
+    price:
+      credits: 150
+    stock: 10
+    per-player: 1
+  generator-skin-obsidian:
+    pool: cosmetic
+    reward:
+      type: item
+      id: generator_skin_obsidian
+      material: OBSIDIAN
+      display: "&5Obsidian Generator Skin"
+      amount: 1
+    description:
+      - "A cosmetic generator skin."
+      - "Looks mean, changes nothing."
+    price:
+      money-min: 400000
+      money-max: 600000
+    stock: 5
+    per-player: 1
+
+  # ----- SEASONAL ----------------------------------------------
+  harvest-collectible:
+    pool: seasonal
+    reward:
+      type: item
+      id: collectible_harvest
+      material: CARVED_PUMPKIN
+      display: "&6Harvest Collectible"
+      amount: 1
+    description:
+      - "A numbered seasonal"
+      - "collectible."
+    price:
+      money-min: 300000
+      money-max: 450000
+    stock: 4
+    per-player: 1
+    # explicitly allowed: owning this collectible counts as
+    # discovery for Collections integrations
+    discovery: true
+  seasonal-firework:
+    pool: seasonal
+    reward:
+      type: item
+      id: cosmetic_seasonal
+      material: FIREWORK_ROCKET
+      display: "&dSeasonal Cosmetic"
+      amount: 1
+    description:
+      - "This season's cosmetic"
+      - "effect."
+    price:
+      credits-min: 100
+      credits-max: 150
+    stock: 6
+    per-player: 2
+
+# ============================================================
+#  Dark Auction — a rarer scheduled session inside the market.
+#  Money bids only. No fund reservation: affordability is checked
+#  on every bid AND at settlement; if the leader cannot pay, the
+#  stored earlier valid bids are walked; nobody else is ever
+#  charged. No real-money bidding, no rank advantages, no
+#  paid-only power lots.
+# ============================================================
+auction:
+  times: ["13:00", "19:30"]
+  lots-per-session-min: 3
+  lots-per-session-max: 5
+  lot-duration-seconds: 60
+  break-seconds: 10
+  anti-snipe:
+    threshold-seconds: 10
+    extension-seconds: 10
+    max-extension-seconds: 60
+  bid-buttons:
+    - "add:10000"
+    - "add:50000"
+    - "add:100000"
+    - "percent:10"
+  lots:
+    generator-core-lot:
+      rarity: epic
+      reward:
+        type: item
+        id: generator_core
+        material: LODESTONE
+        display: "&6Generator Core"
+        amount: 1
+      description:
+        - "A rare industrial"
+        - "progression material."
+      starting-bid: 250000
+      min-increment: 25000
+    pristine-module-lot:
+      rarity: legendary
+      reward:
+        type: item
+        id: island_module_component_rare
+        material: PRISMARINE_CRYSTALS
+        display: "&6Pristine Module Component"
+        amount: 1
+      description:
+        - "The finest module component."
+      starting-bid: 500000
+      min-increment: 50000
+    companion-ascension-lot:
+      rarity: epic
+      reward:
+        type: item
+        id: companion_upgrade_rare
+        material: GOLDEN_APPLE
+        display: "&6Companion Ascension Material"
+        amount: 1
+      description:
+        - "Unlocks a companion's final"
+        - "form."
+      starting-bid: 300000
+      min-increment: 25000
+    crimson-key-lot:
+      rarity: rare
+      reward:
+        type: key
+        id: crimson
+        display: "&c&lCrimson Key"
+        amount: 2
+      description:
+        - "Two Crimson Keys."
+      starting-bid: 200000
+      min-increment: 20000
+    shadow-tag-lot:
+      rarity: cosmetic
+      reward:
+        type: item
+        id: tag_shadow
+        material: NAME_TAG
+        display: "&8Shadow Tag"
+        amount: 1
+      description:
+        - "A cosmetic chat tag."
+      starting-bid: 100000
+      min-increment: 10000
+    seasonal-cosmetic-lot:
+      rarity: seasonal
+      reward:
+        type: item
+        id: cosmetic_seasonal
+        material: FIREWORK_ROCKET
+        display: "&dSeasonal Cosmetic"
+        amount: 1
+      description:
+        - "This season's cosmetic"
+        - "effect."
+      starting-bid: 150000
+      min-increment: 10000

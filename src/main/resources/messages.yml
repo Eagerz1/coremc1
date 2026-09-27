@@ -305,3 +305,44 @@ store:
   lootbox-done: "&aThe {box} &adelivered all 9 rewards."
 
   river-keys-migrated: "&aYour &f{amount} &arank River key(s) are now physical keys — check your inventory (or /rewards)."
+
+# ------------------------------------------------------------
+# Black Market + Dark Auction
+# ------------------------------------------------------------
+market:
+  unavailable: "&cThe Black Market is unavailable right now — an admin should check the console."
+  closed-now: "&cThe Black Market just closed — that rotation is gone."
+  offer-gone: "&cThat offer is no longer on the board."
+  sold-out: "&cSold out — global stock is gone. Faster next time!"
+  limit-reached: "&cYou already bought your limit of {limit} for this rotation."
+  requirements: "&cYou do not meet this offer's requirements yet."
+  cannot-afford: "&cYou cannot afford that (price {price})."
+  purchased: "&aBought &f{item} &afor &e{price}&a."
+
+  opening-warning: "&5&lBLACK MARKET &8» &7The doors open in &e{minutes} minutes&7. Limited global stock — &f/blackmarket&7."
+  open: "&5&lBLACK MARKET &8» &aThe doors are OPEN&7: &f{offers} &7offers, &e{minutes} minutes&7, global stock. &f/blackmarket"
+  closing-warning: "&5&lBLACK MARKET &8» &cClosing in {minutes} minute(s) — last calls."
+  closed: "&5&lBLACK MARKET &8» &7The doors are closed. See you next rotation."
+
+  auction-start: "&5&lDARK AUCTION &8» &dA session begins — &f{lots} &dlots. Bid with &f/blackmarket&d."
+  auction-lot: "&5&lDARK AUCTION &8» &fNow up: {item} &8(&7{rarity}&8) &7— starting at &a{bid}&7, &e{seconds}s &7on the clock."
+  auction-sold: "&5&lDARK AUCTION &8» &f{item} &7sold to &d{player} &7for &a{bid}&7."
+  auction-unsold: "&5&lDARK AUCTION &8» &f{item} &7found no valid buyer — lot cancelled, nobody charged."
+  auction-end: "&5&lDARK AUCTION &8» &7The session is over."
+  no-auction: "&cNo Dark Auction lot is running right now."
+  bid-usage: "&cUsage: &b/blackmarket bid <amount> &7(e.g. 250k, 1.5m)"
+  bid-placed: "&aBid placed: &e{bid}&a. You will only pay if you win."
+  bid-too-low: "&cToo low — the next valid bid is &f{minimum}&c."
+  bid-cannot-afford: "&cYou cannot cover a &f{bid} &cbid right now — bids must be backed by your balance."
+
+  admin-status: "&aMarket: &f{status} &8| &aAuction: &f{auction}"
+  admin-opened: "&aBlack Market opened."
+  admin-already-open: "&cThe Black Market is already open."
+  admin-closed: "&aBlack Market closed. A closed grid window stays closed."
+  admin-already-closed: "&cThe Black Market is not open."
+  admin-rotated: "&aRolled a fresh rotation."
+  admin-auction-started: "&aDark Auction session started."
+  admin-auction-busy: "&cA Dark Auction session is already running (or no lots are configured)."
+  admin-auction-stopped: "&aDark Auction session stopped — unresolved lot cancelled, nobody charged."
+  admin-no-auction: "&cNo Dark Auction session is running."
+  admin-usage: "&cUsage: &b/coremarket status|open|close|rotate|auction start|auction stop"

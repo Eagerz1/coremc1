@@ -97,6 +97,13 @@ commands:
     usage: /corelootbox give <player> <type> <amount>
     permission: coremc.command.corelootbox
     permission-message: You do not have permission to use this command.
+  blackmarket:
+    description: The Black Market — rotating limited-stock offers and the Dark Auction.
+    aliases: [bm, darkauction]
+    permission: coremc.command.blackmarket
+  coremarket:
+    description: Staff controls for the Black Market and Dark Auction.
+    permission: coremc.admin.market
   corebundle:
     description: "Bundle admin - give a bundle's exact contents."
     usage: /corebundle give <player> <type> <amount>
@@ -125,6 +132,8 @@ permissions:
       coremc.command.corecrate: true
       coremc.command.corelootbox: true
       coremc.command.corebundle: true
+      coremc.command.blackmarket: true
+      coremc.admin.market: true
       coremc.admin.credits: true
       coremc.admin.crates: true
       coremc.admin.lootboxes: true
@@ -194,6 +203,12 @@ permissions:
   coremc.command.corebundle:
     description: Allows using /corebundle (all subcommands are admin-gated).
     default: true
+  coremc.command.blackmarket:
+    description: Use /blackmarket.
+    default: true
+  coremc.admin.market:
+    description: Staff Black Market/Dark Auction controls.
+    default: op
   coremc.admin.credits:
     description: Allows /corecredits give|take|set (logged with reasons).
     default: op
