@@ -218,6 +218,10 @@ public final class CrateService {
                             : stack.getItemMeta().getDisplayName())
                     .orElse(color + reward.refId());
             case ITEM -> color + prettify(reward.material()) + (reward.amount() > 1 ? " x" + reward.amount() : "");
+            case SKIN -> plugin.skins().skin(reward.refId())
+                    .map(skin -> color + skin.display() + " &8("
+                            + (skin.type() == com.coremc.core.cosmetic.SkinType.HAT ? "hat" : "tool skin") + ")")
+                    .orElse(color + reward.refId());
         };
     }
 
