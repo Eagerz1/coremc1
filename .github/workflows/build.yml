@@ -25,6 +25,9 @@ jobs:
           java-version: "21"
           cache: maven
 
+      - name: Validate CoreMC ItemsAdder source pack
+        run: python3 tools/validate_itemsadder_assets.py
+
       - name: Build with Maven (compile + JUnit tests + jar)
         run: mvn -B verify
 

@@ -1,0 +1,740 @@
+# Human-auditable fishing catalog. The ItemsAdder source contains exactly
+# 120 entries with category FISHING by convention: 24 per rarity.
+namespace: coremc
+category: fishing
+rarities:
+  common:
+    count: 24
+    items:
+      - id: fish_common_creek_dart
+        species: "Creek Dart"
+        model_id: 20000
+        archetype: dart
+        pattern: lateral
+        fin_signature: fork
+      - id: fish_common_reed_pikelet
+        species: "Reed Pikelet"
+        model_id: 20001
+        archetype: pike
+        pattern: bars
+        fin_signature: highfin
+      - id: fish_common_pebble_loach
+        species: "Pebble Loach"
+        model_id: 20002
+        archetype: loach
+        pattern: spots
+        fin_signature: lowfin
+      - id: fish_common_willow_bream
+        species: "Willow Bream"
+        model_id: 20003
+        archetype: bream
+        pattern: bands
+        fin_signature: roundtail
+      - id: fish_common_mudskipper
+        species: "Mudskipper"
+        model_id: 20004
+        archetype: mud
+        pattern: mottled
+        fin_signature: feet
+      - id: fish_common_glass_minnow
+        species: "Glass Minnow"
+        model_id: 20005
+        archetype: minnow
+        pattern: clear
+        fin_signature: split
+      - id: fish_common_sunscale
+        species: "Sunscale"
+        model_id: 20006
+        archetype: scale
+        pattern: scales
+        fin_signature: sunray
+      - id: fish_common_marsh_killifish
+        species: "Marsh Killifish"
+        model_id: 20007
+        archetype: killifish
+        pattern: eye
+        fin_signature: spear
+      - id: fish_common_sand_goby
+        species: "Sand Goby"
+        model_id: 20008
+        archetype: goby
+        pattern: mask
+        fin_signature: fan
+      - id: fish_common_rainbarb
+        species: "Rain Barb"
+        model_id: 20009
+        archetype: barb
+        pattern: rainbow
+        fin_signature: barbs
+      - id: fish_common_moss_tetra
+        species: "Moss Tetra"
+        model_id: 20010
+        archetype: tetra
+        pattern: chevron
+        fin_signature: tiny
+      - id: fish_common_drift_dace
+        species: "Drift Dace"
+        model_id: 20011
+        archetype: dace
+        pattern: stripe
+        fin_signature: sweep
+      - id: fish_common_lantern_anchovy
+        species: "Lantern Anchovy"
+        model_id: 20012
+        archetype: anchovy
+        pattern: glowdots
+        fin_signature: needle
+      - id: fish_common_kelp_sardine
+        species: "Kelp Sardine"
+        model_id: 20013
+        archetype: sardine
+        pattern: kelp
+        fin_signature: notch
+      - id: fish_common_shellback_sculpin
+        species: "Shellback Sculpin"
+        model_id: 20014
+        archetype: sculpin
+        pattern: shell
+        fin_signature: armour
+      - id: fish_common_frost_ide
+        species: "Frost Ide"
+        model_id: 20015
+        archetype: ide
+        pattern: ice
+        fin_signature: icefin
+      - id: fish_common_copper_roe
+        species: "Copper Roe"
+        model_id: 20016
+        archetype: roe
+        pattern: cluster
+        fin_signature: roundtail
+      - id: fish_common_tide_mullet
+        species: "Tide Mullet"
+        model_id: 20017
+        archetype: mullet
+        pattern: splitline
+        fin_signature: blunt
+      - id: fish_common_bluegill
+        species: "Bluegill"
+        model_id: 20018
+        archetype: bluegill
+        pattern: gill
+        fin_signature: gill
+      - id: fish_common_pond_perch
+        species: "Pond Perch"
+        model_id: 20019
+        archetype: perch
+        pattern: perch
+        fin_signature: spiny
+      - id: fish_common_brook_trout
+        species: "Brook Trout"
+        model_id: 20020
+        archetype: trout
+        pattern: speckle
+        fin_signature: adipose
+      - id: fish_common_ember_guppy
+        species: "Ember Guppy"
+        model_id: 20021
+        archetype: guppy
+        pattern: ember
+        fin_signature: veil
+      - id: fish_common_willow_carp
+        species: "Willow Carp"
+        model_id: 20022
+        archetype: carp
+        pattern: scalegrid
+        fin_signature: barbel
+      - id: fish_common_salt_sprat
+        species: "Salt Sprat"
+        model_id: 20023
+        archetype: sprat
+        pattern: salt
+        fin_signature: fork
+  uncommon:
+    count: 24
+    items:
+      - id: fish_uncommon_moonfin
+        species: "Moonfin"
+        model_id: 20100
+        archetype: crescent
+        pattern: moonspot
+        fin_signature: crescent
+      - id: fish_uncommon_coral_snapper
+        species: "Coral Snapper"
+        model_id: 20101
+        archetype: snapper
+        pattern: coral
+        fin_signature: spine
+      - id: fish_uncommon_dusk_koi
+        species: "Dusk Koi"
+        model_id: 20102
+        archetype: koi
+        pattern: cloud
+        fin_signature: flow
+      - id: fish_uncommon_silverneedle
+        species: "Silver Needlefish"
+        model_id: 20103
+        archetype: needlefish
+        pattern: needle
+        fin_signature: needle
+      - id: fish_uncommon_thunder_tench
+        species: "Thunder Tench"
+        model_id: 20104
+        archetype: tench
+        pattern: bolt
+        fin_signature: bolt
+      - id: fish_uncommon_lantern_loach
+        species: "Lantern Loach"
+        model_id: 20105
+        archetype: lanternloach
+        pattern: lantern
+        fin_signature: whisker
+      - id: fish_uncommon_mangrove_bass
+        species: "Mangrove Bass"
+        model_id: 20106
+        archetype: bass
+        pattern: root
+        fin_signature: root
+      - id: fish_uncommon_aurora_char
+        species: "Aurora Char"
+        model_id: 20107
+        archetype: char
+        pattern: aurora
+        fin_signature: halo
+      - id: fish_uncommon_glasscat
+        species: "Glasscat"
+        model_id: 20108
+        archetype: glasscat
+        pattern: bones
+        fin_signature: whisker
+      - id: fish_uncommon_tide_runner
+        species: "Tide Runner"
+        model_id: 20109
+        archetype: runner
+        pattern: speed
+        fin_signature: sweep
+      - id: fish_uncommon_ribbon_eel
+        species: "Ribbon Eel"
+        model_id: 20110
+        archetype: ribbon
+        pattern: ribbon
+        fin_signature: crest
+      - id: fish_uncommon_speckled_mandarin
+        species: "Speckled Mandarin"
+        model_id: 20111
+        archetype: mandarin
+        pattern: speckle
+        fin_signature: fan
+      - id: fish_uncommon_cloud_darter
+        species: "Cloud Darter"
+        model_id: 20112
+        archetype: cloudfish
+        pattern: cloud
+        fin_signature: wing
+      - id: fish_uncommon_storm_goby
+        species: "Storm Goby"
+        model_id: 20113
+        archetype: stormgoby
+        pattern: storm
+        fin_signature: spike
+      - id: fish_uncommon_jade_codlet
+        species: "Jade Codlet"
+        model_id: 20114
+        archetype: cod
+        pattern: jade
+        fin_signature: chin
+      - id: fish_uncommon_firetail_minnow
+        species: "Firetail Minnow"
+        model_id: 20115
+        archetype: fireminnow
+        pattern: firetail
+        fin_signature: flame
+      - id: fish_uncommon_brine_puffer
+        species: "Brine Puffer"
+        model_id: 20116
+        archetype: puffer
+        pattern: brine
+        fin_signature: spines
+      - id: fish_uncommon_reed_needlefish
+        species: "Reed Needlefish"
+        model_id: 20117
+        archetype: needlefish
+        pattern: reed
+        fin_signature: needle
+      - id: fish_uncommon_opal_bream
+        species: "Opal Bream"
+        model_id: 20118
+        archetype: bream
+        pattern: opal
+        fin_signature: roundtail
+      - id: fish_uncommon_dusk_swordlet
+        species: "Dusk Swordlet"
+        model_id: 20119
+        archetype: sword
+        pattern: dusk
+        fin_signature: sword
+      - id: fish_uncommon_crystal_molly
+        species: "Crystal Molly"
+        model_id: 20120
+        archetype: molly
+        pattern: crystal
+        fin_signature: sail
+      - id: fish_uncommon_mossy_pike
+        species: "Mossy Pike"
+        model_id: 20121
+        archetype: pike
+        pattern: moss
+        fin_signature: highfin
+      - id: fish_uncommon_bluewater_hake
+        species: "Bluewater Hake"
+        model_id: 20122
+        archetype: hake
+        pattern: water
+        fin_signature: twin
+      - id: fish_uncommon_copperhead_dace
+        species: "Copperhead Dace"
+        model_id: 20123
+        archetype: dace
+        pattern: copper
+        fin_signature: sweep
+  rare:
+    count: 24
+    items:
+      - id: fish_rare_abyssal_lanternfish
+        species: "Abyssal Lanternfish"
+        model_id: 20200
+        archetype: angler
+        pattern: abyss
+        fin_signature: lure
+      - id: fish_rare_sunken_sawfish
+        species: "Sunken Sawfish"
+        model_id: 20201
+        archetype: sawfish
+        pattern: sunken
+        fin_signature: saw
+      - id: fish_rare_sapphire_stingray
+        species: "Sapphire Stingray"
+        model_id: 20202
+        archetype: stingray
+        pattern: sapphire
+        fin_signature: wings
+      - id: fish_rare_ghost_koi
+        species: "Ghost Koi"
+        model_id: 20203
+        archetype: koi
+        pattern: ghost
+        fin_signature: flow
+      - id: fish_rare_prism_tetra
+        species: "Prism Tetra"
+        model_id: 20204
+        archetype: tetra
+        pattern: prism
+        fin_signature: diamond
+      - id: fish_rare_ironjaw_barracuda
+        species: "Ironjaw Barracuda"
+        model_id: 20205
+        archetype: barracuda
+        pattern: ironjaw
+        fin_signature: jaw
+      - id: fish_rare_pearl_seahorse
+        species: "Pearl Seahorse"
+        model_id: 20206
+        archetype: seahorse
+        pattern: pearl
+        fin_signature: curl
+      - id: fish_rare_emberfin_salmon
+        species: "Emberfin Salmon"
+        model_id: 20207
+        archetype: salmon
+        pattern: ember
+        fin_signature: fin
+      - id: fish_rare_void_catfish
+        species: "Void Catfish"
+        model_id: 20208
+        archetype: catfish
+        pattern: void
+        fin_signature: whisker
+      - id: fish_rare_thunder_manta
+        species: "Thunder Manta"
+        model_id: 20209
+        archetype: manta
+        pattern: thunder
+        fin_signature: wings
+      - id: fish_rare_frostbite_pike
+        species: "Frostbite Pike"
+        model_id: 20210
+        archetype: pike
+        pattern: frostbite
+        fin_signature: icefin
+      - id: fish_rare_bloodscale_tuna
+        species: "Bloodscale Tuna"
+        model_id: 20211
+        archetype: tuna
+        pattern: bloodscale
+        fin_signature: crescent
+      - id: fish_rare_moonlit_angler
+        species: "Moonlit Angler"
+        model_id: 20212
+        archetype: angler
+        pattern: moonlit
+        fin_signature: lure
+      - id: fish_rare_coral_crownfish
+        species: "Coral Crownfish"
+        model_id: 20213
+        archetype: crownfish
+        pattern: coral
+        fin_signature: crown
+      - id: fish_rare_stormglass_eel
+        species: "Stormglass Eel"
+        model_id: 20214
+        archetype: eel
+        pattern: stormglass
+        fin_signature: ribbon
+      - id: fish_rare_blackwater_ray
+        species: "Blackwater Ray"
+        model_id: 20215
+        archetype: ray
+        pattern: blackwater
+        fin_signature: wings
+      - id: fish_rare_golden_grouper
+        species: "Golden Grouper"
+        model_id: 20216
+        archetype: grouper
+        pattern: golden
+        fin_signature: mouth
+      - id: fish_rare_deepforge_ide
+        species: "Deepforge Ide"
+        model_id: 20217
+        archetype: ide
+        pattern: forge
+        fin_signature: hammer
+      - id: fish_rare_amethyst_betta
+        species: "Amethyst Betta"
+        model_id: 20218
+        archetype: betta
+        pattern: amethyst
+        fin_signature: veil
+      - id: fish_rare_tempest_mackerel
+        species: "Tempest Mackerel"
+        model_id: 20219
+        archetype: mackerel
+        pattern: tempest
+        fin_signature: fork
+      - id: fish_rare_obsidian_gar
+        species: "Obsidian Gar"
+        model_id: 20220
+        archetype: gar
+        pattern: obsidian
+        fin_signature: snout
+      - id: fish_rare_starfall_fangfish
+        species: "Starfall Fangfish"
+        model_id: 20221
+        archetype: fangfish
+        pattern: starfall
+        fin_signature: fang
+      - id: fish_rare_royal_discus
+        species: "Royal Discus"
+        model_id: 20222
+        archetype: discus
+        pattern: royal
+        fin_signature: roundtail
+      - id: fish_rare_rift_skate
+        species: "Rift Skate"
+        model_id: 20223
+        archetype: skate
+        pattern: rift
+        fin_signature: wings
+  epic:
+    count: 24
+    items:
+      - id: fish_epic_celestial_koi
+        species: "Celestial Koi"
+        model_id: 20300
+        archetype: koi
+        pattern: celestial
+        fin_signature: flow
+      - id: fish_epic_leviathan_sardine
+        species: "Leviathan Sardine"
+        model_id: 20301
+        archetype: sardine
+        pattern: leviathan
+        fin_signature: notch
+      - id: fish_epic_phoenix_betta
+        species: "Phoenix Betta"
+        model_id: 20302
+        archetype: betta
+        pattern: phoenix
+        fin_signature: veil
+      - id: fish_epic_astral_swordfish
+        species: "Astral Swordfish"
+        model_id: 20303
+        archetype: swordfish
+        pattern: astral
+        fin_signature: sword
+      - id: fish_epic_nebula_ray
+        species: "Nebula Ray"
+        model_id: 20304
+        archetype: ray
+        pattern: nebula
+        fin_signature: wings
+      - id: fish_epic_eclipse_angelfish
+        species: "Eclipse Angelfish"
+        model_id: 20305
+        archetype: angelfish
+        pattern: eclipse
+        fin_signature: highfin
+      - id: fish_epic_comet_tail
+        species: "Comet Tail"
+        model_id: 20306
+        archetype: cometfish
+        pattern: comet
+        fin_signature: comet
+      - id: fish_epic_aurora_arowana
+        species: "Aurora Arowana"
+        model_id: 20307
+        archetype: arowana
+        pattern: aurora
+        fin_signature: barbel
+      - id: fish_epic_chronicle_sturgeon
+        species: "Chronicle Sturgeon"
+        model_id: 20308
+        archetype: sturgeon
+        pattern: chronicle
+        fin_signature: scute
+      - id: fish_epic_voidfin_shark
+        species: "Voidfin Shark"
+        model_id: 20309
+        archetype: shark
+        pattern: voidfin
+        fin_signature: dorsal
+      - id: fish_epic_tempest_dragonfish
+        species: "Tempest Dragonfish"
+        model_id: 20310
+        archetype: dragonfish
+        pattern: tempest
+        fin_signature: fang
+      - id: fish_epic_sunflare_mola
+        species: "Sunflare Mola"
+        model_id: 20311
+        archetype: mola
+        pattern: sunflare
+        fin_signature: dorsal
+      - id: fish_epic_deepcrown_seahorse
+        species: "Deepcrown Seahorse"
+        model_id: 20312
+        archetype: seahorse
+        pattern: deepcrown
+        fin_signature: crown
+      - id: fish_epic_prism_wing
+        species: "Prism Wing"
+        model_id: 20313
+        archetype: wingfish
+        pattern: prism
+        fin_signature: wings
+      - id: fish_epic_obsidian_orca
+        species: "Obsidian Orca"
+        model_id: 20314
+        archetype: orca
+        pattern: obsidian
+        fin_signature: dorsal
+      - id: fish_epic_moonbreaker_tuna
+        species: "Moonbreaker Tuna"
+        model_id: 20315
+        archetype: tuna
+        pattern: moonbreaker
+        fin_signature: crescent
+      - id: fish_epic_rift_wyrm
+        species: "Rift Wyrm"
+        model_id: 20316
+        archetype: wyrmfish
+        pattern: rift
+        fin_signature: ribbon
+      - id: fish_epic_sapphire_marlin
+        species: "Sapphire Marlin"
+        model_id: 20317
+        archetype: marlin
+        pattern: sapphire
+        fin_signature: spear
+      - id: fish_epic_thunderhead_manta
+        species: "Thunderhead Manta"
+        model_id: 20318
+        archetype: manta
+        pattern: thunderhead
+        fin_signature: wings
+      - id: fish_epic_gilded_coelacanth
+        species: "Gilded Coelacanth"
+        model_id: 20319
+        archetype: coelacanth
+        pattern: gilded
+        fin_signature: lobes
+      - id: fish_epic_starforge_puffer
+        species: "Starforge Puffer"
+        model_id: 20320
+        archetype: puffer
+        pattern: starforge
+        fin_signature: spines
+      - id: fish_epic_bloodmoon_barracuda
+        species: "Bloodmoon Barracuda"
+        model_id: 20321
+        archetype: barracuda
+        pattern: bloodmoon
+        fin_signature: jaw
+      - id: fish_epic_crystal_krakenfish
+        species: "Crystal Krakenfish"
+        model_id: 20322
+        archetype: krakenfish
+        pattern: crystal
+        fin_signature: tentacles
+      - id: fish_epic_skyvault_flyfish
+        species: "Skyvault Flyfish"
+        model_id: 20323
+        archetype: flyfish
+        pattern: skyvault
+        fin_signature: wings
+  mythic:
+    count: 24
+    items:
+      - id: fish_mythic_worldroot_koi
+        species: "Worldroot Koi"
+        model_id: 20400
+        archetype: koi
+        pattern: worldroot
+        fin_signature: flow
+      - id: fish_mythic_elder_leviathan
+        species: "Elder Leviathan"
+        model_id: 20401
+        archetype: leviathan
+        pattern: elder
+        fin_signature: crown
+      - id: fish_mythic_astral_whalelet
+        species: "Astral Whalelet"
+        model_id: 20402
+        archetype: whalelet
+        pattern: astral
+        fin_signature: flukes
+      - id: fish_mythic_void_emperor
+        species: "Void Emperor"
+        model_id: 20403
+        archetype: emperor
+        pattern: void
+        fin_signature: crown
+      - id: fish_mythic_solar_sawfish
+        species: "Solar Sawfish"
+        model_id: 20404
+        archetype: sawfish
+        pattern: solar
+        fin_signature: saw
+      - id: fish_mythic_lunar_seraph
+        species: "Lunar Seraph"
+        model_id: 20405
+        archetype: seraph
+        pattern: lunar
+        fin_signature: halo
+      - id: fish_mythic_genesis_ray
+        species: "Genesis Ray"
+        model_id: 20406
+        archetype: ray
+        pattern: genesis
+        fin_signature: wings
+      - id: fish_mythic_rift_angler
+        species: "Rift Angler"
+        model_id: 20407
+        archetype: angler
+        pattern: rift
+        fin_signature: lure
+      - id: fish_mythic_timeworn_sturgeon
+        species: "Timeworn Sturgeon"
+        model_id: 20408
+        archetype: sturgeon
+        pattern: timeworn
+        fin_signature: scute
+      - id: fish_mythic_crownfire_arowana
+        species: "Crownfire Arowana"
+        model_id: 20409
+        archetype: arowana
+        pattern: crownfire
+        fin_signature: barbel
+      - id: fish_mythic_stormking_marlin
+        species: "Stormking Marlin"
+        model_id: 20410
+        archetype: marlin
+        pattern: stormking
+        fin_signature: spear
+      - id: fish_mythic_auric_dragonfish
+        species: "Auric Dragonfish"
+        model_id: 20411
+        archetype: dragonfish
+        pattern: auric
+        fin_signature: fang
+      - id: fish_mythic_abyss_crown_shark
+        species: "Abyss Crown Shark"
+        model_id: 20412
+        archetype: shark
+        pattern: abysscrown
+        fin_signature: dorsal
+      - id: fish_mythic_starheart_betta
+        species: "Starheart Betta"
+        model_id: 20413
+        archetype: betta
+        pattern: starheart
+        fin_signature: veil
+      - id: fish_mythic_eternal_coelacanth
+        species: "Eternal Coelacanth"
+        model_id: 20414
+        archetype: coelacanth
+        pattern: eternal
+        fin_signature: lobes
+      - id: fish_mythic_nebula_manta
+        species: "Nebula Manta"
+        model_id: 20415
+        archetype: manta
+        pattern: nebula
+        fin_signature: wings
+      - id: fish_mythic_nightveil_eel
+        species: "Nightveil Eel"
+        model_id: 20416
+        archetype: eel
+        pattern: nightveil
+        fin_signature: ribbon
+      - id: fish_mythic_dawnbringer_tuna
+        species: "Dawnbringer Tuna"
+        model_id: 20417
+        archetype: tuna
+        pattern: dawnbringer
+        fin_signature: crescent
+      - id: fish_mythic_prismatic_mola
+        species: "Prismatic Mola"
+        model_id: 20418
+        archetype: mola
+        pattern: prismatic
+        fin_signature: dorsal
+      - id: fish_mythic_obsidian_leviathan
+        species: "Obsidian Leviathan"
+        model_id: 20419
+        archetype: leviathan
+        pattern: obsidian
+        fin_signature: crown
+      - id: fish_mythic_celestial_seahorse
+        species: "Celestial Seahorse"
+        model_id: 20420
+        archetype: seahorse
+        pattern: celestial
+        fin_signature: curl
+      - id: fish_mythic_frostnova_pike
+        species: "Frostnova Pike"
+        model_id: 20421
+        archetype: pike
+        pattern: frostnova
+        fin_signature: icefin
+      - id: fish_mythic_crimson_cometfish
+        species: "Crimson Cometfish"
+        model_id: 20422
+        archetype: cometfish
+        pattern: crimson
+        fin_signature: comet
+      - id: fish_mythic_skyfather_orca
+        species: "Skyfather Orca"
+        model_id: 20423
+        archetype: orca
+        pattern: skyfather
+        fin_signature: dorsal

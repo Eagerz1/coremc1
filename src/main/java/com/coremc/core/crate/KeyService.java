@@ -35,6 +35,20 @@ public final class KeyService {
     private final NamespacedKey markerKey;
     private final Map<String, CrateKey> keys = new LinkedHashMap<>();
 
+    /** Stable pack model ids. The PDC key id remains the item identity; these
+     * values only improve presentation when the coremc resource pack exists. */
+    private static final Map<String, Integer> VISUAL_MODEL_IDS = Map.ofEntries(
+            Map.entry("vote", 21000),
+            Map.entry("river", 21001),
+            Map.entry("sky", 21002),
+            Map.entry("crimson", 21003),
+            Map.entry("boost", 21004),
+            Map.entry("ember", 21005),
+            Map.entry("rune", 21006),
+            Map.entry("titan", 21007),
+            Map.entry("mythic", 21008),
+            Map.entry("daily", 21009));
+
     public KeyService(final CoreMCPlugin plugin) {
         this.plugin = plugin;
         this.markerKey = new NamespacedKey(plugin, "crate-key");
@@ -95,6 +109,13 @@ public final class KeyService {
                     ColorUtil.colorize("&7Crate key — use at &f/crates&7."),
                     ColorUtil.colorize("&8Single use.")));
             meta.getPersistentDataContainer().set(markerKey, PersistentDataType.STRING, key.id());
+            // Presentation is optional and deliberately applied after the
+            // stable PDC marker. If the pack is absent, the vanilla icon and
+            // the PDC-backed key behaviour remain fully functional.
+            final Integer modelId = VISUAL_MODEL_IDS.get(key.id());
+            if (modelId != null) {
+                meta.setCustomModelData(modelId);
+            }
             item.setItemMeta(meta);
         }
         if (amount > 64) {

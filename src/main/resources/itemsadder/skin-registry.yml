@@ -1,0 +1,43 @@
+# CoreMC cosmetic skin contract. This registry is intentionally outside the
+# ItemsAdder namespace YAML: it is read by the CoreMC skin layer, while the
+# adjacent items.yml entries are the visual tokens shown in menus.
+namespace: coremc
+contract:
+  pdc_key: coremc:cosmetic-skin
+  cosmetic_only: true
+  stat_effect: none
+  preserves: [stats, traits, xp, rarity, abilities]
+  selection_rule: model-only override; never replace the base progression object
+  fallback: retain the base generator/companion model when the pack is missing
+generator_skins:
+  cinderstone:
+    item_id: generator_skin_cobble
+    model_id: 21500
+    applies_to: generator
+    cosmetic_only: true
+  glacial_relay:
+    item_id: generator_skin_ice
+    model_id: 21501
+    applies_to: generator
+    cosmetic_only: true
+  rift_prism:
+    item_id: generator_skin_rift
+    model_id: 21502
+    applies_to: generator
+    cosmetic_only: true
+companion_skins:
+  emberfox:
+    item_id: companion_skin_emberfox
+    model_id: 21510
+    applies_to: companion
+    cosmetic_only: true
+  moonmoth:
+    item_id: companion_skin_moonmoth
+    model_id: 21511
+    applies_to: companion
+    cosmetic_only: true
+  starseed:
+    item_id: companion_skin_starseed
+    model_id: 21512
+    applies_to: companion
+    cosmetic_only: true

@@ -1,0 +1,1875 @@
+# CoreMC ItemsAdder content source. Namespace is intentionally stable: coremc.
+# Every item has a vanilla material fallback. PDC identity is owned by CoreMC,
+# so removing/rebuilding the resource pack never invalidates held items.
+info:
+  namespace: coremc
+items:
+  fish_common_creek_dart:
+    display_name: "Creek Dart"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fCreek Dart"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/creek_dart"
+      model_id: 20000
+
+  fish_common_reed_pikelet:
+    display_name: "Reed Pikelet"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fReed Pikelet"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/reed_pikelet"
+      model_id: 20001
+
+  fish_common_pebble_loach:
+    display_name: "Pebble Loach"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fPebble Loach"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/pebble_loach"
+      model_id: 20002
+
+  fish_common_willow_bream:
+    display_name: "Willow Bream"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fWillow Bream"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/willow_bream"
+      model_id: 20003
+
+  fish_common_mudskipper:
+    display_name: "Mudskipper"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fMudskipper"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/mudskipper"
+      model_id: 20004
+
+  fish_common_glass_minnow:
+    display_name: "Glass Minnow"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fGlass Minnow"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/glass_minnow"
+      model_id: 20005
+
+  fish_common_sunscale:
+    display_name: "Sunscale"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fSunscale"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/sunscale"
+      model_id: 20006
+
+  fish_common_marsh_killifish:
+    display_name: "Marsh Killifish"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fMarsh Killifish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/marsh_killifish"
+      model_id: 20007
+
+  fish_common_sand_goby:
+    display_name: "Sand Goby"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fSand Goby"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/sand_goby"
+      model_id: 20008
+
+  fish_common_rainbarb:
+    display_name: "Rain Barb"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fRain Barb"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/rainbarb"
+      model_id: 20009
+
+  fish_common_moss_tetra:
+    display_name: "Moss Tetra"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fMoss Tetra"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/moss_tetra"
+      model_id: 20010
+
+  fish_common_drift_dace:
+    display_name: "Drift Dace"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fDrift Dace"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/drift_dace"
+      model_id: 20011
+
+  fish_common_lantern_anchovy:
+    display_name: "Lantern Anchovy"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fLantern Anchovy"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/lantern_anchovy"
+      model_id: 20012
+
+  fish_common_kelp_sardine:
+    display_name: "Kelp Sardine"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fKelp Sardine"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/kelp_sardine"
+      model_id: 20013
+
+  fish_common_shellback_sculpin:
+    display_name: "Shellback Sculpin"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fShellback Sculpin"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/shellback_sculpin"
+      model_id: 20014
+
+  fish_common_frost_ide:
+    display_name: "Frost Ide"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fFrost Ide"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/frost_ide"
+      model_id: 20015
+
+  fish_common_copper_roe:
+    display_name: "Copper Roe"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fCopper Roe"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/copper_roe"
+      model_id: 20016
+
+  fish_common_tide_mullet:
+    display_name: "Tide Mullet"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fTide Mullet"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/tide_mullet"
+      model_id: 20017
+
+  fish_common_bluegill:
+    display_name: "Bluegill"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fBluegill"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/bluegill"
+      model_id: 20018
+
+  fish_common_pond_perch:
+    display_name: "Pond Perch"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fPond Perch"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/pond_perch"
+      model_id: 20019
+
+  fish_common_brook_trout:
+    display_name: "Brook Trout"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fBrook Trout"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/brook_trout"
+      model_id: 20020
+
+  fish_common_ember_guppy:
+    display_name: "Ember Guppy"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fEmber Guppy"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/ember_guppy"
+      model_id: 20021
+
+  fish_common_willow_carp:
+    display_name: "Willow Carp"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fWillow Carp"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/willow_carp"
+      model_id: 20022
+
+  fish_common_salt_sprat:
+    display_name: "Salt Sprat"
+    lore:
+      - "&8Fishing catch &7• Common"
+      - "&7Species: &fSalt Sprat"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/common/salt_sprat"
+      model_id: 20023
+
+  fish_uncommon_moonfin:
+    display_name: "Moonfin"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fMoonfin"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/moonfin"
+      model_id: 20100
+
+  fish_uncommon_coral_snapper:
+    display_name: "Coral Snapper"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fCoral Snapper"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/coral_snapper"
+      model_id: 20101
+
+  fish_uncommon_dusk_koi:
+    display_name: "Dusk Koi"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fDusk Koi"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/dusk_koi"
+      model_id: 20102
+
+  fish_uncommon_silverneedle:
+    display_name: "Silver Needlefish"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fSilver Needlefish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/silverneedle"
+      model_id: 20103
+
+  fish_uncommon_thunder_tench:
+    display_name: "Thunder Tench"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fThunder Tench"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/thunder_tench"
+      model_id: 20104
+
+  fish_uncommon_lantern_loach:
+    display_name: "Lantern Loach"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fLantern Loach"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/lantern_loach"
+      model_id: 20105
+
+  fish_uncommon_mangrove_bass:
+    display_name: "Mangrove Bass"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fMangrove Bass"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/mangrove_bass"
+      model_id: 20106
+
+  fish_uncommon_aurora_char:
+    display_name: "Aurora Char"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fAurora Char"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/aurora_char"
+      model_id: 20107
+
+  fish_uncommon_glasscat:
+    display_name: "Glasscat"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fGlasscat"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/glasscat"
+      model_id: 20108
+
+  fish_uncommon_tide_runner:
+    display_name: "Tide Runner"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fTide Runner"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/tide_runner"
+      model_id: 20109
+
+  fish_uncommon_ribbon_eel:
+    display_name: "Ribbon Eel"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fRibbon Eel"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/ribbon_eel"
+      model_id: 20110
+
+  fish_uncommon_speckled_mandarin:
+    display_name: "Speckled Mandarin"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fSpeckled Mandarin"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/speckled_mandarin"
+      model_id: 20111
+
+  fish_uncommon_cloud_darter:
+    display_name: "Cloud Darter"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fCloud Darter"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/cloud_darter"
+      model_id: 20112
+
+  fish_uncommon_storm_goby:
+    display_name: "Storm Goby"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fStorm Goby"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/storm_goby"
+      model_id: 20113
+
+  fish_uncommon_jade_codlet:
+    display_name: "Jade Codlet"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fJade Codlet"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/jade_codlet"
+      model_id: 20114
+
+  fish_uncommon_firetail_minnow:
+    display_name: "Firetail Minnow"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fFiretail Minnow"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/firetail_minnow"
+      model_id: 20115
+
+  fish_uncommon_brine_puffer:
+    display_name: "Brine Puffer"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fBrine Puffer"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/brine_puffer"
+      model_id: 20116
+
+  fish_uncommon_reed_needlefish:
+    display_name: "Reed Needlefish"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fReed Needlefish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/reed_needlefish"
+      model_id: 20117
+
+  fish_uncommon_opal_bream:
+    display_name: "Opal Bream"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fOpal Bream"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/opal_bream"
+      model_id: 20118
+
+  fish_uncommon_dusk_swordlet:
+    display_name: "Dusk Swordlet"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fDusk Swordlet"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/dusk_swordlet"
+      model_id: 20119
+
+  fish_uncommon_crystal_molly:
+    display_name: "Crystal Molly"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fCrystal Molly"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/crystal_molly"
+      model_id: 20120
+
+  fish_uncommon_mossy_pike:
+    display_name: "Mossy Pike"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fMossy Pike"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/mossy_pike"
+      model_id: 20121
+
+  fish_uncommon_bluewater_hake:
+    display_name: "Bluewater Hake"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fBluewater Hake"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/bluewater_hake"
+      model_id: 20122
+
+  fish_uncommon_copperhead_dace:
+    display_name: "Copperhead Dace"
+    lore:
+      - "&8Fishing catch &7• Uncommon"
+      - "&7Species: &fCopperhead Dace"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/uncommon/copperhead_dace"
+      model_id: 20123
+
+  fish_rare_abyssal_lanternfish:
+    display_name: "Abyssal Lanternfish"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fAbyssal Lanternfish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/abyssal_lanternfish"
+      model_id: 20200
+
+  fish_rare_sunken_sawfish:
+    display_name: "Sunken Sawfish"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fSunken Sawfish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/sunken_sawfish"
+      model_id: 20201
+
+  fish_rare_sapphire_stingray:
+    display_name: "Sapphire Stingray"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fSapphire Stingray"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/sapphire_stingray"
+      model_id: 20202
+
+  fish_rare_ghost_koi:
+    display_name: "Ghost Koi"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fGhost Koi"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/ghost_koi"
+      model_id: 20203
+
+  fish_rare_prism_tetra:
+    display_name: "Prism Tetra"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fPrism Tetra"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/prism_tetra"
+      model_id: 20204
+
+  fish_rare_ironjaw_barracuda:
+    display_name: "Ironjaw Barracuda"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fIronjaw Barracuda"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/ironjaw_barracuda"
+      model_id: 20205
+
+  fish_rare_pearl_seahorse:
+    display_name: "Pearl Seahorse"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fPearl Seahorse"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/pearl_seahorse"
+      model_id: 20206
+
+  fish_rare_emberfin_salmon:
+    display_name: "Emberfin Salmon"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fEmberfin Salmon"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/emberfin_salmon"
+      model_id: 20207
+
+  fish_rare_void_catfish:
+    display_name: "Void Catfish"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fVoid Catfish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/void_catfish"
+      model_id: 20208
+
+  fish_rare_thunder_manta:
+    display_name: "Thunder Manta"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fThunder Manta"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/thunder_manta"
+      model_id: 20209
+
+  fish_rare_frostbite_pike:
+    display_name: "Frostbite Pike"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fFrostbite Pike"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/frostbite_pike"
+      model_id: 20210
+
+  fish_rare_bloodscale_tuna:
+    display_name: "Bloodscale Tuna"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fBloodscale Tuna"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/bloodscale_tuna"
+      model_id: 20211
+
+  fish_rare_moonlit_angler:
+    display_name: "Moonlit Angler"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fMoonlit Angler"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/moonlit_angler"
+      model_id: 20212
+
+  fish_rare_coral_crownfish:
+    display_name: "Coral Crownfish"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fCoral Crownfish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/coral_crownfish"
+      model_id: 20213
+
+  fish_rare_stormglass_eel:
+    display_name: "Stormglass Eel"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fStormglass Eel"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/stormglass_eel"
+      model_id: 20214
+
+  fish_rare_blackwater_ray:
+    display_name: "Blackwater Ray"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fBlackwater Ray"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/blackwater_ray"
+      model_id: 20215
+
+  fish_rare_golden_grouper:
+    display_name: "Golden Grouper"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fGolden Grouper"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/golden_grouper"
+      model_id: 20216
+
+  fish_rare_deepforge_ide:
+    display_name: "Deepforge Ide"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fDeepforge Ide"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/deepforge_ide"
+      model_id: 20217
+
+  fish_rare_amethyst_betta:
+    display_name: "Amethyst Betta"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fAmethyst Betta"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/amethyst_betta"
+      model_id: 20218
+
+  fish_rare_tempest_mackerel:
+    display_name: "Tempest Mackerel"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fTempest Mackerel"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/tempest_mackerel"
+      model_id: 20219
+
+  fish_rare_obsidian_gar:
+    display_name: "Obsidian Gar"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fObsidian Gar"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/obsidian_gar"
+      model_id: 20220
+
+  fish_rare_starfall_fangfish:
+    display_name: "Starfall Fangfish"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fStarfall Fangfish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/starfall_fangfish"
+      model_id: 20221
+
+  fish_rare_royal_discus:
+    display_name: "Royal Discus"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fRoyal Discus"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/royal_discus"
+      model_id: 20222
+
+  fish_rare_rift_skate:
+    display_name: "Rift Skate"
+    lore:
+      - "&8Fishing catch &7• Rare"
+      - "&7Species: &fRift Skate"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/rare/rift_skate"
+      model_id: 20223
+
+  fish_epic_celestial_koi:
+    display_name: "Celestial Koi"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fCelestial Koi"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/celestial_koi"
+      model_id: 20300
+
+  fish_epic_leviathan_sardine:
+    display_name: "Leviathan Sardine"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fLeviathan Sardine"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/leviathan_sardine"
+      model_id: 20301
+
+  fish_epic_phoenix_betta:
+    display_name: "Phoenix Betta"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fPhoenix Betta"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/phoenix_betta"
+      model_id: 20302
+
+  fish_epic_astral_swordfish:
+    display_name: "Astral Swordfish"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fAstral Swordfish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/astral_swordfish"
+      model_id: 20303
+
+  fish_epic_nebula_ray:
+    display_name: "Nebula Ray"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fNebula Ray"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/nebula_ray"
+      model_id: 20304
+
+  fish_epic_eclipse_angelfish:
+    display_name: "Eclipse Angelfish"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fEclipse Angelfish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/eclipse_angelfish"
+      model_id: 20305
+
+  fish_epic_comet_tail:
+    display_name: "Comet Tail"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fComet Tail"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/comet_tail"
+      model_id: 20306
+
+  fish_epic_aurora_arowana:
+    display_name: "Aurora Arowana"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fAurora Arowana"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/aurora_arowana"
+      model_id: 20307
+
+  fish_epic_chronicle_sturgeon:
+    display_name: "Chronicle Sturgeon"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fChronicle Sturgeon"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/chronicle_sturgeon"
+      model_id: 20308
+
+  fish_epic_voidfin_shark:
+    display_name: "Voidfin Shark"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fVoidfin Shark"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/voidfin_shark"
+      model_id: 20309
+
+  fish_epic_tempest_dragonfish:
+    display_name: "Tempest Dragonfish"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fTempest Dragonfish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/tempest_dragonfish"
+      model_id: 20310
+
+  fish_epic_sunflare_mola:
+    display_name: "Sunflare Mola"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fSunflare Mola"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/sunflare_mola"
+      model_id: 20311
+
+  fish_epic_deepcrown_seahorse:
+    display_name: "Deepcrown Seahorse"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fDeepcrown Seahorse"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/deepcrown_seahorse"
+      model_id: 20312
+
+  fish_epic_prism_wing:
+    display_name: "Prism Wing"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fPrism Wing"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/prism_wing"
+      model_id: 20313
+
+  fish_epic_obsidian_orca:
+    display_name: "Obsidian Orca"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fObsidian Orca"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/obsidian_orca"
+      model_id: 20314
+
+  fish_epic_moonbreaker_tuna:
+    display_name: "Moonbreaker Tuna"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fMoonbreaker Tuna"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/moonbreaker_tuna"
+      model_id: 20315
+
+  fish_epic_rift_wyrm:
+    display_name: "Rift Wyrm"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fRift Wyrm"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/rift_wyrm"
+      model_id: 20316
+
+  fish_epic_sapphire_marlin:
+    display_name: "Sapphire Marlin"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fSapphire Marlin"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/sapphire_marlin"
+      model_id: 20317
+
+  fish_epic_thunderhead_manta:
+    display_name: "Thunderhead Manta"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fThunderhead Manta"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/thunderhead_manta"
+      model_id: 20318
+
+  fish_epic_gilded_coelacanth:
+    display_name: "Gilded Coelacanth"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fGilded Coelacanth"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/gilded_coelacanth"
+      model_id: 20319
+
+  fish_epic_starforge_puffer:
+    display_name: "Starforge Puffer"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fStarforge Puffer"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/starforge_puffer"
+      model_id: 20320
+
+  fish_epic_bloodmoon_barracuda:
+    display_name: "Bloodmoon Barracuda"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fBloodmoon Barracuda"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/bloodmoon_barracuda"
+      model_id: 20321
+
+  fish_epic_crystal_krakenfish:
+    display_name: "Crystal Krakenfish"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fCrystal Krakenfish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/crystal_krakenfish"
+      model_id: 20322
+
+  fish_epic_skyvault_flyfish:
+    display_name: "Skyvault Flyfish"
+    lore:
+      - "&8Fishing catch &7• Epic"
+      - "&7Species: &fSkyvault Flyfish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/epic/skyvault_flyfish"
+      model_id: 20323
+
+  fish_mythic_worldroot_koi:
+    display_name: "Worldroot Koi"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fWorldroot Koi"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/worldroot_koi"
+      model_id: 20400
+
+  fish_mythic_elder_leviathan:
+    display_name: "Elder Leviathan"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fElder Leviathan"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/elder_leviathan"
+      model_id: 20401
+
+  fish_mythic_astral_whalelet:
+    display_name: "Astral Whalelet"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fAstral Whalelet"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/astral_whalelet"
+      model_id: 20402
+
+  fish_mythic_void_emperor:
+    display_name: "Void Emperor"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fVoid Emperor"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/void_emperor"
+      model_id: 20403
+
+  fish_mythic_solar_sawfish:
+    display_name: "Solar Sawfish"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fSolar Sawfish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/solar_sawfish"
+      model_id: 20404
+
+  fish_mythic_lunar_seraph:
+    display_name: "Lunar Seraph"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fLunar Seraph"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/lunar_seraph"
+      model_id: 20405
+
+  fish_mythic_genesis_ray:
+    display_name: "Genesis Ray"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fGenesis Ray"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/genesis_ray"
+      model_id: 20406
+
+  fish_mythic_rift_angler:
+    display_name: "Rift Angler"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fRift Angler"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/rift_angler"
+      model_id: 20407
+
+  fish_mythic_timeworn_sturgeon:
+    display_name: "Timeworn Sturgeon"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fTimeworn Sturgeon"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/timeworn_sturgeon"
+      model_id: 20408
+
+  fish_mythic_crownfire_arowana:
+    display_name: "Crownfire Arowana"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fCrownfire Arowana"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/crownfire_arowana"
+      model_id: 20409
+
+  fish_mythic_stormking_marlin:
+    display_name: "Stormking Marlin"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fStormking Marlin"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/stormking_marlin"
+      model_id: 20410
+
+  fish_mythic_auric_dragonfish:
+    display_name: "Auric Dragonfish"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fAuric Dragonfish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/auric_dragonfish"
+      model_id: 20411
+
+  fish_mythic_abyss_crown_shark:
+    display_name: "Abyss Crown Shark"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fAbyss Crown Shark"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/abyss_crown_shark"
+      model_id: 20412
+
+  fish_mythic_starheart_betta:
+    display_name: "Starheart Betta"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fStarheart Betta"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/starheart_betta"
+      model_id: 20413
+
+  fish_mythic_eternal_coelacanth:
+    display_name: "Eternal Coelacanth"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fEternal Coelacanth"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/eternal_coelacanth"
+      model_id: 20414
+
+  fish_mythic_nebula_manta:
+    display_name: "Nebula Manta"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fNebula Manta"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/nebula_manta"
+      model_id: 20415
+
+  fish_mythic_nightveil_eel:
+    display_name: "Nightveil Eel"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fNightveil Eel"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/nightveil_eel"
+      model_id: 20416
+
+  fish_mythic_dawnbringer_tuna:
+    display_name: "Dawnbringer Tuna"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fDawnbringer Tuna"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/dawnbringer_tuna"
+      model_id: 20417
+
+  fish_mythic_prismatic_mola:
+    display_name: "Prismatic Mola"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fPrismatic Mola"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/prismatic_mola"
+      model_id: 20418
+
+  fish_mythic_obsidian_leviathan:
+    display_name: "Obsidian Leviathan"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fObsidian Leviathan"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/obsidian_leviathan"
+      model_id: 20419
+
+  fish_mythic_celestial_seahorse:
+    display_name: "Celestial Seahorse"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fCelestial Seahorse"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/celestial_seahorse"
+      model_id: 20420
+
+  fish_mythic_frostnova_pike:
+    display_name: "Frostnova Pike"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fFrostnova Pike"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/frostnova_pike"
+      model_id: 20421
+
+  fish_mythic_crimson_cometfish:
+    display_name: "Crimson Cometfish"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fCrimson Cometfish"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/crimson_cometfish"
+      model_id: 20422
+
+  fish_mythic_skyfather_orca:
+    display_name: "Skyfather Orca"
+    lore:
+      - "&8Fishing catch &7• Mythic"
+      - "&7Species: &fSkyfather Orca"
+    resource:
+      material: COD
+      generate: false
+      model_path: "item/fish/mythic/skyfather_orca"
+      model_id: 20423
+
+  vote_key:
+    display_name: "Vote Key"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: PAPER"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: "item/keys/vote_key"
+      model_id: 21000
+
+  river_key:
+    display_name: "River Key"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: TRIPWIRE_HOOK"
+    resource:
+      material: TRIPWIRE_HOOK
+      generate: false
+      model_path: "item/keys/river_key"
+      model_id: 21001
+
+  sky_key:
+    display_name: "Sky Key"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: TRIPWIRE_HOOK"
+    resource:
+      material: TRIPWIRE_HOOK
+      generate: false
+      model_path: "item/keys/sky_key"
+      model_id: 21002
+
+  crimson_key:
+    display_name: "Crimson Key"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: BLAZE_POWDER"
+    resource:
+      material: BLAZE_POWDER
+      generate: false
+      model_path: "item/keys/crimson_key"
+      model_id: 21003
+
+  boost_key:
+    display_name: "Boost Key"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: AMETHYST_SHARD"
+    resource:
+      material: AMETHYST_SHARD
+      generate: false
+      model_path: "item/keys/boost_key"
+      model_id: 21004
+
+  ember_key:
+    display_name: "Ember Key"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: BLAZE_POWDER"
+    resource:
+      material: BLAZE_POWDER
+      generate: false
+      model_path: "item/keys/ember_key"
+      model_id: 21005
+
+  rune_key:
+    display_name: "Rune Key"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: AMETHYST_SHARD"
+    resource:
+      material: AMETHYST_SHARD
+      generate: false
+      model_path: "item/keys/rune_key"
+      model_id: 21006
+
+  titan_key:
+    display_name: "Titan Key"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: NETHERITE_SCRAP"
+    resource:
+      material: NETHERITE_SCRAP
+      generate: false
+      model_path: "item/keys/titan_key"
+      model_id: 21007
+
+  mythic_key:
+    display_name: "Mythic Key"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: NETHER_STAR"
+    resource:
+      material: NETHER_STAR
+      generate: false
+      model_path: "item/keys/mythic_key"
+      model_id: 21008
+
+  daily_key:
+    display_name: "Daily Key"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: CLOCK"
+    resource:
+      material: CLOCK
+      generate: false
+      model_path: "item/keys/daily_key"
+      model_id: 21009
+
+  core_lootbox:
+    display_name: "Core Lootbox"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: CHEST"
+    resource:
+      material: CHEST
+      generate: false
+      model_path: "item/lootboxes/core"
+      model_id: 21100
+
+  monthly_lootbox:
+    display_name: "Monthly Lootbox"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: ENDER_CHEST"
+    resource:
+      material: ENDER_CHEST
+      generate: false
+      model_path: "item/lootboxes/monthly"
+      model_id: 21101
+
+  seasonal_lootbox:
+    display_name: "Seasonal Lootbox"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: SHULKER_BOX"
+    resource:
+      material: SHULKER_BOX
+      generate: false
+      model_path: "item/lootboxes/seasonal"
+      model_id: 21102
+
+  sky_crate:
+    display_name: "Sky Crate"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: ENDER_CHEST"
+    resource:
+      material: ENDER_CHEST
+      generate: false
+      model_path: "item/lootboxes/sky"
+      model_id: 21103
+
+  ember_crate:
+    display_name: "Ember Crate"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: ENDER_CHEST"
+    resource:
+      material: ENDER_CHEST
+      generate: false
+      model_path: "item/lootboxes/ember"
+      model_id: 21104
+
+  rune_crate:
+    display_name: "Rune Crate"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: ENDER_CHEST"
+    resource:
+      material: ENDER_CHEST
+      generate: false
+      model_path: "item/lootboxes/rune"
+      model_id: 21105
+
+  titan_crate:
+    display_name: "Titan Crate"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: ENDER_CHEST"
+    resource:
+      material: ENDER_CHEST
+      generate: false
+      model_path: "item/lootboxes/titan"
+      model_id: 21106
+
+  mythic_crate:
+    display_name: "Mythic Crate"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: ENDER_CHEST"
+    resource:
+      material: ENDER_CHEST
+      generate: false
+      model_path: "item/lootboxes/mythic"
+      model_id: 21107
+
+  daily_crate:
+    display_name: "Daily Crate"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: CHEST"
+    resource:
+      material: CHEST
+      generate: false
+      model_path: "item/lootboxes/daily"
+      model_id: 21108
+
+  core_fragment:
+    display_name: "Core Fragment"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: AMETHYST_SHARD"
+    resource:
+      material: AMETHYST_SHARD
+      generate: false
+      model_path: "item/progression/core_fragment"
+      model_id: 21200
+
+  generator_core:
+    display_name: "Generator Core"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: HEART_OF_THE_SEA"
+    resource:
+      material: HEART_OF_THE_SEA
+      generate: false
+      model_path: "item/progression/generator_core"
+      model_id: 21201
+
+  ancient_seed:
+    display_name: "Ancient Seed"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: WHEAT_SEEDS"
+    resource:
+      material: WHEAT_SEEDS
+      generate: false
+      model_path: "item/progression/ancient_seed"
+      model_id: 21202
+
+  ancient_ore:
+    display_name: "Ancient Ore"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: ANCIENT_DEBRIS"
+    resource:
+      material: ANCIENT_DEBRIS
+      generate: false
+      model_path: "item/progression/ancient_ore"
+      model_id: 21203
+
+  sunken_cache:
+    display_name: "Sunken Cache"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: CHEST"
+    resource:
+      material: CHEST
+      generate: false
+      model_path: "item/progression/sunken_cache"
+      model_id: 21204
+
+  monster_relic:
+    display_name: "Monster Relic"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: WITHER_SKELETON_SKULL"
+    resource:
+      material: WITHER_SKELETON_SKULL
+      generate: false
+      model_path: "item/progression/monster_relic"
+      model_id: 21205
+
+  rift_shard:
+    display_name: "Rift Shard"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: ECHO_SHARD"
+    resource:
+      material: ECHO_SHARD
+      generate: false
+      model_path: "item/progression/rift_shard"
+      model_id: 21206
+
+  rift_crystal:
+    display_name: "Rift Crystal"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: AMETHYST_CLUSTER"
+    resource:
+      material: AMETHYST_CLUSTER
+      generate: false
+      model_path: "item/progression/rift_crystal"
+      model_id: 21207
+
+  rift_essence:
+    display_name: "Rift Essence"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: DRAGON_BREATH"
+    resource:
+      material: DRAGON_BREATH
+      generate: false
+      model_path: "item/progression/rift_essence"
+      model_id: 21208
+
+  island_module_frame:
+    display_name: "Island Module Frame"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: IRON_BLOCK"
+    resource:
+      material: IRON_BLOCK
+      generate: false
+      model_path: "item/progression/island_module_frame"
+      model_id: 21209
+
+  island_module_core:
+    display_name: "Island Module Core"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: NETHER_STAR"
+    resource:
+      material: NETHER_STAR
+      generate: false
+      model_path: "item/progression/island_module_core"
+      model_id: 21210
+
+  island_module_wiring:
+    display_name: "Island Module Wiring"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: REDSTONE"
+    resource:
+      material: REDSTONE
+      generate: false
+      model_path: "item/progression/island_module_wiring"
+      model_id: 21211
+
+  companion_evolution_stone:
+    display_name: "Companion Evolution Stone"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: GLOWSTONE_DUST"
+    resource:
+      material: GLOWSTONE_DUST
+      generate: false
+      model_path: "item/progression/companion_evolution_stone"
+      model_id: 21212
+
+  companion_evolution_shard:
+    display_name: "Companion Evolution Shard"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: PRISMARINE_CRYSTALS"
+    resource:
+      material: PRISMARINE_CRYSTALS
+      generate: false
+      model_path: "item/progression/companion_evolution_shard"
+      model_id: 21213
+
+  companion_memory:
+    display_name: "Companion Memory"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: KNOWLEDGE_BOOK"
+    resource:
+      material: KNOWLEDGE_BOOK
+      generate: false
+      model_path: "item/progression/companion_memory"
+      model_id: 21214
+
+  spring_token:
+    display_name: "Spring Token"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: PINK_TULIP"
+    resource:
+      material: PINK_TULIP
+      generate: false
+      model_path: "item/seasonal/spring_token"
+      model_id: 21215
+
+  summer_token:
+    display_name: "Summer Token"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: SUNFLOWER"
+    resource:
+      material: SUNFLOWER
+      generate: false
+      model_path: "item/seasonal/summer_token"
+      model_id: 21216
+
+  autumn_token:
+    display_name: "Autumn Token"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: ORANGE_DYE"
+    resource:
+      material: ORANGE_DYE
+      generate: false
+      model_path: "item/seasonal/autumn_token"
+      model_id: 21217
+
+  winter_token:
+    display_name: "Winter Token"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: SNOWBALL"
+    resource:
+      material: SNOWBALL
+      generate: false
+      model_path: "item/seasonal/winter_token"
+      model_id: 21218
+
+  omnitool_miner:
+    display_name: "Miner Omni-Tool"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: NETHERITE_PICKAXE"
+    resource:
+      material: NETHERITE_PICKAXE
+      generate: false
+      model_path: "item/tools/omnitool_miner"
+      model_id: 21400
+
+  omnitool_farmer:
+    display_name: "Farmer Omni-Tool"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: NETHERITE_PICKAXE"
+    resource:
+      material: NETHERITE_PICKAXE
+      generate: false
+      model_path: "item/tools/omnitool_farmer"
+      model_id: 21401
+
+  omnitool_fisher:
+    display_name: "Fisher Omni-Tool"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: NETHERITE_PICKAXE"
+    resource:
+      material: NETHERITE_PICKAXE
+      generate: false
+      model_path: "item/tools/omnitool_fisher"
+      model_id: 21402
+
+  omnitool_slayer:
+    display_name: "Slayer Omni-Tool"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: NETHERITE_PICKAXE"
+    resource:
+      material: NETHERITE_PICKAXE
+      generate: false
+      model_path: "item/tools/omnitool_slayer"
+      model_id: 21403
+
+  omnitool_logger:
+    display_name: "Logger Omni-Tool"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: NETHERITE_PICKAXE"
+    resource:
+      material: NETHERITE_PICKAXE
+      generate: false
+      model_path: "item/tools/omnitool_logger"
+      model_id: 21404
+
+  omnitool_universal:
+    display_name: "Universal Omni-Tool"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: NETHERITE_PICKAXE"
+    resource:
+      material: NETHERITE_PICKAXE
+      generate: false
+      model_path: "item/tools/omnitool_universal"
+      model_id: 21405
+
+  generator_skin_cobble:
+    display_name: "Generator Skin: Cinderstone"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: PAPER"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: "item/skins/generator/cinderstone"
+      model_id: 21500
+
+  generator_skin_ice:
+    display_name: "Generator Skin: Glacial Relay"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: PAPER"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: "item/skins/generator/glacial_relay"
+      model_id: 21501
+
+  generator_skin_rift:
+    display_name: "Generator Skin: Rift Prism"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: PAPER"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: "item/skins/generator/rift_prism"
+      model_id: 21502
+
+  companion_skin_emberfox:
+    display_name: "Companion Skin: Emberfox"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: PAPER"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: "item/skins/companion/emberfox"
+      model_id: 21510
+
+  companion_skin_moonmoth:
+    display_name: "Companion Skin: Moonmoth"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: PAPER"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: "item/skins/companion/moonmoth"
+      model_id: 21511
+
+  companion_skin_starseed:
+    display_name: "Companion Skin: Starseed"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: PAPER"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: "item/skins/companion/starseed"
+      model_id: 21512

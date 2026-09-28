@@ -37,6 +37,16 @@ public final class OmniToolService {
     private final NamespacedKey markerKey;
     private final NamespacedKey roleKey;
 
+    /** Stable ItemsAdder model ids. These affect presentation only; the
+     * soulbound PDC role binding below remains the authoritative identity. */
+    private static final Map<Role, Integer> ROLE_MODEL_IDS = Map.of(
+            Role.MINER, 21400,
+            Role.FARMER, 21401,
+            Role.FISHER, 21402,
+            Role.SLAYER, 21403,
+            Role.LOGGER, 21404,
+            Role.UNIVERSAL, 21405);
+
     /** uuid -> tools held in trust across death until respawn. */
     private final Map<UUID, List<ItemStack>> respawnTrust = new ConcurrentHashMap<>();
 
@@ -118,6 +128,10 @@ public final class OmniToolService {
         meta.setUnbreakable(true);
         meta.getPersistentDataContainer().set(markerKey, PersistentDataType.BYTE, (byte) 1);
         meta.getPersistentDataContainer().set(roleKey, PersistentDataType.STRING, role.key());
+        // Custom model data is an optional visual layer. The NETHERITE_PICKAXE
+        // fallback, OmniTool marker, role PDC, lore and upgrade enchantments
+        // are unchanged when a pack is absent.
+        meta.setCustomModelData(ROLE_MODEL_IDS.getOrDefault(role, 21405));
         applyUpgradeEnchants(meta, profile);
         item.setItemMeta(meta);
         return item;
@@ -184,10 +198,13 @@ public final class OmniToolService {
                 continue;
             }
             final ItemMeta meta = item.getItemMeta();
+            final Role role = boundRole(item);
+            if (role != null) {
+                meta.setCustomModelData(ROLE_MODEL_IDS.getOrDefault(role, 21405));
+            }
             applyUpgradeEnchants(meta, profile);
             // Rebuild lore deterministically from the template (upgrade lines
             // must never be duplicated across refresh cycles).
-            final Role role = boundRole(item);
             if (role != null) {
                 final List<String> fresh = new ArrayList<>();
                 fresh.add(ColorUtil.colorize("&7Role: " + role.display()));
