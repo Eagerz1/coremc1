@@ -47,7 +47,7 @@ public final class SkinService {
 
     private final CoreMCPlugin plugin;
     private final NamespacedKey toolSkinKey;
-    private volatile SkinCatalog catalog = new SkinCatalog(Set.of(), Set.of());
+    private volatile SkinCatalog catalog = SkinCatalog.empty();
 
     public SkinService(final CoreMCPlugin plugin) {
         this.plugin = plugin;

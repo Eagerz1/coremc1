@@ -35,6 +35,11 @@ public final class SkinCatalog {
         this.alwaysKeepSources = alwaysKeepSources;
     }
 
+    /** An empty catalogue (used before the first successful load). */
+    public static SkinCatalog empty() {
+        return new SkinCatalog(Set.of(), Set.of());
+    }
+
     /**
      * Parses the raw {@code skins.yml} map.
      *
