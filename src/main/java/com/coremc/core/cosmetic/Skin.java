@@ -56,7 +56,9 @@ public record Skin(
             throw new IllegalArgumentException("skin model id must be positive: " + id);
         }
         Objects.requireNonNull(material, "material");
-        if (material.isAir()) {
+        // pure enum comparison on purpose: Material.isAir() is registry-backed
+        // on Paper 1.21 and must never run in a bare-JVM unit test
+        if (material == Material.AIR || material == Material.CAVE_AIR || material == Material.VOID_AIR) {
             throw new IllegalArgumentException("skin material must not be air: " + id);
         }
     }

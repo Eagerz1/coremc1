@@ -227,12 +227,14 @@ public final class SkinCatalog {
     }
 
     private static Material material(final Object value, final Material fallback, final String id) {
+        if (value == null) {
+            return fallback;
+        }
         final Material parsed = Material.matchMaterial(String.valueOf(value));
-        if (parsed == null || parsed.isAir()) {
-            if (value != null) {
-                // note: reported by the caller's problems list through problems()
-                return fallback;
-            }
+        // pure comparisons only: registry-backed Material methods must stay
+        // out of the bare-JVM unit-tested parse path (Paper 1.21)
+        if (parsed == null
+                || parsed == Material.AIR || parsed == Material.CAVE_AIR || parsed == Material.VOID_AIR) {
             return fallback;
         }
         return parsed;
