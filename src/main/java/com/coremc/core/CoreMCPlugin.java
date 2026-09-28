@@ -86,6 +86,10 @@ public final class CoreMCPlugin extends JavaPlugin {
     private com.coremc.core.island.IslandActivityEffects islandActivityEffects;
     private com.coremc.core.island.IslandProgressService islandProgressService;
     private com.coremc.core.island.IslandBuffService islandBuffService;
+    private com.coremc.core.chat.TagService tagService;
+    private com.coremc.core.chat.ChatStyleService chatStyleService;
+    private com.coremc.core.chat.RankService rankService;
+    private com.coremc.core.chat.ChatFormatService chatFormatService;
 
     /**
      * Creates (or attaches to) the dedicated island world. Islands live in
@@ -197,6 +201,20 @@ public final class CoreMCPlugin extends JavaPlugin {
         final int enchantCount = enchantService.load();
         this.keyService = new KeyService(this);
         final int keyCount = keyService.load();
+        // Chat cosmetics BEFORE crates: crate rewards of type TAG/CHAT_STYLE
+        // validate their ids against these live catalogues.
+        this.tagService = new com.coremc.core.chat.TagService(this);
+        final int tagCount = tagService.load();
+        this.chatStyleService = new com.coremc.core.chat.ChatStyleService(this);
+        final int styleCount = chatStyleService.load();
+        this.chatFormatService = new com.coremc.core.chat.ChatFormatService(this);
+        this.chatFormatService.load();
+        this.rankService = new com.coremc.core.chat.RankService(this);
+        final int rankCount = rankService.load();
+        rankService.startRefreshTask();
+        getLogger().info("Loaded " + tagCount + " chat tag(s), " + styleCount
+                + " chat style(s), " + rankCount + " rank prefix(es).");
+
         // Crates last: reward refs validate against the live catalogues above.
         this.crateService = new CrateService(this);
         final int crateCount = crateService.load();
@@ -205,6 +223,7 @@ public final class CoreMCPlugin extends JavaPlugin {
                 + enchantCount + " enchant(s), " + keyCount + " crate key(s), "
                 + crateCount + " crate(s), "
                 + skinCount + " animated skin(s).");
+
 
         // 4. Listeners.
         this.enchantEngine = new EnchantEngine(this);
@@ -234,6 +253,10 @@ public final class CoreMCPlugin extends JavaPlugin {
         pluginManager.registerEvents(new FarmingEnchantHandler(this, enchantEngine), this);
         pluginManager.registerEvents(new FishingEnchantHandler(this, enchantEngine), this);
         pluginManager.registerEvents(new SlayerEnchantHandler(this, enchantEngine), this);
+        pluginManager.registerEvents(new com.coremc.core.chat.CosmeticsListener(this), this);
+        // Chat formatting registers itself at the configured priority with
+        // ignore-cancelled = true, so mutes/moderation always win first.
+        new com.coremc.core.chat.ChatListener(this).register();
 
         // Spawner liveness watchdog (normalises legacy tiles + re-arms stalls).
         spawnerService.startWatchdog();
@@ -292,6 +315,10 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.islandProgressService = null;
         this.guiService = null;
         this.cosmeticSkinService = null;
+        this.tagService = null;
+        this.chatStyleService = null;
+        this.chatFormatService = null;
+        this.rankService = null;
         this.omniToolService = null;
         this.roleService = null;
         getLogger().info("CoreMC disabled — all player data saved, all tasks cancelled.");
@@ -316,6 +343,12 @@ public final class CoreMCPlugin extends JavaPlugin {
         omniToolService.load();
         enchantService.load();
         keyService.load();
+        // Cosmetics before crates: TAG/CHAT_STYLE rewards validate against them.
+        tagService.load();
+        chatStyleService.load();
+        chatFormatService.load();
+        rankService.load();
+        rankService.startRefreshTask();
         crateService.load();
         islandActivityEffects.clearCaches();
     }
@@ -390,6 +423,23 @@ public final class CoreMCPlugin extends JavaPlugin {
             throw new IllegalStateException("Command 'crates' missing from plugin.yml");
         }
         crates.setExecutor(new CratesCommand(this));
+
+        final PluginCommand tags = getCommand("tags");
+        if (tags == null) {
+            throw new IllegalStateException("Command 'tags' missing from plugin.yml");
+        }
+        final com.coremc.core.chat.TagsCommand tagsCommand = new com.coremc.core.chat.TagsCommand(this);
+        tags.setExecutor(tagsCommand);
+        tags.setTabCompleter(tagsCommand);
+
+        final PluginCommand chatColour = getCommand("chatcolour");
+        if (chatColour == null) {
+            throw new IllegalStateException("Command 'chatcolour' missing from plugin.yml");
+        }
+        final com.coremc.core.chat.ChatColourCommand chatColourCommand =
+                new com.coremc.core.chat.ChatColourCommand(this);
+        chatColour.setExecutor(chatColourCommand);
+        chatColour.setTabCompleter(chatColourCommand);
 
         final ShopCommand shopCommand = new ShopCommand(this);
         for (final String name : new String[] {"shop", "tokenshop"}) {
@@ -530,5 +580,25 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Crate lineup, rolls and pity. */
     public CrateService crates() {
         return crateService;
+    }
+
+    /** Cosmetic chat tags (catalogue, ownership, selection, reward hooks). */
+    public com.coremc.core.chat.TagService tags() {
+        return tagService;
+    }
+
+    /** Chat colours and gradients (/chatcolour). */
+    public com.coremc.core.chat.ChatStyleService chatStyles() {
+        return chatStyleService;
+    }
+
+    /** Rank prefix resolution for the chat format. */
+    public com.coremc.core.chat.RankService ranks() {
+        return rankService;
+    }
+
+    /** Public-chat layout: &lt;RANK&gt; &lt;TAG&gt; Player: Message. */
+    public com.coremc.core.chat.ChatFormatService chatFormat() {
+        return chatFormatService;
     }
 }

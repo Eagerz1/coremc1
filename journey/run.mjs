@@ -25,6 +25,10 @@
 //   P8  outsider protection: guest dig denied, block intact
 //   P9  /gens: four generators render; buy cobble gen, place, harvest
 //   P10 void rescue back home
+//   P10b chat cosmetics: /tags + /chatcolour GUIs, locked/selected states,
+//       admin grant/revoke/check, the exact <RANK> <TAG> Player: Message
+//       layout seen by a SECOND player, clean spacing with no tag/rank,
+//       gradient + bold, '&' injection prevention, and no duplicate chat
 //   P11 clean restart: everything persists (live + data-file asserts,
 //       incl. dotted enchant ids and ancient skeleton progress)
 //   P12 full-log audit: zero server ERRORs, zero CoreMC warn/error lines
@@ -187,7 +191,21 @@ function makeBot(name) {
   }
   bot._client.on('login', readWorld)
   bot._client.on('respawn', readWorld)
+  bot.__raw = []
   bot.on('messagestr', (m) => { bot.__chat.push(m); if (bot.__chat.length > 600) bot.__chat.shift() })
+  // Raw component JSON: lets the chat-cosmetics phase assert COLOURS
+  // (messagestr is plain text and would hide formatting entirely).
+  bot.on('message', (msg) => {
+    try { bot.__raw.push(JSON.stringify(msg.json ?? msg)) } catch { /* noop */ }
+    if (bot.__raw.length > 600) bot.__raw.shift()
+  })
+  // Signed player chat: vanilla clients display 'unsignedChatContent' when a
+  // plugin rewrote the line. mineflayer renders the SIGNED content instead,
+  // so grab the raw packet to see what real clients would be shown.
+  bot._client.on('player_chat', (packet) => {
+    try { bot.__raw.push(JSON.stringify(packet)) } catch { /* noop */ }
+    if (bot.__raw.length > 600) bot.__raw.shift()
+  })
   bot.on('error', (e) => log(`[${name}] bot error: ${e.message}`))
   bot.on('kicked', (reason) => {
     if (expectedQuit.has(name)) return // our own .quit() surfaces as a kick
@@ -207,7 +225,39 @@ async function waitSpawn(bot, timeoutMs = 90000) {
     bot.once('spawn', () => { clearTimeout(t); resolve(true) })
   })
 }
-function clearChat(bot) { bot.__chat.length = 0 }
+function clearChat(bot) { bot.__chat.length = 0; if (bot.__raw) bot.__raw.length = 0 }
+/** Server log with ANSI/section colour noise removed. */
+function serverLogText() {
+  const raw = fs.existsSync(SERVER_LOG) ? fs.readFileSync(SERVER_LOG, 'utf8') : ''
+  // eslint-disable-next-line no-control-regex
+  return raw.replace(/\u001b\[[0-9;]*m/g, '').replace(/\u00a7[0-9a-fk-or]/gi, '')
+}
+/**
+ * Waits for a rendered chat line in the server log. The console is a real
+ * chat viewer, so this is the authoritative view of what CoreMC rendered.
+ */
+async function waitServerLog(rx, timeoutMs = 20000) {
+  const re = rx instanceof RegExp ? rx : new RegExp(rx, 'i')
+  const t0 = Date.now()
+  while (Date.now() - t0 < timeoutMs) {
+    const hit = serverLogText().match(re)
+    if (hit) return hit
+    await sleep(400)
+  }
+  return null
+}
+/** Occurrences of a rendered line in the server log (duplicate-chat guard). */
+function serverLogCount(text) {
+  return serverLogText().split('\n').filter((l) => l.includes(text)).length
+}
+/** Number of received lines containing {@code text} (duplicate-chat guard). */
+function chatCount(bot, text) {
+  return bot.__chat.filter((m) => m.includes(text)).length
+}
+/** Raw component JSON of the first received line containing {@code text}. */
+function rawWith(bot, text) {
+  return (bot.__raw || []).find((j) => j.includes(text)) || ''
+}
 async function waitChat(bot, rx, timeoutMs = 25000) {
   const re = rx instanceof RegExp ? rx : new RegExp(rx, 'i')
   const t0 = Date.now()
@@ -1163,6 +1213,145 @@ async function main() {
     check(await waitChat(owner, /now wearing/i), 're-wear keeps the hat for the restart check')
   }
   await closeWin(owner)
+  // ------------------------------------------------ P10b chat cosmetics
+  phase('10b', 'chat cosmetics: /tags, /chatcolour, <RANK> <TAG> Player: Message')
+  guest = makeBot(GUEST)
+  check(await waitSpawn(guest), 'guest rejoins for the chat phase')
+  await waitUntil(() => guest.__world !== null, 30000)
+  await sleep(1500)
+
+  // --- /tags GUI: locked state before any grant
+  win = await openWindow(owner, '/tags')
+  check(win && win.inventoryStart === 54, '/tags opens a 54-slot panel')
+  check(win && slotJson(win, 10).includes('grinder'), 'first tag (grinder) renders at slot 10')
+  check(win && slotJson(win, 10).includes('locked'), 'unowned tag shows the LOCKED state')
+  check(win && slotJson(win, 49).includes('clear tag'), 'clear-selection button renders')
+  const tagSlots = [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33]
+  check(win && tagSlots.every((s) => slotType(win, s) !== null), 'all 20 tags render on one page')
+  if (win) await closeWin(owner)
+
+  clearChat(owner)
+  owner.chat('/tags select grinder')
+  check(await waitChat(owner, /not unlocked/i, 15000), 'locked tag cannot be selected')
+
+  // --- staff grant (console) then select
+  clearChat(owner)
+  const grantOut = await rc('tags grant JOwner grinder')
+  check(/granted tag/i.test(String(grantOut)), 'console /tags grant confirms', String(grantOut).slice(0, 120))
+  check(await waitChat(owner, /tag unlocked/i, 15000), 'player is told the tag unlocked')
+  clearChat(owner)
+  owner.chat('/tags select grinder')
+  check(await waitChat(owner, /equipped/i, 15000), 'granted tag equips')
+
+  // --- the layout a SECOND player sees.
+  //
+  // mineflayer renders the SIGNED content of player chat and ignores the
+  // plugin-rendered 'unsignedChatContent', so the rendered line is asserted
+  // on the server console (a real chat viewer) and on the raw packet that
+  // vanilla clients actually display.
+  clearChat(guest)
+  owner.chat('hello from the grind')
+  check(!!await waitServerLog(/\[GRINDER\] JOwner: hello from the grind/, 20000),
+    'rendered line is <TAG> Player: Message')
+  check(!!await waitChat(guest, /hello from the grind/, 15000), 'second player receives the message')
+  check(chatCount(guest, 'hello from the grind') === 1, 'message is delivered exactly once (no double chat)',
+    `count=${chatCount(guest, 'hello from the grind')}`)
+  check(serverLogCount('hello from the grind') === 1, 'server logs the chat line exactly once',
+    `count=${serverLogCount('hello from the grind')}`)
+  const taggedRaw = rawWith(guest, 'hello from the grind')
+  check(/GRINDER/.test(taggedRaw), 'clients receive the tag in the rendered component',
+    taggedRaw.slice(0, 220))
+
+  // --- rank prefix first: op the owner so the configured rank matches
+  await rc('op JOwner')
+  await rc('coremc reload')
+  await sleep(1500)
+  clearChat(guest)
+  owner.chat('ranked line')
+  check(!!await waitServerLog(/\[OWNER\] \[GRINDER\] JOwner: ranked line/, 20000),
+    'exact <RANK> <TAG> Player: Message ordering')
+
+  // --- /chatcolour GUI + gradient + bold
+  win = await openWindow(owner, '/chatcolour')
+  check(win && win.inventoryStart === 54, '/chatcolour opens a 54-slot panel')
+  check(win && slotJson(win, 10).includes('white'), 'solid colours render (white at slot 10)')
+  check(win && [10, 11, 12, 13, 14, 15, 16, 17].every((s) => slotType(win, s) !== null),
+    'all eight solid colours render')
+  check(win && [29, 30, 31, 32, 33].every((s) => slotType(win, s) !== null),
+    'all five gradients render')
+  check(win && slotJson(win, 29).includes('sun'), 'sunset gradient renders first')
+  check(win && slotJson(win, 22).includes('preview'), 'preview item renders')
+  check(win && slotJson(win, 48).includes('bold'), 'bold toggle renders')
+  check(win && slotJson(win, 50).includes('reset'), 'reset button renders')
+  if (win) await closeWin(owner)
+
+  clearChat(owner)
+  owner.chat('/chatcolour set sunset')
+  check(await waitChat(owner, /selected/i, 15000), 'gradient style selects')
+  clearChat(guest)
+  const unicodeLine = 'gradient unicode \u2713 test ok'
+  owner.chat(unicodeLine)
+  check(!!await waitServerLog(/JOwner: gradient unicode \u2713 test ok/, 20000),
+    'gradient message keeps punctuation and Unicode intact')
+  const gradientRaw = rawWith(guest, 'gradient unicode')
+  check(/#[0-9a-f]{6}/i.test(gradientRaw), 'gradient renders real hex colours to clients',
+    gradientRaw.slice(0, 260))
+  check(!gradientRaw.includes('minimessage') && !/<\/?[a-z_]+>/.test(gradientRaw),
+    'no MiniMessage markup leaks into chat')
+
+  clearChat(owner)
+  owner.chat('/chatcolour bold')
+  check(await waitChat(owner, /bold is now/i, 15000), 'bold toggles')
+  clearChat(guest)
+  owner.chat('bolded gradient')
+  check(!!await waitServerLog(/JOwner: bolded gradient/, 20000), 'bolded message is rendered')
+  check(/bold/i.test(rawWith(guest, 'bolded gradient')), 'bold reaches the client component',
+    rawWith(guest, 'bolded gradient').slice(0, 220))
+  clearChat(owner)
+  owner.chat('/chatcolour reset')
+  check(await waitChat(owner, /reset/i, 15000), 'chat style resets')
+
+  // --- '&' injection is stripped for players without coremc.chat.format
+  clearChat(owner)
+  guest.chat('&cred &kobf attempt')
+  check(!!await waitServerLog(/JGuest: red obf attempt/, 20000),
+    "players cannot inject '&' formatting codes (codes stripped from the body)")
+  const injectedRaw = rawWith(owner, 'obf attempt')
+  check(!/"obfuscated":\s*(true|1|"1")/.test(injectedRaw), 'players cannot inject obfuscation',
+    injectedRaw.slice(0, 220))
+  check(!/"color":\s*"red"/.test(injectedRaw), 'players cannot inject colours', injectedRaw.slice(0, 220))
+
+  // --- clearing the tag leaves no double space
+  clearChat(owner)
+  owner.chat('/tags clear')
+  check(await waitChat(owner, /cleared/i, 15000), '/tags clear confirms')
+  clearChat(guest)
+  owner.chat('plain line here')
+  const plain = await waitServerLog(/\[OWNER\] JOwner: plain line here/, 20000)
+  check(!!plain, 'no tag renders cleanly with no leftover space')
+  check(!!plain && !/ {2}/.test(String(plain[0])), 'no double space in the rendered line', String(plain))
+
+  // --- staff check / revoke
+  const checkOut = await rc('tags check JOwner')
+  check(/grinder/i.test(String(checkOut)), 'console /tags check lists owned tags', String(checkOut).slice(0, 160))
+  const revokeOut = await rc('tags revoke JOwner grinder')
+  check(/revoked|nothing/i.test(String(revokeOut)), 'console /tags revoke answers', String(revokeOut).slice(0, 160))
+
+  // --- re-grant the cosmetics that phase 11 asserts persist
+  await rc('tags grant JOwner grinder')
+  await rc('chatcolour grant JOwner sunset')
+  await sleep(500)
+  clearChat(owner)
+  owner.chat('/tags select grinder')
+  await waitChat(owner, /equipped/i, 15000)
+  clearChat(owner)
+  owner.chat('/chatcolour set sunset')
+  await waitChat(owner, /selected/i, 15000)
+
+  await rc('deop JOwner')
+  await rc('coremc reload')
+  quitBot(guest, GUEST)
+  await sleep(1500)
 
   // ------------------------------------------------ P11 restart
   phase(11, 'clean restart: everything persists')
@@ -1208,6 +1397,15 @@ async function main() {
   owner.chat('/is info')
   check(await waitChat(owner, /JOwner/i, 15000), '/is info shows the owner')
 
+  // cosmetics survive the restart and still render
+  win = await openWindow(owner, '/tags')
+  check(win && slotJson(win, 10).includes('selected'), 'tag selection persists across restart')
+  if (win) await closeWin(owner)
+  clearChat(owner)
+  owner.chat('after restart')
+  check(!!await waitServerLog(/\[GRINDER\] JOwner: after restart/, 20000),
+    'tag still renders in chat after restart')
+
   // data-file asserts (post-stop flush => files are authoritative now)
   // The username index lives INSIDE the profiles directory.
   const users = yamlLoad(fs.readFileSync(path.join(PLUGIN_DIR, 'profiles', 'usernames.yml'), 'utf8'))
@@ -1228,6 +1426,20 @@ async function main() {
     check(spawnerKills >= 1, 'profile: spawner-mobs-killed stat recorded', String(spawnerKills))
     const pity = (profile.stats && profile.stats['crate-pity:sky']) || 0
     check(pity === 0, 'profile: sky pity counter reset by payout', `pity=${pity}`)
+    const ownedTags = profile['owned-tags'] || []
+    check(ownedTags.includes('grinder'), 'profile: tag ownership stored by stable id',
+      JSON.stringify(ownedTags))
+    check(profile['equipped-tag'] === 'grinder', 'profile: equipped tag stored by stable id',
+      String(profile['equipped-tag']))
+    check(profile['chat-color'] === 'sunset', 'profile: chat style stored by stable id',
+      String(profile['chat-color']))
+    check((profile['owned-chat-styles'] || []).includes('sunset'),
+      'profile: chat style ownership persisted', JSON.stringify(profile['owned-chat-styles']))
+    const profileRaw = fs.readFileSync(path.join(PLUGIN_DIR, 'profiles', `${uuid}.yml`), 'utf8')
+    check(!profileRaw.includes('\u00a7') && !profileRaw.includes('#ff5555'),
+      'profile: no rendered colour output is ever persisted')
+    check(profile['schema-version'] === 7, 'profile: schema migrated to v7',
+      String(profile['schema-version']))
     const enchLvl = (profile['enchant-levels'] && profile['enchant-levels']['miner.treasure-miner']) || 0
     check(enchLvl >= 1, 'profile: dotted treasure-miner id persisted literally', `level=${enchLvl}`)
     check(profile.money === snapMoney && profile.credits === snapCredits

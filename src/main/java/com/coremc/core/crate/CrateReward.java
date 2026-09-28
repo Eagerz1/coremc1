@@ -23,7 +23,8 @@ public record CrateReward(
         String key,
         /** KEY / ITEM: stack size granted. */
         int amount,
-        /** SPAWNER: purchasable tier id (zombie-2). GENERATOR: gen id (quartz). SKIN: skin id. */
+        /** SPAWNER: tier id (zombie-2). GENERATOR: gen id (quartz). */
+        /** TAG/CHAT_STYLE/SKIN: stable cosmetic id. */
         String refId,
         /** ITEM: Bukkit material name. */
         String material,
@@ -37,6 +38,10 @@ public record CrateReward(
         SPAWNER,
         GENERATOR,
         ITEM,
+        /** Unlocks a cosmetic chat tag by stable id (refId). */
+        TAG,
+        /** Unlocks a chat colour/gradient by stable id (refId). */
+        CHAT_STYLE,
         /** Animated skin (tool or hat): granted via the skin service hooks. */
         SKIN
     }

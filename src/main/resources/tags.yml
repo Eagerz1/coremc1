@@ -1,0 +1,184 @@
+# ======================================================
+#  CoreMC — cosmetic chat tags
+#
+#  Rendered chat layout (see chat.yml 'format'):
+#      <RANK> <TAG> Player: Message
+#
+#  The KEY of each entry is its STABLE ID. Ownership and the equipped
+#  tag are persisted by that id on the player profile, never by display
+#  name — so you can restyle 'display', 'name', 'lore', 'material' and
+#  'slot' at any time without touching player data or losing purchases.
+#
+#  display       compact '&'-coded tag shown in chat (before the name)
+#  name          GUI item name (defaults to 'display')
+#  material      GUI icon
+#  slot          -1 = auto-place into the next gui.slots entry
+#  permission    permission that ALSO grants the tag ('' = none).
+#                Default: coremc.tag.<id>. 'coremc.tag.*' grants all.
+#  default-owned true = every player owns it from day one (starters).
+#                Keep this false for paid/crate/event tags.
+#  lore          extra GUI lore lines
+#
+#  Unlocks come from crates (crates.yml reward type TAG), the store,
+#  events or staff: /tags grant <player> <id>. Admin grants persist
+#  immediately (write-through to the profile file).
+# ======================================================
+
+tags:
+  grinder:
+    display: "&8[&cGRINDER&8]"
+    name: "&c&lGRINDER"
+    material: NETHERITE_PICKAXE
+    default-owned: false
+    lore:
+      - "&7For the players who never stop."
+  og:
+    display: "&8[&6OG&8]"
+    name: "&6&lOG"
+    material: GOLDEN_APPLE
+    default-owned: false
+    lore:
+      - "&7Here since the very beginning."
+  beta:
+    display: "&8[&bBETA&8]"
+    name: "&b&lBETA"
+    material: EXPERIENCE_BOTTLE
+    default-owned: false
+    lore:
+      - "&7Survived the beta."
+  rich:
+    display: "&8[&aRICH&8]"
+    name: "&a&lRICH"
+    material: EMERALD_BLOCK
+    default-owned: false
+    lore:
+      - "&7Money talks."
+  lucky:
+    display: "&8[&dLUCKY&8]"
+    name: "&d&lLUCKY"
+    material: RABBIT_FOOT
+    default-owned: false
+    lore:
+      - "&7Fortune favours you."
+  fisher:
+    display: "&8[&3FISHER&8]"
+    name: "&3&lFISHER"
+    material: FISHING_ROD
+    default-owned: false
+    lore:
+      - "&7Master of the rod."
+  miner:
+    display: "&8[&7MINER&8]"
+    name: "&7&lMINER"
+    material: IRON_PICKAXE
+    default-owned: false
+    lore:
+      - "&7Deep down, always digging."
+  farmer:
+    display: "&8[&2FARMER&8]"
+    name: "&2&lFARMER"
+    material: WHEAT
+    default-owned: false
+    lore:
+      - "&7Crops never sleep."
+  slayer:
+    display: "&8[&4SLAYER&8]"
+    name: "&4&lSLAYER"
+    material: NETHERITE_SWORD
+    default-owned: false
+    lore:
+      - "&7Mobs fear this name."
+  builder:
+    display: "&8[&eBUILDER&8]"
+    name: "&e&lBUILDER"
+    material: BRICKS
+    default-owned: false
+    lore:
+      - "&7Block by block."
+  collector:
+    display: "&8[&9COLLECTOR&8]"
+    name: "&9&lCOLLECTOR"
+    material: CHEST
+    default-owned: false
+    lore:
+      - "&7One of everything, please."
+  merchant:
+    display: "&8[&6MERCHANT&8]"
+    name: "&6&lMERCHANT"
+    material: GOLD_INGOT
+    default-owned: false
+    lore:
+      - "&7Always has a deal going."
+  riftwalker:
+    display: "&8[&5RIFTWALKER&8]"
+    name: "&5&lRIFTWALKER"
+    material: ENDER_PEARL
+    default-owned: false
+    lore:
+      - "&7Steps between worlds."
+  champion:
+    display: "&8[&cCHAMPION&8]"
+    name: "&c&lCHAMPION"
+    material: DIAMOND_SWORD
+    default-owned: false
+    lore:
+      - "&7Won when it counted."
+  top:
+    display: "&8[&eTOP&8]"
+    name: "&e&lTOP"
+    material: GOLDEN_HELMET
+    default-owned: false
+    lore:
+      - "&7Leaderboard royalty."
+  veteran:
+    display: "&8[&3VETERAN&8]"
+    name: "&3&lVETERAN"
+    material: SHIELD
+    default-owned: false
+    lore:
+      - "&7Seen every season."
+  event:
+    display: "&8[&aEVENT&8]"
+    name: "&a&lEVENT"
+    material: FIREWORK_ROCKET
+    default-owned: false
+    lore:
+      - "&7Earned at a live event."
+  booster:
+    display: "&8[&dBOOSTER&8]"
+    name: "&d&lBOOSTER"
+    material: NETHER_STAR
+    default-owned: false
+    lore:
+      - "&7Thanks for the boost!"
+  creator:
+    display: "&8[&bCREATOR&8]"
+    name: "&b&lCREATOR"
+    material: PAINTING
+    default-owned: false
+    lore:
+      - "&7Makes content for the server."
+  legend:
+    display: "&8[&6LEGEND&8]"
+    name: "&6&lLEGEND"
+    material: DRAGON_EGG
+    default-owned: false
+    lore:
+      - "&7Spoken about, rarely seen."
+
+# GUI layout for /tags. Slots are 0-indexed chest slots.
+gui:
+  title: "&b&lCOREMC &8» &fTags"
+  size: 54
+  slots: [10, 11, 12, 13, 14, 15, 16,
+          19, 20, 21, 22, 23, 24, 25,
+          28, 29, 30, 31, 32, 33, 34]
+  clear-slot: 49
+  clear-material: BARRIER
+  close-slot: 53
+  close-material: BARRIER
+  previous-slot: 45
+  next-slot: 46
+  selected-material: NAME_TAG
+  locked-material: GRAY_DYE
+  sounds: true
