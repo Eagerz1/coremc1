@@ -1604,7 +1604,7 @@ async function main() {
     const profileRaw = fs.readFileSync(path.join(PLUGIN_DIR, 'profiles', `${uuid}.yml`), 'utf8')
     check(!profileRaw.includes('\u00a7') && !profileRaw.includes('#ff5555'),
       'profile: no rendered colour output is ever persisted')
-    check(profile['schema-version'] === 7, 'profile: schema migrated to v7',
+    check(profile['schema-version'] === 8, 'profile: schema migrated to v8',
       String(profile['schema-version']))
     const enchLvl = (profile['enchant-levels'] && profile['enchant-levels']['miner.treasure-miner']) || 0
     check(enchLvl >= 1, 'profile: dotted treasure-miner id persisted literally', `level=${enchLvl}`)

@@ -33,6 +33,13 @@ jobs:
           set -o pipefail
           mvn -B verify 2>&1 | tee mvn.log
 
+      - name: Report final CoreMC JAR checksum
+        run: |
+          JAR=$(ls target/CoreMC-*.jar | head -1)
+          echo "Final JAR: $JAR"
+          stat -c 'Final JAR size: %s bytes' "$JAR"
+          sha256sum "$JAR"
+
       - name: Surface Maven failure lines as annotations
         if: failure()
         run: |
