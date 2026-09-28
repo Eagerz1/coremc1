@@ -38,7 +38,9 @@ jobs:
           JAR=$(ls target/CoreMC-*.jar | head -1)
           echo "Final JAR: $JAR"
           stat -c 'Final JAR size: %s bytes' "$JAR"
-          sha256sum "$JAR"
+          SHA=$(sha256sum "$JAR" | awk '{print $1}')
+          echo "$SHA  $JAR"
+          echo "::notice title=final-coremc-jar::${JAR} sha256=${SHA}"
 
       - name: Surface Maven failure lines as annotations
         if: failure()
