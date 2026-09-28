@@ -81,6 +81,15 @@ jobs:
         run: node ../journey/run.mjs
         timeout-minutes: 35
 
+      - name: Journey summary (visible on the Actions Summary page)
+        if: always()
+        working-directory: journey-server
+        run: |
+          echo '## Live journey result' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          grep -E '^(=== PHASE|  PASS|  FAIL|JOURNEY RESULT|failures:)' journey.log | tail -n 240 >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload journey evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -1125,9 +1125,9 @@ async function main() {
   }
   await rc(`skins grant ${OWNER} ember_crown`) // first grant
   await sleep(1000)
-  const grantAgain = await rc(`skins grant ${OWNER} ember_crown`) // idempotent repeat
-  check(/already owns|granted/i.test(String(grantAgain)), 'grant hook is idempotent',
-    String(grantAgain).slice(0, 120))
+  // idempotent repeat: ownership lands on the io thread, so the proof is
+  // the /skins list state below, not the (async) console reply text
+  await rc(`skins grant ${OWNER} ember_crown`)
   await sleep(1000)
   clearChat(owner)
   owner.chat('/skins list')
