@@ -5,6 +5,9 @@ import com.coremc.core.command.CurrencyAdminCommand;
 import com.coremc.core.command.HealCommand;
 import com.coremc.core.command.ProfileCommand;
 import com.coremc.core.cosmetic.CosmeticSkinService;
+import com.coremc.core.cosmetic.HatOverlayService;
+import com.coremc.core.cosmetic.SkinService;
+import com.coremc.core.cosmetic.SkinsCommand;
 import com.coremc.core.config.CoreConfig;
 import com.coremc.core.config.MessageService;
 import com.coremc.core.crate.CrateService;
@@ -70,6 +73,8 @@ public final class CoreMCPlugin extends JavaPlugin {
     private IslandService islandService;
     private GuiService guiService;
     private CosmeticSkinService cosmeticSkinService;
+    private SkinService skinService;
+    private HatOverlayService hatOverlayService;
     private OmniToolService omniToolService;
     private RoleService roleService;
     private PlaceableService placeableService;
@@ -90,6 +95,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private com.coremc.core.chat.ChatStyleService chatStyleService;
     private com.coremc.core.chat.RankService rankService;
     private com.coremc.core.chat.ChatFormatService chatFormatService;
+    private com.coremc.core.moderation.ModerationService moderationService;
 
     /**
      * Creates (or attaches to) the dedicated island world. Islands live in
@@ -149,6 +155,10 @@ public final class CoreMCPlugin extends JavaPlugin {
         // 3b. Economy (pure service over player profiles; no I/O of its own).
         this.economyService = new EconomyService(playerDataService);
 
+        // 3b-2. Staff tools and moderation (loads its own UUID-based records).
+        this.moderationService = new com.coremc.core.moderation.ModerationService(this);
+        this.moderationService.load();
+
         // 3c. Island registry (loads async from plugins/CoreMC/islands/) inside
         //     the DEDICATED island world (created as void terrain when absent).
         ensureIslandWorld();
@@ -180,6 +190,12 @@ public final class CoreMCPlugin extends JavaPlugin {
         // Cosmetic skins are a presentation-only layer over generators and
         // future companions; they never own or mutate progression data.
         this.cosmeticSkinService = new CosmeticSkinService(this);
+        // Animated skins (this feature): catalog from skins.yml, ownership in
+        // profiles; loaded BEFORE roles/crates so tool creation can stamp the
+        // equipped skin and crate rewards can validate skin refs.
+        this.skinService = new SkinService(this);
+        final int skinCount = skinService.load();
+        this.hatOverlayService = new HatOverlayService(this);
 
         // 3e. Roles + OmniTool (profile-driven progression).
         this.omniToolService = new OmniToolService(this);
@@ -201,8 +217,8 @@ public final class CoreMCPlugin extends JavaPlugin {
         final int enchantCount = enchantService.load();
         this.keyService = new KeyService(this);
         final int keyCount = keyService.load();
-        // Chat cosmetics BEFORE crates: crate rewards of type TAG/CHAT_STYLE
-        // validate their ids against these live catalogues.
+        // Chat cosmetics BEFORE crates: TAG/CHAT_STYLE rewards validate against
+        // these live catalogues.
         this.tagService = new com.coremc.core.chat.TagService(this);
         final int tagCount = tagService.load();
         this.chatStyleService = new com.coremc.core.chat.ChatStyleService(this);
@@ -224,12 +240,15 @@ public final class CoreMCPlugin extends JavaPlugin {
                 + crateCount + " crate(s), "
                 + skinCount + " animated skin(s).");
 
-
         // 4. Listeners.
         this.enchantEngine = new EnchantEngine(this);
         final PluginManager pluginManager = getServer().getPluginManager();
         pluginManager.registerEvents(
                 new PlayerListener(playerDataService, messageService, coreConfig, islandService), this);
+        pluginManager.registerEvents(moderationService.listener(), this);
+        pluginManager.registerEvents(moderationService.visibility(), this);
+        pluginManager.registerEvents(moderationService.spectate(), this);
+        pluginManager.registerEvents(moderationService.cps(), this);
         pluginManager.registerEvents(new IslandProtectionListener(this), this);
         pluginManager.registerEvents(new IslandVoidRescueListener(this), this);
         pluginManager.registerEvents(islandUpgradeEffects, this);
@@ -276,6 +295,10 @@ public final class CoreMCPlugin extends JavaPlugin {
     }
 
     private void shutdownServices() {
+        // Restore staff state before scheduled work is cancelled.
+        if (moderationService != null) {
+            moderationService.shutdown();
+        }
         // Stop scheduled work first so nothing touches dead services.
         if (taskService != null) {
             taskService.cancelAll();
@@ -315,10 +338,13 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.islandProgressService = null;
         this.guiService = null;
         this.cosmeticSkinService = null;
+        this.skinService = null;
+        this.hatOverlayService = null;
         this.tagService = null;
         this.chatStyleService = null;
         this.chatFormatService = null;
         this.rankService = null;
+        this.moderationService = null;
         this.omniToolService = null;
         this.roleService = null;
         getLogger().info("CoreMC disabled — all player data saved, all tasks cancelled.");
@@ -343,7 +369,6 @@ public final class CoreMCPlugin extends JavaPlugin {
         omniToolService.load();
         enchantService.load();
         keyService.load();
-        // Cosmetics before crates: TAG/CHAT_STYLE rewards validate against them.
         tagService.load();
         chatStyleService.load();
         chatFormatService.load();
@@ -351,6 +376,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         rankService.startRefreshTask();
         crateService.load();
         islandActivityEffects.clearCaches();
+        moderationService.reload();
     }
 
     private void registerCommands() {
@@ -450,6 +476,62 @@ public final class CoreMCPlugin extends JavaPlugin {
             cmd.setExecutor(shopCommand);
             cmd.setTabCompleter(shopCommand);
         }
+
+        registerModerationCommands();
+    }
+
+    private void registerModerationCommands() {
+        final com.coremc.core.moderation.StaffToolCommand staffTools =
+                new com.coremc.core.moderation.StaffToolCommand(this);
+        for (final String name : new String[] {"vanish", "spectate", "cps", "rotate", "freeze"}) {
+            final PluginCommand command = getCommand(name);
+            if (command == null) {
+                throw new IllegalStateException("Command '" + name + "' missing from plugin.yml");
+            }
+            command.setExecutor(staffTools);
+            command.setTabCompleter(staffTools);
+        }
+
+        final com.coremc.core.moderation.PunishmentCommand punishments =
+                new com.coremc.core.moderation.PunishmentCommand(this);
+        for (final String name : new String[] {"kick", "mute", "ban", "unmute", "unban"}) {
+            final PluginCommand command = getCommand(name);
+            if (command == null) {
+                throw new IllegalStateException("Command '" + name + "' missing from plugin.yml");
+            }
+            command.setExecutor(punishments);
+            command.setTabCompleter(punishments);
+        }
+
+        for (int tier = 1; tier <= 5; tier++) {
+            final String name = "t" + tier;
+            final PluginCommand command = getCommand(name);
+            if (command == null) {
+                throw new IllegalStateException("Command '" + name + "' missing from plugin.yml");
+            }
+            final com.coremc.core.moderation.TierCommand handler =
+                    new com.coremc.core.moderation.TierCommand(this, tier);
+            command.setExecutor(handler);
+            command.setTabCompleter(handler);
+        }
+
+        final PluginCommand history = getCommand("history");
+        if (history == null) {
+            throw new IllegalStateException("Command 'history' missing from plugin.yml");
+        }
+        final com.coremc.core.moderation.HistoryCommand historyCommand =
+                new com.coremc.core.moderation.HistoryCommand(this);
+        history.setExecutor(historyCommand);
+        history.setTabCompleter(historyCommand);
+
+        final PluginCommand tierCorrect = getCommand("tiercorrect");
+        if (tierCorrect == null) {
+            throw new IllegalStateException("Command 'tiercorrect' missing from plugin.yml");
+        }
+        final com.coremc.core.moderation.TierCorrectionCommand correctionCommand =
+                new com.coremc.core.moderation.TierCorrectionCommand(this);
+        tierCorrect.setExecutor(correctionCommand);
+        tierCorrect.setTabCompleter(correctionCommand);
     }
 
     private void registerCurrencyCommand(final String name, final Currency currency) {
@@ -532,6 +614,41 @@ public final class CoreMCPlugin extends JavaPlugin {
         return cosmeticSkinService;
     }
 
+    /** Animated tool/hat skins: catalog, ownership, selection, grant hooks. */
+    public SkinService skins() {
+        return skinService;
+    }
+
+    /** Animated hat overlays (ItemDisplay riding the player's head). */
+    public HatOverlayService hatOverlay() {
+        return hatOverlayService;
+    }
+
+    /** Cosmetic chat tags (catalogue, ownership, selection, reward hooks). */
+    public com.coremc.core.chat.TagService tags() {
+        return tagService;
+    }
+
+    /** Chat colours and gradients (/chatcolour). */
+    public com.coremc.core.chat.ChatStyleService chatStyles() {
+        return chatStyleService;
+    }
+
+    /** Rank prefix resolution for the chat format. */
+    public com.coremc.core.chat.RankService ranks() {
+        return rankService;
+    }
+
+    /** Public-chat layout: &lt;RANK&gt; &lt;TAG&gt; Player: Message. */
+    public com.coremc.core.chat.ChatFormatService chatFormat() {
+        return chatFormatService;
+    }
+
+    /** Staff tools, punishments and moderation persistence. */
+    public com.coremc.core.moderation.ModerationService moderation() {
+        return moderationService;
+    }
+
     /** OmniTool service. */
     public OmniToolService omniTool() {
         return omniToolService;
@@ -580,25 +697,5 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Crate lineup, rolls and pity. */
     public CrateService crates() {
         return crateService;
-    }
-
-    /** Cosmetic chat tags (catalogue, ownership, selection, reward hooks). */
-    public com.coremc.core.chat.TagService tags() {
-        return tagService;
-    }
-
-    /** Chat colours and gradients (/chatcolour). */
-    public com.coremc.core.chat.ChatStyleService chatStyles() {
-        return chatStyleService;
-    }
-
-    /** Rank prefix resolution for the chat format. */
-    public com.coremc.core.chat.RankService ranks() {
-        return rankService;
-    }
-
-    /** Public-chat layout: &lt;RANK&gt; &lt;TAG&gt; Player: Message. */
-    public com.coremc.core.chat.ChatFormatService chatFormat() {
-        return chatFormatService;
     }
 }
