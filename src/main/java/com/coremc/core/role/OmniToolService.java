@@ -242,7 +242,6 @@ public final class OmniToolService {
                 continue;
             }
             final ItemMeta meta = item.getItemMeta();
-            final Role role = boundRole(item);
             if (role != null) {
                 meta.setCustomModelData(ROLE_MODEL_IDS.getOrDefault(role, 21405));
             }
