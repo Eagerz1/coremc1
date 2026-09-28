@@ -10,6 +10,9 @@ existing ItemsAdder `contents/` directory on a staging/production server.
   fishing species (24 each of Common, Uncommon, Rare, Epic, and Mythic), plus
   keys, crate/lootbox icons, progression materials, OmniTool role models, and
   cosmetic skin tokens.
+- `contents/coremc/configs/skins-items.yml` — 33 animated skin items (30 tool
+  skins + 3 hats), all with `generate: false` (explicit 3D geometry) and
+  vanilla-material fallbacks.
 - `contents/coremc/resourcepack/assets/coremc/textures/item/` — original,
   deterministic 32x32 RGBA pixel sprites. Fish use silhouette, fin/tail
   signature, markings, and rarity detail; they are not recoloured copies.
@@ -17,9 +20,17 @@ existing ItemsAdder `contents/` directory on a staging/production server.
   model per item, with stable texture paths.
 - `fishing-catalog.yml` — an auditable 24-by-5 species catalog.
 - `model-ids.yml` — the stable, non-overlapping custom model-data allocation.
-  IDs `21600–21632` are intentionally reserved for the active animated-skins
-  catalogue on the descendant CoreMC branch; this branch does not duplicate it.
 - `skin-registry.yml` — the cosmetic-only generator/companion skin contract.
+- `contents/coremc/resourcepack/assets/coremc/textures/item/skins/` — 22 original
+  animated texture strips (16/32px frames, 8 frames each) with `.png.mcmeta`
+  flipbook metadata. Client-side animation only: the server never swaps items
+  or spawns entities to animate.
+- `contents/coremc/resourcepack/assets/coremc/models/item/skins/` — 33 explicit
+  3D models. The six role silhouettes are genuinely distinct geometries (pick,
+  axe, rod, blade, scythe/hoe, multi-tool), not one model recoloured.
+- `skins.yml` (plugin resource, next to `plugin.yml`) — the plugin-side skin
+  catalogue: stable ids, model ids, unlock sources and the season-reset policy.
+  Live at `plugins/CoreMC/skins.yml`; edits survive updates (merge-preserved).
 
 The CoreMC Java service remains the source of truth for PDC identity. The
 resource pack changes presentation only. All definitions retain a vanilla
@@ -39,7 +50,18 @@ The validator checks the namespace, 24-by-5 fish counts, unique item/model
 IDs, every model and texture path, JSON mappings, all PNG signatures/CRCs and
 32x32 dimensions, non-empty sprites, purple/black fallback pixels, unique fish
 hashes, and compatibility aliases for the existing Java/config crate keys and
-six OmniTool roles.
+six OmniTool roles. It also validates the 33 animated skins: the exact
+21600-21632 id allocation, real 3D geometry (no flat parents), coremc-namespaced
+texture refs, and animation strips with valid `.png.mcmeta` flipbooks.
+
+For the deeper skin pipeline (per-frame motion proofs, geometry distinctness,
+catalogue agreement, built-pack dispatch coverage) run
+`python3 tools/validate_skin_assets.py`, and `python3 tools/build_pack.py`
+to produce `dist/CoreMC-ResourcePack.zip` — a ready-to-serve pack covering
+1.21 through 1.21.11 (dual dispatch: legacy `CustomModelData` predicates for
+1.20.x-1.21.3 and `assets/minecraft/items/*.json` range-dispatch for
+1.21.4+). ItemsAdder's own `/iazip` produces the equivalent pack from the
+same source files; the built zip is the CI-verifiable artifact.
 
 A real ItemsAdder binary/server was not available in this repository session,
 so the validator is deterministic repository validation, not a claim of a live

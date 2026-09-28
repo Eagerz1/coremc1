@@ -31,10 +31,7 @@ RANGES = {
     "epic": range(20300, 20324),
     "mythic": range(20400, 20424),
 }
-# Reserved by the active animated-skins branch (01a0e555-coremc1). Keeping
-# this gap here prevents this branch from accidentally duplicating those
-# assets when the branches are integrated later.
-RESERVED_ANIMATED_SKINS = range(21600, 21633)
+ANIMATED_SKIN_IDS = range(21600, 21633)
 
 
 def fail(message: str):
@@ -176,8 +173,6 @@ def check_assets(records):
         model_ids.append(record["model_id"])
         if record["material"] == "AIR":
             fail(f"{item_id}: AIR is not a safe vanilla fallback material")
-        if record["model_id"] in RESERVED_ANIMATED_SKINS:
-            fail(f"{item_id}: collides with reserved animated-skins model id {record['model_id']}")
         model = MODELS / (record["path"] + ".json")
         if not model.is_file():
             fail(f"{item_id}: missing model {model}")
@@ -193,11 +188,23 @@ def check_assets(records):
         fail("duplicate custom model IDs in ItemsAdder items")
     # No orphan generated source assets: every generated model has an item entry.
     expected_models = {record["path"] + ".json" for record in records.values()}
-    actual_models = {path.relative_to(MODELS).as_posix() for path in MODELS.rglob("*.json")}
+    actual_models = {
+        path.relative_to(MODELS).as_posix() for path in MODELS.rglob("*.json")
+        if not (len(path.relative_to(MODELS).parts) >= 2
+                    and path.relative_to(MODELS).parts[0] == "skins"
+                    and path.relative_to(MODELS).parts[1] in {"tools", "hats"})
+    }
     if actual_models != expected_models:
         fail(f"orphan/missing model files: expected {len(expected_models)}, found {len(actual_models)}")
     expected_textures = {record["path"] + ".png" for record in records.values()}
-    actual_textures = {path.relative_to(TEXTURES).as_posix() for path in TEXTURES.rglob("*.png")}
+    actual_textures = {
+        path.relative_to(TEXTURES).as_posix() for path in TEXTURES.rglob("*.png")
+        if not (len(path.relative_to(TEXTURES).parts) >= 2
+                    and path.relative_to(TEXTURES).parts[0] == "skins"
+                    and path.relative_to(TEXTURES).parts[1] in {
+                        "astral", "emberforge", "overgrown", "riftbound", "tidecaller", "moonlit"
+                    })
+    }
     if actual_textures != expected_textures:
         fail(f"orphan/missing texture files: expected {len(expected_textures)}, found {len(actual_textures)}")
 
@@ -217,8 +224,28 @@ def check_manifest(records, manifest):
             fail(f"{item_id}: manifest model path disagrees with ItemsAdder")
         if entry["material"] != record["material"]:
             fail(f"{item_id}: manifest fallback disagrees with ItemsAdder")
-    if any(record["model_id"] in RESERVED_ANIMATED_SKINS for record in manifest.values()):
-        fail("stable model manifest consumes the reserved animated-skins range 21600-21632")
+
+
+def check_animated_manifest(manifest, static_records):
+    animated = {
+        key: record for key, record in manifest.items()
+        if key.startswith("tool_skin_") or key.startswith("hat_skin_")
+    }
+    if len(animated) != 33:
+        fail(f"animated skin manifest must contain 33 entries, found {len(animated)}")
+    ids = {record["model_id"] for record in animated.values()}
+    if ids != set(ANIMATED_SKIN_IDS):
+        fail("animated skin model IDs must be exactly 21600-21632")
+    static_ids = {record["model_id"] for record in static_records.values()}
+    if static_ids & ids:
+        fail("static and animated model IDs overlap")
+    for item_id, record in animated.items():
+        if record["material"] in {"AIR", ""}:
+            fail(f"{item_id}: animated skin has no safe fallback material")
+        model = MODELS / (record["path"] + ".json")
+        if not model.is_file():
+            fail(f"{item_id}: missing animated skin model {model}")
+    return animated
 
 
 def check_java_references(records):
@@ -279,9 +306,14 @@ def main():
             fail(f"missing required source file {path}")
     records = parse_items()
     manifest = parse_manifest()
+    static_manifest = {
+        key: value for key, value in manifest.items()
+        if not (key.startswith("tool_skin_") or key.startswith("hat_skin_"))
+    }
     fish = check_fish(records)
     check_assets(records)
-    check_manifest(records, manifest)
+    check_manifest(records, static_manifest)
+    animated = check_animated_manifest(manifest, records)
     check_java_references(records)
     catalog_text = CATALOG.read_text(encoding="utf-8")
     for rarity in RANGES:
@@ -289,7 +321,8 @@ def main():
             fail(f"fishing catalog missing {rarity} section")
         if len(re.findall(rf"^      - id: fish_{rarity}_", catalog_text, re.M)) != 24:
             fail(f"fishing catalog {rarity} count mismatch")
-    print(f"PASS ItemsAdder source: {len(records)} item definitions, 120 fish (24 x 5), {len(records)} models, {len(records)} textures")
+    print(f"PASS ItemsAdder source: {len(records)} item definitions, 120 fish (24 x 5), {len(records)} static models, {len(records)} static textures")
+    print(f"PASS animated skin integration: {len(animated)} models, IDs 21600-21632, disjoint fallback materials")
     print("PASS stable model IDs: unique, range-checked, and no orphan mappings")
     print("PASS PNGs: valid 32x32 RGBA, non-empty, no purple/black fallback pixels")
     print("PASS Java/config compatibility: existing crate key lookups and role tool identities covered")

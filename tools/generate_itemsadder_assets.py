@@ -542,12 +542,19 @@ def write_yaml():
 
 
 def write_manifest(manifest):
+    # The static generator owns the base catalog, while the animated-skin
+    # generator owns its additive block. Preserve that block so either
+    # deterministic generator can run without deleting the other feature.
+    animated_block = ""
+    if MANIFEST.exists():
+        previous = MANIFEST.read_text(encoding="utf-8")
+        marker = "  # --- generated: animated skin items (tools/generate_skin_assets.py) ---"
+        if marker in previous:
+            animated_block = previous[previous.index(marker):].rstrip("\n")
     lines = [
         "# Stable CoreMC custom model-data allocation.",
         "# Ranges are intentionally disjoint from vanilla and from each other.",
         "# Do not renumber: old stacks use these visual IDs when the pack is present.",
-        "# IDs 21600-21632 are reserved for the active animated-skins catalogue;",
-        "# this branch intentionally does not duplicate those assets or entries.",
         "namespace: coremc",
         "base_material_fallback: true",
         "ranges:",
@@ -559,7 +566,11 @@ def write_manifest(manifest):
         if key == "omnitool": count = 6
         if key == "skin": count = 13
         lines += [f"  {key}:", f"    start: {start}", f"    end: {start + count - 1}"]
-    lines += ["", "items:"]
+    lines += [
+        "  tool_skin:", "    start: 21600", "    end: 21629",
+        "  hat_skin:", "    start: 21630", "    end: 21632",
+        "", "items:",
+    ]
     for item_id, display, model_id, material, path, rarity, form, pattern, signature in manifest:
         lines += [
             f"  {item_id}:",
@@ -569,7 +580,10 @@ def write_manifest(manifest):
             f"    category: {rarity}",
         ]
     MANIFEST.parent.mkdir(parents=True, exist_ok=True)
-    MANIFEST.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    output = "\n".join(lines) + "\n"
+    if animated_block:
+        output += "\n" + animated_block + "\n"
+    MANIFEST.write_text(output, encoding="utf-8")
 
 
 def write_catalog(manifest):
@@ -597,7 +611,13 @@ def write_catalog(manifest):
 
 
 def write_skin_registry():
-    SKINS.write_text("""# CoreMC cosmetic skin contract. This registry is intentionally outside the
+    animated_block = ""
+    if SKINS.exists():
+        previous = SKINS.read_text(encoding="utf-8")
+        marker = "# ==== animated tool skins + hats (tools/generate_skin_assets.py) ===="
+        if marker in previous:
+            animated_block = previous[previous.index(marker):].rstrip("\n")
+    base = """# CoreMC cosmetic skin contract. This registry is intentionally outside the
 # ItemsAdder namespace YAML: it is read by the CoreMC skin layer, while the
 # adjacent items.yml entries are the visual tokens shown in menus.
 namespace: coremc
@@ -640,7 +660,10 @@ companion_skins:
     model_id: 21512
     applies_to: companion
     cosmetic_only: true
-""", encoding="utf-8")
+"""
+    if animated_block:
+        base += "\n" + animated_block + "\n"
+    SKINS.write_text(base, encoding="utf-8")
 
 
 def generate():

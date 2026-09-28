@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Schema v7 persistence for animated skins: ownership and selections
+ * Schema v8 persistence for animated skins: ownership and selections
  * round-trip through toMap/fromMap, revocation unequips everywhere, and
  * older (v6) maps load with clean defaults — no skins, nothing equipped,
  * nothing granted.
@@ -26,7 +26,7 @@ class PlayerProfileV7Test {
         assertTrue(profile.ownedSkins().isEmpty(), "nothing is auto-granted");
         assertTrue(profile.equippedToolSkin("miner").isEmpty(), "no equipped skins");
         assertEquals("none", profile.equippedHat(), "no hat equipped");
-        assertEquals(7, PlayerProfile.SCHEMA_VERSION);
+        assertEquals(8, PlayerProfile.SCHEMA_VERSION);
     }
 
     @Test
