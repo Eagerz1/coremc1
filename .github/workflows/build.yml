@@ -31,7 +31,21 @@ jobs:
           python3 tools/validate_skin_assets.py
 
       - name: Build with Maven (compile + JUnit tests + jar)
-        run: mvn -B verify
+        run: |
+          set -o pipefail
+          mvn -B verify 2>&1 | tee mvn.log
+
+      - name: Surface Maven failure lines as annotations
+        if: failure()
+        run: |
+          # javac/junit failure lines from the tee'd log -> ::error:: so they
+          # are readable through the checks annotations API as well
+          grep -E "(\[ERROR\]|BUILD FAILURE|Tests run:.*Failures: [1-9]|COMPILATION ERROR)" mvn.log \
+            | grep -v "To see the full stack trace" | grep -v "Re-run Maven using" \
+            | grep -v "For more information about the errors" | grep -v "When encountering" \
+            | head -n 20 | while IFS= read -r line; do
+              echo "::error::${line:0:700}"
+            done
 
       - name: Upload plugin jar
         if: success()
