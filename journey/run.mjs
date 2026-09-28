@@ -1060,6 +1060,110 @@ async function main() {
     rescuedOkay ? '' : `dist=${owner.entity.position.distanceTo(HOME).toFixed(2)}`)
   check(owner.health > 0, 'rescue prevents death', `health=${owner.health}`)
 
+  // ------------------------------------------------ P10b animated skins
+  phase('10b', '/skins: menus, grant hooks, apply + hat overlay')
+  // Everything below runs WITHOUT the resource pack: menu entries fall
+  // back to their vanilla materials (netherite_pickaxe / carved_pumpkin),
+  // which is exactly the decline-the-pack contract.
+  win = await openWindow(owner, '/skins')
+  check(win && win.inventoryStart === 54, '/skins opens a 54-slot menu')
+  check(win && slotType(win, 0) === 'netherite_pickaxe', 'Tool Skins tab renders')
+  check(win && slotType(win, 1) === 'carved_pumpkin', 'Hats tab renders')
+  check(win && slotType(win, 9) === 'name_tag'
+    && slotType(win, 10) !== null && slotType(win, 14) !== null, 'collection filters render')
+  check(win && slotType(win, 19) === 'iron_pickaxe', 'role filter row renders')
+  check(win && slotType(win, 28) === 'netherite_pickaxe'
+    && slotJson(win, 28).includes('emberforge'), 'grid leads with the Emberforge Miner skin (vanilla fallback)')
+  check(win && slotType(win, 47) === 'item_frame', 'preview slot starts empty')
+  // locked path: preview works, apply refuses
+  await click(owner, 28)
+  let grid = owner.currentWindow
+  check(grid && slotType(grid, 47) === 'netherite_pickaxe', 'selecting a locked skin still previews it')
+  clearChat(owner)
+  await click(owner, 49)
+  check(await waitChat(owner, /do not own/i), 'apply refuses a locked skin')
+  // paging: 30 tool skins over 3 pages
+  await click(owner, 46)
+  grid = owner.currentWindow
+  check(grid && slotJson(grid, 28).includes('astral'), 'next page reaches the Astral collection')
+  await click(owner, 45)
+  // grant hook from console (the same hook crates/events/store call)
+  await rc(`skins grant ${OWNER} emberforge_miner`)
+  await sleep(1500)
+  clearChat(owner)
+  owner.chat('/skins list')
+  check(await waitChat(owner, /emberforge: ✔miner/i, 15000), 'grant hook: miner skin shows owned')
+  check(await waitChat(owner, /hats: ✘ember_crown/i), 'hats start locked (nothing auto-granted)')
+  // apply + ownership persistence across the GUI
+  win = await openWindow(owner, '/skins')
+  check(win && slotJson(win, 28).includes('emberforge'), 'skins menu reopens after grants')
+  clearChat(owner)
+  await click(owner, 28)
+  await click(owner, 49)
+  check(await waitChat(owner, /skin applied/i), 'apply equips the owned miner skin')
+  clearChat(owner)
+  await click(owner, 51)
+  check(await waitChat(owner, /skin removed|back to the default/i), 'reset returns to the default look')
+  clearChat(owner)
+  await click(owner, 28)
+  await click(owner, 49)
+  check(await waitChat(owner, /skin applied/i), 're-apply for the restart check')
+  // hats section: locked wear refuses -> grant -> wear -> overlay entity
+  await closeWin(owner)
+  win = await openWindow(owner, '/skins')
+  await click(owner, 1)
+  await sleep(800)
+  let hatsWin = owner.currentWindow
+  check(hatsWin && hatsWin.inventoryStart === 54
+    && slotType(hatsWin, 20) === 'carved_pumpkin'
+    && slotJson(hatsWin, 20).includes('ember'), 'hats tab opens with the Ember Crown entry')
+  if (hatsWin) {
+    clearChat(owner)
+    await click(owner, 20)
+    await click(owner, 49)
+    check(await waitChat(owner, /do not own/i), 'wearing a locked hat refuses cleanly')
+  }
+  await rc(`skins grant ${OWNER} ember_crown`) // first grant
+  await sleep(1000)
+  // idempotent repeat: ownership lands on the io thread, so the proof is
+  // the /skins list state below, not the (async) console reply text
+  await rc(`skins grant ${OWNER} ember_crown`)
+  await sleep(1000)
+  clearChat(owner)
+  owner.chat('/skins list')
+  check(await waitChat(owner, /hats: ✔ember_crown/i, 15000), 'grant hook: hat shows owned')
+  win = await openWindow(owner, '/skins')
+  await click(owner, 1)
+  await sleep(800)
+  hatsWin = owner.currentWindow
+  if (hatsWin) {
+    clearChat(owner)
+    await click(owner, 20)
+    await click(owner, 49)
+    check(await waitChat(owner, /now wearing/i), 'wear puts on the Ember Crown')
+    const overlay = await waitUntil(() => {
+      return Object.values(owner.entities).some((e) => e !== owner.entity
+        && /display/i.test(String(e.name || ''))
+        && e.position && e.position.distanceTo(owner.entity.position) < 4)
+    }, 20000, 500)
+    check(!!overlay, 'hat overlay entity rides the player (helmet slot untouched)')
+    clearChat(owner)
+    await click(owner, 51)
+    check(await waitChat(owner, /hat removed/i), 'remove takes the hat off')
+    const gone = await waitUntil(() => {
+      return !Object.values(owner.entities).some((e) => e !== owner.entity
+        && /display/i.test(String(e.name || ''))
+        && e.position && e.position.distanceTo(owner.entity.position) < 4)
+    }, 20000, 500)
+    check(!!gone, 'overlay entity is cleaned up on remove')
+    // wear it again and keep it on for the restart persistence check
+    clearChat(owner)
+    await click(owner, 20)
+    await click(owner, 49)
+    check(await waitChat(owner, /now wearing/i), 're-wear keeps the hat for the restart check')
+  }
+  await closeWin(owner)
+
   // ------------------------------------------------ P11 restart
   phase(11, 'clean restart: everything persists')
   const snapMoney = await moneyOf(owner)
@@ -1089,6 +1193,12 @@ async function main() {
   win = await openWindow(owner, '/role')
   check(win && slotJson(win, 4).includes('miner'), 'role still Miner after restart')
   await closeWin(win)
+  const hatBack = await waitUntil(() => {
+    return Object.values(owner.entities).some((e) => e !== owner.entity
+      && /display/i.test(String(e.name || ''))
+      && e.position && e.position.distanceTo(owner.entity.position) < 4)
+  }, 30000, 500)
+  check(!!hatBack, 'hat overlay re-applies after the restart rejoin')
   const m2 = await moneyOf(owner)
   const c2 = await creditsOf(owner)
   const t2 = await tokensOf(owner)
@@ -1130,6 +1240,15 @@ async function main() {
     check(island.upgrades && island.upgrades.border === 1, 'island file: border tier persists')
     const buffTier = island.buffs && (island.buffs['mining-boost'] || island.buffs.mining_boost)
     check(buffTier === 1, 'island file: mining-boost tier persists', `tier=${buffTier}`)
+    const ownedSkins = profile['owned-skins'] || []
+    check(ownedSkins.includes('emberforge_miner') && ownedSkins.includes('ember_crown'),
+      'profile: skin ownership persists (tool skin + hat)', JSON.stringify(ownedSkins))
+    const equippedSkin = profile['equipped-tool-skins'] && profile['equipped-tool-skins'].miner
+    check(equippedSkin === 'emberforge_miner', 'profile: miner tool skin stays equipped',
+      String(equippedSkin))
+    check(profile['equipped-hat'] === 'ember_crown', 'profile: equipped hat persists',
+      String(profile['equipped-hat']))
+    check(!ownedSkins.includes('riftbound_universal'), 'profile: no phantom skins granted')
   }
 
   // ------------------------------------------------ P12 audit

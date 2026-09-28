@@ -48,6 +48,11 @@ commands:
     usage: /role [miner|logger|fisher|slayer|farmer|universal|info]
     permission: coremc.command.role
     permission-message: "&cYou do not have permission to use this command."
+  skins:
+    description: Browse, preview and apply animated tool skins and hats.
+    usage: /skins [help|list|grant|revoke|set|clear|resetseason|reload]
+    permission: coremc.command.skins
+    permission-message: "&cYou do not have permission to use this command."
   gens:
     description: Open the generator market.
     usage: /gens
@@ -96,11 +101,13 @@ permissions:
       coremc.command.gens: true
       coremc.command.spawners: true
       coremc.command.crates: true
+      coremc.command.skins: true
       coremc.command.shop: true
       coremc.command.tokenshop: true
       coremc.admin.credits: true
       coremc.admin.skytokens: true
       coremc.admin.money: true
+      coremc.skins.admin: true
       coremc.island.bypass: true
   coremc.command.coremc:
     description: Allows using /coremc.
@@ -141,6 +148,12 @@ permissions:
   coremc.command.spawners:
     description: Allows viewing spawner progression and purchasing spawners.
     default: true
+  coremc.command.skins:
+    description: Allows opening the /skins menu.
+    default: true
+  coremc.skins.admin:
+    description: Allows managing animated skins (grant/revoke/set/clear/resetseason/reload).
+    default: op
   coremc.command.crates:
     description: Allows opening the crate lineup.
     default: true

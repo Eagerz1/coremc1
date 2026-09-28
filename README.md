@@ -19,6 +19,7 @@ contains the complete from-scratch rebuild of the plugin.
 | Spawners | 15 mob lanes × five variants (tiers I–IV **plus an Ancient variant**: named, glowing, toughened mobs; an Ancient kill grants **triple progress toward the next lane as one event**). Kill-gated unlocks, token purchases, real block spawners with correct NBT and a liveness watchdog. |
 | Generators | Configurable generator blocks (market purchase, place, timed harvest, break returns exactly one core item, piston protection). |
 | Crates | Six config-driven crates with physical PDC-tagged keys, weighted rolls, pity counters, preview GUIs; keys are consumed exactly once per open. |
+| Animated skins (`/skins`) | 30 animated tool skins (5 collections — Emberforge, Riftbound, Astral, Tidecaller, Overgrown — × one distinct 3D model per role: Miner, Logger, Fisher, Slayer, Farmer, Universal OmniTool) + 3 animated hats (Ember Crown, Rift Halo, Moonlit Cap), all original artwork. A skin is a **visual layer only**: it changes `custom_model_data` plus one cosmetic PDC marker — damage, enchants, upgrades, levels and identity PDC are never touched. Ownership persists in the profile by stable id; grant/revoke hooks feed crates (`type: SKIN` rewards), events and the store; nothing is auto-granted and purchased skins survive season resets by config. Hats are worn as a client-visible overlay entity riding the head (real helmet + armour fully preserved — vanilla has no cosmetic armour slot). |
 | Shop & economy | Three currencies (Core money, Credits, Sky Tokens), `/shop` category GUIs, `/tokenshop` exchange, admin grant commands; every purchase is withdraw-then-deliver with overflow/refund safety. |
 | Protection & security | Island build/break/bucket/hanging/entity protection, ownership checks on registered blocks, GUI click/drag theft sweeps, soulbound item guards, kill-cap anti-abuse, economy overflow checks. |
 | First-join welcome, `/coremc`, `/profile`, `/heal` | Branded welcome; `/coremc info|reload|help`; profiles; self/other heal. |
@@ -64,6 +65,8 @@ back to the repository):
 | `coremc.command.heal` | op | `/heal` |
 | `coremc.command.heal.others` | op | `/heal <player>` |
 | `coremc.command.island` | everyone | `/island [create\|teleport\|info\|delete\|help]` |
+| `coremc.command.skins` | everyone | `/skins` menu |
+| `coremc.skins.admin` | op | `/skins grant\|revoke\|set\|clear\|resetseason\|reload` |
 | `coremc.*` / `coremc.command.*` | op / children | parent nodes |
 
 ## Architecture

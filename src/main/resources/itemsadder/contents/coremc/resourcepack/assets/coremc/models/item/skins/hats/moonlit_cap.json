@@ -1,0 +1,839 @@
+{
+  "__comment": "CoreMC &bMoonlit Cap hat \u2014 original wearable 3D geometry",
+  "textures": {
+    "#metal": "coremc:item/skins/moonlit/cap",
+    "#energy": "coremc:item/skins/moonlit/star",
+    "#gem": "coremc:item/skins/moonlit/star",
+    "particle": "coremc:item/skins/moonlit/cap"
+  },
+  "elements": [
+    {
+      "name": "brim",
+      "from": [
+        3.4,
+        9.4,
+        3.4
+      ],
+      "to": [
+        12.6,
+        10.0,
+        12.6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            2,
+            6,
+            14,
+            10
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            2,
+            6,
+            14,
+            10
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            3.4,
+            6.0,
+            12.6,
+            6.6
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            3.4,
+            6.0,
+            12.6,
+            6.6
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            3.4,
+            3.4,
+            12.6,
+            12.6
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            3.4,
+            3.4,
+            12.6,
+            12.6
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "dome_1",
+      "from": [
+        4.0,
+        10.0,
+        4.0
+      ],
+      "to": [
+        12.0,
+        11.6,
+        12.0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            3,
+            2,
+            13,
+            6
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            3,
+            2,
+            13,
+            6
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            4.0,
+            4.4,
+            12.0,
+            6.0
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            4.0,
+            4.4,
+            12.0,
+            6.0
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            4.0,
+            4.0,
+            12.0,
+            12.0
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            4.0,
+            4.0,
+            12.0,
+            12.0
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "dome_2",
+      "from": [
+        4.9,
+        11.6,
+        4.9
+      ],
+      "to": [
+        11.1,
+        12.8,
+        11.1
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            1,
+            12,
+            5
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            4,
+            1,
+            12,
+            5
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            4.9,
+            3.2,
+            11.1,
+            4.4
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            4.9,
+            3.2,
+            11.1,
+            4.4
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            4.9,
+            4.9,
+            11.1,
+            11.1
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            4.9,
+            4.9,
+            11.1,
+            11.1
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "dome_3",
+      "from": [
+        5.8,
+        12.8,
+        5.8
+      ],
+      "to": [
+        10.2,
+        13.8,
+        10.2
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            5,
+            1,
+            11,
+            4
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            5,
+            1,
+            11,
+            4
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            5.8,
+            2.2,
+            10.2,
+            3.2
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            5.8,
+            2.2,
+            10.2,
+            3.2
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            5.8,
+            5.8,
+            10.2,
+            10.2
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            5.8,
+            5.8,
+            10.2,
+            10.2
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "dome_4",
+      "from": [
+        6.9,
+        13.8,
+        6.9
+      ],
+      "to": [
+        9.1,
+        14.6,
+        9.1
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            6,
+            1,
+            10,
+            3
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            6,
+            1,
+            10,
+            3
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            6.9,
+            1.4,
+            9.1,
+            2.2
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            6.9,
+            1.4,
+            9.1,
+            2.2
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            6.9,
+            6.9,
+            9.1,
+            9.1
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            6.9,
+            6.9,
+            9.1,
+            9.1
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "moon_band",
+      "from": [
+        3.85,
+        11.3,
+        3.85
+      ],
+      "to": [
+        12.15,
+        11.75,
+        12.15
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            2,
+            6,
+            14,
+            10
+          ],
+          "texture": "#energy"
+        },
+        "south": {
+          "uv": [
+            2,
+            6,
+            14,
+            10
+          ],
+          "texture": "#energy"
+        },
+        "east": {
+          "uv": [
+            3.85,
+            4.25,
+            12.15,
+            4.7
+          ],
+          "texture": "#energy"
+        },
+        "west": {
+          "uv": [
+            3.85,
+            4.25,
+            12.15,
+            4.7
+          ],
+          "texture": "#energy"
+        },
+        "up": {
+          "uv": [
+            3.85,
+            3.85,
+            12.15,
+            12.15
+          ],
+          "texture": "#energy"
+        },
+        "down": {
+          "uv": [
+            3.85,
+            3.85,
+            12.15,
+            12.15
+          ],
+          "texture": "#energy"
+        }
+      }
+    },
+    {
+      "name": "star_stud_front",
+      "from": [
+        7.525,
+        11.525,
+        3.875
+      ],
+      "to": [
+        8.475,
+        12.475,
+        4.825
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "south": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "east": {
+          "uv": [
+            3.875,
+            3.525,
+            4.825,
+            4.475
+          ],
+          "texture": "#gem"
+        },
+        "west": {
+          "uv": [
+            3.875,
+            3.525,
+            4.825,
+            4.475
+          ],
+          "texture": "#gem"
+        },
+        "up": {
+          "uv": [
+            7.525,
+            3.875,
+            8.475,
+            4.825
+          ],
+          "texture": "#gem"
+        },
+        "down": {
+          "uv": [
+            7.525,
+            11.175,
+            8.475,
+            12.125
+          ],
+          "texture": "#gem"
+        }
+      }
+    },
+    {
+      "name": "star_stud_left",
+      "from": [
+        3.875,
+        10.725,
+        7.525
+      ],
+      "to": [
+        4.825,
+        11.675,
+        8.475
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "south": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "east": {
+          "uv": [
+            7.525,
+            4.325,
+            8.475,
+            5.275
+          ],
+          "texture": "#gem"
+        },
+        "west": {
+          "uv": [
+            7.525,
+            4.325,
+            8.475,
+            5.275
+          ],
+          "texture": "#gem"
+        },
+        "up": {
+          "uv": [
+            3.875,
+            7.525,
+            4.825,
+            8.475
+          ],
+          "texture": "#gem"
+        },
+        "down": {
+          "uv": [
+            3.875,
+            7.525,
+            4.825,
+            8.475
+          ],
+          "texture": "#gem"
+        }
+      }
+    },
+    {
+      "name": "star_stud_top",
+      "from": [
+        8.075,
+        13.775,
+        8.075
+      ],
+      "to": [
+        9.125,
+        14.825,
+        9.125
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "south": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "east": {
+          "uv": [
+            8.075,
+            1.175,
+            9.125,
+            2.225
+          ],
+          "texture": "#gem"
+        },
+        "west": {
+          "uv": [
+            8.075,
+            1.175,
+            9.125,
+            2.225
+          ],
+          "texture": "#gem"
+        },
+        "up": {
+          "uv": [
+            8.075,
+            8.075,
+            9.125,
+            9.125
+          ],
+          "texture": "#gem"
+        },
+        "down": {
+          "uv": [
+            8.075,
+            6.875,
+            9.125,
+            7.925
+          ],
+          "texture": "#gem"
+        }
+      }
+    },
+    {
+      "name": "moon_pin",
+      "from": [
+        7.3,
+        11.9,
+        3.7
+      ],
+      "to": [
+        8.7,
+        13.3,
+        4.15
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "south": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "east": {
+          "uv": [
+            3.7,
+            2.7,
+            4.15,
+            4.1
+          ],
+          "texture": "#gem"
+        },
+        "west": {
+          "uv": [
+            3.7,
+            2.7,
+            4.15,
+            4.1
+          ],
+          "texture": "#gem"
+        },
+        "up": {
+          "uv": [
+            7.3,
+            3.7,
+            8.7,
+            4.15
+          ],
+          "texture": "#gem"
+        },
+        "down": {
+          "uv": [
+            7.3,
+            11.85,
+            8.7,
+            12.3
+          ],
+          "texture": "#gem"
+        }
+      }
+    }
+  ],
+  "display": {
+    "head": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        0.2,
+        0
+      ],
+      "scale": [
+        1.05,
+        1.05,
+        1.05
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "translation": [
+        0,
+        3,
+        0.5
+      ],
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0,
+        -90,
+        0
+      ],
+      "translation": [
+        0,
+        3,
+        0.5
+      ],
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        -60,
+        20
+      ],
+      "translation": [
+        1.1,
+        2.6,
+        1.1
+      ],
+      "scale": [
+        0.42,
+        0.42,
+        0.42
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        60,
+        -20
+      ],
+      "translation": [
+        1.1,
+        2.6,
+        1.1
+      ],
+      "scale": [
+        0.42,
+        0.42,
+        0.42
+      ]
+    },
+    "gui": {
+      "rotation": [
+        15,
+        215,
+        0
+      ],
+      "translation": [
+        0,
+        0.5,
+        0
+      ],
+      "scale": [
+        0.62,
+        0.62,
+        0.62
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        2,
+        0
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        -20,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        0.45,
+        0.45,
+        0.45
+      ]
+    }
+  }
+}

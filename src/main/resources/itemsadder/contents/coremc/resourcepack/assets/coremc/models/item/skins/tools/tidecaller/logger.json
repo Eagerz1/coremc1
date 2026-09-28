@@ -1,0 +1,892 @@
+{
+  "__comment": "CoreMC tidecaller logger skin \u2014 original 3D geometry with animated textures",
+  "textures": {
+    "#metal": "coremc:item/skins/tidecaller/glass",
+    "#energy": "coremc:item/skins/tidecaller/biolume",
+    "#grip": "coremc:item/skins/tidecaller/haft",
+    "#gem": "coremc:item/skins/tidecaller/float",
+    "particle": "coremc:item/skins/tidecaller/glass"
+  },
+  "elements": [
+    {
+      "name": "haft",
+      "from": [
+        7.3,
+        0.5,
+        7.3
+      ],
+      "to": [
+        8.7,
+        13.0,
+        8.7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            0,
+            9,
+            15
+          ],
+          "texture": "#grip"
+        },
+        "south": {
+          "uv": [
+            7,
+            0,
+            9,
+            15
+          ],
+          "texture": "#grip"
+        },
+        "east": {
+          "uv": [
+            7.3,
+            3.0,
+            8.7,
+            15.5
+          ],
+          "texture": "#grip"
+        },
+        "west": {
+          "uv": [
+            7.3,
+            3.0,
+            8.7,
+            15.5
+          ],
+          "texture": "#grip"
+        },
+        "up": {
+          "uv": [
+            7.3,
+            7.3,
+            8.7,
+            8.7
+          ],
+          "texture": "#grip"
+        },
+        "down": {
+          "uv": [
+            7.3,
+            7.3,
+            8.7,
+            8.7
+          ],
+          "texture": "#grip"
+        }
+      }
+    },
+    {
+      "name": "pommel",
+      "from": [
+        6.95,
+        0.0,
+        6.95
+      ],
+      "to": [
+        9.05,
+        0.8,
+        9.05
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            6,
+            9,
+            10,
+            13
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            6,
+            9,
+            10,
+            13
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            6.95,
+            15.2,
+            9.05,
+            16.0
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            6.95,
+            15.2,
+            9.05,
+            16.0
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            6.95,
+            6.95,
+            9.05,
+            9.05
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            6.95,
+            6.95,
+            9.05,
+            9.05
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "collar",
+      "from": [
+        6.5,
+        12.2,
+        6.5
+      ],
+      "to": [
+        10.5,
+        13.4,
+        9.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            6,
+            3,
+            10,
+            8
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            6,
+            3,
+            10,
+            8
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            6.5,
+            2.6,
+            9.5,
+            3.8
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            6.5,
+            2.6,
+            9.5,
+            3.8
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            6.5,
+            6.5,
+            10.5,
+            9.5
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            6.5,
+            6.5,
+            10.5,
+            9.5
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "cheek",
+      "from": [
+        8.5,
+        9.4,
+        6.7
+      ],
+      "to": [
+        12.4,
+        12.9,
+        9.3
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            9,
+            3,
+            13,
+            8
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            9,
+            3,
+            13,
+            8
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            6.7,
+            3.1,
+            9.3,
+            6.6
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            6.7,
+            3.1,
+            9.3,
+            6.6
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            8.5,
+            6.7,
+            12.4,
+            9.3
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            8.5,
+            6.7,
+            12.4,
+            9.3
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "blade",
+      "from": [
+        12.4,
+        8.4,
+        6.9
+      ],
+      "to": [
+        14.6,
+        13.4,
+        9.1
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            12,
+            3,
+            15,
+            8
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            12,
+            3,
+            15,
+            8
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            6.9,
+            2.6,
+            9.1,
+            7.6
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            6.9,
+            2.6,
+            9.1,
+            7.6
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            12.4,
+            6.9,
+            14.6,
+            9.1
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            12.4,
+            6.9,
+            14.6,
+            9.1
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "blade_edge",
+      "from": [
+        14.6,
+        9.0,
+        7.3
+      ],
+      "to": [
+        15.3,
+        13.0,
+        8.7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            12,
+            5,
+            15,
+            7
+          ],
+          "texture": "#energy"
+        },
+        "south": {
+          "uv": [
+            12,
+            5,
+            15,
+            7
+          ],
+          "texture": "#energy"
+        },
+        "east": {
+          "uv": [
+            7.3,
+            3.0,
+            8.7,
+            7.0
+          ],
+          "texture": "#energy"
+        },
+        "west": {
+          "uv": [
+            7.3,
+            3.0,
+            8.7,
+            7.0
+          ],
+          "texture": "#energy"
+        },
+        "up": {
+          "uv": [
+            14.6,
+            7.3,
+            15.3,
+            8.7
+          ],
+          "texture": "#energy"
+        },
+        "down": {
+          "uv": [
+            14.6,
+            7.3,
+            15.3,
+            8.7
+          ],
+          "texture": "#energy"
+        }
+      }
+    },
+    {
+      "name": "poll",
+      "from": [
+        5.6,
+        10.0,
+        7.0
+      ],
+      "to": [
+        8.5,
+        12.4,
+        9.0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            5,
+            4,
+            9,
+            8
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            5,
+            4,
+            9,
+            8
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            7.0,
+            3.6,
+            9.0,
+            6.0
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            7.0,
+            3.6,
+            9.0,
+            6.0
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            5.6,
+            7.0,
+            8.5,
+            9.0
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            5.6,
+            7.0,
+            8.5,
+            9.0
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "poll_spike",
+      "from": [
+        4.9,
+        10.6,
+        7.4
+      ],
+      "to": [
+        5.9,
+        11.9,
+        8.6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "texture": "#energy"
+        },
+        "south": {
+          "uv": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "texture": "#energy"
+        },
+        "east": {
+          "uv": [
+            7.4,
+            4.1,
+            8.6,
+            5.4
+          ],
+          "texture": "#energy"
+        },
+        "west": {
+          "uv": [
+            7.4,
+            4.1,
+            8.6,
+            5.4
+          ],
+          "texture": "#energy"
+        },
+        "up": {
+          "uv": [
+            4.9,
+            7.4,
+            5.9,
+            8.6
+          ],
+          "texture": "#energy"
+        },
+        "down": {
+          "uv": [
+            4.9,
+            7.4,
+            5.9,
+            8.6
+          ],
+          "texture": "#energy"
+        }
+      }
+    },
+    {
+      "name": "water_channel",
+      "from": [
+        7.4,
+        11.0,
+        6.55
+      ],
+      "to": [
+        13.4,
+        11.7,
+        9.45
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            3,
+            6,
+            13,
+            10
+          ],
+          "texture": "#energy"
+        },
+        "south": {
+          "uv": [
+            3,
+            6,
+            13,
+            10
+          ],
+          "texture": "#energy"
+        },
+        "east": {
+          "uv": [
+            6.55,
+            4.3,
+            9.45,
+            5.0
+          ],
+          "texture": "#energy"
+        },
+        "west": {
+          "uv": [
+            6.55,
+            4.3,
+            9.45,
+            5.0
+          ],
+          "texture": "#energy"
+        },
+        "up": {
+          "uv": [
+            7.4,
+            6.55,
+            13.4,
+            9.45
+          ],
+          "texture": "#energy"
+        },
+        "down": {
+          "uv": [
+            7.4,
+            6.55,
+            13.4,
+            9.45
+          ],
+          "texture": "#energy"
+        }
+      }
+    },
+    {
+      "name": "glass_charm",
+      "from": [
+        3.3,
+        10.6,
+        7.1
+      ],
+      "to": [
+        5.1,
+        12.4,
+        8.9
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "south": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "east": {
+          "uv": [
+            7.1,
+            3.6,
+            8.9,
+            5.4
+          ],
+          "texture": "#gem"
+        },
+        "west": {
+          "uv": [
+            7.1,
+            3.6,
+            8.9,
+            5.4
+          ],
+          "texture": "#gem"
+        },
+        "up": {
+          "uv": [
+            3.3,
+            7.1,
+            5.1,
+            8.9
+          ],
+          "texture": "#gem"
+        },
+        "down": {
+          "uv": [
+            3.3,
+            7.1,
+            5.1,
+            8.9
+          ],
+          "texture": "#gem"
+        }
+      }
+    },
+    {
+      "name": "haft_lume",
+      "from": [
+        7.05,
+        6.3,
+        7.05
+      ],
+      "to": [
+        8.95,
+        7.4,
+        8.95
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            6,
+            6,
+            10,
+            10
+          ],
+          "texture": "#energy"
+        },
+        "south": {
+          "uv": [
+            6,
+            6,
+            10,
+            10
+          ],
+          "texture": "#energy"
+        },
+        "east": {
+          "uv": [
+            7.05,
+            8.6,
+            8.95,
+            9.7
+          ],
+          "texture": "#energy"
+        },
+        "west": {
+          "uv": [
+            7.05,
+            8.6,
+            8.95,
+            9.7
+          ],
+          "texture": "#energy"
+        },
+        "up": {
+          "uv": [
+            7.05,
+            7.05,
+            8.95,
+            8.95
+          ],
+          "texture": "#energy"
+        },
+        "down": {
+          "uv": [
+            7.05,
+            7.05,
+            8.95,
+            8.95
+          ],
+          "texture": "#energy"
+        }
+      }
+    }
+  ],
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        0,
+        90,
+        -50
+      ],
+      "translation": [
+        0,
+        3.5,
+        0.9
+      ],
+      "scale": [
+        0.8,
+        0.8,
+        0.8
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0,
+        -90,
+        50
+      ],
+      "translation": [
+        0,
+        3.5,
+        0.9
+      ],
+      "scale": [
+        0.8,
+        0.8,
+        0.8
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        -90,
+        25
+      ],
+      "translation": [
+        1.13,
+        3.2,
+        1.13
+      ],
+      "scale": [
+        0.68,
+        0.68,
+        0.68
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        90,
+        -25
+      ],
+      "translation": [
+        1.13,
+        3.2,
+        1.13
+      ],
+      "scale": [
+        0.68,
+        0.68,
+        0.68
+      ]
+    },
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "translation": [
+        0,
+        1.2,
+        0
+      ],
+      "scale": [
+        0.62,
+        0.62,
+        0.62
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        2,
+        0
+      ],
+      "scale": [
+        0.38,
+        0.38,
+        0.38
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        -1,
+        0
+      ],
+      "scale": [
+        0.45,
+        0.45,
+        0.45
+      ]
+    }
+  }
+}

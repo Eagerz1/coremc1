@@ -23,7 +23,7 @@ public record CrateReward(
         String key,
         /** KEY / ITEM: stack size granted. */
         int amount,
-        /** SPAWNER: purchasable tier id (zombie-2). GENERATOR: gen id (quartz). */
+        /** SPAWNER: purchasable tier id (zombie-2). GENERATOR: gen id (quartz). SKIN: skin id. */
         String refId,
         /** ITEM: Bukkit material name. */
         String material,
@@ -36,7 +36,9 @@ public record CrateReward(
         KEY,
         SPAWNER,
         GENERATOR,
-        ITEM
+        ITEM,
+        /** Animated skin (tool or hat): granted via the skin service hooks. */
+        SKIN
     }
 
     /** Colour code for a rarity (common/uncommon/rare/epic/legendary). */

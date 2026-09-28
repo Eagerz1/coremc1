@@ -165,6 +165,12 @@ public final class CrateService {
                     return Optional.empty();
                 }
             }
+            case SKIN -> {
+                if (plugin.skins().skin(refId).isEmpty()) {
+                    warn(crateId, "unknown skin '" + refId + "'");
+                    return Optional.empty();
+                }
+            }
         }
         final CrateReward reward = new CrateReward(type, Math.max(0, weight), rarity, currency,
                 Math.max(1L, min), Math.max(1L, max), key, amount, refId, material, "");
@@ -212,6 +218,10 @@ public final class CrateService {
                             : stack.getItemMeta().getDisplayName())
                     .orElse(color + reward.refId());
             case ITEM -> color + prettify(reward.material()) + (reward.amount() > 1 ? " x" + reward.amount() : "");
+            case SKIN -> plugin.skins().skin(reward.refId())
+                    .map(skin -> color + skin.display() + " &8("
+                            + (skin.type() == com.coremc.core.cosmetic.SkinType.HAT ? "hat" : "tool skin") + ")")
+                    .orElse(color + reward.refId());
         };
     }
 
@@ -290,6 +300,10 @@ public final class CrateService {
                 final Material icon = Material.matchMaterial(reward.material());
                 yield icon == null || icon.isAir() ? Material.STONE : icon;
             }
+            case SKIN -> plugin.skins().skin(reward.refId())
+                    .map(skin -> skin.type() == com.coremc.core.cosmetic.SkinType.HAT
+                            ? Material.CARVED_PUMPKIN : skin.material())
+                    .orElse(Material.NAME_TAG);
         };
     }
 
@@ -389,6 +403,22 @@ public final class CrateService {
             }
             case KEY -> {
                 plugin.keys().giveKeys(player, reward.key(), reward.amount());
+                return ColorUtil.colorize(reward.label());
+            }
+            case SKIN -> {
+                // Grant hook: ownership by stable id. Already-owned rolls are
+                // simply re-confirmed (no loss; the crate still pays out).
+                plugin.skins().grant(player.getUniqueId(), reward.refId());
+                final var skin = plugin.skins().skin(reward.refId());
+                if (skin.isPresent()
+                        && skin.get().type() == com.coremc.core.cosmetic.SkinType.HAT
+                        && "none".equals(profile.equippedHat())
+                        && profile.ownsSkin(skin.get().id())) {
+                    // first hat win: wear it immediately for the wow moment
+                    profile.equipHat(skin.get().id());
+                    plugin.playerData().persistImportant(profile);
+                    plugin.hatOverlay().syncWithProfile(player, profile);
+                }
                 return ColorUtil.colorize(reward.label());
             }
             default -> {
