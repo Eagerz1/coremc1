@@ -67,6 +67,14 @@ public final class OmniToolListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBlockBreak(final org.bukkit.event.block.BlockBreakEvent event) {
+        // Skip enchant-driven bonus breaks (AoE/vein/ultimate). Those fire a
+        // synthetic, guarded BlockBreakEvent and are finished with
+        // block.breakNaturally(tool), which drops the raw ore itself. Smelting
+        // them here would ADD a smelted ingot on top of that raw drop — a
+        // double-drop dupe. Only the player's own direct break is smelted.
+        if (plugin.enchantEngine().guarded()) {
+            return;
+        }
         final ItemStack tool = tools.toolInMainHand(event.getPlayer());
         if (tool == null) {
             return;

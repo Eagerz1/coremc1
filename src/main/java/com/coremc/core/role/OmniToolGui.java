@@ -87,7 +87,9 @@ public final class OmniToolGui implements Gui {
         inventory.setItem(
                 SLOT_TOOL,
                 GuiService.item(
-                        Material.NETHERITE_PICKAXE,
+                        // Mirror the actual physical OmniTool the player carries
+                        // for their current role (pickaxe/axe/hoe/sword/rod).
+                        current == null ? Material.NETHERITE_PICKAXE : current.toolMaterial(),
                         "&bOmniTool level: &f" + tool.level() + (tool.maxed() ? " &8(MAX)" : ""),
                         List.of(
                                 "&7XP: &f" + tool.xp() + (tool.maxed() ? "" : "&7/&f" + tool.xpToNext()),

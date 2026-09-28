@@ -98,6 +98,66 @@ class EnchantEngineTest {
     }
 
     @Test
+    void universalTrackFiresForEveryRoleOnEveryActivity() {
+        // Regression: the Universal role used to fall into the role-track
+        // branch, so its ANY-trigger enchants never matched a concrete
+        // activity trigger and silently did nothing.
+        assertTrue(EnchantEngine.firesFor("universal", EnchantEffect.Trigger.MINE,
+                "universal", EnchantEffect.Trigger.ANY), "universal role, ANY enchant, mining");
+        assertTrue(EnchantEngine.firesFor("universal", EnchantEffect.Trigger.KILL,
+                "universal", EnchantEffect.Trigger.ANY), "universal role, ANY enchant, killing");
+        assertTrue(EnchantEngine.firesFor("miner", EnchantEffect.Trigger.MINE,
+                "universal", EnchantEffect.Trigger.ANY), "miner, shared ANY enchant, mining");
+    }
+
+    @Test
+    void universalAnyEnchantsFireOnEveryActivityForEveryRole() {
+        // Regression matrix for the Universal-role fix: a shared universal
+        // ANY-trigger enchant must fire on ALL five activities, whether the
+        // player's role is Universal itself or any specific role.
+        final EnchantEffect.Trigger[] activities = {
+            EnchantEffect.Trigger.MINE, EnchantEffect.Trigger.LOG, EnchantEffect.Trigger.FISH,
+            EnchantEffect.Trigger.KILL, EnchantEffect.Trigger.FARM,
+        };
+        final String[] roles = {"universal", "miner", "logger", "fisher", "slayer", "farmer"};
+        for (final String role : roles) {
+            for (final EnchantEffect.Trigger activity : activities) {
+                assertTrue(
+                        EnchantEngine.firesFor(role, activity, "universal", EnchantEffect.Trigger.ANY),
+                        "universal ANY enchant must fire for role=" + role + " activity=" + activity);
+            }
+        }
+    }
+
+    @Test
+    void slayerAndFisherConcreteTracksFireOnTheirOwnActivity() {
+        assertTrue(EnchantEngine.firesFor("slayer", EnchantEffect.Trigger.KILL,
+                "slayer", EnchantEffect.Trigger.KILL), "slayer enchant fires on a kill");
+        assertFalse(EnchantEngine.firesFor("slayer", EnchantEffect.Trigger.MINE,
+                "slayer", EnchantEffect.Trigger.KILL), "slayer enchant does not fire while mining");
+        assertTrue(EnchantEngine.firesFor("fisher", EnchantEffect.Trigger.FISH,
+                "fisher", EnchantEffect.Trigger.FISH), "fisher enchant fires while fishing");
+        assertFalse(EnchantEngine.firesFor("fisher", EnchantEffect.Trigger.KILL,
+                "fisher", EnchantEffect.Trigger.FISH), "fisher enchant does not fire on a kill");
+    }
+
+    @Test
+    void concreteRoleTrackRequiresRoleAndActivityMatch() {
+        assertTrue(EnchantEngine.firesFor("miner", EnchantEffect.Trigger.MINE,
+                "miner", EnchantEffect.Trigger.MINE), "miner enchant fires while mining");
+        assertFalse(EnchantEngine.firesFor("miner", EnchantEffect.Trigger.KILL,
+                "miner", EnchantEffect.Trigger.MINE), "mining enchant never fires on a kill");
+        assertFalse(EnchantEngine.firesFor("logger", EnchantEffect.Trigger.LOG,
+                "miner", EnchantEffect.Trigger.LOG), "another role's track never fires");
+        // Universal players do not own concrete role tracks, so those never fire for them.
+        assertFalse(EnchantEngine.firesFor("universal", EnchantEffect.Trigger.MINE,
+                "miner", EnchantEffect.Trigger.MINE), "universal role has no miner track");
+        // PASSIVE universal enchants are handled via the multiplier path, not activeFor.
+        assertFalse(EnchantEngine.firesFor("universal", EnchantEffect.Trigger.MINE,
+                "universal", EnchantEffect.Trigger.PASSIVE), "PASSIVE enchant is not an active trigger");
+    }
+
+    @Test
     void rollHonoursBounds() {
         final EnchantEngine engine = new EnchantEngine(null);
         assertTrue(engine.roll(1.0), "chance 1 always hits");

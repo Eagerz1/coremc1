@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -17,8 +16,10 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 /**
- * Owns the OmniTool: a soulbound, PDC-identified netherite pickaxe the
- * player receives when selecting a role.
+ * Owns the OmniTool: a soulbound, PDC-identified tool the player
+ * receives when selecting a role. Its physical material follows the
+ * bound role (pickaxe/axe/hoe/sword/fishing-rod — see
+ * {@link Role#toolMaterial()}).
  *
  * Identity: a {@link NamespacedKey} marker + role binding + issued tool
  * level in the item's {@link org.bukkit.persistence.PersistentDataContainer}
@@ -115,7 +116,7 @@ public final class OmniToolService {
     /** Builds a fresh OmniTool bound to {@code role}, stamped with the tool level
      * and every OmniTool upgrade the owner has purchased. */
     public ItemStack create(final Role role, final PlayerProfile profile) {
-        final ItemStack item = new ItemStack(Material.NETHERITE_PICKAXE);
+        final ItemStack item = new ItemStack(role.toolMaterial());
         final ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(ColorUtil.colorize("&b&lOmni-Tool"));
         final List<String> lore = new ArrayList<>();
@@ -228,6 +229,16 @@ public final class OmniToolService {
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             final ItemStack item = inventory.getItem(slot);
             if (!isOmniTool(item)) {
+                continue;
+            }
+            final Role role = boundRole(item);
+            // Migration/self-heal: a tool whose physical material no longer
+            // matches its bound role (e.g. legacy pickaxe-shaped Slayer tools
+            // from before per-role materials existed) is rebuilt from scratch
+            // in place — the level/upgrades live in the profile, so nothing is
+            // lost and the correct tool form appears on the next refresh/join.
+            if (role != null && item.getType() != role.toolMaterial()) {
+                inventory.setItem(slot, create(role, profile));
                 continue;
             }
             final ItemMeta meta = item.getItemMeta();
