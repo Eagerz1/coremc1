@@ -8,22 +8,28 @@ import org.bukkit.Material;
  * {@link RoleCategory} — which gameplay actions feed its progression.
  */
 public enum Role {
-    MINER("miner", "&eMiner", Material.IRON_PICKAXE, RoleCategory.MINING),
-    LOGGER("logger", "&6Logger", Material.OAK_LOG, RoleCategory.LOGGING),
-    FISHER("fisher", "&bFisher", Material.FISHING_ROD, RoleCategory.FISHING),
-    SLAYER("slayer", "&cSlayer", Material.IRON_SWORD, RoleCategory.SLAYING),
-    FARMER("farmer", "&aFarmer", Material.WHEAT, RoleCategory.FARMING),
-    UNIVERSAL("universal", "&dUniversal", Material.NETHER_STAR, null);
+    MINER("miner", "&eMiner", Material.IRON_PICKAXE, Material.NETHERITE_PICKAXE, RoleCategory.MINING),
+    LOGGER("logger", "&6Logger", Material.OAK_LOG, Material.NETHERITE_AXE, RoleCategory.LOGGING),
+    FISHER("fisher", "&bFisher", Material.FISHING_ROD, Material.FISHING_ROD, RoleCategory.FISHING),
+    SLAYER("slayer", "&cSlayer", Material.IRON_SWORD, Material.NETHERITE_SWORD, RoleCategory.SLAYING),
+    FARMER("farmer", "&aFarmer", Material.WHEAT, Material.NETHERITE_HOE, RoleCategory.FARMING),
+    // Universal aggregates every category but still carries a single physical
+    // OmniTool; a Netherite Pickaxe is the most versatile default (mines and
+    // still deals melee damage), matching the historical Universal tool form.
+    UNIVERSAL("universal", "&dUniversal", Material.NETHER_STAR, Material.NETHERITE_PICKAXE, null);
 
     private final String key;
     private final String display;
     private final Material icon;
+    private final Material toolMaterial;
     private final RoleCategory category;
 
-    Role(final String key, final String display, final Material icon, final RoleCategory category) {
+    Role(final String key, final String display, final Material icon, final Material toolMaterial,
+            final RoleCategory category) {
         this.key = key;
         this.display = display;
         this.icon = icon;
+        this.toolMaterial = toolMaterial;
         this.category = category;
     }
 
@@ -37,6 +43,11 @@ public enum Role {
 
     public Material icon() {
         return icon;
+    }
+
+    /** The physical tool material the OmniTool takes when bound to this role. */
+    public Material toolMaterial() {
+        return toolMaterial;
     }
 
     /** Category this role progresses from; null = Universal (feeds from all). */

@@ -152,24 +152,28 @@ public final class EnchantEngine implements Listener {
     public List<EnchantService.EnchantLevel> activeFor(
             final PlayerProfile profile, final String roleKey, final EnchantEffect.Trigger trigger) {
         final List<EnchantService.EnchantLevel> result = new ArrayList<>();
-        collectActive(profile, roleKey, trigger, false, result);
+        // The player's own role track (concrete triggers: MINE/LOG/...). The
+        // Universal role has no concrete-trigger track — it owns only shared
+        // universal-track enchants, collected below — so scanning "universal"
+        // here would apply role-track semantics to ANY-trigger enchants and
+        // they would never match a concrete activity (the historical bug).
+        collectActive(profile, roleKey, roleKey, trigger, result);
         if (!"universal".equals(roleKey)) {
-            collectActive(profile, "universal", trigger, true, result);
+            // Shared universal-track enchants (trigger ANY) fire on every
+            // activity for every specific role too.
+            collectActive(profile, roleKey, "universal", trigger, result);
         }
         return result;
     }
 
     private void collectActive(
             final PlayerProfile profile,
+            final String playerRole,
             final String track,
             final EnchantEffect.Trigger trigger,
-            final boolean universal,
             final List<EnchantService.EnchantLevel> result) {
         for (final Enchant enchant : plugin.enchants().registry().forRole(track)) {
-            if (universal && enchant.trigger() != EnchantEffect.Trigger.ANY) {
-                continue;
-            }
-            if (!universal && enchant.trigger() != trigger) {
+            if (!firesFor(playerRole, trigger, enchant.role(), enchant.trigger())) {
                 continue;
             }
             final int level = profile.enchantLevel(enchant.id());
@@ -177,6 +181,30 @@ public final class EnchantEngine implements Listener {
                 result.add(new EnchantService.EnchantLevel(enchant, level));
             }
         }
+    }
+
+    /**
+     * Pure activation rule (unit-testable): does an owned enchant fire for a
+     * player of {@code playerRole} performing an {@code activity}?
+     *
+     * <ul>
+     *   <li>Shared universal-track enchants fire across every activity for
+     *       EVERY role (including the Universal role itself) — but only when
+     *       their trigger is ANY (PASSIVE multipliers apply through a separate
+     *       path).</li>
+     *   <li>A concrete role track fires only for that exact role, and only on
+     *       its matching activity trigger.</li>
+     * </ul>
+     */
+    static boolean firesFor(
+            final String playerRole,
+            final EnchantEffect.Trigger activity,
+            final String enchantRole,
+            final EnchantEffect.Trigger enchantTrigger) {
+        if ("universal".equals(enchantRole)) {
+            return enchantTrigger == EnchantEffect.Trigger.ANY;
+        }
+        return enchantRole.equals(playerRole) && enchantTrigger == activity;
     }
 
     /** Chance roll: 1+ always, 0- never, else uniform. */
