@@ -158,12 +158,26 @@ public final class SkinCatalog {
         return out;
     }
 
-    /** Whether a source id survives the season reset ("all" keeps everything). */
+    /**
+     * Whether a source id survives the season reset. A keep entry protects
+     * both its exact id and its family: {@code crate} keeps {@code crate:ember}.
+     * An empty policy set ("all") keeps everything.
+     */
     public boolean survivesSeasonReset(final String source) {
-        if (alwaysKeepSources.contains(source)) {
+        final String src = source == null ? "unknown" : source.toLowerCase(Locale.ROOT);
+        if (matchesKeepEntry(alwaysKeepSources, src)) {
             return true;
         }
-        return seasonKeepSources.isEmpty() || seasonKeepSources.contains(source);
+        return seasonKeepSources.isEmpty() || matchesKeepEntry(seasonKeepSources, src);
+    }
+
+    private static boolean matchesKeepEntry(final Set<String> keep, final String source) {
+        for (final String entry : keep) {
+            if (entry.equals(source) || source.startsWith(entry + ":")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Parse problems (empty when the catalogue is fully valid). */

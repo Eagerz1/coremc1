@@ -40,10 +40,13 @@ jobs:
         run: |
           # javac/junit failure lines from the tee'd log -> ::error:: so they
           # are readable through the checks annotations API as well
-          grep -E "(\[ERROR\]|BUILD FAILURE|Tests run:.*Failures: [1-9]|COMPILATION ERROR)" mvn.log \
-            | grep -v "To see the full stack trace" | grep -v "Re-run Maven using" \
-            | grep -v "For more information about the errors" | grep -v "When encountering" \
-            | head -n 20 | while IFS= read -r line; do
+          {
+            grep -E "(\[ERROR\]|BUILD FAILURE|COMPILATION ERROR)" mvn.log \
+              | grep -v "To see the full stack trace" | grep -v "Re-run Maven using" \
+              | grep -v "For more information about the errors" | grep -v "When encountering" \
+              | grep -v "Please make sure" | head -n 12
+            grep -E -A 4 "<<< (FAILURE|ERROR)!" mvn.log | grep -v "^--$" | head -n 30
+          } | while IFS= read -r line; do
               echo "::error::${line:0:700}"
             done
 
