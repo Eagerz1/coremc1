@@ -34,6 +34,12 @@ ranges:
   skin:
     start: 21500
     end: 21512
+  tool_skin:
+    start: 21600
+    end: 21629
+  hat_skin:
+    start: 21630
+    end: 21632
 
 items:
   fish_common_creek_dart:
@@ -886,3 +892,169 @@ items:
     model_path: skins/companion/starseed
     fallback_material: PAPER
     category: progression
+  # --- generated: animated skin items (tools/generate_skin_assets.py) ---
+  tool_skin_emberforge_miner:
+    model_id: 21600
+    model_path: skins/tools/emberforge/miner
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_emberforge_logger:
+    model_id: 21601
+    model_path: skins/tools/emberforge/logger
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_emberforge_fisher:
+    model_id: 21602
+    model_path: skins/tools/emberforge/fisher
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_emberforge_slayer:
+    model_id: 21603
+    model_path: skins/tools/emberforge/slayer
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_emberforge_farmer:
+    model_id: 21604
+    model_path: skins/tools/emberforge/farmer
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_emberforge_universal:
+    model_id: 21605
+    model_path: skins/tools/emberforge/universal
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_riftbound_miner:
+    model_id: 21606
+    model_path: skins/tools/riftbound/miner
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_riftbound_logger:
+    model_id: 21607
+    model_path: skins/tools/riftbound/logger
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_riftbound_fisher:
+    model_id: 21608
+    model_path: skins/tools/riftbound/fisher
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_riftbound_slayer:
+    model_id: 21609
+    model_path: skins/tools/riftbound/slayer
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_riftbound_farmer:
+    model_id: 21610
+    model_path: skins/tools/riftbound/farmer
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_riftbound_universal:
+    model_id: 21611
+    model_path: skins/tools/riftbound/universal
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_astral_miner:
+    model_id: 21612
+    model_path: skins/tools/astral/miner
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_astral_logger:
+    model_id: 21613
+    model_path: skins/tools/astral/logger
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_astral_fisher:
+    model_id: 21614
+    model_path: skins/tools/astral/fisher
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_astral_slayer:
+    model_id: 21615
+    model_path: skins/tools/astral/slayer
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_astral_farmer:
+    model_id: 21616
+    model_path: skins/tools/astral/farmer
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_astral_universal:
+    model_id: 21617
+    model_path: skins/tools/astral/universal
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_tidecaller_miner:
+    model_id: 21618
+    model_path: skins/tools/tidecaller/miner
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_tidecaller_logger:
+    model_id: 21619
+    model_path: skins/tools/tidecaller/logger
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_tidecaller_fisher:
+    model_id: 21620
+    model_path: skins/tools/tidecaller/fisher
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_tidecaller_slayer:
+    model_id: 21621
+    model_path: skins/tools/tidecaller/slayer
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_tidecaller_farmer:
+    model_id: 21622
+    model_path: skins/tools/tidecaller/farmer
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_tidecaller_universal:
+    model_id: 21623
+    model_path: skins/tools/tidecaller/universal
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_overgrown_miner:
+    model_id: 21624
+    model_path: skins/tools/overgrown/miner
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_overgrown_logger:
+    model_id: 21625
+    model_path: skins/tools/overgrown/logger
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_overgrown_fisher:
+    model_id: 21626
+    model_path: skins/tools/overgrown/fisher
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_overgrown_slayer:
+    model_id: 21627
+    model_path: skins/tools/overgrown/slayer
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_overgrown_farmer:
+    model_id: 21628
+    model_path: skins/tools/overgrown/farmer
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  tool_skin_overgrown_universal:
+    model_id: 21629
+    model_path: skins/tools/overgrown/universal
+    fallback_material: NETHERITE_PICKAXE
+    category: tool_skin
+  hat_skin_ember_crown:
+    model_id: 21630
+    model_path: skins/hats/ember_crown
+    fallback_material: CARVED_PUMPKIN
+    category: hat_skin
+  hat_skin_rift_halo:
+    model_id: 21631
+    model_path: skins/hats/rift_halo
+    fallback_material: CARVED_PUMPKIN
+    category: hat_skin
+  hat_skin_moonlit_cap:
+    model_id: 21632
+    model_path: skins/hats/moonlit_cap
+    fallback_material: CARVED_PUMPKIN
+    category: hat_skin

@@ -130,11 +130,45 @@ public final class OmniToolService {
         meta.getPersistentDataContainer().set(roleKey, PersistentDataType.STRING, role.key());
         // Custom model data is an optional visual layer. The NETHERITE_PICKAXE
         // fallback, OmniTool marker, role PDC, lore and upgrade enchantments
-        // are unchanged when a pack is absent.
-        meta.setCustomModelData(ROLE_MODEL_IDS.getOrDefault(role, 21405));
+        // are unchanged when a pack is absent. An equipped animated skin for
+        // this role (profile selection) wins over the base role model.
+        stampVisualLayer(meta, role, profile);
         applyUpgradeEnchants(meta, profile);
         item.setItemMeta(meta);
         return item;
+    }
+
+    /**
+     * Stamps ONLY the presentation layer: the equipped animated tool skin
+     * for this role when one is selected (and fits the role), otherwise the
+     * base role model. Identity PDC, damage, enchants, upgrades, levels and
+     * lore are never touched here — a skin can only change what the item
+     * looks like. Re-invoked on every refresh/upgrade/re-grant, so the
+     * visual layer always matches the profile selection.
+     */
+    private void stampVisualLayer(final ItemMeta meta, final Role role, final PlayerProfile profile) {
+        final Integer baseModel = ROLE_MODEL_IDS.getOrDefault(role, 21405);
+        String skinId = null;
+        if (profile != null && plugin.skins() != null) {
+            skinId = profile.equippedToolSkin(role.key()).orElse(null);
+        }
+        com.coremc.core.cosmetic.Skin skin = null;
+        if (skinId != null && plugin.skins() != null) {
+            skin = plugin.skins().skin(skinId)
+                    .filter(candidate -> candidate.fitsRole(role))
+                    .orElse(null);
+        }
+        if (skin != null) {
+            meta.setCustomModelData(skin.modelId());
+            meta.getPersistentDataContainer()
+                    .set(plugin.skins().toolSkinKey(), PersistentDataType.STRING, skin.id());
+        } else {
+            meta.setCustomModelData(baseModel);
+            if (plugin.skins() != null) {
+                meta.getPersistentDataContainer()
+                        .remove(plugin.skins().toolSkinKey());
+            }
+        }
     }
 
     /** Tool lore line per owned upgrade (level/shield visibility = investment proof). */
@@ -200,7 +234,7 @@ public final class OmniToolService {
             final ItemMeta meta = item.getItemMeta();
             final Role role = boundRole(item);
             if (role != null) {
-                meta.setCustomModelData(ROLE_MODEL_IDS.getOrDefault(role, 21405));
+                stampVisualLayer(meta, role, profile);
             }
             applyUpgradeEnchants(meta, profile);
             // Rebuild lore deterministically from the template (upgrade lines

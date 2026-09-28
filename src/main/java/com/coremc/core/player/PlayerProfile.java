@@ -14,7 +14,8 @@ import java.util.UUID;
  * 4 = + spawner unlock kill counters;
  * 5 = + OmniTool purchased upgrade levels;
  * 6 = + custom enchant levels, souls, tags, companions, quests, playtime,
- * chat style, lifetime stats, subscription claims, store rank.
+ * chat style, lifetime stats, subscription claims, store rank;
+ * 7 = + animated skins (owned ids, per-role equipped tool skins, equipped hat).
  * All loads are tolerant: unknown/missing fields become defaults.
  *
  * A profile is created the first time a player connects and survives
@@ -34,7 +35,7 @@ import java.util.UUID;
 public final class PlayerProfile {
 
     /** Current on-disk schema version. */
-    public static final int SCHEMA_VERSION = 6;
+    public static final int SCHEMA_VERSION = 7;
 
     private final UUID uuid;
 
@@ -105,6 +106,14 @@ public final class PlayerProfile {
     private final Map<String, String> subscriptionClaims = new LinkedHashMap<>();
     /** Purchased store rank id ("member" = default). */
     private String rankId = "member";
+
+    // --- schema v7: animated skins (tolerant, all defaulted) ---
+    /** Owned animated skin ids (stable ids; empty by default — nothing is auto-granted). */
+    private final java.util.Set<String> ownedSkins = new java.util.LinkedHashSet<>();
+    /** roleKey -> equipped tool skin id (absent = default look). Survives role switches. */
+    private final Map<String, String> equippedToolSkins = new LinkedHashMap<>();
+    /** Equipped hat skin id ("none" = no hat). */
+    private String equippedHat = "none";
 
     private PlayerProfile(final UUID uuid) {
         this.uuid = Objects.requireNonNull(uuid, "uuid");
@@ -234,6 +243,27 @@ public final class PlayerProfile {
             }
         }
         profile.rankId = String.valueOf(map.getOrDefault("rank", "member"));
+        // --- schema v7: animated skins ---
+        final Object ownedSkinsObject = map.get("owned-skins");
+        if (ownedSkinsObject instanceof java.util.List<?> skinList) {
+            for (final Object entry : skinList) {
+                final String id = String.valueOf(entry);
+                if (!id.isBlank() && !"none".equals(id)) {
+                    profile.ownedSkins.add(id);
+                }
+            }
+        }
+        final Object equippedSkinsObject = map.get("equipped-tool-skins");
+        if (equippedSkinsObject instanceof Map<?, ?> rawEquipped) {
+            for (final Map.Entry<?, ?> entry : rawEquipped.entrySet()) {
+                final String roleKey = String.valueOf(entry.getKey());
+                final String skinId = String.valueOf(entry.getValue());
+                if (!roleKey.isBlank() && !skinId.isBlank() && !"none".equals(skinId)) {
+                    profile.equippedToolSkins.put(roleKey, skinId);
+                }
+            }
+        }
+        profile.equippedHat = String.valueOf(map.getOrDefault("equipped-hat", "none"));
     }
 
     /** Tolerant loader for id -> flat string/object record maps (companions, quests). */
@@ -292,6 +322,9 @@ public final class PlayerProfile {
         map.put("stats", new LinkedHashMap<>(stats));
         map.put("subscription-claims", new LinkedHashMap<>(subscriptionClaims));
         map.put("rank", rankId);
+        map.put("owned-skins", new java.util.ArrayList<>(ownedSkins));
+        map.put("equipped-tool-skins", new LinkedHashMap<>(equippedToolSkins));
+        map.put("equipped-hat", equippedHat);
         return map;
     }
 
@@ -665,6 +698,74 @@ public final class PlayerProfile {
 
     public Map<String, String> cosmetics() {
         return Map.copyOf(cosmetics);
+    }
+
+    // ------------------------------------------------------------------
+    // schema v7: animated skins
+    // ------------------------------------------------------------------
+
+    /** Owned skin ids (immutable view; stable ids such as {@code emberforge_miner}). */
+    public java.util.Set<String> ownedSkins() {
+        return java.util.Set.copyOf(ownedSkins);
+    }
+
+    public boolean ownsSkin(final String skinId) {
+        return skinId != null && ownedSkins.contains(skinId);
+    }
+
+    /** Grants ownership of a skin. Returns false when it was already owned. */
+    public boolean grantSkin(final String skinId) {
+        if (skinId == null || skinId.isBlank() || "none".equals(skinId)) {
+            return false;
+        }
+        return ownedSkins.add(skinId);
+    }
+
+    /**
+     * Revokes ownership of a skin and unequips it everywhere so a revoked
+     * skin can never stay visually active. Returns false when not owned.
+     */
+    public boolean revokeSkin(final String skinId) {
+        if (skinId == null || !ownedSkins.remove(skinId)) {
+            return false;
+        }
+        equippedToolSkins.values().removeIf(skinId::equals);
+        if (skinId.equals(equippedHat)) {
+            equippedHat = "none";
+        }
+        return true;
+    }
+
+    /** The equipped tool skin id for a role (empty = default look). */
+    public java.util.Optional<String> equippedToolSkin(final String roleKey) {
+        return java.util.Optional.ofNullable(roleKey == null ? null : equippedToolSkins.get(roleKey));
+    }
+
+    /** Equips (or replaces) the tool skin for a role. {@code null} clears it. */
+    public void equipToolSkin(final String roleKey, final String skinId) {
+        if (roleKey == null || roleKey.isBlank()) {
+            return;
+        }
+        if (skinId == null || skinId.isBlank() || "none".equals(skinId)) {
+            equippedToolSkins.remove(roleKey);
+        } else {
+            equippedToolSkins.put(roleKey, skinId);
+        }
+    }
+
+    /** Snapshot of all equipped tool skins (roleKey -> skinId, immutable). */
+    public Map<String, String> equippedToolSkins() {
+        return Map.copyOf(equippedToolSkins);
+    }
+
+    /** The equipped hat skin id, or "none". */
+    public String equippedHat() {
+        return equippedHat;
+    }
+
+    /** Equips a hat skin ({@code null} or "none" removes it). */
+    public void equipHat(final String skinId) {
+        this.equippedHat = skinId == null || skinId.isBlank() ? "none" : skinId;
     }
 
     public String subscriptionTier() {

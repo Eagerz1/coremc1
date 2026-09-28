@@ -26,7 +26,9 @@ jobs:
           cache: maven
 
       - name: Validate CoreMC ItemsAdder source pack
-        run: python3 tools/validate_itemsadder_assets.py
+        run: |
+          python3 tools/validate_itemsadder_assets.py
+          python3 tools/validate_skin_assets.py
 
       - name: Build with Maven (compile + JUnit tests + jar)
         run: mvn -B verify

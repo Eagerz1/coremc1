@@ -1,6 +1,9 @@
 # Maven build output
 target/
 
+# Resource-pack build output (reproducible: python3 tools/build_pack.py)
+dist/
+
 # Local paper jars / runtimes (never vendored; CI downloads Paper)
 sandbox/
 

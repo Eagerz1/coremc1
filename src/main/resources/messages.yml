@@ -13,6 +13,25 @@ reload-success: "Configuration reloaded."
 unknown-subcommand: "Unknown subcommand. Usage: {usage}"
 player-not-online: "&cNo online player named '&f{player}&c'."
 
+skins:
+  not-owned: "&cYou do not own that skin yet."
+  applied: "&aSkin applied: {skin}&a. Your tool's stats are untouched."
+  wrong-role: "&cThat skin only fits the {role} &cOmni-Tool."
+  cleared: "&7Tool skin removed — back to the default look."
+  hat-applied: "&aNow wearing: {hat}&a."
+  hat-removed: "&7Hat removed."
+  unknown-skin: "&cUnknown skin '&f{skin}&c'."
+  unknown-player: "&cNo player data found for '&f{player}&c'."
+  player-offline: "&c{player} must be online for that."
+  granted-admin: "&aGranted {skin} &ato &f{player}&a."
+  grant-already: "&f{player} &ealready owns {skin}&e."
+  revoked-admin: "&aRevoked {skin} &afrom &f{player}&a."
+  revoke-not-owned: "&f{player} &edoes not own {skin}&e."
+  set: "&aEquipped {skin} &afor &f{player}&a."
+  cleared-admin: "&aCleared skin selections for &f{player}&a."
+  reloaded: "&aLoaded &f{count} &askin(s) from skins.yml."
+  unknown-sub: "&cUnknown subcommand. Try &f/skins help&c."
+
 welcome-first-join: "&fWelcome to &b&lCoreMC &fSkyblock, {player}&f! Enjoy your stay."
 
 heal:

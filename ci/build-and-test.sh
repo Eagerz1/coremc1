@@ -5,6 +5,7 @@
 set -euo pipefail
 
 python3 tools/validate_itemsadder_assets.py
+python3 tools/validate_skin_assets.py
 mvn -B verify
 
 echo

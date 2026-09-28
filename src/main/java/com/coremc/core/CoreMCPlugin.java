@@ -5,6 +5,9 @@ import com.coremc.core.command.CurrencyAdminCommand;
 import com.coremc.core.command.HealCommand;
 import com.coremc.core.command.ProfileCommand;
 import com.coremc.core.cosmetic.CosmeticSkinService;
+import com.coremc.core.cosmetic.HatOverlayService;
+import com.coremc.core.cosmetic.SkinService;
+import com.coremc.core.cosmetic.SkinsCommand;
 import com.coremc.core.config.CoreConfig;
 import com.coremc.core.config.MessageService;
 import com.coremc.core.crate.CrateService;
@@ -70,6 +73,8 @@ public final class CoreMCPlugin extends JavaPlugin {
     private IslandService islandService;
     private GuiService guiService;
     private CosmeticSkinService cosmeticSkinService;
+    private SkinService skinService;
+    private HatOverlayService hatOverlayService;
     private OmniToolService omniToolService;
     private RoleService roleService;
     private PlaceableService placeableService;
@@ -176,6 +181,12 @@ public final class CoreMCPlugin extends JavaPlugin {
         // Cosmetic skins are a presentation-only layer over generators and
         // future companions; they never own or mutate progression data.
         this.cosmeticSkinService = new CosmeticSkinService(this);
+        // Animated skins (this feature): catalog from skins.yml, ownership in
+        // profiles; loaded BEFORE roles/crates so tool creation can stamp the
+        // equipped skin and crate rewards can validate skin refs.
+        this.skinService = new SkinService(this);
+        final int skinCount = skinService.load();
+        this.hatOverlayService = new HatOverlayService(this);
 
         // 3e. Roles + OmniTool (profile-driven progression).
         this.omniToolService = new OmniToolService(this);
@@ -203,7 +214,8 @@ public final class CoreMCPlugin extends JavaPlugin {
         getLogger().info("Loaded " + gens + " generator(s), " + spawners + " spawner type(s), "
                 + shopEntries + " shop entr(y/ies), " + omniUpgrades + " omni upgrade(s), "
                 + enchantCount + " enchant(s), " + keyCount + " crate key(s), "
-                + crateCount + " crate(s).");
+                + crateCount + " crate(s), "
+                + skinCount + " animated skin(s).");
 
         // 4. Listeners.
         this.enchantEngine = new EnchantEngine(this);
@@ -217,6 +229,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         pluginManager.registerEvents(islandProgressService, this);
         pluginManager.registerEvents(guiService, this);
         pluginManager.registerEvents(new OmniToolListener(this), this);
+        pluginManager.registerEvents(hatOverlayService, this);
         pluginManager.registerEvents(new MiningXpListener(this), this);
         pluginManager.registerEvents(new LoggingXpListener(this), this);
         pluginManager.registerEvents(new FarmingXpListener(this), this);
@@ -236,6 +249,9 @@ public final class CoreMCPlugin extends JavaPlugin {
         // Spawner liveness watchdog (normalises legacy tiles + re-arms stalls).
         spawnerService.startWatchdog();
 
+        // Animated hat overlays: one yaw-lock sync task for all wearers.
+        hatOverlayService.start();
+
         // 5. Commands.
         registerCommands();
 
@@ -251,6 +267,11 @@ public final class CoreMCPlugin extends JavaPlugin {
         // Stop scheduled work first so nothing touches dead services.
         if (taskService != null) {
             taskService.cancelAll();
+        }
+        // Remove hat overlay entities while the plugin is still enabled
+        // (players keep a clean state; overlays are respawned on next join).
+        if (hatOverlayService != null) {
+            hatOverlayService.shutdown();
         }
         // Flush and shut down player data (synchronous, safe on disable).
         if (playerDataService != null) {
@@ -282,6 +303,8 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.islandProgressService = null;
         this.guiService = null;
         this.cosmeticSkinService = null;
+        this.skinService = null;
+        this.hatOverlayService = null;
         this.omniToolService = null;
         this.roleService = null;
         getLogger().info("CoreMC disabled — all player data saved, all tasks cancelled.");
@@ -293,6 +316,11 @@ public final class CoreMCPlugin extends JavaPlugin {
         messageService.load();
         // Re-apply the autosave interval with fresh configuration.
         playerDataService.startAutosave(coreConfig.autosaveSeconds());
+        skinService.load();
+        for (final org.bukkit.entity.Player online : getServer().getOnlinePlayers()) {
+            playerDataService.profileOf(online.getUniqueId())
+                    .ifPresent(profile -> hatOverlayService.syncWithProfile(online, profile));
+        }
         themeService.load();
         miningCubeService.load();
         spawnerService.load();
@@ -349,6 +377,14 @@ public final class CoreMCPlugin extends JavaPlugin {
         final RoleCommand roleCommand = new RoleCommand(this);
         role.setExecutor(roleCommand);
         role.setTabCompleter(roleCommand);
+
+        final PluginCommand skins = getCommand("skins");
+        if (skins == null) {
+            throw new IllegalStateException("Command 'skins' missing from plugin.yml");
+        }
+        final SkinsCommand skinsCommand = new SkinsCommand(this);
+        skins.setExecutor(skinsCommand);
+        skins.setTabCompleter(skinsCommand);
 
         final PluginCommand gens = getCommand("gens");
         if (gens == null) {
@@ -457,6 +493,16 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Visual-only generator/companion skin layer. */
     public CosmeticSkinService cosmeticSkins() {
         return cosmeticSkinService;
+    }
+
+    /** Animated tool/hat skins: catalog, ownership, selection, grant hooks. */
+    public SkinService skins() {
+        return skinService;
+    }
+
+    /** Animated hat overlays (ItemDisplay riding the player's head). */
+    public HatOverlayService hatOverlay() {
+        return hatOverlayService;
     }
 
     /** OmniTool service. */

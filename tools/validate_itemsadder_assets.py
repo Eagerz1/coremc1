@@ -18,6 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PACK = ROOT / "src/main/resources/itemsadder/contents/coremc"
 ITEMS = PACK / "configs/items.yml"
+SKINS_ITEMS = PACK / "configs/skins-items.yml"
 ASSET_ROOT = PACK / "resourcepack/assets/coremc"
 MODELS = ASSET_ROOT / "models/item"
 TEXTURES = ASSET_ROOT / "textures/item"
@@ -113,6 +114,102 @@ def parse_items():
     return records
 
 
+def parse_skins():
+    """Skin item definitions from configs/skins-items.yml (same shape as items.yml)."""
+    if not SKINS_ITEMS.is_file():
+        fail(f"missing required source file {SKINS_ITEMS}")
+    text = SKINS_ITEMS.read_text(encoding="utf-8")
+    if "namespace: coremc" not in text:
+        fail("skins-items.yml namespace is not coremc")
+    records = {}
+    for item_id, body in item_blocks(text):
+        model = re.search(r"^      model_path: \"item/([^\"]+)\"$", body, re.M)
+        model_id = re.search(r"^      model_id: (\d+)$", body, re.M)
+        material = re.search(r"^      material: ([A-Z0-9_]+)$", body, re.M)
+        if not (model and model_id and material):
+            fail(f"{item_id}: incomplete skin resource definition")
+        records[item_id] = {
+            "path": model.group(1),
+            "model_id": int(model_id.group(1)),
+            "material": material.group(1),
+        }
+    return records
+
+
+def png_strip_info(path: Path):
+    """Animated skins use square-frame RGBA animation strips + .png.mcmeta.
+
+    Strip width is 16 or 32 px per frame; height is width * frame count
+    (>= 2 frames => a guaranteed visible loop).
+    """
+    data = path.read_bytes()
+    if data[:8] != b"\x89PNG\r\n\x1a\n":
+        fail(f"{path}: not a PNG")
+    if data[12:16] != b"IHDR":
+        fail(f"{path}: PNG has no IHDR")
+    width, height, depth, colour = struct.unpack(">IIBB", data[16:26])
+    if (depth, colour) != (8, 6):
+        fail(f"{path}: expected 8-bit RGBA strip, got depth={depth} colour={colour}")
+    if width not in (16, 32):
+        fail(f"{path}: expected 16- or 32-wide strip, got {width}")
+    if height % width != 0 or height // width < 2:
+        fail(f"{path}: strip must hold >= 2 square frames, got {width}x{height}")
+    mcmeta = path.with_suffix(path.suffix + ".mcmeta")
+    if not mcmeta.is_file():
+        fail(f"{path}: animation strip has no .png.mcmeta")
+    meta = json.loads(mcmeta.read_text(encoding="utf-8"))
+    animation = meta.get("animation")
+    if not isinstance(animation, dict) or "frametime" not in animation:
+        fail(f"{mcmeta}: missing animation.frametime")
+    frames = height // width
+    if animation.get("frametime", 0) < 1:
+        fail(f"{mcmeta}: frametime must be >= 1")
+    declared = animation.get("frames", list(range(frames)))
+    if len(declared) < 2 or any(not isinstance(f, int) or not 0 <= f < frames for f in declared):
+        fail(f"{mcmeta}: frames must index the {frames} strip frames")
+    return frames
+
+
+def check_skins(records):
+    """33 animated skins: stable id range, real 3D models, animated strips."""
+    if len(records) != 33:
+        fail(f"expected exactly 33 skin items, found {len(records)}")
+    ids = {record["model_id"] for record in records.values()}
+    expected = set(range(21600, 21633))
+    if ids != expected:
+        fail(f"skin model ids must be exactly 21600-21632, got {sorted(ids)[:5]}...{sorted(ids)[-5:]}")
+    tool_skins = [rid for rid in records if rid.startswith("tool_skin_")]
+    hat_skins = [rid for rid in records if rid.startswith("hat_skin_")]
+    if len(tool_skins) != 30 or len(hat_skins) != 3:
+        fail(f"expected 30 tool skins + 3 hats, got {len(tool_skins)}+{len(hat_skins)}")
+    seen_textures = set()
+    for item_id, record in records.items():
+        model = MODELS / (record["path"] + ".json")
+        if not model.is_file():
+            fail(f"{item_id}: missing skin model {model}")
+        payload = json.loads(model.read_text(encoding="utf-8"))
+        if payload.get("parent") in ("minecraft:item/handheld", "minecraft:item/generated"):
+            fail(f"{item_id}: skin model must be real 3D geometry, not a flat parent")
+        elements = payload.get("elements")
+        if not isinstance(elements, list) or len(elements) < 3:
+            fail(f"{item_id}: skin model needs >= 3 elements (distinct silhouette)")
+        textures = payload.get("textures")
+        if not isinstance(textures, dict) or not textures:
+            fail(f"{item_id}: skin model has no textures")
+        for ref in textures.values():
+            if not isinstance(ref, str) or not ref.startswith("coremc:item/"):
+                fail(f"{item_id}: texture ref must be coremc-namespaced: {ref}")
+            rel = ref[len("coremc:item/"):]
+            png = TEXTURES / (rel + ".png")
+            if not png.is_file():
+                fail(f"{item_id}: missing texture {png}")
+            seen_textures.add(rel)
+    # every skin texture must be an animated strip (visible loop guarantee)
+    for rel in sorted(seen_textures):
+        png_strip_info(TEXTURES / (rel + ".png"))
+    return seen_textures
+
+
 def check_fish(records):
     fish = {rarity: [] for rarity in RANGES}
     for item_id, record in records.items():
@@ -142,8 +239,10 @@ def check_fish(records):
     return fish
 
 
-def check_assets(records):
+def check_assets(records, skin_records=(), skin_textures=()):
     model_ids = []
+    for record in skin_records.values():
+        model_ids.append(record["model_id"])
     for item_id, record in records.items():
         model_ids.append(record["model_id"])
         model = MODELS / (record["path"] + ".json")
@@ -161,13 +260,21 @@ def check_assets(records):
         fail("duplicate custom model IDs in ItemsAdder items")
     # No orphan generated source assets: every generated model has an item entry.
     expected_models = {record["path"] + ".json" for record in records.values()}
+    expected_models |= {record["path"] + ".json" for record in skin_records.values()}
     actual_models = {path.relative_to(MODELS).as_posix() for path in MODELS.rglob("*.json")}
     if actual_models != expected_models:
-        fail(f"orphan/missing model files: expected {len(expected_models)}, found {len(actual_models)}")
+        missing = expected_models - actual_models
+        orphan = actual_models - expected_models
+        fail(f"orphan/missing model files: expected {len(expected_models)}, found {len(actual_models)}"
+             f" (missing={sorted(missing)[:3]} orphan={sorted(orphan)[:3]})")
     expected_textures = {record["path"] + ".png" for record in records.values()}
+    expected_textures |= {rel + ".png" for rel in skin_textures}
     actual_textures = {path.relative_to(TEXTURES).as_posix() for path in TEXTURES.rglob("*.png")}
     if actual_textures != expected_textures:
-        fail(f"orphan/missing texture files: expected {len(expected_textures)}, found {len(actual_textures)}")
+        missing = expected_textures - actual_textures
+        orphan = actual_textures - expected_textures
+        fail(f"orphan/missing texture files: expected {len(expected_textures)}, found {len(actual_textures)}"
+             f" (missing={sorted(missing)[:3]} orphan={sorted(orphan)[:3]})")
 
 
 def check_java_references(records):
@@ -218,8 +325,10 @@ def main():
         if not path.is_file():
             fail(f"missing required source file {path}")
     records = parse_items()
+    skin_records = parse_skins()
+    skin_textures = check_skins(skin_records)
     fish = check_fish(records)
-    check_assets(records)
+    check_assets(records, skin_records, skin_textures)
     check_java_references(records)
     catalog_text = CATALOG.read_text(encoding="utf-8")
     for rarity in RANGES:
@@ -227,10 +336,14 @@ def main():
             fail(f"fishing catalog missing {rarity} section")
         if len(re.findall(rf"^      - id: fish_{rarity}_", catalog_text, re.M)) != 24:
             fail(f"fishing catalog {rarity} count mismatch")
-    print(f"PASS ItemsAdder source: {len(records)} item definitions, 120 fish (24 x 5), {len(records)} models, {len(records)} textures")
+    print(f"PASS ItemsAdder source: {len(records)} item definitions, 120 fish (24 x 5), "
+          f"{len(records) + len(skin_records)} models, "
+          f"{len(records) + len(skin_textures)} textures")
     print("PASS stable model IDs: unique, range-checked, and no orphan mappings")
     print("PASS PNGs: valid 32x32 RGBA, non-empty, no purple/black fallback pixels")
     print("PASS Java/config compatibility: existing crate key lookups and role tool identities covered")
+    print(f"PASS animated skins: {len(skin_records)} items (30 tools + 3 hats), ids 21600-21632, "
+          f"{len(skin_textures)} animation strips, real 3D geometry")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,1420 @@
+{
+  "__comment": "CoreMC overgrown universal skin \u2014 original 3D geometry with animated textures",
+  "textures": {
+    "#metal": "coremc:item/skins/overgrown/stone",
+    "#energy": "coremc:item/skins/overgrown/spores",
+    "#grip": "coremc:item/skins/overgrown/haft",
+    "#gem": "coremc:item/skins/overgrown/bloom",
+    "particle": "coremc:item/skins/overgrown/stone"
+  },
+  "elements": [
+    {
+      "name": "haft",
+      "from": [
+        7.3,
+        0.5,
+        7.3
+      ],
+      "to": [
+        8.7,
+        10.4,
+        8.7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            0,
+            9,
+            13
+          ],
+          "texture": "#grip"
+        },
+        "south": {
+          "uv": [
+            7,
+            0,
+            9,
+            13
+          ],
+          "texture": "#grip"
+        },
+        "east": {
+          "uv": [
+            7.3,
+            5.6,
+            8.7,
+            15.5
+          ],
+          "texture": "#grip"
+        },
+        "west": {
+          "uv": [
+            7.3,
+            5.6,
+            8.7,
+            15.5
+          ],
+          "texture": "#grip"
+        },
+        "up": {
+          "uv": [
+            7.3,
+            7.3,
+            8.7,
+            8.7
+          ],
+          "texture": "#grip"
+        },
+        "down": {
+          "uv": [
+            7.3,
+            7.3,
+            8.7,
+            8.7
+          ],
+          "texture": "#grip"
+        }
+      }
+    },
+    {
+      "name": "pommel",
+      "from": [
+        6.9,
+        0.0,
+        6.9
+      ],
+      "to": [
+        9.1,
+        0.8,
+        9.1
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            6,
+            9,
+            10,
+            13
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            6,
+            9,
+            10,
+            13
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            6.9,
+            15.2,
+            9.1,
+            16.0
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            6.9,
+            15.2,
+            9.1,
+            16.0
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            6.9,
+            6.9,
+            9.1,
+            9.1
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            6.9,
+            6.9,
+            9.1,
+            9.1
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "hub",
+      "from": [
+        5.6,
+        10.3,
+        5.6
+      ],
+      "to": [
+        10.4,
+        13.8,
+        10.4
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            5,
+            3,
+            11,
+            9
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            5,
+            3,
+            11,
+            9
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            5.6,
+            2.2,
+            10.4,
+            5.7
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            5.6,
+            2.2,
+            10.4,
+            5.7
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            5.6,
+            5.6,
+            10.4,
+            10.4
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            5.6,
+            5.6,
+            10.4,
+            10.4
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "hub_core",
+      "from": [
+        7.5,
+        11.6,
+        7.5
+      ],
+      "to": [
+        8.5,
+        12.6,
+        8.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#energy"
+        },
+        "south": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#energy"
+        },
+        "east": {
+          "uv": [
+            7.5,
+            3.4,
+            8.5,
+            4.4
+          ],
+          "texture": "#energy"
+        },
+        "west": {
+          "uv": [
+            7.5,
+            3.4,
+            8.5,
+            4.4
+          ],
+          "texture": "#energy"
+        },
+        "up": {
+          "uv": [
+            7.5,
+            7.5,
+            8.5,
+            8.5
+          ],
+          "texture": "#energy"
+        },
+        "down": {
+          "uv": [
+            7.5,
+            7.5,
+            8.5,
+            8.5
+          ],
+          "texture": "#energy"
+        }
+      }
+    },
+    {
+      "name": "pick_prong",
+      "from": [
+        1.8,
+        11.6,
+        7.2
+      ],
+      "to": [
+        5.6,
+        13.5,
+        8.8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            4,
+            6,
+            7
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            1,
+            4,
+            6,
+            7
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            7.2,
+            2.5,
+            8.8,
+            4.4
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            7.2,
+            2.5,
+            8.8,
+            4.4
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            1.8,
+            7.2,
+            5.6,
+            8.8
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            1.8,
+            7.2,
+            5.6,
+            8.8
+          ],
+          "texture": "#metal"
+        }
+      },
+      "rotation": {
+        "origin": [
+          5.6,
+          12.5,
+          8.0
+        ],
+        "axis": "z",
+        "angle": -20
+      }
+    },
+    {
+      "name": "pick_tip",
+      "from": [
+        1.0,
+        11.4,
+        7.4
+      ],
+      "to": [
+        2.2,
+        13.0,
+        8.6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            4,
+            2,
+            6
+          ],
+          "texture": "#energy"
+        },
+        "south": {
+          "uv": [
+            0,
+            4,
+            2,
+            6
+          ],
+          "texture": "#energy"
+        },
+        "east": {
+          "uv": [
+            7.4,
+            3.0,
+            8.6,
+            4.6
+          ],
+          "texture": "#energy"
+        },
+        "west": {
+          "uv": [
+            7.4,
+            3.0,
+            8.6,
+            4.6
+          ],
+          "texture": "#energy"
+        },
+        "up": {
+          "uv": [
+            1.0,
+            7.4,
+            2.2,
+            8.6
+          ],
+          "texture": "#energy"
+        },
+        "down": {
+          "uv": [
+            1.0,
+            7.4,
+            2.2,
+            8.6
+          ],
+          "texture": "#energy"
+        }
+      },
+      "rotation": {
+        "origin": [
+          5.6,
+          12.5,
+          8.0
+        ],
+        "axis": "z",
+        "angle": -20
+      }
+    },
+    {
+      "name": "axe_blade",
+      "from": [
+        10.4,
+        11.5,
+        6.9
+      ],
+      "to": [
+        12.5,
+        13.5,
+        9.1
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            11,
+            4,
+            13,
+            7
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            11,
+            4,
+            13,
+            7
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            6.9,
+            2.5,
+            9.1,
+            4.5
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            6.9,
+            2.5,
+            9.1,
+            4.5
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            10.4,
+            6.9,
+            12.5,
+            9.1
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            10.4,
+            6.9,
+            12.5,
+            9.1
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "axe_edge",
+      "from": [
+        12.5,
+        11.8,
+        7.3
+      ],
+      "to": [
+        13.2,
+        13.1,
+        8.7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            13,
+            5,
+            15,
+            7
+          ],
+          "texture": "#energy"
+        },
+        "south": {
+          "uv": [
+            13,
+            5,
+            15,
+            7
+          ],
+          "texture": "#energy"
+        },
+        "east": {
+          "uv": [
+            7.3,
+            2.9,
+            8.7,
+            4.2
+          ],
+          "texture": "#energy"
+        },
+        "west": {
+          "uv": [
+            7.3,
+            2.9,
+            8.7,
+            4.2
+          ],
+          "texture": "#energy"
+        },
+        "up": {
+          "uv": [
+            12.5,
+            7.3,
+            13.2,
+            8.7
+          ],
+          "texture": "#energy"
+        },
+        "down": {
+          "uv": [
+            12.5,
+            7.3,
+            13.2,
+            8.7
+          ],
+          "texture": "#energy"
+        }
+      }
+    },
+    {
+      "name": "sword_point",
+      "from": [
+        7.4,
+        12.4,
+        3.0
+      ],
+      "to": [
+        8.6,
+        14.1,
+        5.6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            2,
+            9,
+            5
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            7,
+            2,
+            9,
+            5
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            3.0,
+            1.9,
+            5.6,
+            3.6
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            3.0,
+            1.9,
+            5.6,
+            3.6
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            7.4,
+            3.0,
+            8.6,
+            5.6
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            7.4,
+            10.4,
+            8.6,
+            13.0
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "sword_point_edge",
+      "from": [
+        7.5,
+        12.9,
+        2.4
+      ],
+      "to": [
+        8.5,
+        13.7,
+        3.2
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            2,
+            9,
+            4
+          ],
+          "texture": "#energy"
+        },
+        "south": {
+          "uv": [
+            7,
+            2,
+            9,
+            4
+          ],
+          "texture": "#energy"
+        },
+        "east": {
+          "uv": [
+            2.4,
+            2.3,
+            3.2,
+            3.1
+          ],
+          "texture": "#energy"
+        },
+        "west": {
+          "uv": [
+            2.4,
+            2.3,
+            3.2,
+            3.1
+          ],
+          "texture": "#energy"
+        },
+        "up": {
+          "uv": [
+            7.5,
+            2.4,
+            8.5,
+            3.2
+          ],
+          "texture": "#energy"
+        },
+        "down": {
+          "uv": [
+            7.5,
+            12.8,
+            8.5,
+            13.6
+          ],
+          "texture": "#energy"
+        }
+      }
+    },
+    {
+      "name": "hook_back",
+      "from": [
+        7.5,
+        12.0,
+        10.4
+      ],
+      "to": [
+        8.5,
+        13.9,
+        12.6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            7,
+            2,
+            9,
+            5
+          ],
+          "texture": "#metal"
+        },
+        "south": {
+          "uv": [
+            7,
+            2,
+            9,
+            5
+          ],
+          "texture": "#metal"
+        },
+        "east": {
+          "uv": [
+            10.4,
+            2.1,
+            12.6,
+            4.0
+          ],
+          "texture": "#metal"
+        },
+        "west": {
+          "uv": [
+            10.4,
+            2.1,
+            12.6,
+            4.0
+          ],
+          "texture": "#metal"
+        },
+        "up": {
+          "uv": [
+            7.5,
+            10.4,
+            8.5,
+            12.6
+          ],
+          "texture": "#metal"
+        },
+        "down": {
+          "uv": [
+            7.5,
+            3.4,
+            8.5,
+            5.6
+          ],
+          "texture": "#metal"
+        }
+      }
+    },
+    {
+      "name": "top_gem",
+      "from": [
+        7.2,
+        13.8,
+        7.2
+      ],
+      "to": [
+        8.8,
+        15.2,
+        8.8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "south": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "east": {
+          "uv": [
+            7.2,
+            0.8,
+            8.8,
+            2.2
+          ],
+          "texture": "#gem"
+        },
+        "west": {
+          "uv": [
+            7.2,
+            0.8,
+            8.8,
+            2.2
+          ],
+          "texture": "#gem"
+        },
+        "up": {
+          "uv": [
+            7.2,
+            7.2,
+            8.8,
+            8.8
+          ],
+          "texture": "#gem"
+        },
+        "down": {
+          "uv": [
+            7.2,
+            7.2,
+            8.8,
+            8.8
+          ],
+          "texture": "#gem"
+        }
+      }
+    },
+    {
+      "name": "moss_patch_a",
+      "from": [
+        0.85,
+        13.2,
+        2.85
+      ],
+      "to": [
+        2.9,
+        14.35,
+        12.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "south": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "east": {
+          "uv": [
+            2.85,
+            1.65,
+            12.75,
+            2.8
+          ],
+          "texture": "#gem"
+        },
+        "west": {
+          "uv": [
+            2.85,
+            1.65,
+            12.75,
+            2.8
+          ],
+          "texture": "#gem"
+        },
+        "up": {
+          "uv": [
+            0.85,
+            2.85,
+            2.9,
+            12.75
+          ],
+          "texture": "#gem"
+        },
+        "down": {
+          "uv": [
+            0.85,
+            3.25,
+            2.9,
+            13.15
+          ],
+          "texture": "#gem"
+        }
+      }
+    },
+    {
+      "name": "moss_patch_b",
+      "from": [
+        11.5,
+        11.5,
+        2.85
+      ],
+      "to": [
+        13.5,
+        12.5,
+        4.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "south": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "east": {
+          "uv": [
+            2.85,
+            3.5,
+            4.5,
+            4.5
+          ],
+          "texture": "#gem"
+        },
+        "west": {
+          "uv": [
+            2.85,
+            3.5,
+            4.5,
+            4.5
+          ],
+          "texture": "#gem"
+        },
+        "up": {
+          "uv": [
+            11.5,
+            2.85,
+            13.5,
+            4.5
+          ],
+          "texture": "#gem"
+        },
+        "down": {
+          "uv": [
+            11.5,
+            11.5,
+            13.5,
+            13.15
+          ],
+          "texture": "#gem"
+        }
+      }
+    },
+    {
+      "name": "grass_blade",
+      "from": [
+        7.0,
+        14.3,
+        3.4
+      ],
+      "to": [
+        7.35,
+        15.6,
+        3.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "south": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "east": {
+          "uv": [
+            3.4,
+            0.4,
+            3.75,
+            1.7
+          ],
+          "texture": "#gem"
+        },
+        "west": {
+          "uv": [
+            3.4,
+            0.4,
+            3.75,
+            1.7
+          ],
+          "texture": "#gem"
+        },
+        "up": {
+          "uv": [
+            7.0,
+            3.4,
+            7.35,
+            3.75
+          ],
+          "texture": "#gem"
+        },
+        "down": {
+          "uv": [
+            7.0,
+            12.25,
+            7.35,
+            12.6
+          ],
+          "texture": "#gem"
+        }
+      },
+      "rotation": {
+        "origin": [
+          7.1,
+          13.8,
+          3.6
+        ],
+        "axis": "z",
+        "angle": -14
+      }
+    },
+    {
+      "name": "vine_wrap_low",
+      "from": [
+        6.85,
+        4.75,
+        7.3
+      ],
+      "to": [
+        9.15,
+        5.2,
+        8.7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            2,
+            2,
+            14,
+            14
+          ],
+          "texture": "#gem"
+        },
+        "south": {
+          "uv": [
+            2,
+            2,
+            14,
+            14
+          ],
+          "texture": "#gem"
+        },
+        "east": {
+          "uv": [
+            7.3,
+            10.8,
+            8.7,
+            11.25
+          ],
+          "texture": "#gem"
+        },
+        "west": {
+          "uv": [
+            7.3,
+            10.8,
+            8.7,
+            11.25
+          ],
+          "texture": "#gem"
+        },
+        "up": {
+          "uv": [
+            6.85,
+            7.3,
+            9.15,
+            8.7
+          ],
+          "texture": "#gem"
+        },
+        "down": {
+          "uv": [
+            6.85,
+            7.3,
+            9.15,
+            8.7
+          ],
+          "texture": "#gem"
+        }
+      },
+      "rotation": {
+        "origin": [
+          8.0,
+          5.5,
+          8.0
+        ],
+        "axis": "z",
+        "angle": 28
+      }
+    },
+    {
+      "name": "vine_wrap_high",
+      "from": [
+        6.85,
+        6.05,
+        7.3
+      ],
+      "to": [
+        9.15,
+        6.5,
+        8.7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            2,
+            2,
+            14,
+            14
+          ],
+          "texture": "#gem"
+        },
+        "south": {
+          "uv": [
+            2,
+            2,
+            14,
+            14
+          ],
+          "texture": "#gem"
+        },
+        "east": {
+          "uv": [
+            7.3,
+            9.5,
+            8.7,
+            9.95
+          ],
+          "texture": "#gem"
+        },
+        "west": {
+          "uv": [
+            7.3,
+            9.5,
+            8.7,
+            9.95
+          ],
+          "texture": "#gem"
+        },
+        "up": {
+          "uv": [
+            6.85,
+            7.3,
+            9.15,
+            8.7
+          ],
+          "texture": "#gem"
+        },
+        "down": {
+          "uv": [
+            6.85,
+            7.3,
+            9.15,
+            8.7
+          ],
+          "texture": "#gem"
+        }
+      },
+      "rotation": {
+        "origin": [
+          8.0,
+          5.5,
+          8.0
+        ],
+        "axis": "z",
+        "angle": -28
+      }
+    },
+    {
+      "name": "spore_bloom",
+      "from": [
+        7.15,
+        15.1,
+        7.15
+      ],
+      "to": [
+        8.85,
+        16.8,
+        8.85
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "south": {
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ],
+          "texture": "#gem"
+        },
+        "east": {
+          "uv": [
+            7.15,
+            -0.8,
+            8.85,
+            0.9
+          ],
+          "texture": "#gem"
+        },
+        "west": {
+          "uv": [
+            7.15,
+            -0.8,
+            8.85,
+            0.9
+          ],
+          "texture": "#gem"
+        },
+        "up": {
+          "uv": [
+            7.15,
+            7.15,
+            8.85,
+            8.85
+          ],
+          "texture": "#gem"
+        },
+        "down": {
+          "uv": [
+            7.15,
+            7.15,
+            8.85,
+            8.85
+          ],
+          "texture": "#gem"
+        }
+      }
+    }
+  ],
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        0,
+        90,
+        -50
+      ],
+      "translation": [
+        0,
+        3.5,
+        0.9
+      ],
+      "scale": [
+        0.8,
+        0.8,
+        0.8
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0,
+        -90,
+        50
+      ],
+      "translation": [
+        0,
+        3.5,
+        0.9
+      ],
+      "scale": [
+        0.8,
+        0.8,
+        0.8
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        -90,
+        25
+      ],
+      "translation": [
+        1.13,
+        3.2,
+        1.13
+      ],
+      "scale": [
+        0.68,
+        0.68,
+        0.68
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        90,
+        -25
+      ],
+      "translation": [
+        1.13,
+        3.2,
+        1.13
+      ],
+      "scale": [
+        0.68,
+        0.68,
+        0.68
+      ]
+    },
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "translation": [
+        0,
+        1.2,
+        0
+      ],
+      "scale": [
+        0.62,
+        0.62,
+        0.62
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        2,
+        0
+      ],
+      "scale": [
+        0.38,
+        0.38,
+        0.38
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        -1,
+        0
+      ],
+      "scale": [
+        0.45,
+        0.45,
+        0.45
+      ]
+    }
+  }
+}

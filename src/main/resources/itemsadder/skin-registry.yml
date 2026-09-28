@@ -41,3 +41,184 @@ companion_skins:
     model_id: 21512
     applies_to: companion
     cosmetic_only: true
+
+# ==== animated tool skins + hats (tools/generate_skin_assets.py) ====
+tool_skin_contract:
+  pdc_key: coremc:tool_skin
+  cosmetic_only: true
+  stat_effect: none
+  preserves: [damage, enchants, upgrades, levels, role, pdc_identity]
+  selection_rule: custom model layer over the soulbound OmniTool only;
+    role must match the tool binding, ownership lives in the profile
+  fallback: vanilla NETHERITE_PICKAXE with role lore when pack missing
+hat_contract:
+  mechanism: item_display passenger overlay (HEAD transform)
+  preserves: real helmet slot item and all armour attributes
+  fallback: vanilla CARVED_PUMPKIN appearance when pack missing
+tool_skins:
+  emberforge_miner:
+    item_id: tool_skin_emberforge_miner
+    model_id: 21600
+    applies_to: omnitool:miner
+    cosmetic_only: true
+  emberforge_logger:
+    item_id: tool_skin_emberforge_logger
+    model_id: 21601
+    applies_to: omnitool:logger
+    cosmetic_only: true
+  emberforge_fisher:
+    item_id: tool_skin_emberforge_fisher
+    model_id: 21602
+    applies_to: omnitool:fisher
+    cosmetic_only: true
+  emberforge_slayer:
+    item_id: tool_skin_emberforge_slayer
+    model_id: 21603
+    applies_to: omnitool:slayer
+    cosmetic_only: true
+  emberforge_farmer:
+    item_id: tool_skin_emberforge_farmer
+    model_id: 21604
+    applies_to: omnitool:farmer
+    cosmetic_only: true
+  emberforge_universal:
+    item_id: tool_skin_emberforge_universal
+    model_id: 21605
+    applies_to: omnitool:universal
+    cosmetic_only: true
+  riftbound_miner:
+    item_id: tool_skin_riftbound_miner
+    model_id: 21606
+    applies_to: omnitool:miner
+    cosmetic_only: true
+  riftbound_logger:
+    item_id: tool_skin_riftbound_logger
+    model_id: 21607
+    applies_to: omnitool:logger
+    cosmetic_only: true
+  riftbound_fisher:
+    item_id: tool_skin_riftbound_fisher
+    model_id: 21608
+    applies_to: omnitool:fisher
+    cosmetic_only: true
+  riftbound_slayer:
+    item_id: tool_skin_riftbound_slayer
+    model_id: 21609
+    applies_to: omnitool:slayer
+    cosmetic_only: true
+  riftbound_farmer:
+    item_id: tool_skin_riftbound_farmer
+    model_id: 21610
+    applies_to: omnitool:farmer
+    cosmetic_only: true
+  riftbound_universal:
+    item_id: tool_skin_riftbound_universal
+    model_id: 21611
+    applies_to: omnitool:universal
+    cosmetic_only: true
+  astral_miner:
+    item_id: tool_skin_astral_miner
+    model_id: 21612
+    applies_to: omnitool:miner
+    cosmetic_only: true
+  astral_logger:
+    item_id: tool_skin_astral_logger
+    model_id: 21613
+    applies_to: omnitool:logger
+    cosmetic_only: true
+  astral_fisher:
+    item_id: tool_skin_astral_fisher
+    model_id: 21614
+    applies_to: omnitool:fisher
+    cosmetic_only: true
+  astral_slayer:
+    item_id: tool_skin_astral_slayer
+    model_id: 21615
+    applies_to: omnitool:slayer
+    cosmetic_only: true
+  astral_farmer:
+    item_id: tool_skin_astral_farmer
+    model_id: 21616
+    applies_to: omnitool:farmer
+    cosmetic_only: true
+  astral_universal:
+    item_id: tool_skin_astral_universal
+    model_id: 21617
+    applies_to: omnitool:universal
+    cosmetic_only: true
+  tidecaller_miner:
+    item_id: tool_skin_tidecaller_miner
+    model_id: 21618
+    applies_to: omnitool:miner
+    cosmetic_only: true
+  tidecaller_logger:
+    item_id: tool_skin_tidecaller_logger
+    model_id: 21619
+    applies_to: omnitool:logger
+    cosmetic_only: true
+  tidecaller_fisher:
+    item_id: tool_skin_tidecaller_fisher
+    model_id: 21620
+    applies_to: omnitool:fisher
+    cosmetic_only: true
+  tidecaller_slayer:
+    item_id: tool_skin_tidecaller_slayer
+    model_id: 21621
+    applies_to: omnitool:slayer
+    cosmetic_only: true
+  tidecaller_farmer:
+    item_id: tool_skin_tidecaller_farmer
+    model_id: 21622
+    applies_to: omnitool:farmer
+    cosmetic_only: true
+  tidecaller_universal:
+    item_id: tool_skin_tidecaller_universal
+    model_id: 21623
+    applies_to: omnitool:universal
+    cosmetic_only: true
+  overgrown_miner:
+    item_id: tool_skin_overgrown_miner
+    model_id: 21624
+    applies_to: omnitool:miner
+    cosmetic_only: true
+  overgrown_logger:
+    item_id: tool_skin_overgrown_logger
+    model_id: 21625
+    applies_to: omnitool:logger
+    cosmetic_only: true
+  overgrown_fisher:
+    item_id: tool_skin_overgrown_fisher
+    model_id: 21626
+    applies_to: omnitool:fisher
+    cosmetic_only: true
+  overgrown_slayer:
+    item_id: tool_skin_overgrown_slayer
+    model_id: 21627
+    applies_to: omnitool:slayer
+    cosmetic_only: true
+  overgrown_farmer:
+    item_id: tool_skin_overgrown_farmer
+    model_id: 21628
+    applies_to: omnitool:farmer
+    cosmetic_only: true
+  overgrown_universal:
+    item_id: tool_skin_overgrown_universal
+    model_id: 21629
+    applies_to: omnitool:universal
+    cosmetic_only: true
+hat_skins:
+  ember_crown:
+    item_id: hat_skin_ember_crown
+    model_id: 21630
+    applies_to: hat
+    cosmetic_only: true
+  rift_halo:
+    item_id: hat_skin_rift_halo
+    model_id: 21631
+    applies_to: hat
+    cosmetic_only: true
+  moonlit_cap:
+    item_id: hat_skin_moonlit_cap
+    model_id: 21632
+    applies_to: hat
+    cosmetic_only: true
