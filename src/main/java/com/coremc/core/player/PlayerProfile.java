@@ -263,7 +263,8 @@ public final class PlayerProfile {
                 }
             }
         }
-        profile.equippedHat = String.valueOf(map.getOrDefault("equipped-hat", "none"));
+        final String equippedHatRaw = String.valueOf(map.getOrDefault("equipped-hat", "none"));
+        profile.equippedHat = equippedHatRaw.isBlank() ? "none" : equippedHatRaw;
     }
 
     /** Tolerant loader for id -> flat string/object record maps (companions, quests). */
