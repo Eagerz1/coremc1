@@ -102,6 +102,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private com.coremc.core.chat.RankService rankService;
     private com.coremc.core.chat.ChatFormatService chatFormatService;
     private com.coremc.core.moderation.ModerationService moderationService;
+    private com.coremc.core.event.EventService eventService;
 
     /**
      * Creates (or attaches to) the dedicated island world. Islands live in
@@ -152,6 +153,11 @@ public final class CoreMCPlugin extends JavaPlugin {
 
         this.messageService = new MessageService(this);
         this.messageService.load();
+
+        // 2b. Recurring Core Hour schedule is persistent across restarts.
+        this.eventService = new com.coremc.core.event.EventService(this);
+        this.eventService.load();
+        this.eventService.start(taskService);
 
         // 3. Player data (YAML store in plugins/CoreMC/profiles/).
         this.playerDataService =
@@ -267,6 +273,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         pluginManager.registerEvents(islandUpgradeEffects, this);
         pluginManager.registerEvents(islandActivityEffects, this);
         pluginManager.registerEvents(islandProgressService, this);
+        pluginManager.registerEvents(eventService, this);
         pluginManager.registerEvents(guiService, this);
         pluginManager.registerEvents(new OmniToolListener(this), this);
         pluginManager.registerEvents(hatOverlayService, this);
@@ -373,6 +380,9 @@ public final class CoreMCPlugin extends JavaPlugin {
         if (moderationService != null) {
             moderationService.shutdown();
         }
+        if (eventService != null) {
+            eventService.shutdown();
+        }
         if (companionService != null) {
             companionService.shutdown();
         }
@@ -424,6 +434,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.chatFormatService = null;
         this.rankService = null;
         this.moderationService = null;
+        this.eventService = null;
         this.omniToolService = null;
         this.roleService = null;
         getLogger().info("CoreMC disabled — all player data saved, all tasks cancelled.");
@@ -433,6 +444,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     public void reloadCoreConfig() {
         coreConfig.load();
         messageService.load();
+        eventService.load();
         // Re-apply the autosave interval with fresh configuration.
         playerDataService.startAutosave(coreConfig.autosaveSeconds());
         skinService.load();
@@ -496,6 +508,12 @@ public final class CoreMCPlugin extends JavaPlugin {
         registerCurrencyCommand("credits", Currency.CREDITS);
         registerCurrencyCommand("skytokens", Currency.SKY_TOKENS);
         registerCurrencyCommand("money", Currency.MONEY);
+
+        final PluginCommand event = getCommand("event");
+        if (event == null) {
+            throw new IllegalStateException("Command 'event' missing from plugin.yml");
+        }
+        event.setExecutor(new com.coremc.core.event.EventCommand(this));
 
         final PluginCommand role = getCommand("role");
         if (role == null) {
@@ -640,6 +658,11 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Central task service (tracked, cancelled on disable). */
     public TaskService tasks() {
         return taskService;
+    }
+
+    /** Recurring event schedule and live reward multipliers. */
+    public com.coremc.core.event.EventService events() {
+        return eventService;
     }
 
     /** Typed plugin configuration. */

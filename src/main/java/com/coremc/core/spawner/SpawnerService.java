@@ -407,6 +407,7 @@ public final class SpawnerService {
             return;
         }
         long money = Math.max(0L, plugin.getConfig().getLong("spawners.kill-rewards.money", 3L));
+        money = Math.max(0L, Math.round(money * plugin.events().slayingMoneyMultiplier()));
         long tokens = Math.max(0L, plugin.getConfig().getLong("spawners.kill-rewards.sky-tokens", 1L));
         long moneyPaid = 0L;
         long tokensPaid = 0L;

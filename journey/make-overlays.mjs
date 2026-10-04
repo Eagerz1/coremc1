@@ -2,9 +2,11 @@
 // Builds the journey's deterministic config overlays.
 //
 // The plugin jar under test is byte-built from the exact HEAD under test;
-// only two DATA tables are tuned so stochastic mechanics become
-// deterministic and fast. Mechanics (triggers, rolls, keys, pity) run 100%
-// through production code paths — only the tuned NUMBERS differ:
+// deterministic DATA overlays cover stochastic mechanics, and the event
+// schedule is anchored in an active window so /event can be tested without
+// waiting four hours. The live reward paths remain production code.
+// Mechanics (triggers, rolls, keys, pity, scheduled multipliers) run 100%
+// through production code paths — only the deterministic test setup differs:
 //
 //   enchants.yml: miner.treasure-miner procs on every mined block,
 //     has no cooldown/level-gate, costs 1 token, always rolls a sky key.
@@ -20,6 +22,12 @@ import path from 'node:path'
 const SRC = 'src/main/resources'
 const OUT = 'journey-server/plugins/CoreMC'
 fs.mkdirSync(OUT, { recursive: true })
+
+// Start inside the first event window; the normal four-hour schedule and
+// one-hour duration remain unchanged. This tests the real persisted schedule.
+fs.writeFileSync(path.join(OUT, 'events.yml'), yamlDump({
+  'schedule-anchor-millis': Date.now() - 1000,
+}))
 
 const ench = yamlLoad(fs.readFileSync(path.join(SRC, 'enchants.yml'), 'utf8'))
 const tm = ench.enchants && ench.enchants['miner.treasure-miner']
@@ -60,3 +68,4 @@ console.log('overlays written to', OUT)
 console.log('  miner.treasure-miner: chance 1.0, cooldown 0, min-role-level 0, cost-base 1, sky key chance 1.0')
 console.log('  sky crate: pity-count 2, legendary weight 0')
 console.log('  config: spawner kill-rewards chance 1.0')
+console.log('  events: schedule anchor placed in the active window')

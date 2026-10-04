@@ -17,7 +17,7 @@ not count as a feature.
 | Companions | Summon/equip GUI, abilities, progression and persistence | Six earnable companions, visible followers, 20-level category XP abilities, persistence, tests and journey coverage | Complete |
 | Equipment sets | Real set items, bonuses, acquisition and GUI/help surface | Not implemented | Missing |
 | Missions / quests | Daily/weekly objectives, progress, claim flow, reset and persistence | Daily assignment, five activity metrics, claim GUI, rewards, reset/persistence and tests implemented; weekly track remains | In progress |
-| Events | Scheduled gameplay events with visible state and rewards | Not implemented | Missing |
+| Events | Scheduled gameplay events with visible state and rewards | One-hour Core Hour every four hours; persisted schedule, four-step boss bar, `/event` status, and 2x island XP/slaying money/Omni-Tool XP wired into normal reward paths | In progress — awaiting release build + live journey |
 | Lootboxes | Non-pay-to-win reward definitions, preview/open flow and persistence | Crates exist; promised separate lootbox system not implemented | Missing |
 | Store | Bundles/subscriptions/cosmetics delivery with explicit non-P2W rules | Grant hooks exist; no complete store service or GUI | Missing |
 | Scoreboard | Live currencies, role/tool progress, island and objective context | Not implemented | Missing |

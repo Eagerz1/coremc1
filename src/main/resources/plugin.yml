@@ -43,6 +43,11 @@ commands:
     usage: /money [give|remove|set] <player> <amount>
     permission: coremc.command.money
     permission-message: "&cYou do not have permission to use this command."
+  event:
+    description: Check the current Core Hour and the next event countdown.
+    usage: /event
+    permission: coremc.command.event
+    permission-message: "&cYou do not have permission to use this command."
   role:
     description: Choose your CoreMC role and view progression.
     usage: /role [miner|logger|fisher|slayer|farmer|universal|info]
@@ -176,6 +181,7 @@ permissions:
       coremc.command.credits: true
       coremc.command.skytokens: true
       coremc.command.money: true
+      coremc.command.event: true
       coremc.command.role: true
       coremc.command.gens: true
       coremc.command.companions: true
@@ -330,6 +336,9 @@ permissions:
     default: true
   coremc.command.money:
     description: Allows viewing your Money balance.
+    default: true
+  coremc.command.event:
+    description: Allows checking the Core Hour event schedule.
     default: true
   coremc.command.role:
     description: Allows choosing a role and viewing progression.

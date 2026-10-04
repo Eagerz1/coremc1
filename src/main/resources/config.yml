@@ -15,6 +15,16 @@ welcome:
   # Send the branded first-join welcome message (messages.yml -> welcome-first-join)
   first-join-message: true
 
+events:
+  # The first Core Hour is scheduled this many hours after the first enable.
+  # Further events use this interval and survive clean restarts.
+  interval-hours: 4
+  duration-minutes: 60
+  multipliers:
+    island-xp: 2.0
+    slaying-money: 2.0
+    omnitool-xp: 2.0
+
 island:
   # World islands live in. CoreMC creates this world automatically when it
   # does not exist (as empty void terrain — the dedicated island world).

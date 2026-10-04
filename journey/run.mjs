@@ -620,6 +620,11 @@ async function main() {
   check(await waitSpawn(owner), 'owner spawns on first boot')
   check(await waitChat(owner, /welcome to/i, 20000), 'first-join welcome received')
   clearChat(owner)
+  owner.chat('/event')
+  check(await waitChat(owner, /CORE HOUR is live/i, 10000), '/event reports the active Core Hour')
+  check(await waitChat(owner, /2x Island XP.*2x Slaying Money.*2x Omni-Tool XP/i, 10000),
+    'event status lists all three configured rewards')
+  clearChat(owner)
   owner.chat('/is create')
   check(await waitChat(owner, /has been created/i, 90000), '/is create pastes island')
   // Wait for the real world swap (level name from the respawn packet) and

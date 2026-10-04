@@ -131,8 +131,10 @@ public final class RoleService {
         profile.setProgress(role.get().key(), roleResult.level, roleResult.xp);
 
         // OmniTool progression (same amount)
+        final long toolAwarded = Math.max(0L,
+                Math.round(awarded * plugin.events().omniToolXpMultiplier()));
         final ProgressionService.Result toolResult = progression.award(
-                ProgressionService.TOOL_BASE_XP, profile.omniToolLevel(), profile.omniToolXp(), awarded);
+                ProgressionService.TOOL_BASE_XP, profile.omniToolLevel(), profile.omniToolXp(), toolAwarded);
         profile.setOmniToolProgress(toolResult.level, toolResult.xp);
 
         plugin.companions().awardXp(player, profile, category, awarded);

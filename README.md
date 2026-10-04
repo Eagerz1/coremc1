@@ -8,7 +8,7 @@ honest feature-by-feature release gate is in [`docs/RECOVERY_MATRIX.md`](docs/RE
 - **Language:** Java 21
 - **Build:** Maven (`mvn package`) — one consistent build system for the project
 
-## Current feature set (v0.11.0)
+## Current feature set (v0.12.0)
 
 | Area | Details |
 |---|---|
@@ -28,6 +28,7 @@ honest feature-by-feature release gate is in [`docs/RECOVERY_MATRIX.md`](docs/RE
 | Chat tags (`/tags`) | 20 config-driven cosmetic tags (`grinder`…`legend`) in a CoreMC GUI with owned/locked/selected/clear states. Ownership and selection persist by **stable id** (never display name); unlock hooks for crates (`TAG` reward), store and events; staff `/tags grant|revoke|check|clear|reload`. |
 | Chat colours (`/chatcolour`, `/chatcolor`) | Eight solid colours + five gradients (legacy `§x` hex — **no MiniMessage**), bold toggle, live preview and reset. Only stable style ids + a bold flag are persisted; ownership is grantable by crates (`CHAT_STYLE` reward), store or staff. |
 | Chat format | `<RANK> <TAG> Player: Message`, fully config-driven (`chat.yml`: format string, separators, rank table, GUI slots, safety limits). Rendered via Paper's async chat **renderer** at a configurable priority with `ignore-cancelled` — mutes/moderation always win, and chat is never duplicated. |
+| Scheduled events | Core Hour runs for one hour every four hours, persists its schedule across restarts, shows a four-step boss bar and `/event` countdown, and doubles island XP, slaying money and Omni-Tool XP through their normal reward paths. |
 | First-join welcome, `/coremc`, `/profile`, `/heal` | Branded welcome; `/coremc info|reload|help`; profiles; self/other heal. |
 | Branding | Standard Minecraft `&` colour codes and legacy hex only (MiniMessage is intentionally not used). Bundled YAML defaults merge into existing config files, preserving admin values. |
 

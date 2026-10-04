@@ -116,7 +116,9 @@ public final class IslandProgressService implements Listener {
         if (bonusXp <= 0L) {
             return;
         }
-        island.addXp(bonusXp);
+        final long awardedXp = Math.max(0L,
+                Math.round(bonusXp * plugin.events().islandXpMultiplier()));
+        island.addXp(awardedXp);
         plugin.islands().markDirty(island);
         final int next = levelFor(island);
         if (next > island.level()) {
@@ -130,7 +132,9 @@ public final class IslandProgressService implements Listener {
         final long weight =
                 Math.max(0L, plugin.getConfig().getLong("island.level.weights." + stat, 1L));
         island.addStat(stat, 1L);
-        island.addXp(weight);
+        final long awardedXp = Math.max(0L,
+                Math.round(weight * plugin.events().islandXpMultiplier()));
+        island.addXp(awardedXp);
         plugin.islands().markDirty(island);
         final int next = levelFor(island);
         if (next > island.level()) {
