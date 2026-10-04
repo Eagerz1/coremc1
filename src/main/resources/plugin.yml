@@ -58,6 +58,18 @@ commands:
     usage: /gens
     permission: coremc.command.gens
     permission-message: "&cYou do not have permission to use this command."
+  companions:
+    description: Unlock, summon and level gameplay companions.
+    usage: /companions
+    aliases: [pets]
+    permission: coremc.command.companions
+    permission-message: "&cYou do not have permission to use this command."
+  quests:
+    description: View and claim daily gameplay missions.
+    usage: /quests
+    aliases: [missions, daily]
+    permission: coremc.command.quests
+    permission-message: "&cYou do not have permission to use this command."
   spawners:
     description: View spawner unlock progress and buy spawners.
     usage: /spawners
@@ -69,7 +81,7 @@ commands:
     permission-message: "&cYou do not have permission to use this command."
   shop:
     description: Open the CoreMC shop (optionally straight into a category).
-    usage: /shop [gear|food|end|nether]
+    usage: /shop [blocks|food|redstone|misc|ores]
     permission: coremc.command.shop
     permission-message: "&cYou do not have permission to use this command."
   tokenshop:
@@ -166,6 +178,8 @@ permissions:
       coremc.command.money: true
       coremc.command.role: true
       coremc.command.gens: true
+      coremc.command.companions: true
+      coremc.command.quests: true
       coremc.command.spawners: true
       coremc.command.crates: true
       coremc.command.skins: true

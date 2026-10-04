@@ -107,7 +107,7 @@ public final class CoreMCCommand implements CommandExecutor, TabCompleter {
                     "&cUnknown mob lane '" + mob + "'. Known: " + String.join(", ", plugin.spawners().laneKeys())));
             return true;
         }
-        plugin.messages().sendPrefixed(sender, "spawner.ancient-admin",
+        plugin.messages().sendPrefixed(sender, "spawner.admin-progress",
                 Map.of("amount", String.valueOf(amount),
                         "mob", com.coremc.core.spawner.SpawnerMobTagger.prettyEntityName(mob.replace('-', '_')),
                         "player", target.getName()));

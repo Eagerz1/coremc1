@@ -176,11 +176,11 @@ public final class SkinsGui implements Gui {
         lore.add("&7Unlock: " + SkinService.sourceLabel(skin));
         lore.add("");
         if (equipped) {
-            lore.add("&a&lEQUIPPED");
+            lore.add("&a✔ &lEQUIPPED");
         } else if (owned) {
-            lore.add("&aOwned");
+            lore.add("&a✔ Owned");
         } else {
-            lore.add("&cLocked");
+            lore.add("&c✖ Locked");
         }
         lore.add("&eLeft-click &7to preview.");
         if (owned && !equipped) {
@@ -188,7 +188,7 @@ public final class SkinsGui implements Gui {
         }
         final ItemStack item = new ItemStack(skin.material());
         final var meta = item.getItemMeta();
-        meta.setDisplayName(ColorUtil.colorize(skin.display()));
+        meta.setDisplayName(ColorUtil.colorize((owned ? "&a✔ " : "&c✖ ") + skin.display()));
         meta.setLore(lore.stream().map(ColorUtil::colorize).toList());
         // the grid entry itself is the animated custom model (live preview)
         meta.setCustomModelData(skin.modelId());

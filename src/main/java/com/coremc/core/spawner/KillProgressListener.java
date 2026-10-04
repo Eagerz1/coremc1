@@ -17,9 +17,7 @@ import org.bukkit.event.entity.EntityDeathEvent;
  *    (the 25-zombie → spawner I journey),
  *  - <b>spawner-born mobs</b> never count toward wild unlocks (bought
  *    spawners cannot trivialise the unlock grind); they pay the
- *    configured Core money / Sky Token / island-XP reward instead, and
- *    Ancient mobs grant triple progress toward the NEXT mob lane as a
- *    single kill event.
+ *    configured Core money / Sky Token / island-XP reward instead.
  */
 public final class KillProgressListener implements Listener {
 

@@ -1,6 +1,7 @@
 package com.coremc.core.role;
 
 import com.coremc.core.CoreMCPlugin;
+import com.coremc.core.enchant.EnchantGui;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -21,7 +22,7 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * OmniTool rules enforcement:
- *  - shift right-click with the tool opens the Omni panel,
+ *  - shift right-click with the tool opens the enchant/upgrades main menu,
  *  - dropping is cancelled (soulbound) with a throttled branded hint,
  *  - moving it into external containers is cancelled (no stashing),
  *  - death strips it from drops and respawn returns it.
@@ -41,7 +42,7 @@ public final class OmniToolListener implements Listener {
         this.tools = plugin.omniTool();
     }
 
-    // ------------------------------------------------------------------ shift-right-click opens the panel
+    // ----------------------------------------------------------- shift-right-click opens the main menu
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onInteract(final PlayerInteractEvent event) {
@@ -52,7 +53,12 @@ public final class OmniToolListener implements Listener {
             return;
         }
         event.setCancelled(true);
-        plugin.gui().open(event.getPlayer(), new OmniToolGui(plugin));
+        final var profile = plugin.playerData().profileOf(event.getPlayer().getUniqueId()).orElse(null);
+        if (profile == null || Role.byKey(profile.roleId()).isEmpty()) {
+            plugin.gui().open(event.getPlayer(), new RoleSelectGui(plugin));
+            return;
+        }
+        plugin.gui().open(event.getPlayer(), new EnchantGui(plugin, profile.roleId()));
     }
 
     // ------------------------------------------------------------------ Auto-Smelter upgrade

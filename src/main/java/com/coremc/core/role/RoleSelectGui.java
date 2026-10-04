@@ -1,6 +1,7 @@
 package com.coremc.core.role;
 
 import com.coremc.core.CoreMCPlugin;
+import com.coremc.core.enchant.EnchantGui;
 import com.coremc.core.gui.Gui;
 import com.coremc.core.gui.GuiService;
 import com.coremc.core.player.PlayerProfile;
@@ -103,8 +104,9 @@ public final class RoleSelectGui implements Gui {
                 role == Role.UNIVERSAL
                         ? "&7Progresses a little from EVERY action."
                         : "&7Progresses from " + role.category().name().toLowerCase() + " actions.");
-        lore.add(current == role ? "&aCurrently selected" : "&eClick to select this role");
-        inventory.setItem(slot, GuiService.item(role.icon(), role.display(), lore));
+        lore.add(current == role ? "&a✔ Currently selected" : "&eClick to select this role");
+        inventory.setItem(slot, GuiService.item(role.icon(),
+                (current == role ? "&a✔ " : "") + role.display(), lore));
     }
 
     @Override
@@ -132,9 +134,12 @@ public final class RoleSelectGui implements Gui {
         }
         if (plugin.roles().select(viewer, profile, role)) {
             plugin.messages().sendPrefixed(viewer, "role.selected", Map.of("role", role.display()));
-            return true; // re-render: current-role marker + omnitool refresh
+            plugin.gui().open(viewer, new EnchantGui(plugin, role.key()));
+            return false;
         }
         plugin.messages().sendPrefixed(viewer, "role.already", Map.of("role", role.display()));
+        plugin.omniTool().grantFresh(viewer, role, profile);
+        plugin.gui().open(viewer, new EnchantGui(plugin, role.key()));
         return false;
     }
 }

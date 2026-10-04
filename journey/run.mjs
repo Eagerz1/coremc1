@@ -11,26 +11,25 @@
 //       + /tokenshop exchange (live fitsDeposit path)
 //   P3  /is upgrades: six categories render; buy border tier 1
 //   P4  /is buffs: all 12 buffs render; buy mining-boost tier 1
-//   P5  /spawners: 15 lanes, locked submenu (I..IV + Ancient), 25 REAL
-//       kills, unlock fanfare, buy + place tier I; spawner-born kill pays
+//   P4b /companions: six earnable companions, unlock + summon + persistence
+//   P4c /quests: three daily assignments render and persist
+//   P5  /spawners: 30 regular spawners across two pages, 25 REAL
+//       kills, unlock fanfare, direct buy + place; spawner-born kill pays
 //       Core money/tokens WITHOUT counting wild progress; hostile GUI
 //       interactions (shift/number-key/drop/double-click) cannot steal
-//   P5b Ancient tier: admin kill grant, buy + place Ancient spawner,
-//       kill the Ancient zombie -> +3 progress toward SKELETON as ONE
-//       kill event (source lane counter untouched)
 //   P6  Omni-Tool panel -> enchants (15-grid) -> buy treasure-miner
 //       (overlay: deterministic), mine 2 blocks -> 2 sky keys
 //   P7  /crates: six crates render; open sky x2 (2nd is deterministically
 //       the pity), no-key negative path
 //   P8  outsider protection: guest dig denied, block intact
-//   P9  /gens: four generators render; buy cobble gen, place, harvest
+//   P9  /gens: 24 generators render; buy cobble gen, place, harvest
 //   P10 void rescue back home
 //   P10b chat cosmetics: /tags + /chatcolour GUIs, locked/selected states,
 //       admin grant/revoke/check, the exact <RANK> <TAG> Player: Message
 //       layout seen by a SECOND player, clean spacing with no tag/rank,
 //       gradient + bold, '&' injection prevention, and no duplicate chat
 //   P11 clean restart: everything persists (live + data-file asserts,
-//       incl. dotted enchant ids and ancient skeleton progress)
+//       including dotted enchant ids and regular-spawner kill isolation)
 //   P12 full-log audit: zero server ERRORs, zero CoreMC warn/error lines
 //
 // Run from journey-server/ (cwd is the server dir). Exit 0 = all green.
@@ -144,7 +143,7 @@ async function baseSetup() {
   // Gamerules/time/difficulty are per-level in modern Paper: apply them to
   // BOTH the hub world and the islands world. Monster spawners obey the
   // vanilla darkness rule (torches stop dungeon spawners), so the islands
-  // must stay at night for P5/P5b — natural spawning is still disabled on
+  // must stay at night for P5 — natural spawning is still disabled on
   // that world at creation (setSpawnFlags), so no wild mobs can leak.
   for (const dim of ['minecraft:overworld', 'minecraft:islands']) {
     const inDim = (cmd) => rc(`execute in ${dim} run ${cmd}`)
@@ -675,20 +674,20 @@ async function main() {
 
   win = await openWindow(owner, '/shop')
   check(win && win.inventoryStart === 54, '/shop opens 54-slot hub')
-  check(win && slotJson(win, 20).includes('gear'), 'gear category at slot 20')
+  check(win && slotJson(win, 20).includes('blocks'), 'blocks category at slot 20')
   if (win) {
     await click(owner, 20)
     await sleep(1200)
     const cat = owner.currentWindow
-    check(cat && slotJson(cat, 10).includes('iron sword'), 'iron sword is first gear entry')
+    check(cat && slotJson(cat, 10).includes('stone'), 'stone is first blocks entry')
     if (cat) {
       const before = await moneyOf(owner)
       clearChat(owner)
       await click(owner, 10)
       check(await waitChat(owner, /bought/i), 'buy confirms in chat')
-      check(invHas(owner, 'iron_sword'), 'iron sword delivered')
+      check(invHas(owner, 'stone'), 'stone delivered')
       const after = await moneyOf(owner)
-      check(after === before - 250, 'buy debits exactly 250 money', `${before} -> ${after}`)
+      check(after === before - 8, 'buy debits exactly 8 money', `${before} -> ${after}`)
     }
     await closeWin(owner)
   }
@@ -697,14 +696,14 @@ async function main() {
   await sleep(1000)
   check(invCount(owner, 'bread') >= 16, 'RCON bread grant arrives')
   win = await openWindow(owner, '/shop food')
-  check(win && slotJson(win, 10).includes('bread'), 'bread is first food entry')
+  check(win && slotJson(win, 38).includes('bread'), 'bread renders in the first food page')
   if (win) {
     const before = await moneyOf(owner)
     clearChat(owner)
-    await click(owner, 10, 1) // right-click = sell
+    await click(owner, 38, 1) // right-click = sell
     check(await waitChat(owner, /sold/i), 'sell confirms in chat')
     const after = await moneyOf(owner)
-    check(after === before + 16, 'sell pays exactly 16 money (sell-boost 0)', `${before} -> ${after}`)
+    check(after === before + 192, 'sell pays exactly 192 money (sell-boost 0)', `${before} -> ${after}`)
     check(invCount(owner, 'bread') === 0, 'sold stock leaves inventory')
     await closeWin(owner)
   }
@@ -774,29 +773,62 @@ async function main() {
     await closeWin(owner)
   }
 
-  // ------------------------------------------------ P5 spawners
-  phase(5, '/spawners: lanes, 25 real kills, unlock, buy, place, spawner kill rewards')
-  const LANES = [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 31]
-  win = await openWindow(owner, '/spawners')
-  check(win && win.inventoryStart === 54, '/spawners opens 54-slot panel')
-  check(win && LANES.every((s) => slotType(win, s)), 'all 15 mob lanes render')
-  const laneSlot = win ? findSlotByName(win, 'zombie', 10, 31) : -1
-  check(laneSlot >= 0, 'zombie lane present', 'slot=' + laneSlot)
-  // tier slots are 19..23 = I, II, III, IV, Ancient
-  const TIER_SLOTS = [19, 20, 21, 22, 23]
-  if (win && laneSlot >= 0) {
-    await click(owner, laneSlot)
-    await sleep(1200)
-    const tier = owner.currentWindow
-    check(tier && tier.inventoryStart === 54, 'zombie submenu is 54 slots')
-    check(tier && slotType(tier, 19) === 'barrier', 'tier 1 renders locked (barrier)')
-    check(tier && slotJson(tier, 19).includes('25'), 'locked lore shows 25-kill requirement')
-    check(tier && slotJson(tier, 23) !== null && /ancient/i.test(slotJson(tier, 23)),
-      '5th slot is the Ancient variant')
-    check(TIER_SLOTS.every((s) => tier && slotType(tier, s) === 'barrier'),
-      'all five tiers (I..IV + Ancient) start locked')
+  // ------------------------------------------------ P4b companions
+  phase('4b', '/companions: six earnable companions; unlock and summon Ore Sprite')
+  win = await openWindow(owner, '/companions')
+  check(win && win.inventoryStart === 54, '/companions opens 54-slot panel')
+  const COMPANION_SLOTS = [10, 12, 14, 16, 29, 33]
+  check(win && COMPANION_SLOTS.every((s) => slotType(win, s)), 'all six companions render')
+  check(win && slotJson(win, 10).includes('ore sprite'), 'Ore Sprite leads the companion collection')
+  if (win) {
+    const before = await tokensOf(owner)
+    clearChat(owner)
+    await click(owner, 10)
+    check(await waitChat(owner, /companion unlocked/i), 'companion unlock confirms')
+    const after = await tokensOf(owner)
+    check(after === before - 150, 'Ore Sprite costs exactly 150 Sky Tokens', `${before} -> ${after}`)
+    check(slotJson(owner.currentWindow, 10).includes('summoned'), 'unlocked companion is immediately summoned')
     await closeWin(owner)
   }
+  const follower = await waitUntil(() => Object.values(owner.entities).some((e) => e !== owner.entity
+    && /armor_stand/i.test(String(e.name || ''))
+    && e.position && e.position.distanceTo(owner.entity.position) < 4), 15000, 500)
+  check(!!follower, 'summoned companion visibly follows the player')
+
+  // ------------------------------------------------ P4c quests
+  phase('4c', '/quests: three daily gameplay missions are assigned')
+  win = await openWindow(owner, '/quests')
+  check(win && win.inventoryStart === 54, '/quests opens 54-slot mission board')
+  check(win && [20, 22, 24].every((s) => slotType(win, s)), 'three daily missions render')
+  if (win) await closeWin(owner)
+
+  // ------------------------------------------------ P5 spawners
+  phase(5, '/spawners: lanes, 25 real kills, unlock, buy, place, spawner kill rewards')
+  const LANES = [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25,
+    28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43]
+  win = await openWindow(owner, '/spawners')
+  check(win && win.inventoryStart === 54, '/spawners opens 54-slot panel')
+  check(win && LANES.every((s) => slotType(win, s)), 'first 28 mob lanes render')
+  if (win) {
+    await click(owner, 50)
+    await sleep(500)
+    win = owner.currentWindow
+    check(win && slotType(win, 10) && slotType(win, 11), 'second page renders final two mob lanes')
+    check(win && slotJson(win, 49).includes('2') && slotJson(win, 49).includes('30'),
+      'spawner pagination reports page 2 and 30 lanes')
+    await click(owner, 48)
+    await sleep(500)
+    win = owner.currentWindow
+  }
+  const laneSlot = win ? findSlotByName(win, 'zombie', 10, 31) : -1
+  check(laneSlot >= 0, 'zombie lane present', 'slot=' + laneSlot)
+  check(win && laneSlot >= 0 && slotJson(win, laneSlot).includes('regular spawner'),
+    'zombie entry is one regular spawner with no variants')
+  check(win && laneSlot >= 0 && slotJson(win, laneSlot).includes('25'),
+    'locked lore shows the 25-kill requirement')
+  check(win && laneSlot >= 0 && slotJson(win, laneSlot).includes('✖'),
+    'locked spawner uses the red X state')
+  if (win) await closeWin(owner)
 
   const sword = owner.inventory.items().find((i) => i.name === 'iron_sword')
   if (sword) await owner.equip(sword, 'hand')
@@ -826,35 +858,27 @@ async function main() {
   win = await openWindow(owner, '/spawners')
   const lane2 = win ? findSlotByName(win, 'zombie', 10, 31) : -1
   if (win && lane2 >= 0) {
+    check(slotJson(win, lane2).includes('✔'), 'unlocked affordable spawner uses the green tick state')
+    const before = await tokensOf(owner)
+    clearChat(owner)
     await click(owner, lane2)
-    await sleep(1200)
-    const tier = owner.currentWindow
-    check(tier && slotType(tier, 19) === 'spawner', 'tier 1 unlocks to a spawner item')
-    check(tier && slotType(tier, 20) === 'barrier', 'tier 2 stays locked at 25 kills')
-    if (tier && slotType(tier, 19) === 'spawner') {
-      const before = await tokensOf(owner)
-      clearChat(owner)
-      await click(owner, 19)
-      check(await waitChat(owner, /purchased/i), 'spawner purchase confirms')
-      const after = await tokensOf(owner)
-      check(after === before - 5, 'zombie spawner I costs exactly 5 tokens', `${before} -> ${after}`)
-      check(invHas(owner, 'spawner', 'zombie spawner'), 'spawner item delivered')
-    }
+    check(await waitChat(owner, /purchased/i), 'direct spawner purchase confirms')
+    const after = await tokensOf(owner)
+    check(after === before - 5, 'regular zombie spawner costs exactly 5 tokens', `${before} -> ${after}`)
+    check(invHas(owner, 'spawner', 'zombie spawner'), 'regular spawner item delivered')
     await closeWin(owner)
   } else {
-    bad('zombie submenu reopens after unlock')
+    bad('zombie spawner remains visible after unlock')
   }
 
-  // ---- hostile GUI interactions on a LOCKED skeleton submenu
+  // ---- hostile GUI interactions on a LOCKED skeleton entry
   win = await openWindow(owner, '/spawners')
   if (win) {
     const skel = findSlotByName(win, 'skeleton', 10, 31)
     check(skel >= 0, 'skeleton lane present for hostile-GUI test', 'slot=' + skel)
     if (skel >= 0) {
-      await click(owner, skel)
-      await sleep(1000)
       const sub = owner.currentWindow
-      check(sub && slotType(sub, 19) === 'barrier', 'skeleton tier 1 locked for hostile test')
+      check(sub && slotJson(sub, skel).includes('✖'), 'skeleton spawner is visibly locked')
       if (sub) {
         const beforeSnap = invSnapshot(owner)
         const beforeTok = await tokensOf(owner)
@@ -865,8 +889,8 @@ async function main() {
         // the client library refuses to craft are sent on the wire so the
         // server parser itself is exercised; all must be refused cleanly.
         const gestures = [
-          [19, 0, 1], [19, 0, 2], [19, 1, 2], [19, 2, 2],
-          [19, 0, 4], [19, 0, 3], [19, 0, 6], [19, 1, 0],
+          [skel, 0, 1], [skel, 0, 2], [skel, 1, 2], [skel, 2, 2],
+          [skel, 0, 4], [skel, 0, 3], [skel, 0, 6], [skel, 1, 0],
           [4, 0, 0], [4, 1, 0],
           [54 + 13, 0, 1], [54 + 14, 0, 2], [54 + 14, 3, 2],
         ]
@@ -877,7 +901,7 @@ async function main() {
         }
         await sleep(800)
         check(owner.currentWindow === sub, 'menu survives hostile clicks (no close/crash)')
-        check(slotType(sub, 19) === 'barrier', 'locked tier item cannot be taken')
+        check(slotJson(sub, skel).includes('✖'), 'locked spawner entry cannot be taken')
         check(invSnapshot(owner) === beforeSnap, 'no item moved into or out of inventory')
         const afterTok = await tokensOf(owner)
         check(afterTok === beforeTok, 'locked/hostile clicks never spend currency',
@@ -889,7 +913,7 @@ async function main() {
     }
   }
 
-  // place the tier-I spawner and verify a spawner-born kill pays rewards
+  // place the regular spawner and verify a spawner-born kill pays rewards
   let t1cell = null
   for (let r = 1; r <= 3 && !t1cell; r++) {
     for (const [dx, dz] of [[r, 0], [-r, 0], [0, r], [0, -r]]) {
@@ -899,11 +923,11 @@ async function main() {
       }
     }
   }
-  check(!!t1cell, 'found a free platform cell for the tier-I spawner')
+  check(!!t1cell, 'found a free platform cell for the regular spawner')
   let t1Placed = false
   if (t1cell) {
     const item = owner.inventory.items().find((i) => i.name === 'spawner'
-      && !/ancient/i.test(JSON.stringify(i)))
+      && /zombie spawner/i.test(JSON.stringify(i)))
     if (item) {
       await owner.equip(item, 'hand')
       try {
@@ -913,7 +937,7 @@ async function main() {
         t1Placed = !!b && b.name === 'spawner'
       } catch (e) { log('[spawner] place failed: ' + e.message) }
     }
-    check(t1Placed, 'tier-I spawner places on the island')
+    check(t1Placed, 'regular spawner places on the island')
   }
   if (t1Placed) {
     // Re-equip the sword (placement left the spent spawner stack selected).
@@ -943,126 +967,30 @@ async function main() {
     }
   }
 
-  // ----------------------------------------------- P5b Ancient variant
-  phase('5b', 'Ancient tier: unlock, buy, place; Ancient kill = triple NEXT-lane progress')
-  // 25 wild kills already counted; grant adds 250 to reach the Ancient gate of 275.
-  await rc(`coremc kills ${OWNER} zombie 250`)
-  await sleep(800)
-  check(await waitChat(owner, /SPAWNER UNLOCKED/i, 15000), 'admin grant crosses unlock boundaries')
-  win = await openWindow(owner, '/spawners')
-  if (win) {
-    const lane = findSlotByName(win, 'zombie', 10, 31)
-    if (lane >= 0) {
-      await click(owner, lane)
-      await sleep(1200)
-      const tier = owner.currentWindow
-      check(tier && slotType(tier, 23) === 'spawner', 'Ancient tier unlocks to a spawner item')
-      if (tier && slotType(tier, 23) === 'spawner') {
-        const before = await tokensOf(owner)
-        clearChat(owner)
-        await click(owner, 23)
-        check(await waitChat(owner, /purchased/i), 'Ancient spawner purchase confirms')
-        const after = await tokensOf(owner)
-        check(after === before - 100, 'Ancient zombie spawner costs exactly 100 tokens',
-          `${before} -> ${after}`)
-        check(invHas(owner, 'spawner', 'ancient'), 'Ancient spawner item delivered')
-      }
-      await closeWin(owner)
-    }
-  }
-  let aCell = null
-  for (let r = 2; r <= 3 && !aCell; r++) {
-    for (const [dx, dz] of [[0, -r], [0, r], [r, 0], [-r, 0]]) {
-      if (t1cell && Math.abs((HX + dx) - t1cell.x) + Math.abs((HZ + dz) - t1cell.z) < 2) continue
-      if (solidAt(owner, HX + dx, GY, HZ + dz) && airAbove(owner, HX + dx, GY, HZ + dz)) {
-        aCell = { x: HX + dx, y: GY, z: HZ + dz }
-        break
-      }
-    }
-  }
-  check(!!aCell, 'found a separate platform cell for the Ancient spawner')
-  if (aCell) {
-    const item = owner.inventory.items().find((i) => i.name === 'spawner'
-      && /ancient/i.test(JSON.stringify(i)))
-    if (item) {
-      await owner.equip(item, 'hand')
-      try {
-        await owner.placeBlock(owner.blockAt(v3(aCell.x, aCell.y, aCell.z)), v3(0, 1, 0))
-        await sleep(800)
-        const b = owner.blockAt(v3(aCell.x, aCell.y + 1, aCell.z))
-        check(!!b && b.name === 'spawner', 'Ancient spawner places on the island')
-      } catch (e) { bad('Ancient spawner places on the island', e.message) }
-    }
-    // No RCON teleport: sweep ordinary zombies away each second so the
-    // nearest client-side zombie is the named Ancient when the cycle
-    // awakens it. The Ancient carries the plugin's vanilla scoreboard
-    // tag coremc.ancient (its display name has colour/style components,
-    // which a name="..." selector cannot match reliably).
-    const ancient = await waitUntil(async () => {
-      await rc(`execute in ${DIM} positioned ${HX + 0.5} ${GY + 1} ${HZ + 0.5} run kill @e[type=zombie,tag=!coremc.ancient,distance=..16]`)
-      return nearbyMobs(owner, 'zombie', 20, /ancient/)[0] || null
-    }, 90000, 1000)
-    check(!!ancient, 'Ancient spawner awakens a named Ancient zombie')
-    if (ancient) {
-      // Fight from the island centre with the sword out: the Ancient is
-      // knockback-immune and toughened, and a quick kill keeps the fight
-      // on the platform (no void deaths with no player killer).
-      const swordA = owner.inventory.items().find((i) => i.name === 'iron_sword')
-      if (swordA) await owner.equip(swordA, 'hand')
-      await walkTo(owner, HX + 0.5, HZ + 0.5)
-      clearChat(owner)
-      const dead = await killMob(owner, ancient, 90000)
-      check(dead, 'Ancient zombie killed')
-      // Match the FULL line in one pattern: waitChat's match[0] is only the
-      // regex match substring, so a separate /\+3/ test on it could never
-      // see the +3 that follows elsewhere on the line.
-      const progress = await waitChat(owner, /ancient kill.*\+3/i, 12000)
-      check(!!progress,
-        'Ancient kill grants +3 progress in one event', progress ? progress.input : 'none')
-    }
-  }
-  // Recover both spawner blocks with the owner's Omni-Tool pickaxe. Freshly
-  // cycled zombies would interrupt the dig, so sweep zombies every second
-  // while digging; retry a few times (ancient cycles every ~10s).
+  // Recover the regular spawner with the owner's Omni-Tool pickaxe.
   const omniPick = owner.inventory.items().find((i) => i.name === 'netherite_pickaxe')
-  if (omniPick) await owner.equip(omniPick, 'hand')
-  for (const cell of [t1cell, aCell]) {
-    if (!cell) continue
+  if (omniPick && t1cell) {
+    await owner.equip(omniPick, 'hand')
     for (let attempt = 0; attempt < 3; attempt++) {
       await rc(`execute in ${DIM} run kill @e[type=zombie]`)
-      let b = owner.blockAt(v3(cell.x, cell.y + 1, cell.z))
+      let b = owner.blockAt(v3(t1cell.x, t1cell.y + 1, t1cell.z))
       if (!b || b.name === 'air') break
-      // Stand on the cell one step toward island centre; target stays in
-      // reach (RCON teleports strand the mineflayer client without chunks).
-      const sx = cell.x - Math.sign(cell.x - HX)
-      const sz = cell.z - Math.sign(cell.z - HZ)
+      const sx = t1cell.x - Math.sign(t1cell.x - HX)
+      const sz = t1cell.z - Math.sign(t1cell.z - HZ)
       await walkTo(owner, sx + 0.5, sz + 0.5)
-      const ready = await waitBlockReady(owner, cell.x, cell.y + 1, cell.z, true, 10000)
-      if (!ready) { log(`[spawner] ${cell.x},${cell.z} not ready on attempt ${attempt}`); continue }
-      let sweeper = setInterval(() => {
-        rc(`execute in ${DIM} positioned ${HX + 0.5} ${GY + 1} ${HZ + 0.5} run kill @e[type=zombie,distance=..12]`).catch(() => {})
-      }, 1000)
+      const ready = await waitBlockReady(owner, t1cell.x, t1cell.y + 1, t1cell.z, true, 10000)
+      if (!ready) continue
       try {
-        b = owner.blockAt(v3(cell.x, cell.y + 1, cell.z))
-        if (b && b.name === 'spawner') {
-          await Promise.race([owner.dig(b), sleep(15000)])
-        }
-      } catch (e) { log('[spawner] dig attempt ' + attempt + ' failed: ' + e.message) }
-      clearInterval(sweeper)
+        b = owner.blockAt(v3(t1cell.x, t1cell.y + 1, t1cell.z))
+        if (b && b.name === 'spawner') await Promise.race([owner.dig(b), sleep(15000)])
+      } catch (e) { log('[spawner] dig failed: ' + e.message) }
       await sleep(600)
-      const after = owner.blockAt(v3(cell.x, cell.y + 1, cell.z))
-      if (!after || after.name === 'air') {
-        log(`[spawner] recovered ${cell.x},${cell.z}`)
-        break
-      }
-      log(`[spawner] ${cell.x},${cell.z} still present after attempt ${attempt}`)
     }
   }
   await rc(`execute in ${DIM} run kill @e[type=zombie]`)
   await sleep(1000)
-
   // ------------------------------------------------ P6 enchants + keys
-  phase(6, 'omni panel -> 15-enchant grid -> treasure-miner -> mine 2 -> 2 sky keys')
+  phase(6, 'direct OmniTool enchant menu -> treasure-miner -> mine 2 -> 2 sky keys')
   const omni = owner.inventory.items().find((i) => i.name === 'netherite_pickaxe')
   check(!!omni, 'omni-tool still held for panel test')
   let ewin = null
@@ -1076,12 +1004,8 @@ async function main() {
     await sleep(600)
     owner.setControlState('sneak', false)
     const panel = await waitWindow(owner, 15000)
-    check(!!panel, 'shift-right-click opens the omni panel')
-    if (panel) {
-      await click(owner, 4)
-      await sleep(1200)
-      ewin = owner.currentWindow
-    }
+    check(!!panel, 'shift-right-click opens the OmniTool enchant menu directly')
+    ewin = panel
   }
   check(ewin && ewin.inventoryStart === 54, 'miner enchant grid is 54 slots')
   const GRID = [11, 12, 13, 14, 15, 20, 21, 22, 23, 24, 29, 30, 31, 32, 33]
@@ -1214,16 +1138,17 @@ async function main() {
   }
 
   // ------------------------------------------------ P9 generators
-  phase(9, '/gens: four generators render; buy cobble gen, place, harvest')
+  phase(9, '/gens: 24 generators render; buy cobble gen, place, harvest')
   win = await openWindow(owner, '/gens')
   check(win && win.inventoryStart === 54, '/gens opens 54-slot market')
-  const GEN_SLOTS = [20, 21, 23, 24]
-  check(win && GEN_SLOTS.every((s) => slotType(win, s) !== null), 'all four generators render')
-  check(win && slotJson(win, 20).includes('cobble'), 'cobble gen leads the market')
+  const GEN_SLOTS = [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23,
+    24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39]
+  check(win && GEN_SLOTS.every((s) => slotType(win, s) !== null), 'all 24 generators render')
+  check(win && slotJson(win, 10).includes('cobble'), 'cobble gen leads the market')
   if (win) {
     const before = await creditsOf(owner)
     clearChat(owner)
-    await click(owner, 20)
+    await click(owner, 10)
     check(await waitChat(owner, /purchased/i), 'gen purchase confirms')
     const after = await creditsOf(owner)
     check(after === before - 5000, 'cobble gen costs exactly 5000 credits', `${before} -> ${after}`)
@@ -1548,6 +1473,9 @@ async function main() {
   win = await openWindow(owner, '/role')
   check(win && slotJson(win, 4).includes('miner'), 'role still Miner after restart')
   await closeWin(win)
+  win = await openWindow(owner, '/companions')
+  check(win && slotJson(win, 10).includes('summoned'), 'companion ownership and summon state persist after restart')
+  if (win) await closeWin(owner)
   const hatBack = await waitUntil(() => {
     return Object.values(owner.entities).some((e) => e !== owner.entity
       && /display/i.test(String(e.name || ''))
@@ -1583,11 +1511,8 @@ async function main() {
     const profile = prof.profile || prof
     check(profile.role === 'miner', 'profile: role=miner', String(profile.role))
     const zk = (profile['kill-counts'] && profile['kill-counts'].zombie) || 0
-    check(zk === 275, 'profile: zombie kills = 275 (25 wild + admin grant, no spawner farming)',
+    check(zk === 25, 'profile: zombie kills = 25 wild kills (no spawner farming)',
       `zombie=${zk}`)
-    const sk = (profile['kill-counts'] && profile['kill-counts'].skeleton) || 0
-    check(sk === 3, 'profile: Ancient zombie kill = 3 skeleton progress (one event)',
-      `skeleton=${sk}`)
     const spawnerKills = (profile.stats && profile.stats['spawner-mobs-killed']) || 0
     check(spawnerKills >= 1, 'profile: spawner-mobs-killed stat recorded', String(spawnerKills))
     const pity = (profile.stats && profile.stats['crate-pity:sky']) || 0
@@ -1626,6 +1551,14 @@ async function main() {
       String(equippedSkin))
     check(profile['equipped-hat'] === 'ember_crown', 'profile: equipped hat persists',
       String(profile['equipped-hat']))
+    check(profile.companions && profile.companions['ore-sprite'],
+      'profile: companion ownership and progression persist')
+    check(profile['equipped-companion'] === 'ore-sprite',
+      'profile: equipped companion persists by stable id', String(profile['equipped-companion']))
+    check(Array.isArray(profile['daily-quests']) && profile['daily-quests'].length === 3,
+      'profile: three daily mission assignments persist', JSON.stringify(profile['daily-quests']))
+    check(typeof profile['quest-day'] === 'string' && profile['quest-day'].length === 10,
+      'profile: daily mission reset key persists', String(profile['quest-day']))
     check(!ownedSkins.includes('riftbound_universal'), 'profile: no phantom skins granted')
   }
 

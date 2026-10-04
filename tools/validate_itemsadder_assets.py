@@ -285,9 +285,9 @@ def check_java_references(records):
     config = (ROOT / "src/main/resources/config.yml").read_text(encoding="utf-8")
     generators = config.split("generators:\n", 1)[1].split("\n# --------------------------------------------------------------------------\n# SPAWNERS", 1)[0]
     generator_ids = re.findall(r"^  ([a-z][a-z0-9_-]*):\n", generators, re.M)
-    if set(generator_ids) != {"cobble", "obsidian", "ice", "quartz"}:
-        fail(f"unexpected generator catalog while validating: {generator_ids}")
-    # The existing Java service still uses vanilla generator block material and
+    if len(generator_ids) != 24 or not {"cobble", "obsidian", "ice", "quartz"}.issubset(generator_ids):
+        fail(f"expected the 24-generator catalogue with stable legacy ids: {generator_ids}")
+    # The Java service still uses vanilla generator block material and
     # placeable PDC; no visual asset is allowed to masquerade as its identity.
     java = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "src/main/java").rglob("*.java"))
     if "new NamespacedKey(plugin, \"placeable\")" not in java:

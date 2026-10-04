@@ -261,22 +261,15 @@ public final class IslandUpgradeEffects implements Listener {
         }
         // One extra mob of the same kind. Custom-reason spawn (never
         // re-enters this handler) carrying the SAME identity as the base
-        // mob (tier id + ancient marker) so the kill router and the slayer
+        // mob (regular spawner id) so the kill router and the slayer
         // economy filter treat it identically.
         final Entity extra = location.getWorld().spawnEntity(location, event.getEntityType());
         final var tags = plugin.spawners().tags();
         final String tierId = tags.tierIdOf(event.getEntity()).orElse(null);
-        final boolean ancient = tags.isAncient(event.getEntity());
         if (tierId != null) {
-            tags.tag(extra, tierId, ancient);
+            tags.tag(extra, tierId);
         } else {
             extra.getPersistentDataContainer().set(spawnerBornKey, PersistentDataType.BYTE, (byte) 1);
-        }
-        if (ancient && extra instanceof org.bukkit.entity.LivingEntity living) {
-            final var ref = plugin.spawners().tierFor(tierId);
-            ref.ifPresent(value -> tags.decorateAncient(plugin, living,
-                    com.coremc.core.spawner.SpawnerMobTagger.prettyEntityName(
-                            value.mob().entityType().name())));
         }
     }
 

@@ -1,7 +1,8 @@
 # CoreMC
 
 CoreMC is the core plugin for the CoreMC Skyblock server. This repository
-contains the complete from-scratch rebuild of the plugin.
+contains the active rebuild. It is not yet the complete planned server; the
+honest feature-by-feature release gate is in [`docs/RECOVERY_MATRIX.md`](docs/RECOVERY_MATRIX.md).
 
 - **Platform:** Paper (currently targeting Paper 1.21.x — built and tested against Paper 1.21.11)
 - **Language:** Java 21
@@ -15,12 +16,14 @@ contains the complete from-scratch rebuild of the plugin.
 | Persistent player profiles | One YAML file per player (`plugins/CoreMC/profiles/<uuid>.yml`), loaded asynchronously at pre-login, saved on quit/autosave/shutdown with atomic writes and additive schema evolution. |
 | Skyblock islands (`/island`, `/is`) | Per-player spiral-grid islands in a dedicated void world (`minecraft:islands`, natural spawning disabled), themed platforms, home/info/two-step delete, members/teams, settings & permissions GUIs. Per-owner YAML under `plugins/CoreMC/islands/`. |
 | Island upgrades & buffs | Six upgrade categories (mining, fishing, farming, slaying, logging, island — border, member slots, mining cube, crop regrowth…) and 12 purchasable island buffs; all costs config-only, persisted, applied live. |
-| Roles & Omni-Tool | Role select GUI (Miner/Lumberjack/etc.) grants a soulbound Omni-Tool; role XP/levels, per-role enchant grids (15 enchants each, PDC ids), and Omni-Tool upgrades (efficiency, fortune, auto-smelter) with full theft/dupe guards. |
-| Spawners | 15 mob lanes × five variants (tiers I–IV **plus an Ancient variant**: named, glowing, toughened mobs; an Ancient kill grants **triple progress toward the next lane as one event**). Kill-gated unlocks, token purchases, real block spawners with correct NBT and a liveness watchdog. |
-| Generators | Configurable generator blocks (market purchase, place, timed harvest, break returns exactly one core item, piston protection). |
+| Roles & Omni-Tool | Role select GUI (Miner/Lumberjack/etc.) grants a soulbound Omni-Tool; shift-right-click opens the enchant menu directly, with role/tool progress, 15 role enchants and all three upgrades on one screen. PDC ids and theft/dupe guards preserve identity and progression. |
+| Spawners | 30 regular mob spawners in a polished paginated GUI. Each has a kill requirement, direct Sky Token purchase, clear `✔`/`✖` states, real block-spawner configuration and a liveness watchdog. No tier or Ancient variants. |
+| Generators | 24 material/crop generator blocks in a paginated market (purchase, place, timed harvest, break returns exactly one core item, piston protection). |
+| Companions (`/companions`, `/pets`) | Six earnable companions bought with Sky Tokens, a collection/summon GUI, visible followers, 20 levels and category XP abilities. Ownership, equipped state and progress persist. |
+| Daily missions (`/quests`, `/missions`) | Three deterministic per-player objectives drawn daily from ten mining, logging, farming, fishing and slaying missions. Live event progress, persistent claim state and earned Credit/Sky Token rewards. |
 | Crates | Six config-driven crates with physical PDC-tagged keys, weighted rolls, pity counters, preview GUIs; keys are consumed exactly once per open. |
 | Animated skins (`/skins`) | 30 animated tool skins (5 collections — Emberforge, Riftbound, Astral, Tidecaller, Overgrown — × one distinct 3D model per role: Miner, Logger, Fisher, Slayer, Farmer, Universal OmniTool) + 3 animated hats (Ember Crown, Rift Halo, Moonlit Cap), all original artwork. A skin is a **visual layer only**: it changes `custom_model_data` plus one cosmetic PDC marker — damage, enchants, upgrades, levels and identity PDC are never touched. Ownership persists in the profile by stable id; grant/revoke hooks feed crates (`type: SKIN` rewards), events and the store; nothing is auto-granted and purchased skins survive season resets by config. Hats are worn as a client-visible overlay entity riding the head (real helmet + armour fully preserved — vanilla has no cosmetic armour slot). |
-| Shop & economy | Three currencies (Core money, Credits, Sky Tokens), `/shop` category GUIs, `/tokenshop` exchange, admin grant commands; every purchase is withdraw-then-deliver with overflow/refund safety. |
+| Shop & economy | Three currencies (Core money, Credits, Sky Tokens), a 219-item paginated `/shop` across Blocks, Food, Redstone, Misc and Ores, `/tokenshop` exchange, affordability markers and admin grant commands; every purchase is withdraw-then-deliver with overflow/refund safety. |
 | Protection & security | Island build/break/bucket/hanging/entity protection, ownership checks on registered blocks, GUI click/drag theft sweeps, soulbound item guards, kill-cap anti-abuse, economy overflow checks. |
 | Chat tags (`/tags`) | 20 config-driven cosmetic tags (`grinder`…`legend`) in a CoreMC GUI with owned/locked/selected/clear states. Ownership and selection persist by **stable id** (never display name); unlock hooks for crates (`TAG` reward), store and events; staff `/tags grant|revoke|check|clear|reload`. |
 | Chat colours (`/chatcolour`, `/chatcolor`) | Eight solid colours + five gradients (legacy `§x` hex — **no MiniMessage**), bold toggle, live preview and reset. Only stable style ids + a bold flag are persisted; ownership is grantable by crates (`CHAT_STYLE` reward), store or staff. |
@@ -92,14 +95,14 @@ cancelled on disable, data flushed synchronously in `onDisable`.
 
 ## Testing
 
-- **140+ JUnit unit tests** run under Maven Surefire (`mvn verify`):
+- **250+ JUnit unit tests** run under Maven Surefire (`mvn verify`):
   profile model and every schema migration, YAML persistence round-trips
   and corrupt-file handling, island grid/buff math, economy and GUI
-  purchase logic, enchant/catalog parsing, spawner tier/progression math
+  purchase logic, enchant/catalog parsing, spawner unlock/progression math
   and crate roll/pity rules.
 - **Live journey on Paper 1.21.11** — `journey/run.mjs` drives two
   offline-mode bots plus RCON through 12 phases (economy, shop, island
-  upgrades/buffs, spawner unlocks + real spawner kills incl. Ancient
+  upgrades/buffs, regular spawner unlocks + real spawner kills
   triple-progress, enchants/Sky Keys, crates incl. key consumption and
   pity, outsider protection, generators, void rescue, and persistence
   across a clean server restart), finishing with a zero-ERROR log audit.

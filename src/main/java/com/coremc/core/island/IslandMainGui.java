@@ -130,11 +130,11 @@ public final class IslandMainGui implements Gui {
         inventory.setItem(SLOT_GENS, GuiService.item(
                 Material.OBSERVER,
                 "&6Gens",
-                List.of("&7Buy infinite generators:", "&7cobble, obsidian, ice, quartz.", "", "&eClick to open gens.")));
+                List.of("&7Browse 24 material and crop", "&7generators for your island.", "", "&eClick to open gens.")));
         inventory.setItem(SLOT_SPAWNERS, GuiService.item(
                 Material.SPAWNER,
                 "&6Spawners",
-                List.of("&7Unlock spawner tiers with kills,", "&7then buy them here.", "", "&eClick to open spawners.")));
+                List.of("&7Unlock 30 regular spawners", "&7with mob kills, then buy them.", "", "&eClick to open spawners.")));
         if (hasIsland) {
             final var islandValue = island.get();
             final int borderTier = islandValue.upgrades().getOrDefault("border", 0);

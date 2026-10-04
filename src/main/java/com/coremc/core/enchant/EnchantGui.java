@@ -4,8 +4,9 @@ import com.coremc.core.CoreMCPlugin;
 import com.coremc.core.gui.Gui;
 import com.coremc.core.gui.GuiService;
 import com.coremc.core.player.PlayerProfile;
-import com.coremc.core.role.OmniToolGui;
+import com.coremc.core.role.OmniUpgradeCatalog;
 import com.coremc.core.role.Role;
+import com.coremc.core.role.RoleSelectGui;
 import java.util.ArrayList;
 import java.util.List;
 import org.bukkit.Material;
@@ -13,14 +14,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 /**
- * One enchant track (the player's role, or universal): double chest
+ * The OmniTool main menu for one enchant track (the player's role, or universal): double chest
  * (54) with explicit slot constants. The 15 track enchants sit on a
  * centred 5-column grid; left-click buys the next level, right-click
  * shows the full stat block in chat.
  *
- * A role-switcher row previews every track: the player's own track
- * and universal are live, other roles' tracks are visible-but-locked
- * (buying there explains the role requirement instead of charging).
+ * Role/tool progress and all three OmniTool upgrades live here so shift-right-click
+ * never detours through a second overview menu. Only the selected role and the
+ * universal track can be viewed; changing role is an explicit separate action.
  */
 public final class EnchantGui implements Gui {
 
@@ -31,13 +32,13 @@ public final class EnchantGui implements Gui {
         20, 21, 22, 23, 24,
         29, 30, 31, 32, 33,
     };
-    private static final int SLOT_NOTE = 40;
-    private static final int SLOT_BACK = 45;
+    private static final int SLOT_ROLE_INFO = 36;
+    private static final int SLOT_UPGRADE_1 = 38;
+    private static final int SLOT_UPGRADE_2 = 40;
+    private static final int SLOT_UPGRADE_3 = 42;
+    private static final int SLOT_CHANGE_ROLE = 45;
     private static final int SLOT_SWITCH = 49;
     private static final int SLOT_CLOSE = 53;
-    /** Role-switcher row (row 5): miner logger fisher slayer | farmer universal. */
-    private static final int[] ROLE_SLOTS = {36, 37, 38, 39, 41, 42};
-    private static final String[] ROLE_KEYS = {"miner", "logger", "fisher", "slayer", "farmer", "universal"};
     // ----------------------------------------------------
 
     private final CoreMCPlugin plugin;
@@ -50,7 +51,7 @@ public final class EnchantGui implements Gui {
 
     @Override
     public String title() {
-        return "&5&lENCHANTS &8— &7" + plugin.enchants().roleLabel(roleKey);
+        return "&b&lOMNI-TOOL &8— &7" + plugin.enchants().roleLabel(roleKey);
     }
 
     @Override
@@ -67,16 +68,20 @@ public final class EnchantGui implements Gui {
         final List<Enchant> track = plugin.enchants().registry().forRole(roleKey);
         final int owned = plugin.enchants().ownedOf(profile, roleKey).size();
 
-        final Role role = Role.byKey(roleKey).orElse(null);
+        final Role selectedRole = plugin.roles().roleOf(profile).orElse(null);
+        final var roleView = selectedRole == null ? null : plugin.roles().roleView(profile, selectedRole);
+        final var toolView = plugin.roles().toolView(profile);
         inventory.setItem(
                 SLOT_HEADER,
                 GuiService.item(
-                        role == null ? Material.ENCHANTED_BOOK : role.icon(),
+                        selectedRole == null ? Material.ENCHANTED_BOOK : selectedRole.toolMaterial(),
                         plugin.enchants().roleLabel(roleKey) + " &7enchants &8(&b" + owned + "&7/&b"
                                 + track.size() + "&8)",
                         List.of(
                                 "&7Balance: &f" + String.format(java.util.Locale.ROOT, "%,d",
                                         profile.skyTokens()) + " Sky Tokens",
+                                "&7Role level: &f" + (roleView == null ? 0 : roleView.level()),
+                                "&7OmniTool level: &f" + toolView.level(),
                                 "&7Left-click an enchant to upgrade it.",
                                 "&7Right-click an enchant for details.")));
 
@@ -96,27 +101,13 @@ public final class EnchantGui implements Gui {
             inventory.setItem(GRID_SLOTS[index], GuiService.item(icon, name, lore));
         }
 
-        if (roleKey.equals("universal")) {
-            inventory.setItem(
-                    SLOT_NOTE,
-                    GuiService.item(
-                            Material.AMETHYST_SHARD,
-                            "&7Universal enchants work with &fany role&7.",
-                            List.of("&7Your role: &f" + plugin.enchants().roleLabel(profile.roleId()))));
-        } else {
-            inventory.setItem(
-                    SLOT_NOTE,
-                    GuiService.item(
-                            Material.BOOK,
-                            "&8Other roles' enchants unlock via &7/role&8.",
-                            List.of("&7Universal enchants: click below.")));
-        }
+        inventory.setItem(SLOT_ROLE_INFO, roleInfo(profile, selectedRole, roleView, toolView));
+        upgradeEntry(inventory, profile, SLOT_UPGRADE_1, OmniUpgradeCatalog.EFFICIENCY);
+        upgradeEntry(inventory, profile, SLOT_UPGRADE_2, OmniUpgradeCatalog.FORTUNE);
+        upgradeEntry(inventory, profile, SLOT_UPGRADE_3, OmniUpgradeCatalog.SMELTER);
 
-        for (int index = 0; index < ROLE_SLOTS.length; index++) {
-            inventory.setItem(ROLE_SLOTS[index], roleSwitcherItem(profile, ROLE_KEYS[index]));
-        }
-
-        inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&cBack", List.of("&7Omni-Tool panel.")));
+        inventory.setItem(SLOT_CHANGE_ROLE, GuiService.item(
+                Material.COMPASS, "&eChange Role", List.of("&7Open the role selector.", "&7Progress is never reset.")));
         if (roleKey.equals("universal")) {
             inventory.setItem(
                     SLOT_SWITCH,
@@ -136,18 +127,50 @@ public final class EnchantGui implements Gui {
         GuiService.fillGaps(inventory);
     }
 
-    /** One role-switcher icon: viewing-state, own-role and locked flavours. */
-    private org.bukkit.inventory.ItemStack roleSwitcherItem(final PlayerProfile profile, final String key) {
-        final Role role = Role.byKey(key).orElse(null);
-        final Material icon = role == null ? Material.ENCHANTED_BOOK : role.icon();
-        final String label = plugin.enchants().roleLabel(key);
-        if (key.equals(roleKey)) {
-            return GuiService.item(icon, "&a▶ " + label, List.of("&7Currently viewing."));
+    private org.bukkit.inventory.ItemStack roleInfo(
+            final PlayerProfile profile,
+            final Role selectedRole,
+            final com.coremc.core.role.RoleService.ProgressView roleView,
+            final com.coremc.core.role.RoleService.ProgressView toolView) {
+        final List<String> lore = new ArrayList<>();
+        if (selectedRole == null || roleView == null) {
+            lore.add("&7No role selected.");
+        } else {
+            lore.add("&7Role level: &f" + roleView.level() + (roleView.maxed() ? " &8(MAX)" : ""));
+            lore.add("&7Role XP: &f" + roleView.xp() + (roleView.maxed() ? "" : "&7/&f" + roleView.xpToNext()));
         }
-        if (key.equals(profile.roleId()) || "universal".equals(key)) {
-            return GuiService.item(icon, "&e" + label, List.of("&7Click to view."));
+        lore.add("&7Tool level: &f" + toolView.level() + (toolView.maxed() ? " &8(MAX)" : ""));
+        lore.add("&7Tool XP: &f" + toolView.xp() + (toolView.maxed() ? "" : "&7/&f" + toolView.xpToNext()));
+        return GuiService.item(
+                selectedRole == null ? Material.GRAY_DYE : selectedRole.icon(),
+                selectedRole == null ? "&7No role selected" : selectedRole.display(), lore);
+    }
+
+    private void upgradeEntry(
+            final Inventory inventory, final PlayerProfile profile, final int slot, final String upgradeId) {
+        final var found = plugin.omniTool().upgrades().upgrade(upgradeId);
+        if (found.isEmpty()) {
+            inventory.setItem(slot, GuiService.item(
+                    Material.LIGHT_GRAY_STAINED_GLASS_PANE, "&8Upgrade", List.of("&7Not configured.")));
+            return;
         }
-        return GuiService.item(Material.GRAY_DYE, "&8" + label, List.of("&7Click to preview.", "&8Locked — switch via /role to buy."));
+        final OmniUpgradeCatalog.Upgrade def = found.get();
+        final int level = profile.omniUpgrade(upgradeId);
+        final Material icon = switch (upgradeId) {
+            case OmniUpgradeCatalog.FORTUNE -> Material.AMETHYST_CLUSTER;
+            case OmniUpgradeCatalog.SMELTER -> Material.BLAZE_ROD;
+            default -> Material.GOLDEN_PICKAXE;
+        };
+        final List<String> lore = new ArrayList<>();
+        lore.add("&7Level: &b" + level + "&7/&b" + def.maxLevel());
+        if (def.maxed(level)) {
+            lore.add("&a&lMAXED OUT");
+        } else {
+            lore.add("&7Next level: &a" + String.format(java.util.Locale.ROOT, "%,d", def.costForNextLevel(level))
+                    + " Credits");
+            lore.add("&eClick to purchase.");
+        }
+        inventory.setItem(slot, GuiService.item(icon, def.display(), lore));
     }
 
     @Override
@@ -156,8 +179,8 @@ public final class EnchantGui implements Gui {
             viewer.closeInventory();
             return false;
         }
-        if (slot == SLOT_BACK) {
-            plugin.gui().open(viewer, new OmniToolGui(plugin));
+        if (slot == SLOT_CHANGE_ROLE) {
+            plugin.gui().open(viewer, new RoleSelectGui(plugin));
             return false;
         }
         if (slot == SLOT_SWITCH) {
@@ -174,11 +197,18 @@ public final class EnchantGui implements Gui {
             }
             return false;
         }
-        for (int index = 0; index < ROLE_SLOTS.length; index++) {
-            if (slot == ROLE_SLOTS[index] && !ROLE_KEYS[index].equals(roleKey)) {
-                plugin.gui().open(viewer, new EnchantGui(plugin, ROLE_KEYS[index]));
-                return false;
+        final String upgradeId = switch (slot) {
+            case SLOT_UPGRADE_1 -> OmniUpgradeCatalog.EFFICIENCY;
+            case SLOT_UPGRADE_2 -> OmniUpgradeCatalog.FORTUNE;
+            case SLOT_UPGRADE_3 -> OmniUpgradeCatalog.SMELTER;
+            default -> null;
+        };
+        if (upgradeId != null) {
+            final PlayerProfile profile = plugin.playerData().profileOf(viewer.getUniqueId()).orElse(null);
+            if (profile != null) {
+                plugin.omniTool().purchaseUpgrade(viewer, profile, upgradeId);
             }
+            return true;
         }
         final Enchant enchant = gridEnchant(slot);
         if (enchant == null) {

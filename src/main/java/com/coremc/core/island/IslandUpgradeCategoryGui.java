@@ -101,7 +101,7 @@ public final class IslandUpgradeCategoryGui implements Gui {
         lore.add("");
         if (locked != null) {
             final int have = island.upgrades().getOrDefault(locked.getKey(), 0);
-            lore.add("&c&lLOCKED");
+            lore.add("&c✖ LOCKED");
             lore.add("&7Requires: &f" + UpgradeCatalog.displayOf(locked.getKey())
                     + " tier " + locked.getValue() + " &8(yours: " + have + "&8)");
             if (tier < max && cost.isPresent()) {
@@ -109,44 +109,49 @@ public final class IslandUpgradeCategoryGui implements Gui {
             }
             return GuiService.item(
                     Material.REDSTONE_BLOCK,
-                    "&c" + track.display() + " &8[LOCKED]",
+                    "&c✖ " + track.display() + " &8[LOCKED]",
                     lore);
         }
         final int needIsland = plugin.coreConfig().upgradeRequiresIslandLevel(track.id());
         if (needIsland > 0 && island.level() < needIsland) {
-            lore.add("&c&lLOCKED");
+            lore.add("&c✖ LOCKED");
             lore.add("&7Requires island level &f" + needIsland + " &8(yours: " + island.level() + "&8)");
             if (tier < max && cost.isPresent()) {
                 lore.add("&8Next: tier " + (tier + 1) + " — " + cost.getAsLong() + " Sky Tokens");
             }
             return GuiService.item(
                     Material.REDSTONE_BLOCK,
-                    "&c" + track.display() + " &8[LOCKED]",
+                    "&c✖ " + track.display() + " &8[LOCKED]",
                     lore);
         }
         final int needRole = plugin.coreConfig().upgradeRequiresRoleLevel(track.id());
         final int haveRole = viewerProfile == null ? 0 : plugin.roles().maxRoleLevel(viewerProfile);
         if (needRole > 0 && haveRole < needRole) {
-            lore.add("&c&lLOCKED");
+            lore.add("&c✖ LOCKED");
             lore.add("&7Requires role level &f" + needRole + " &8(any role, yours: " + haveRole + "&8)");
             if (tier < max && cost.isPresent()) {
                 lore.add("&8Next: tier " + (tier + 1) + " — " + cost.getAsLong() + " Sky Tokens");
             }
             return GuiService.item(
                     Material.REDSTONE_BLOCK,
-                    "&c" + track.display() + " &8[LOCKED]",
+                    "&c✖ " + track.display() + " &8[LOCKED]",
                     lore);
         }
         if (tier >= max || cost.isEmpty()) {
-            lore.add("&a&lMAXED OUT");
+            lore.add("&a✔ MAXED OUT");
         } else {
             lore.add("&7Next tier: &f" + (tier + 1) + "&8/&7" + max);
             lore.add("&7Cost: &b" + cost.getAsLong() + " Sky Tokens");
-            lore.add("&eClick to purchase.");
+            final long tokens = viewerProfile == null ? 0L : viewerProfile.skyTokens();
+            lore.add(tokens >= cost.getAsLong()
+                    ? "&a✔ Click to purchase."
+                    : "&c✖ You cannot afford this.");
         }
+        final boolean available = tier >= max || cost.isEmpty()
+                || (viewerProfile != null && viewerProfile.skyTokens() >= cost.getAsLong());
         return GuiService.item(
                 tier > 0 ? track.icon() : track.icon(),
-                category.color() + track.display()
+                (available ? "&a✔ " : "&c✖ ") + category.color() + track.display()
                         + (tier > 0 ? " &8[&f" + tier + "&8/&7" + max + "&8]" : ""),
                 lore);
     }

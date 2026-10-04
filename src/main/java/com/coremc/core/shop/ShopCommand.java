@@ -13,7 +13,7 @@ import org.bukkit.entity.Player;
 
 /**
  * {@code /shop} — the shop hub; {@code /shop <category>} jumps straight
- * into gear/food/end/nether; {@code /tokenshop} opens the exchange.
+ * into blocks/food/redstone/misc/ores; {@code /tokenshop} opens the exchange.
  */
 public final class ShopCommand implements CommandExecutor, TabCompleter {
 

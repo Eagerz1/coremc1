@@ -14,7 +14,7 @@ import org.bukkit.inventory.Inventory;
 /**
  * One 54-slot category page (double chest). Slot positions are hard
  * constants — the grid walks 5 rows of 9, entries sit at 10..16 / 19..25 /
- * 28..34 / 37..43 (4×7 = 28 max items), navigation at 45 (back) and 53 (close).
+ * 28..34 / 37..43 (4×7 = 28 items per page), navigation on the bottom row.
  *
  * Left-click buys, right-click sells matching inventory stock back at
  * the entry's sell price (when sellable; members on their own island
@@ -30,14 +30,23 @@ public final class ShopCategoryGui implements Gui {
         37, 38, 39, 40, 41, 42, 43
     };
     private static final int SLOT_BACK = 45;
+    private static final int SLOT_PREVIOUS = 48;
+    private static final int SLOT_PAGE = 49;
+    private static final int SLOT_NEXT = 50;
     private static final int SLOT_CLOSE = 53;
 
     private final CoreMCPlugin plugin;
     private final ShopCategory category;
+    private final int page;
 
     public ShopCategoryGui(final CoreMCPlugin plugin, final ShopCategory category) {
+        this(plugin, category, 0);
+    }
+
+    ShopCategoryGui(final CoreMCPlugin plugin, final ShopCategory category, final int page) {
         this.plugin = plugin;
         this.category = category;
+        this.page = Math.max(0, page);
     }
 
     @Override
@@ -57,14 +66,19 @@ public final class ShopCategoryGui implements Gui {
             inventory.setItem(slot, GuiService.item(Material.GRAY_STAINED_GLASS_PANE, " ", List.of()));
         }
         final List<ShopEntry> entries = plugin.shop().entriesOf(category);
-        for (int i = 0; i < ITEM_SLOTS.length && i < entries.size(); i++) {
-            final ShopEntry entry = entries.get(i);
+        final int pages = Math.max(1, (entries.size() + ITEM_SLOTS.length - 1) / ITEM_SLOTS.length);
+        final int safePage = Math.min(page, pages - 1);
+        final int offset = safePage * ITEM_SLOTS.length;
+        final var profile = plugin.playerData().profileOf(viewer.getUniqueId()).orElse(null);
+        for (int i = 0; i < ITEM_SLOTS.length && offset + i < entries.size(); i++) {
+            final ShopEntry entry = entries.get(offset + i);
             final List<String> lore = new ArrayList<>();
             lore.add("&7Amount: &fx" + entry.amount());
             lore.add("&7Price: &a" + String.format(Locale.ROOT, "%,d", entry.price())
                     + " &7" + entry.currency().displayName());
             lore.add("");
-            lore.add("&eClick to purchase.");
+            final boolean affordable = profile != null && profile.balanceOf(entry.currency()) >= entry.price();
+            lore.add(affordable ? "&a✔ Left-click to purchase." : "&c✖ You cannot afford this.");
             if (entry.sellPrice() > 0L) {
                 lore.add("&eRight-click to sell: &a" + String.format(Locale.ROOT, "%,d", entry.sellPrice())
                         + " &7" + entry.currency().displayName() + " &7each.");
@@ -72,6 +86,17 @@ public final class ShopCategoryGui implements Gui {
             inventory.setItem(ITEM_SLOTS[i], GuiService.item(entry.material(), entry.display(), lore));
         }
         inventory.setItem(SLOT_BACK, GuiService.item(Material.ARROW, "&e&lBack", List.of("&7Return to the shop.")));
+        if (safePage > 0) {
+            inventory.setItem(SLOT_PREVIOUS, GuiService.item(
+                    Material.ARROW, "&ePrevious Page", List.of("&7Page " + safePage + " of " + pages)));
+        }
+        inventory.setItem(SLOT_PAGE, GuiService.item(
+                Material.PAPER, "&fPage " + (safePage + 1) + "&7/&f" + pages,
+                List.of("&7" + entries.size() + " items in this category.")));
+        if (safePage + 1 < pages) {
+            inventory.setItem(SLOT_NEXT, GuiService.item(
+                    Material.ARROW, "&eNext Page", List.of("&7Page " + (safePage + 2) + " of " + pages)));
+        }
         inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
     }
 
@@ -85,15 +110,26 @@ public final class ShopCategoryGui implements Gui {
             plugin.gui().open(viewer, new ShopMainGui(plugin));
             return false;
         }
+        final List<ShopEntry> entries = plugin.shop().entriesOf(category);
+        final int pages = Math.max(1, (entries.size() + ITEM_SLOTS.length - 1) / ITEM_SLOTS.length);
+        final int safePage = Math.min(page, pages - 1);
+        if (slot == SLOT_PREVIOUS && safePage > 0) {
+            plugin.gui().open(viewer, new ShopCategoryGui(plugin, category, safePage - 1));
+            return false;
+        }
+        if (slot == SLOT_NEXT && safePage + 1 < pages) {
+            plugin.gui().open(viewer, new ShopCategoryGui(plugin, category, safePage + 1));
+            return false;
+        }
+        final int offset = safePage * ITEM_SLOTS.length;
         for (int i = 0; i < ITEM_SLOTS.length; i++) {
             if (slot != ITEM_SLOTS[i]) {
                 continue;
             }
-            final List<ShopEntry> entries = plugin.shop().entriesOf(category);
-            if (i >= entries.size()) {
+            if (offset + i >= entries.size()) {
                 return false;
             }
-            if (plugin.shop().purchase(viewer, entries.get(i))) {
+            if (plugin.shop().purchase(viewer, entries.get(offset + i))) {
                 return true; // success re-render (balance surfaces elsewhere stay fresh)
             }
             return false; // refused: keep panel, message was sent
@@ -103,18 +139,20 @@ public final class ShopCategoryGui implements Gui {
 
     @Override
     public boolean onRightClick(final Player viewer, final int slot) {
-        if (slot == SLOT_CLOSE || slot == SLOT_BACK) {
+        if (slot == SLOT_CLOSE || slot == SLOT_BACK || slot == SLOT_PREVIOUS || slot == SLOT_NEXT) {
             return onClick(viewer, slot);
         }
+        final List<ShopEntry> entries = plugin.shop().entriesOf(category);
+        final int pages = Math.max(1, (entries.size() + ITEM_SLOTS.length - 1) / ITEM_SLOTS.length);
+        final int offset = Math.min(page, pages - 1) * ITEM_SLOTS.length;
         for (int i = 0; i < ITEM_SLOTS.length; i++) {
             if (slot != ITEM_SLOTS[i]) {
                 continue;
             }
-            final List<ShopEntry> entries = plugin.shop().entriesOf(category);
-            if (i >= entries.size()) {
+            if (offset + i >= entries.size()) {
                 return false;
             }
-            return plugin.shop().sell(viewer, entries.get(i));
+            return plugin.shop().sell(viewer, entries.get(offset + i));
         }
         return false;
     }

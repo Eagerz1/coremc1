@@ -45,20 +45,22 @@ public final class TokenShopGui implements Gui {
 
     @Override
     public void build(final Player viewer, final Inventory inventory) {
+        final PlayerProfile profile = plugin.playerData().profileOf(viewer.getUniqueId()).orElse(null);
         final List<ShopEntry> entries = plugin.shop().entriesOf(ShopCategory.TOKENS);
         for (int i = 0; i < ITEM_SLOTS.length && i < entries.size(); i++) {
             final ShopEntry entry = entries.get(i);
+            final boolean affordable = profile != null
+                    && profile.balanceOf(entry.currency()) >= entry.price();
             inventory.setItem(ITEM_SLOTS[i], GuiService.item(
                     entry.material(),
-                    entry.display(),
+                    (affordable ? "&a✔ " : "&c✖ ") + entry.display(),
                     List.of(
                             "&7Gives: &bx" + entry.amount() + " Sky Token" + (entry.amount() == 1 ? "" : "s"),
                             "&7Price: &a" + String.format(Locale.ROOT, "%,d", entry.price())
                                     + " &7" + entry.currency().displayName(),
                             "",
-                            "&eClick to exchange.")));
+                            affordable ? "&a✔ Click to exchange." : "&c✖ You cannot afford this.")));
         }
-        final PlayerProfile profile = plugin.playerData().profileOf(viewer.getUniqueId()).orElse(null);
         final String tokens = profile == null ? "0" : String.format(Locale.ROOT, "%,d", profile.skyTokens());
         inventory.setItem(SLOT_BALANCE, GuiService.item(
                 Material.NETHER_STAR,

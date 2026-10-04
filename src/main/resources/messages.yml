@@ -170,6 +170,19 @@ omnitool:
   upgrade-unknown: "&cUnknown Omni-Tool upgrade."
   insufficient: "&cYou need &a{price} Credits&c for this Omni-Tool upgrade."
 
+companion:
+  insufficient: "&cYou need &b{price} Sky Tokens&c to unlock this companion."
+  already-owned: "&eYou already own that companion."
+  unlocked: "&a&lCOMPANION UNLOCKED! &r{companion}&7 is now following you."
+  equipped: "{companion}&7 is now following you."
+  unequipped: "&7Your companion has been dismissed."
+  level-up: "{companion}&7 reached level &d{level}&7!"
+
+quest:
+  completed: "&a&lMISSION COMPLETE! &r{quest}&7 — claim it with &f/quests&7."
+  claimed: "&aMission reward claimed: &e{credits} Credits &7and &b{tokens} Sky Tokens&7."
+  overflow: "&cYour balance is too full to claim this reward."
+
 gen:
   bought: "Purchased {name}&7 for &a{price} Credits&7. Place it anywhere to set it down."
   bought-enderchest: "&eYour inventory was full — the item went to your ender chest."
@@ -186,9 +199,7 @@ spawner:
   insufficient: "&cYou need &b{price} Sky Tokens&c for this spawner."
   bought: "Purchased {name}&7 for &b{price} Sky Tokens&7. Place it to spawn."
   kill-reward: "&7Spawner kill &8» &a${money} &7and &b{tokens} Sky Token(s)&7."
-  ancient-progress: "&5&lANCIENT KILL! &7Triple progress toward {mob}&7: &d+{amount}&7."
-  ancient-bounty: "&5&lANCIENT KILL! &7No lane follows {mob}&7 — its bounty pays through the spawner-kill reward."
-  ancient-admin: "&7Granted &f{amount}&7 {mob}&7 kill progress to &f{player}&7."
+  admin-progress: "&7Granted &f{amount}&7 {mob}&7 kill progress to &f{player}&7."
 
 placeable:
   returned: "&7Picked up your core block."
@@ -203,7 +214,7 @@ shop:
   insufficient: "&cYou need &a{price} {currency}&c for this."
   overflow: "&eYour inventory was full — the item went to your ender chest."
   unavailable: "&cYour profile isn't ready — try again in a second."
-  unknown-category: "&cUnknown shop category &f{input}&c. Try &f/shop gear|food|end|nether&c."
+  unknown-category: "&cUnknown shop category &f{input}&c. Try &f/shop blocks|food|redstone|misc|ores&c."
 
 profile:
   header: "&b&lPROFILE &8— &f{player}"

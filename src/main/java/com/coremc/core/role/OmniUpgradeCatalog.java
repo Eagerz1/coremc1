@@ -21,7 +21,7 @@ public final class OmniUpgradeCatalog {
     public static final String EFFICIENCY = "efficiency";
     public static final String FORTUNE = "fortune";
     public static final String SMELTER = "smelter";
-    /** GUI display order (OmniToolGui slots 47/49/51). */
+    /** GUI display order in the OmniTool enchant menu. */
     public static final List<String> GUI_ORDER = List.of(EFFICIENCY, FORTUNE, SMELTER);
     // -------------------------------------------------------------
 

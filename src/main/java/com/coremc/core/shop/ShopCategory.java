@@ -5,10 +5,11 @@ package com.coremc.core.shop;
  * and {@code /shop <key>} arguments.
  */
 public enum ShopCategory {
-    GEAR("gear", "&6Gear"),
+    BLOCKS("blocks", "&aBlocks"),
     FOOD("food", "&eFood"),
-    END("end", "&5End"),
-    NETHER("nether", "&cNether"),
+    REDSTONE("redstone", "&cRedstone"),
+    MISC("misc", "&dMiscellaneous"),
+    ORES("ores", "&bOres & Minerals"),
     TOKENS("tokens", "&bT&do&bk&de&bn&ds");
 
     private final String key;

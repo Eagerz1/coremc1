@@ -1,7 +1,6 @@
 package com.coremc.core.spawner;
 
 import com.coremc.core.CoreMCPlugin;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -11,11 +10,10 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
  * Gives every mob produced by a CoreMC spawner block its identity:
  * the {@code spawner-born} marker (other listeners already tag vanilla
  * SPAWNER-reason mobs generically; this handler enriches CoreMC's own),
- * the purchasable tier id, and — for Ancient spawners — the ancient
- * marker plus visible buffed presentation.
+ * the stable purchasable spawner id.
  *
- * Runs at NORMAL so the Ancient presentation is in place before any
- * later listener (slots, boosts) inspects the entity. Mobs from
+ * Runs at NORMAL so later listeners (slots, boosts) can inspect the
+ * identity. Mobs from
  * non-CoreMC spawner blocks (dungeon spawners, other plugins) only ever
  * receive the generic marker from the slayer handler — never a tier id.
  */
@@ -49,15 +47,10 @@ public final class SpawnerMobTagger implements Listener {
         if (ref.isEmpty()) {
             return;
         }
-        final boolean ancient = ref.get().tier().ancient();
-        tags.tag(event.getEntity(), tierId, ancient);
-        if (ancient && event.getEntity() instanceof LivingEntity living) {
-            tags.decorateAncient(
-                    plugin, living, prettyEntityName(ref.get().mob().entityType().name()));
-        }
+        tags.tag(event.getEntity(), tierId);
     }
 
-    /** ZOMBIFIED_PIGLIN -> "Zombified Piglin" for ancient names. */
+    /** ZOMBIFIED_PIGLIN -> "Zombified Piglin" for player-facing names. */
     public static String prettyEntityName(final String enumName) {
         final String[] parts = enumName.toLowerCase(java.util.Locale.ROOT).split("_");
         final StringBuilder out = new StringBuilder();

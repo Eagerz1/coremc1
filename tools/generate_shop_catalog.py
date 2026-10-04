@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""Generate the deterministic 219-entry CoreMC Skyblock shop resource."""
+
+from pathlib import Path
+
+
+CATEGORIES = {
+    "blocks": [
+        "STONE", "COBBLESTONE", "ANDESITE", "DIORITE", "GRANITE", "DEEPSLATE", "COBBLED_DEEPSLATE",
+        "TUFF", "CALCITE", "DRIPSTONE_BLOCK", "DIRT", "COARSE_DIRT", "ROOTED_DIRT", "GRASS_BLOCK",
+        "PODZOL", "MYCELIUM", "MUD", "CLAY", "SAND", "RED_SAND", "GRAVEL", "SNOW_BLOCK", "ICE",
+        "PACKED_ICE", "BLUE_ICE", "OBSIDIAN", "CRYING_OBSIDIAN", "NETHERRACK", "SOUL_SAND", "SOUL_SOIL",
+        "END_STONE", "PURPUR_BLOCK", "PRISMARINE", "PRISMARINE_BRICKS", "DARK_PRISMARINE", "SEA_LANTERN",
+        "SPONGE", "WET_SPONGE", "BRICKS", "MUD_BRICKS", "OAK_LOG", "SPRUCE_LOG", "BIRCH_LOG", "JUNGLE_LOG",
+        "ACACIA_LOG", "DARK_OAK_LOG", "MANGROVE_LOG", "CHERRY_LOG", "CRIMSON_STEM", "WARPED_STEM",
+        "OAK_PLANKS", "SPRUCE_PLANKS", "BIRCH_PLANKS", "JUNGLE_PLANKS", "ACACIA_PLANKS", "DARK_OAK_PLANKS",
+        "MANGROVE_PLANKS", "CHERRY_PLANKS", "CRIMSON_PLANKS", "WARPED_PLANKS",
+    ],
+    "food": [
+        "WHEAT", "WHEAT_SEEDS", "CARROT", "POTATO", "BEETROOT", "BEETROOT_SEEDS", "MELON_SLICE",
+        "MELON_SEEDS", "PUMPKIN", "PUMPKIN_SEEDS", "SUGAR_CANE", "COCOA_BEANS", "CACTUS", "BAMBOO", "KELP",
+        "DRIED_KELP", "SWEET_BERRIES", "GLOW_BERRIES", "NETHER_WART", "BROWN_MUSHROOM", "RED_MUSHROOM",
+        "APPLE", "BREAD", "BAKED_POTATO", "COOKIE", "PUMPKIN_PIE", "COOKED_BEEF", "COOKED_PORKCHOP",
+        "COOKED_CHICKEN", "COOKED_MUTTON", "COOKED_RABBIT", "COOKED_COD", "COOKED_SALMON", "GOLDEN_CARROT",
+        "GOLDEN_APPLE", "HONEY_BOTTLE", "EGG", "MILK_BUCKET", "CHORUS_FRUIT", "RABBIT_STEW",
+    ],
+    "redstone": [
+        "REDSTONE", "REDSTONE_TORCH", "REPEATER", "COMPARATOR", "OBSERVER", "PISTON", "STICKY_PISTON",
+        "DISPENSER", "DROPPER", "HOPPER", "LEVER", "STONE_BUTTON", "OAK_PRESSURE_PLATE",
+        "HEAVY_WEIGHTED_PRESSURE_PLATE", "LIGHT_WEIGHTED_PRESSURE_PLATE", "TRIPWIRE_HOOK", "TARGET",
+        "DAYLIGHT_DETECTOR", "NOTE_BLOCK", "JUKEBOX", "TNT", "SLIME_BLOCK", "HONEY_BLOCK", "SCULK_SENSOR",
+        "CALIBRATED_SCULK_SENSOR", "RAIL", "POWERED_RAIL", "DETECTOR_RAIL", "ACTIVATOR_RAIL", "MINECART",
+        "CHEST_MINECART", "HOPPER_MINECART", "REDSTONE_LAMP", "IRON_DOOR", "IRON_TRAPDOOR",
+    ],
+    "misc": [
+        "STRING", "BONE", "ROTTEN_FLESH", "SPIDER_EYE", "GUNPOWDER", "SLIME_BALL", "ENDER_PEARL",
+        "BLAZE_ROD", "GHAST_TEAR", "MAGMA_CREAM", "PHANTOM_MEMBRANE", "PRISMARINE_SHARD",
+        "PRISMARINE_CRYSTALS", "RABBIT_HIDE", "LEATHER", "FEATHER", "INK_SAC", "GLOW_INK_SAC", "TURTLE_SCUTE",
+        "ARMADILLO_SCUTE", "WHITE_DYE", "ORANGE_DYE", "MAGENTA_DYE", "LIGHT_BLUE_DYE", "YELLOW_DYE",
+        "LIME_DYE", "PINK_DYE", "GRAY_DYE", "LIGHT_GRAY_DYE", "CYAN_DYE", "PURPLE_DYE", "BLUE_DYE",
+        "BROWN_DYE", "GREEN_DYE", "RED_DYE", "BLACK_DYE", "PAPER", "BOOK", "NAME_TAG", "SADDLE", "LEAD",
+        "COMPASS", "CLOCK", "GLASS_BOTTLE",
+    ],
+    "ores": [
+        "COAL", "CHARCOAL", "RAW_IRON", "IRON_INGOT", "IRON_NUGGET", "RAW_COPPER", "COPPER_INGOT",
+        "RAW_GOLD", "GOLD_INGOT", "GOLD_NUGGET", "DIAMOND", "EMERALD", "LAPIS_LAZULI", "QUARTZ",
+        "AMETHYST_SHARD", "NETHERITE_SCRAP", "NETHERITE_INGOT", "ANCIENT_DEBRIS", "COAL_ORE",
+        "DEEPSLATE_COAL_ORE", "IRON_ORE", "DEEPSLATE_IRON_ORE", "COPPER_ORE", "DEEPSLATE_COPPER_ORE",
+        "GOLD_ORE", "DEEPSLATE_GOLD_ORE", "REDSTONE_ORE", "DEEPSLATE_REDSTONE_ORE", "LAPIS_ORE",
+        "DEEPSLATE_LAPIS_ORE", "DIAMOND_ORE", "DEEPSLATE_DIAMOND_ORE", "EMERALD_ORE",
+        "DEEPSLATE_EMERALD_ORE", "NETHER_GOLD_ORE", "NETHER_QUARTZ_ORE", "COAL_BLOCK", "IRON_BLOCK",
+        "COPPER_BLOCK", "GOLD_BLOCK",
+    ],
+}
+
+BASE_PRICE = {"blocks": 8, "food": 16, "redstone": 40, "misc": 20, "ores": 32}
+PRICE_OVERRIDES = {
+    "BLUE_ICE": 120, "OBSIDIAN": 80, "CRYING_OBSIDIAN": 160, "SEA_LANTERN": 96, "SPONGE": 320,
+    "WET_SPONGE": 240, "GOLDEN_CARROT": 80, "GOLDEN_APPLE": 400, "ENDER_PEARL": 160,
+    "BLAZE_ROD": 240, "GHAST_TEAR": 400, "PHANTOM_MEMBRANE": 320, "NAME_TAG": 400, "SADDLE": 320,
+    "DIAMOND": 400, "EMERALD": 320, "NETHERITE_SCRAP": 1600, "NETHERITE_INGOT": 6400,
+    "ANCIENT_DEBRIS": 2000, "DIAMOND_ORE": 500, "DEEPSLATE_DIAMOND_ORE": 540, "EMERALD_ORE": 400,
+    "DEEPSLATE_EMERALD_ORE": 440, "GOLD_BLOCK": 720, "IRON_BLOCK": 288, "COAL_BLOCK": 144,
+}
+
+
+def price_for(category: str, material: str, index: int) -> int:
+    price = PRICE_OVERRIDES.get(material, BASE_PRICE[category] * (1 + index // 10))
+    return max(4, ((price + 3) // 4) * 4)
+
+
+def display(material: str) -> str:
+    return " ".join(word.capitalize() for word in material.split("_"))
+
+
+def main() -> None:
+    count = sum(len(items) for items in CATEGORIES.values())
+    if count != 219:
+        raise SystemExit(f"catalogue must contain 219 entries, found {count}")
+
+    lines = [
+        "# CoreMC Skyblock shop — generated by tools/generate_shop_catalog.py",
+        "# 219 regular MONEY entries across five categories; /tokenshop remains separate.",
+        "# Existing server files are migration-safe: new defaults merge without overwriting admin values.",
+        "",
+    ]
+    colours = {"blocks": "&a", "food": "&e", "redstone": "&c", "misc": "&d", "ores": "&b"}
+    for category, materials in CATEGORIES.items():
+        lines.append(f"{category}:")
+        for index, material in enumerate(materials):
+            item_id = material.lower().replace("_", "-")
+            price = price_for(category, material, index)
+            lines.extend([
+                f"  {item_id}:",
+                f"    material: {material}",
+                f'    display: "{colours[category]}{display(material)}"',
+                "    currency: MONEY",
+                f"    price: {price}",
+                f"    sell-price: {price // 4}",
+            ])
+        lines.append("")
+
+    lines.extend([
+        "# /tokenshop — Sky Token exchange desk (currency conversions + token packs)",
+        "tokens:",
+        "  token-small:",
+        "    material: SUNFLOWER",
+        '    display: "&b1 Sky Token"',
+        "    currency: MONEY",
+        "    price: 10000",
+        "    amount: 1",
+        "  token-big:",
+        "    material: NETHER_STAR",
+        '    display: "&b5 Sky Tokens"',
+        "    currency: MONEY",
+        "    price: 45000",
+        "    amount: 5",
+        "  token-from-credits:",
+        "    material: AMETHYST_SHARD",
+        '    display: "&b1 Sky Token &7(via Credits)"',
+        "    currency: CREDITS",
+        "    price: 20",
+        "    amount: 1",
+        "",
+    ])
+    output = Path(__file__).resolve().parents[1] / "src/main/resources/shop.yml"
+    output.write_text("\n".join(lines), encoding="utf-8")
+    print(f"wrote {count} regular entries to {output}")
+
+
+if __name__ == "__main__":
+    main()

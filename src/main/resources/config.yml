@@ -480,6 +480,131 @@ island-buffs:
     percent-per-level: 5
 
 # --------------------------------------------------------------------------
+# DAILY MISSIONS (/quests)
+# Three deterministic per-player objectives are assigned each UTC day.
+# --------------------------------------------------------------------------
+daily-quests:
+  mine-100:
+    display: "&7Mine 100 Blocks"
+    icon: IRON_PICKAXE
+    metric: MINE_BLOCK
+    target: 100
+    reward-credits: 300
+    reward-sky-tokens: 10
+  mine-250:
+    display: "&bMine 250 Blocks"
+    icon: DIAMOND_PICKAXE
+    metric: MINE_BLOCK
+    target: 250
+    reward-credits: 750
+    reward-sky-tokens: 25
+  chop-50:
+    display: "&6Chop 50 Logs"
+    icon: IRON_AXE
+    metric: CHOP_LOG
+    target: 50
+    reward-credits: 350
+    reward-sky-tokens: 12
+  chop-150:
+    display: "&eChop 150 Logs"
+    icon: DIAMOND_AXE
+    metric: CHOP_LOG
+    target: 150
+    reward-credits: 900
+    reward-sky-tokens: 28
+  harvest-75:
+    display: "&aHarvest 75 Crops"
+    icon: WHEAT
+    metric: HARVEST_CROP
+    target: 75
+    reward-credits: 400
+    reward-sky-tokens: 15
+  harvest-200:
+    display: "&2Harvest 200 Crops"
+    icon: GOLDEN_HOE
+    metric: HARVEST_CROP
+    target: 200
+    reward-credits: 1000
+    reward-sky-tokens: 30
+  fish-10:
+    display: "&3Catch 10 Fish"
+    icon: FISHING_ROD
+    metric: CATCH_FISH
+    target: 10
+    reward-credits: 450
+    reward-sky-tokens: 18
+  fish-25:
+    display: "&bCatch 25 Fish"
+    icon: TROPICAL_FISH
+    metric: CATCH_FISH
+    target: 25
+    reward-credits: 1100
+    reward-sky-tokens: 35
+  slay-25:
+    display: "&cSlay 25 Mobs"
+    icon: IRON_SWORD
+    metric: KILL_MOB
+    target: 25
+    reward-credits: 500
+    reward-sky-tokens: 20
+  slay-75:
+    display: "&4Slay 75 Mobs"
+    icon: DIAMOND_SWORD
+    metric: KILL_MOB
+    target: 75
+    reward-credits: 1250
+    reward-sky-tokens: 40
+
+# --------------------------------------------------------------------------
+# COMPANIONS (/companions)
+# Earned with gameplay currency. A summoned companion gains XP from its
+# matching role activity and boosts that category by the configured amount.
+# --------------------------------------------------------------------------
+companions:
+  ore-sprite:
+    display: "&bOre Sprite"
+    icon: AMETHYST_CLUSTER
+    category: MINING
+    price-sky-tokens: 150
+    max-level: 20
+    xp-bonus-per-level: 1.0
+  timber-wisp:
+    display: "&6Timber Wisp"
+    icon: OAK_SAPLING
+    category: LOGGING
+    price-sky-tokens: 150
+    max-level: 20
+    xp-bonus-per-level: 1.0
+  tide-sprite:
+    display: "&3Tide Sprite"
+    icon: HEART_OF_THE_SEA
+    category: FISHING
+    price-sky-tokens: 150
+    max-level: 20
+    xp-bonus-per-level: 1.0
+  harvest-sprite:
+    display: "&aHarvest Sprite"
+    icon: FLOWERING_AZALEA
+    category: FARMING
+    price-sky-tokens: 150
+    max-level: 20
+    xp-bonus-per-level: 1.0
+  ember-hound:
+    display: "&cEmber Hound"
+    icon: BLAZE_POWDER
+    category: SLAYING
+    price-sky-tokens: 175
+    max-level: 20
+    xp-bonus-per-level: 1.0
+  allay-guide:
+    display: "&dAllay Guide"
+    icon: ALLAY_SPAWN_EGG
+    category: MINING
+    price-sky-tokens: 300
+    max-level: 20
+    xp-bonus-per-level: 1.5
+
+# --------------------------------------------------------------------------
 # GENERATOR MARKET (/gens)
 # Generators are bought with Credits, placed in the world, and right-clicked
 # to harvest their product after a cooldown. All balance lives here.
@@ -509,187 +634,385 @@ generators:
     product: QUARTZ
     price: 40000
     cooldown-seconds: 25
+  stone:
+    display: "&7Stone Generator"
+    block: STONE_BRICKS
+    product: STONE
+    price: 7500
+    cooldown-seconds: 6
+  coal:
+    display: "&8Coal Generator"
+    block: COAL_BLOCK
+    product: COAL
+    price: 12000
+    cooldown-seconds: 8
+  copper:
+    display: "&6Copper Generator"
+    block: CUT_COPPER
+    product: RAW_COPPER
+    price: 18000
+    cooldown-seconds: 10
+  iron:
+    display: "&fIron Generator"
+    block: IRON_BLOCK
+    product: RAW_IRON
+    price: 30000
+    cooldown-seconds: 14
+  gold:
+    display: "&6Gold Generator"
+    block: GOLD_BLOCK
+    product: RAW_GOLD
+    price: 55000
+    cooldown-seconds: 20
+  redstone:
+    display: "&cRedstone Generator"
+    block: REDSTONE_BLOCK
+    product: REDSTONE
+    price: 70000
+    cooldown-seconds: 22
+  lapis:
+    display: "&9Lapis Generator"
+    block: LAPIS_BLOCK
+    product: LAPIS_LAZULI
+    price: 90000
+    cooldown-seconds: 25
+  emerald:
+    display: "&aEmerald Generator"
+    block: EMERALD_BLOCK
+    product: EMERALD
+    price: 180000
+    cooldown-seconds: 35
+  diamond:
+    display: "&bDiamond Generator"
+    block: DIAMOND_BLOCK
+    product: DIAMOND
+    price: 250000
+    cooldown-seconds: 45
+  sand:
+    display: "&eSand Generator"
+    block: SMOOTH_SANDSTONE
+    product: SAND
+    price: 9000
+    cooldown-seconds: 7
+  gravel:
+    display: "&7Gravel Generator"
+    block: POLISHED_ANDESITE
+    product: GRAVEL
+    price: 11000
+    cooldown-seconds: 8
+  clay:
+    display: "&bClay Generator"
+    block: TERRACOTTA
+    product: CLAY_BALL
+    price: 22000
+    cooldown-seconds: 12
+  oak:
+    display: "&6Oak Generator"
+    block: STRIPPED_OAK_WOOD
+    product: OAK_LOG
+    price: 16000
+    cooldown-seconds: 10
+  wheat:
+    display: "&eWheat Generator"
+    block: HAY_BLOCK
+    product: WHEAT
+    price: 14000
+    cooldown-seconds: 9
+  carrot:
+    display: "&6Carrot Generator"
+    block: ORANGE_GLAZED_TERRACOTTA
+    product: CARROT
+    price: 18000
+    cooldown-seconds: 9
+  potato:
+    display: "&ePotato Generator"
+    block: YELLOW_GLAZED_TERRACOTTA
+    product: POTATO
+    price: 18000
+    cooldown-seconds: 9
+  sugar-cane:
+    display: "&aSugar Cane Generator"
+    block: LIME_GLAZED_TERRACOTTA
+    product: SUGAR_CANE
+    price: 24000
+    cooldown-seconds: 12
+  cactus:
+    display: "&2Cactus Generator"
+    block: GREEN_GLAZED_TERRACOTTA
+    product: CACTUS
+    price: 28000
+    cooldown-seconds: 14
+  kelp:
+    display: "&3Kelp Generator"
+    block: DRIED_KELP_BLOCK
+    product: KELP
+    price: 32000
+    cooldown-seconds: 15
+  prismarine:
+    display: "&3Prismarine Generator"
+    block: DARK_PRISMARINE
+    product: PRISMARINE_SHARD
+    price: 110000
+    cooldown-seconds: 30
 
 # --------------------------------------------------------------------------
 # SPAWNERS (/spawners)
-# Per-mob kill progression unlocks progressively BETTER spawner tiers.
-# Each mob lane has up to 4 tiers; a tier is unlocked once the player has
-# killed <required-kills> of that entity, then bought with Sky Tokens.
+# Per-mob kill progression unlocks one regular spawner for each mob.
+# A spawner is unlocked once the player has killed <required-kills> of
+# that entity, then bought directly from /spawners with Sky Tokens.
 # spawn-count / spawn-delay-ticks are applied to the placed spawner block
-# (fewer ticks = faster cycle, more spawns per cycle = better tier).
+# (fewer ticks = a faster cycle).
 # --------------------------------------------------------------------------
 spawners:
   # Anti-farming: kills above this per rolling minute do not count.
   kill-cap-per-minute: 120
-  # Reward for killing a mob produced by a CoreMC spawner (chance rolls once;
-  # money/tokens scale a little with the spawner tier; Ancient kills get
-  # spawners.ancient.reward-multiplier on top). Spawner kills consume one
-  # slot in the kill cap, same as wild kills.
+  # Reward for killing a mob produced by a CoreMC spawner. Spawner kills
+  # consume one slot in the kill cap, the same as wild kills.
   kill-rewards:
     chance: 0.75
     money: 3
     sky-tokens: 1
     island-xp: 2
-  # Ancient variant rules: an Ancient spawner awakens one named, toughened
-  # mob per cycle. Killing one is a SINGLE kill that grants progress-bonus
-  # (3) kills of progress toward the NEXT mob lane — three progress, not
-  # three instant kills (one cap slot, one message). The final lane pays
-  # the same multiplier as a currency bounty instead.
-  ancient:
-    progress-bonus: 3
-    health-multiplier: 2.0
-    reward-multiplier: 5
-    name-prefix: "&5&lAncient "
   zombie:
     display: "&2Zombie"
     entity: ZOMBIE
     icon: ZOMBIE_SPAWN_EGG
-    tiers:
-      - { display: "&2Zombie Spawner I",    required-kills: 25,  price: 5,  spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&2Zombie Spawner II",   required-kills: 60,  price: 15, spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&2Zombie Spawner III",  required-kills: 120, price: 30, spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&2Zombie Spawner IV",   required-kills: 200, price: 50, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&2&lAncient Zombie Spawner", required-kills: 275, price: 100, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 25
+    price: 5
+    spawn-count: 1
+    spawn-delay-ticks: 400
   skeleton:
     display: "&7Skeleton"
     entity: SKELETON
     icon: SKELETON_SPAWN_EGG
-    tiers:
-      - { display: "&7Skeleton Spawner I",   required-kills: 35,  price: 8,  spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&7Skeleton Spawner II",  required-kills: 75,  price: 22, spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&7Skeleton Spawner III", required-kills: 140, price: 40, spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&7Skeleton Spawner IV",  required-kills: 240, price: 65, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&7&lAncient Skeleton Spawner", required-kills: 330, price: 130, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 35
+    price: 8
+    spawn-count: 1
+    spawn-delay-ticks: 400
   spider:
     display: "&cSpider"
     entity: SPIDER
     icon: SPIDER_SPAWN_EGG
-    tiers:
-      - { display: "&cSpider Spawner I",   required-kills: 50,  price: 12, spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&cSpider Spawner II",  required-kills: 100, price: 30, spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&cSpider Spawner III", required-kills: 180, price: 55, spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&cSpider Spawner IV",  required-kills: 300, price: 90, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&c&lAncient Spider Spawner", required-kills: 420, price: 180, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 50
+    price: 12
+    spawn-count: 1
+    spawn-delay-ticks: 400
   creeper:
     display: "&aCreeper"
     entity: CREEPER
     icon: CREEPER_SPAWN_EGG
-    tiers:
-      - { display: "&aCreeper Spawner I",   required-kills: 75,  price: 20,  spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&aCreeper Spawner II",  required-kills: 150, price: 50,  spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&aCreeper Spawner III", required-kills: 260, price: 90,  spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&aCreeper Spawner IV",  required-kills: 400, price: 150, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&a&lAncient Creeper Spawner", required-kills: 550, price: 300, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 75
+    price: 20
+    spawn-count: 1
+    spawn-delay-ticks: 400
   cave-spider:
     display: "&4Cave Spider"
     entity: CAVE_SPIDER
     icon: CAVE_SPIDER_SPAWN_EGG
-    tiers:
-      - { display: "&4Cave Spider Spawner I",   required-kills: 90,  price: 25,  spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&4Cave Spider Spawner II",  required-kills: 180, price: 60,  spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&4Cave Spider Spawner III", required-kills: 300, price: 110, spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&4Cave Spider Spawner IV",  required-kills: 450, price: 180, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&4&lAncient Cave Spider Spawner", required-kills: 620, price: 360, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 90
+    price: 25
+    spawn-count: 1
+    spawn-delay-ticks: 400
   drowned:
     display: "&3Drowned"
     entity: DROWNED
     icon: DROWNED_SPAWN_EGG
-    tiers:
-      - { display: "&3Drowned Spawner I",   required-kills: 100, price: 30,  spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&3Drowned Spawner II",  required-kills: 200, price: 70,  spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&3Drowned Spawner III", required-kills: 330, price: 130, spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&3Drowned Spawner IV",  required-kills: 500, price: 210, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&3&lAncient Drowned Spawner", required-kills: 700, price: 420, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 100
+    price: 30
+    spawn-count: 1
+    spawn-delay-ticks: 400
   slime:
     display: "&aSlime"
     entity: SLIME
     icon: SLIME_SPAWN_EGG
-    tiers:
-      - { display: "&aSlime Spawner I",   required-kills: 110, price: 30,  spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&aSlime Spawner II",  required-kills: 220, price: 75,  spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&aSlime Spawner III", required-kills: 360, price: 140, spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&aSlime Spawner IV",  required-kills: 550, price: 225, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&a&lAncient Slime Spawner", required-kills: 760, price: 450, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 110
+    price: 30
+    spawn-count: 1
+    spawn-delay-ticks: 400
   witch:
     display: "&5Witch"
     entity: WITCH
     icon: WITCH_SPAWN_EGG
-    tiers:
-      - { display: "&5Witch Spawner I",   required-kills: 130, price: 40,  spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&5Witch Spawner II",  required-kills: 260, price: 95,  spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&5Witch Spawner III", required-kills: 420, price: 175, spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&5Witch Spawner IV",  required-kills: 650, price: 280, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&5&lAncient Witch Spawner", required-kills: 900, price: 560, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 130
+    price: 40
+    spawn-count: 1
+    spawn-delay-ticks: 400
   enderman:
     display: "&dEnderman"
     entity: ENDERMAN
     icon: ENDERMAN_SPAWN_EGG
-    tiers:
-      - { display: "&dEnderman Spawner I",   required-kills: 150, price: 50,  spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&dEnderman Spawner II",  required-kills: 300, price: 120, spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&dEnderman Spawner III", required-kills: 480, price: 220, spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&dEnderman Spawner IV",  required-kills: 750, price: 350, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&d&lAncient Enderman Spawner", required-kills: 1050, price: 700, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 150
+    price: 50
+    spawn-count: 1
+    spawn-delay-ticks: 400
   piglin:
     display: "&6Piglin"
     entity: PIGLIN
     icon: PIGLIN_SPAWN_EGG
-    tiers:
-      - { display: "&6Piglin Spawner I",   required-kills: 170, price: 55,  spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&6Piglin Spawner II",  required-kills: 340, price: 135, spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&6Piglin Spawner III", required-kills: 550, price: 250, spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&6Piglin Spawner IV",  required-kills: 850, price: 400, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&6&lAncient Piglin Spawner", required-kills: 1150, price: 800, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 170
+    price: 55
+    spawn-count: 1
+    spawn-delay-ticks: 400
   guardian:
     display: "&bGuardian"
     entity: GUARDIAN
     icon: GUARDIAN_SPAWN_EGG
-    tiers:
-      - { display: "&bGuardian Spawner I",   required-kills: 200,  price: 65,  spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&bGuardian Spawner II",  required-kills: 400,  price: 160, spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&bGuardian Spawner III", required-kills: 650,  price: 300, spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&bGuardian Spawner IV",  required-kills: 1000, price: 475, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&b&lAncient Guardian Spawner", required-kills: 1400, price: 950, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 200
+    price: 65
+    spawn-count: 1
+    spawn-delay-ticks: 400
   magma-cube:
     display: "&cMagma Cube"
     entity: MAGMA_CUBE
     icon: MAGMA_CUBE_SPAWN_EGG
-    tiers:
-      - { display: "&cMagma Cube Spawner I",   required-kills: 220,  price: 70,  spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&cMagma Cube Spawner II",  required-kills: 440,  price: 175, spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&cMagma Cube Spawner III", required-kills: 700,  price: 330, spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&cMagma Cube Spawner IV",  required-kills: 1100, price: 525, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&c&lAncient Magma Cube Spawner", required-kills: 1500, price: 1050, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 220
+    price: 70
+    spawn-count: 1
+    spawn-delay-ticks: 400
   blaze:
     display: "&eBlaze"
     entity: BLAZE
     icon: BLAZE_SPAWN_EGG
-    tiers:
-      - { display: "&eBlaze Spawner I",   required-kills: 250,  price: 80,  spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&eBlaze Spawner II",  required-kills: 500,  price: 200, spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&eBlaze Spawner III", required-kills: 800,  price: 380, spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&eBlaze Spawner IV",  required-kills: 1250, price: 600, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&e&lAncient Blaze Spawner", required-kills: 1700, price: 1200, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 250
+    price: 80
+    spawn-count: 1
+    spawn-delay-ticks: 400
   ghast:
     display: "&fGhast"
     entity: GHAST
     icon: GHAST_SPAWN_EGG
-    tiers:
-      - { display: "&fGhast Spawner I",   required-kills: 300,  price: 100, spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&fGhast Spawner II",  required-kills: 600,  price: 250, spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&fGhast Spawner III", required-kills: 950,  price: 470, spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&fGhast Spawner IV",  required-kills: 1500, price: 750, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&f&lAncient Ghast Spawner", required-kills: 2050, price: 1500, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 300
+    price: 100
+    spawn-count: 1
+    spawn-delay-ticks: 400
   wither-skeleton:
     display: "&7Wither Skeleton"
     entity: WITHER_SKELETON
     icon: WITHER_SKELETON_SPAWN_EGG
-    tiers:
-      - { display: "&7Wither Skeleton Spawner I",   required-kills: 350,  price: 120, spawn-count: 1, spawn-delay-ticks: 400 }
-      - { display: "&7Wither Skeleton Spawner II",  required-kills: 700,  price: 300, spawn-count: 2, spawn-delay-ticks: 320 }
-      - { display: "&7Wither Skeleton Spawner III", required-kills: 1100, price: 560, spawn-count: 3, spawn-delay-ticks: 240 }
-      - { display: "&7Wither Skeleton Spawner IV",  required-kills: 1750, price: 900, spawn-count: 4, spawn-delay-ticks: 160 }
-      - { display: "&7&lAncient Wither Skeleton Spawner", required-kills: 2400, price: 1800, spawn-count: 1, spawn-delay-ticks: 200, ancient: true }
+    required-kills: 350
+    price: 120
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  husk:
+    display: "&eHusk"
+    entity: HUSK
+    icon: HUSK_SPAWN_EGG
+    required-kills: 400
+    price: 140
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  stray:
+    display: "&bStray"
+    entity: STRAY
+    icon: STRAY_SPAWN_EGG
+    required-kills: 450
+    price: 160
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  zombie-villager:
+    display: "&2Zombie Villager"
+    entity: ZOMBIE_VILLAGER
+    icon: ZOMBIE_VILLAGER_SPAWN_EGG
+    required-kills: 500
+    price: 180
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  bogged:
+    display: "&2Bogged"
+    entity: BOGGED
+    icon: BOGGED_SPAWN_EGG
+    required-kills: 550
+    price: 200
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  silverfish:
+    display: "&7Silverfish"
+    entity: SILVERFISH
+    icon: SILVERFISH_SPAWN_EGG
+    required-kills: 600
+    price: 220
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  endermite:
+    display: "&dEndermite"
+    entity: ENDERMITE
+    icon: ENDERMITE_SPAWN_EGG
+    required-kills: 650
+    price: 240
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  pillager:
+    display: "&7Pillager"
+    entity: PILLAGER
+    icon: PILLAGER_SPAWN_EGG
+    required-kills: 700
+    price: 260
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  vindicator:
+    display: "&8Vindicator"
+    entity: VINDICATOR
+    icon: VINDICATOR_SPAWN_EGG
+    required-kills: 750
+    price: 280
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  evoker:
+    display: "&5Evoker"
+    entity: EVOKER
+    icon: EVOKER_SPAWN_EGG
+    required-kills: 825
+    price: 310
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  ravager:
+    display: "&4Ravager"
+    entity: RAVAGER
+    icon: RAVAGER_SPAWN_EGG
+    required-kills: 900
+    price: 350
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  phantom:
+    display: "&9Phantom"
+    entity: PHANTOM
+    icon: PHANTOM_SPAWN_EGG
+    required-kills: 1000
+    price: 390
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  breeze:
+    display: "&bBreeze"
+    entity: BREEZE
+    icon: BREEZE_SPAWN_EGG
+    required-kills: 1100
+    price: 430
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  shulker:
+    display: "&dShulker"
+    entity: SHULKER
+    icon: SHULKER_SPAWN_EGG
+    required-kills: 1200
+    price: 480
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  hoglin:
+    display: "&cHoglin"
+    entity: HOGLIN
+    icon: HOGLIN_SPAWN_EGG
+    required-kills: 1300
+    price: 530
+    spawn-count: 1
+    spawn-delay-ticks: 400
+  zombified-piglin:
+    display: "&dZombified Piglin"
+    entity: ZOMBIFIED_PIGLIN
+    icon: ZOMBIFIED_PIGLIN_SPAWN_EGG
+    required-kills: 1400
+    price: 580
+    spawn-count: 1
+    spawn-delay-ticks: 400
 
 # ======================================================
 #  Staff tools + moderation (UUID based, CoreMC only)

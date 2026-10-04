@@ -10,10 +10,9 @@ import org.bukkit.entity.EntityType;
  * One mob's spawner progression lane loaded from
  * {@code config.yml spawners:<id>}.
  *
- * A mob has an ordered list of {@link SpawnerTier}s unlocked by kills of
- * its entity type (counters persist per player). Legacy single-tier
- * config sections ({@code required-kills}/{@code price} directly under
- * the mob) still load — they become a lane with exactly one tier.
+ * A mob has one regular {@link SpawnerTier} unlocked by kills of its
+ * entity type (counters persist per player). The list shape remains for
+ * backwards-compatible loading of old placed spawners.
  */
 public record SpawnerDefinition(
         String id,

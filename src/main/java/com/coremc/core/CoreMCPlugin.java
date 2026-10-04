@@ -4,6 +4,8 @@ import com.coremc.core.command.CoreMCCommand;
 import com.coremc.core.command.CurrencyAdminCommand;
 import com.coremc.core.command.HealCommand;
 import com.coremc.core.command.ProfileCommand;
+import com.coremc.core.companion.CompanionService;
+import com.coremc.core.companion.CompanionsCommand;
 import com.coremc.core.cosmetic.CosmeticSkinService;
 import com.coremc.core.cosmetic.HatOverlayService;
 import com.coremc.core.cosmetic.SkinService;
@@ -35,6 +37,8 @@ import com.coremc.core.gen.GeneratorService;
 import com.coremc.core.placeable.PlaceableListener;
 import com.coremc.core.placeable.PlaceableService;
 import com.coremc.core.player.YamlPlayerDataStore;
+import com.coremc.core.quest.QuestService;
+import com.coremc.core.quest.QuestsCommand;
 import com.coremc.core.role.OmniToolListener;
 import com.coremc.core.role.OmniToolService;
 import com.coremc.core.role.RoleCommand;
@@ -75,6 +79,8 @@ public final class CoreMCPlugin extends JavaPlugin {
     private CosmeticSkinService cosmeticSkinService;
     private SkinService skinService;
     private HatOverlayService hatOverlayService;
+    private CompanionService companionService;
+    private QuestService questService;
     private OmniToolService omniToolService;
     private RoleService roleService;
     private PlaceableService placeableService;
@@ -187,8 +193,8 @@ public final class CoreMCPlugin extends JavaPlugin {
 
         // 3d. GUI runtime (holder-bound menus; no per-player tracking maps).
         this.guiService = new GuiService(this);
-        // Cosmetic skins are a presentation-only layer over generators and
-        // future companions; they never own or mutate progression data.
+        // Cosmetic skins are a presentation-only layer; they never own or
+        // mutate generator or companion progression data.
         this.cosmeticSkinService = new CosmeticSkinService(this);
         // Animated skins (this feature): catalog from skins.yml, ownership in
         // profiles; loaded BEFORE roles/crates so tool creation can stamp the
@@ -196,6 +202,11 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.skinService = new SkinService(this);
         final int skinCount = skinService.load();
         this.hatOverlayService = new HatOverlayService(this);
+        this.companionService = new CompanionService(this);
+        final int companionCount = companionService.load();
+        companionService.start(taskService);
+        this.questService = new QuestService(this);
+        final int questCount = questService.load();
 
         // 3e. Roles + OmniTool (profile-driven progression).
         this.omniToolService = new OmniToolService(this);
@@ -238,7 +249,8 @@ public final class CoreMCPlugin extends JavaPlugin {
                 + shopEntries + " shop entr(y/ies), " + omniUpgrades + " omni upgrade(s), "
                 + enchantCount + " enchant(s), " + keyCount + " crate key(s), "
                 + crateCount + " crate(s), "
-                + skinCount + " animated skin(s).");
+                + skinCount + " animated skin(s), " + companionCount + " companion(s), "
+                + questCount + " daily quest(s).");
 
         // 4. Listeners.
         this.enchantEngine = new EnchantEngine(this);
@@ -257,6 +269,8 @@ public final class CoreMCPlugin extends JavaPlugin {
         pluginManager.registerEvents(guiService, this);
         pluginManager.registerEvents(new OmniToolListener(this), this);
         pluginManager.registerEvents(hatOverlayService, this);
+        pluginManager.registerEvents(companionService, this);
+        pluginManager.registerEvents(questService, this);
         pluginManager.registerEvents(new MiningXpListener(this), this);
         pluginManager.registerEvents(new LoggingXpListener(this), this);
         pluginManager.registerEvents(new FarmingXpListener(this), this);
@@ -299,6 +313,9 @@ public final class CoreMCPlugin extends JavaPlugin {
         if (moderationService != null) {
             moderationService.shutdown();
         }
+        if (companionService != null) {
+            companionService.shutdown();
+        }
         // Stop scheduled work first so nothing touches dead services.
         if (taskService != null) {
             taskService.cancelAll();
@@ -331,6 +348,8 @@ public final class CoreMCPlugin extends JavaPlugin {
             placeableService = null;
         }
         this.generatorService = null;
+        this.companionService = null;
+        this.questService = null;
         this.spawnerService = null;
         this.shopService = null;
         this.islandService = null;
@@ -365,6 +384,8 @@ public final class CoreMCPlugin extends JavaPlugin {
         miningCubeService.load();
         spawnerService.load();
         generatorService.load();
+        companionService.load();
+        questService.load();
         shopService.loadCatalogue();
         omniToolService.load();
         enchantService.load();
@@ -437,6 +458,18 @@ public final class CoreMCPlugin extends JavaPlugin {
             throw new IllegalStateException("Command 'gens' missing from plugin.yml");
         }
         gens.setExecutor(new GensCommand(this));
+
+        final PluginCommand companions = getCommand("companions");
+        if (companions == null) {
+            throw new IllegalStateException("Command 'companions' missing from plugin.yml");
+        }
+        companions.setExecutor(new CompanionsCommand(this));
+
+        final PluginCommand quests = getCommand("quests");
+        if (quests == null) {
+            throw new IllegalStateException("Command 'quests' missing from plugin.yml");
+        }
+        quests.setExecutor(new QuestsCommand(this));
 
         final PluginCommand spawners = getCommand("spawners");
         if (spawners == null) {
@@ -667,6 +700,16 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Generator catalogue and purchases. */
     public GeneratorService generators() {
         return generatorService;
+    }
+
+    /** Earnable, summonable gameplay companions and their progression. */
+    public CompanionService companions() {
+        return companionService;
+    }
+
+    /** Assigned daily missions, gameplay progress and claims. */
+    public QuestService quests() {
+        return questService;
     }
 
     /** Spawner catalogue, unlock progression and purchases. */

@@ -58,14 +58,13 @@ public final class IslandBuffsGui implements Gui {
         final Island value = island.get();
         final List<BuffCatalog.Buff> buffs = BuffCatalog.all();
 
-        for (int i = 0; i < buffs.size() && i < BUFF_SLOTS.length; i++) {
-            inventory.setItem(BUFF_SLOTS[i], render(buffs.get(i), value));
-        }
-
         final long tokens = plugin.playerData()
                 .profileOf(viewer.getUniqueId())
                 .map(com.coremc.core.player.PlayerProfile::skyTokens)
                 .orElse(0L);
+        for (int i = 0; i < buffs.size() && i < BUFF_SLOTS.length; i++) {
+            inventory.setItem(BUFF_SLOTS[i], render(buffs.get(i), value, tokens));
+        }
         inventory.setItem(SLOT_BALANCE, GuiService.item(
                 Material.NETHER_STAR,
                 "&bYour balance",
@@ -77,7 +76,8 @@ public final class IslandBuffsGui implements Gui {
         GuiService.fillGaps(inventory);
     }
 
-    private org.bukkit.inventory.ItemStack render(final BuffCatalog.Buff buff, final Island island) {
+    private org.bukkit.inventory.ItemStack render(
+            final BuffCatalog.Buff buff, final Island island, final long tokens) {
         final int tier = island.buffs().getOrDefault(buff.id(), 0);
         final int max = plugin.coreConfig().buffMaxTier(buff.id());
         final var cost = plugin.coreConfig().buffCost(buff.id(), tier);
@@ -91,15 +91,19 @@ public final class IslandBuffsGui implements Gui {
             lore.add("&7Current: " + current);
         }
         if (tier >= max || cost.isEmpty()) {
-            lore.add("&a&lMAXED OUT");
+            lore.add("&a✔ MAXED OUT");
         } else {
             lore.add("&7Next: " + buff.nextText(tier, pct));
             lore.add("&7Cost: &b" + cost.getAsLong() + " Sky Tokens");
-            lore.add("&eClick to purchase.");
+            lore.add(tokens >= cost.getAsLong()
+                    ? "&a✔ Click to purchase."
+                    : "&c✖ You cannot afford this.");
         }
+        final boolean available = tier >= max || cost.isEmpty() || tokens >= cost.getAsLong();
         return GuiService.item(
                 buff.icon(),
-                buff.display() + (tier > 0 ? " &8[&f" + tier + "&8/&7" + max + "&8]" : ""),
+                (available ? "&a✔ " : "&c✖ ") + buff.display()
+                        + (tier > 0 ? " &8[&f" + tier + "&8/&7" + max + "&8]" : ""),
                 lore);
     }
 

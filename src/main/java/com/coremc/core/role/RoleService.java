@@ -109,12 +109,16 @@ public final class RoleService {
         // BUFF stage of the pipeline: the island xp-boost multiplies here,
         // exactly once, for members standing on their own island.
         final double buffBoost = plugin.islandBuffs().xpMult(player);
+        // A summoned category companion is a visible, earned progression
+        // multiplier. Dismissed companions never affect this funnel.
+        final double companionBoost = plugin.companions().xpMultiplier(profile, category);
         long awarded = 0L;
         if (role.get().category() == category) {
-            awarded = Math.round(baseAmount * multiplier * enchantBoost * engineBoost * islandBoost * buffBoost);
+            awarded = Math.round(baseAmount * multiplier * enchantBoost * engineBoost
+                    * islandBoost * buffBoost * companionBoost);
         } else if (role.get() == Role.UNIVERSAL) {
             awarded = Math.round(baseAmount * multiplier * plugin.coreConfig().roleUniversalShare()
-                    * enchantBoost * engineBoost * islandBoost * buffBoost);
+                    * enchantBoost * engineBoost * islandBoost * buffBoost * companionBoost);
         }
         if (awarded <= 0L) {
             return 0L;
@@ -130,6 +134,8 @@ public final class RoleService {
         final ProgressionService.Result toolResult = progression.award(
                 ProgressionService.TOOL_BASE_XP, profile.omniToolLevel(), profile.omniToolXp(), awarded);
         profile.setOmniToolProgress(toolResult.level, toolResult.xp);
+
+        plugin.companions().awardXp(player, profile, category, awarded);
 
         playerData.markDirty(profile.uuid());
 

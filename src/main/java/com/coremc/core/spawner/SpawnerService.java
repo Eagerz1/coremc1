@@ -28,8 +28,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * Spawner catalogue: per-mob kill progression unlocks progressively
- * better spawner tiers, bought with Sky Tokens.
+ * Spawner catalogue: per-mob kill progression unlocks one regular
+ * spawner, bought with Sky Tokens.
  *
  * Kill progress lives in the player profile (schema v4+) so it survives
  * restarts and role switches. All thresholds, prices and spawner
@@ -47,7 +47,7 @@ public final class SpawnerService {
     private final Map<String, SpawnerDefinition> lanes = new LinkedHashMap<>();
     /** purchasable id ("zombie-2") -> (mob, tier). Includes legacy aliases for old placements. */
     private final Map<String, TierRef> purchasables = new LinkedHashMap<>();
-    /** Shared entity PDC tags (spawner-born / spawner-id / spawner-ancient). */
+    /** Shared entity PDC tags (spawner-born / spawner-id). */
     private final SpawnerTags tags;
 
     /** uuid -> rolling kill window (anti-farming); bounded by KILL_WINDOW_SOFT_LIMIT. */
@@ -87,7 +87,7 @@ public final class SpawnerService {
             if (def == null) {
                 continue;
             }
-            // Non-mob tables live under spawners: too (kill-rewards, ancient).
+            // Non-mob tables can also live under spawners: (for example kill-rewards).
             if (!def.contains("entity")) {
                 continue;
             }
@@ -116,11 +116,16 @@ public final class SpawnerService {
             // Legacy alias: pre-tier-world items minted with the plain mob id
             // resolve to lane tier 1 so old purchases/world data keep working.
             purchasables.putIfAbsent(id, new TierRef(mob, tiers.get(0)));
+            // Variants were removed. Old tiered item/placement ids resolve
+            // to the regular spawner instead of becoming unusable.
+            for (int oldTier = 2; oldTier <= 5; oldTier++) {
+                purchasables.putIfAbsent(SpawnerTier.tierId(id, oldTier), new TierRef(mob, tiers.get(0)));
+            }
         }
         return lanes.size();
     }
 
-    /** Parses the tier list of one mob, tolerating the legacy single-tier shape. */
+    /** Parses the regular spawner, while tolerating pre-removal tier config. */
     private List<SpawnerTier> parseTiers(final String mobId, final String mobDisplay, final ConfigurationSection def) {
         final List<SpawnerTier> tiers = new ArrayList<>();
         final List<Map<?, ?>> raw = def.getMapList("tiers");
@@ -130,38 +135,32 @@ public final class SpawnerService {
                 return tiers;
             }
             appendTier(mobId, tiers, mobDisplay + " Spawner",
-                    def.getLong("required-kills", 0L), def.getLong("price", 0L), 1, 400, false);
+                    def.getLong("required-kills", 0L), def.getLong("price", 0L),
+                    def.getInt("spawn-count", 1), def.getInt("spawn-delay-ticks", 400));
             return tiers;
         }
-        int index = 0;
-        for (final Map<?, ?> entry : raw) {
-            index++;
-            final boolean ancient = Boolean.TRUE.equals(entry.get("ancient"));
-            final Object rawDisplay = entry.get("display");
-            appendTier(mobId, tiers,
-                    rawDisplay == null
-                            ? mobDisplay + " Spawner " + SpawnerTier.roman(index)
-                            : String.valueOf(rawDisplay),
-                    entry.get("required-kills"), entry.get("price"),
-                    entry.get("spawn-count"), entry.get("spawn-delay-ticks"), ancient);
-        }
+        // Existing deployed configs may still contain the old five-row list.
+        // Deliberately load only its first row and normalise it into the one
+        // regular spawner; retained disk config must not revive variants.
+        final Map<?, ?> entry = raw.get(0);
+        appendTier(mobId, tiers, mobDisplay + " Spawner",
+                entry.get("required-kills"), entry.get("price"),
+                entry.get("spawn-count"), entry.get("spawn-delay-ticks"));
         return tiers;
     }
 
     private void appendTier(
             final String mobId, final List<SpawnerTier> out, final String display,
             final Object requiredKills, final Object price, final Object spawnCount,
-            final Object spawnDelayTicks, final boolean ancient) {
+            final Object spawnDelayTicks) {
         final int index = out.size() + 1;
         try {
             out.add(new SpawnerTier(
                     SpawnerTier.tierId(mobId, index), index, display,
                     Math.max(0L, longOf(requiredKills, 0L)),
                     Math.max(0L, longOf(price, 0L)),
-                    // Ancient variants always awaken a single mob per cycle.
-                    ancient ? 1 : (int) Math.max(1L, longOf(spawnCount, 1L)),
-                    (int) Math.max(20L, longOf(spawnDelayTicks, 400L)),
-                    ancient));
+                    (int) Math.max(1L, longOf(spawnCount, 1L)),
+                    (int) Math.max(20L, longOf(spawnDelayTicks, 400L))));
         } catch (IllegalArgumentException e) {
             plugin.getLogger().warning("Spawner tier '" + mobId + "-" + index
                     + "' skipped: " + e.getMessage());
@@ -382,22 +381,15 @@ public final class SpawnerService {
      * Handles the death of a CoreMC spawner-born mob at a player's hands.
      * Spawner kills NEVER advance the source lane's wild unlock — instead
      * they pay the configurable Core money / Sky Token / island-XP reward
-     * (chance + amounts from {@code spawners.kill-rewards}), and an
-     * Ancient kill grants {@code spawners.ancient.progress-bonus} (3 by
-     * default) progress toward the NEXT mob lane as ONE kill event (one
-     * cap slot, one message) — never three instant kills.
+     * (chance + amounts from {@code spawners.kill-rewards}).
      */
     public void recordSpawnerKill(final Player killer, final PlayerProfile profile,
             final org.bukkit.entity.LivingEntity victim) {
         if (!acquireKillSlot(killer.getUniqueId())) {
-            return; // throttled: no rewards, no ancient progress
+            return; // throttled: no rewards
         }
         profile.addStat("spawner-mobs-killed", 1L);
         plugin.playerData().markDirty(profile.uuid());
-
-        final Optional<String> tierId = tags.tierIdOf(victim);
-        final boolean ancient = tags.isAncient(victim);
-        final TierRef ref = tierId.flatMap(this::tierFor).orElse(null);
 
         // Team-island scope: spawner farms only pay where the killer belongs.
         final var at = victim.getLocation();
@@ -408,10 +400,6 @@ public final class SpawnerService {
         island.ifPresent(value -> plugin.islandProgress()
                 .awardKillXp(value, killer, plugin.getConfig().getLong("spawners.kill-rewards.island-xp", 2L)));
 
-        if (ancient && ref != null) {
-            applyAncientProgress(killer, profile, ref.mob());
-        }
-
         final double chance = Math.max(0.0, Math.min(1.0,
                 plugin.getConfig().getDouble("spawners.kill-rewards.chance", 0.75)));
         if (java.util.concurrent.ThreadLocalRandom.current().nextDouble() >= chance) {
@@ -419,16 +407,6 @@ public final class SpawnerService {
         }
         long money = Math.max(0L, plugin.getConfig().getLong("spawners.kill-rewards.money", 3L));
         long tokens = Math.max(0L, plugin.getConfig().getLong("spawners.kill-rewards.sky-tokens", 1L));
-        if (ancient) {
-            final long multiplier = Math.max(1L,
-                    plugin.getConfig().getLong("spawners.ancient.reward-multiplier", 5L));
-            money *= multiplier;
-            tokens *= multiplier;
-        }
-        // Tier index beyond I adds a little scaling so better spawners are worth farming.
-        final int scale = ref == null ? 1 : Math.max(1, ref.tier().index());
-        money *= Math.min(scale, 4);
-        tokens *= Math.min(scale, 4);
         long moneyPaid = 0L;
         long tokensPaid = 0L;
         if (money > 0L) {
@@ -444,29 +422,6 @@ public final class SpawnerService {
                     "money", String.format(Locale.ROOT, "%,d", moneyPaid),
                     "tokens", String.format(Locale.ROOT, "%,d", tokensPaid)));
         }
-    }
-
-    /**
-     * Ancient kill = one event granting {@code progress-bonus} kills
-     * toward the NEXT lane (fanfares for any tiers crossed). The final
-     * lane has no successor and instead pays a flat bounty message.
-     */
-    private void applyAncientProgress(
-            final Player player, final PlayerProfile profile, final SpawnerDefinition sourceLane) {
-        final List<SpawnerDefinition> ordered = all();
-        final int index = ordered.indexOf(sourceLane);
-        final int bonus = Math.max(1, plugin.getConfig().getInt("spawners.ancient.progress-bonus", 3));
-        if (index < 0 || index + 1 >= ordered.size()) {
-            plugin.messages().sendPrefixed(player, "spawner.ancient-bounty", Map.of(
-                    "mob", sourceLane.colouredDisplay(),
-                    "amount", String.valueOf(bonus)));
-            return;
-        }
-        final SpawnerDefinition next = ordered.get(index + 1);
-        addProgress(player, profile, List.of(next), next.killKey(), bonus);
-        plugin.messages().sendPrefixed(player, "spawner.ancient-progress", Map.of(
-                "amount", String.valueOf(bonus),
-                "mob", next.colouredDisplay()));
     }
 
     /** Adds {@code amount} kills for {@code key}, firing unlock fanfares for every tier crossed. */
@@ -525,13 +480,7 @@ public final class SpawnerService {
         if (meta != null) {
             meta.setDisplayName(ref.tier().colouredDisplay());
             final List<String> lore = new ArrayList<>();
-            lore.add(ColorUtil.colorize(ref.tier().ancient()
-                    ? "&7Ancient variant &8— " + ref.tier().throughputLine()
-                    : "&7Tier &b" + SpawnerTier.roman(ref.tier().index())
-                            + "&7 — " + ref.tier().throughputLine()));
-            if (!ref.tier().specialLine().isEmpty()) {
-                lore.add(ColorUtil.colorize(ref.tier().specialLine()));
-            }
+            lore.add(ColorUtil.colorize("&7Regular Spawner &8— " + ref.tier().throughputLine()));
             lore.add(ColorUtil.colorize("&7Place me to set me down."));
             meta.setLore(lore);
             stack.setItemMeta(meta);

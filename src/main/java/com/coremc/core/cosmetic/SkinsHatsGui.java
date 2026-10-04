@@ -122,16 +122,16 @@ public final class SkinsHatsGui implements Gui {
         lore.add("&7Unlock: " + SkinService.sourceLabel(skin));
         lore.add("");
         if (equipped) {
-            lore.add("&a&lWORN");
+            lore.add("&a✔ &lWORN");
         } else if (owned) {
-            lore.add("&aOwned");
+            lore.add("&a✔ Owned");
         } else {
-            lore.add("&cLocked");
+            lore.add("&c✖ Locked");
         }
         lore.add("&eClick &7to preview &8(&eeClick again to wear&8)");
         final ItemStack item = new ItemStack(skin.material());
         final var meta = item.getItemMeta();
-        meta.setDisplayName(ColorUtil.colorize(skin.display()));
+        meta.setDisplayName(ColorUtil.colorize((owned ? "&a✔ " : "&c✖ ") + skin.display()));
         meta.setLore(lore.stream().map(ColorUtil::colorize).toList());
         meta.setCustomModelData(skin.modelId());
         if (equipped || skin.id().equals(previewSkinId)) {

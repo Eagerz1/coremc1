@@ -37,15 +37,16 @@ server log, plugin data files) is uploaded as a workflow artifact named
 | Phase | Coverage |
 |---|---|
 | 1 | First-join welcome, `/is create` world teleport, island ground/grid allocation, `/role` GUI and Omni-Tool grant |
-| 2 | Economy admin grants land exactly; `/shop` gear/food buy + sell with exact balances; `/tokenshop` exchange |
+| 2 | Economy admin grants land exactly; `/shop` blocks/food buy + sell with exact balances; `/tokenshop` exchange |
 | 3 | `/is upgrades`: all six categories render, border tier purchase debits exactly and persists |
 | 4 | `/is buffs`: all 12 buffs render; mining-boost purchase debits exactly |
-| 5 | `/spawners`: 15 mob lanes, locked I–IV + Ancient submenus, 25 real kills (summoned, hunted), unlock fanfare, hostile-GUI theft sweep, tier-I purchase + placement, **real spawner emission**, kill pays Core money + Sky Tokens |
-| 5b | Ancient tier unlock (kill gate), purchase, placement; the spawner **awakens a named, glowing Ancient zombie**; killing it grants **+3 progress toward the next lane as one event** |
-| 6 | Shift-right-click Omni-Tool panel, 15-slot miner enchant grid, treasure-miner purchase, platform mining mints exactly 2 Sky Keys |
+| 4b | `/companions`: all six companions render; Ore Sprite unlock debits exactly, summons a visible follower and persists |
+| 4c | `/quests`: three deterministic daily objectives render and their assignment/reset key persists |
+| 5 | `/spawners`: 30 regular mob spawners over two pages, polished locked/affordable states, 25 real kills, unlock fanfare, hostile-GUI theft sweep, direct purchase + placement, **real spawner emission**, kill pays Core money + Sky Tokens |
+| 6 | Shift-right-click opens the OmniTool enchant menu directly, 15-slot miner enchant grid, treasure-miner purchase, platform mining mints exactly 2 Sky Keys |
 | 7 | `/crates`: six-crate lineup, preview OPEN slot, two Sky crate opens (rolled reward then deterministic pity = 50 credits), each open consumes exactly one key, no-key refusal |
 | 8 | Outsider cannot dig island blocks; block remains intact; branded protection denial |
-| 9 | `/gens` market, cobble generator purchase/placement/harvest |
+| 9 | `/gens` 24-entry market, cobble generator purchase/placement/harvest |
 | 10 | Void rescue teleports the player home and prevents death |
 | 10b | Chat cosmetics: `/tags` 54-slot GUI with all 20 tags, locked → granted → selected states, `/chatcolour` GUI (8 solids, 5 gradients, preview, bold, reset), the exact `<RANK> <TAG> Player: Message` layout as seen by a **second player**, clean spacing with no tag/rank, gradient hex + Unicode/punctuation integrity, `&`-injection prevention, staff grant/revoke/check, and an explicit **no duplicate chat** assertion |
 | 11 | Graceful stop + clean boot: balances, role, kill stats, pity counter, dotted enchant id, island world/upgrades/buffs all persist byte-for-byte |

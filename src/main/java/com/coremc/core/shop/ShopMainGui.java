@@ -14,16 +14,18 @@ import org.bukkit.inventory.Inventory;
 /**
  * {@code /shop} — 54-slot hub.
  *
- *   20 Gear &nbsp; 21 Food &nbsp; 22 Tokens &nbsp; 23 End &nbsp; 24 Nether
+ *   20 Blocks &nbsp; 21 Food &nbsp; 22 Redstone &nbsp; 23 Misc &nbsp; 24 Ores
+ *   31 Tokens
  *   40 balances &nbsp; 53 close
  */
 public final class ShopMainGui implements Gui {
 
-    private static final int SLOT_GEAR = 20;
+    private static final int SLOT_BLOCKS = 20;
     private static final int SLOT_FOOD = 21;
-    private static final int SLOT_TOKENS = 22;
-    private static final int SLOT_END = 23;
-    private static final int SLOT_NETHER = 24;
+    private static final int SLOT_REDSTONE = 22;
+    private static final int SLOT_MISC = 23;
+    private static final int SLOT_ORES = 24;
+    private static final int SLOT_TOKENS = 31;
     private static final int SLOT_BALANCE = 40;
     private static final int SLOT_CLOSE = 53;
 
@@ -45,16 +47,18 @@ public final class ShopMainGui implements Gui {
 
     @Override
     public void build(final Player viewer, final Inventory inventory) {
-        inventory.setItem(SLOT_GEAR, GuiService.item(
-                Material.IRON_CHESTPLATE, "&6Gear", List.of("&7Weapons, armour, tools.")));
+        inventory.setItem(SLOT_BLOCKS, GuiService.item(
+                Material.GRASS_BLOCK, "&aBlocks", List.of("&7Building blocks and island materials.")));
         inventory.setItem(SLOT_FOOD, GuiService.item(
-                Material.COOKED_BEEF, "&eFood", List.of("&7Food and farming goods.")));
+                Material.COOKED_BEEF, "&eFood", List.of("&7Food, crops and farming goods.")));
+        inventory.setItem(SLOT_REDSTONE, GuiService.item(
+                Material.REDSTONE, "&cRedstone", List.of("&7Components, rails and mechanisms.")));
+        inventory.setItem(SLOT_MISC, GuiService.item(
+                Material.ENDER_PEARL, "&dMiscellaneous", List.of("&7Mob drops, dyes and utility items.")));
+        inventory.setItem(SLOT_ORES, GuiService.item(
+                Material.DIAMOND, "&bOres & Minerals", List.of("&7Raw materials, gems and ingots.")));
         inventory.setItem(SLOT_TOKENS, GuiService.item(
                 Material.SUNFLOWER, "&bToken Exchange", List.of("&7Sky Token packs & conversions.")));
-        inventory.setItem(SLOT_END, GuiService.item(
-                Material.ENDER_PEARL, "&5End", List.of("&7End-dimension goods.")));
-        inventory.setItem(SLOT_NETHER, GuiService.item(
-                Material.NETHERRACK, "&cNether", List.of("&7Nether-dimension goods.")));
 
         final PlayerProfile profile = plugin.playerData().profileOf(viewer.getUniqueId()).orElse(null);
         final String money = profile == null ? "0" : String.format(Locale.ROOT, "%,d", profile.money());
@@ -74,11 +78,12 @@ public final class ShopMainGui implements Gui {
     @Override
     public boolean onClick(final Player viewer, final int slot) {
         final ShopCategory category = switch (slot) {
-            case SLOT_GEAR -> ShopCategory.GEAR;
+            case SLOT_BLOCKS -> ShopCategory.BLOCKS;
             case SLOT_FOOD -> ShopCategory.FOOD;
+            case SLOT_REDSTONE -> ShopCategory.REDSTONE;
+            case SLOT_MISC -> ShopCategory.MISC;
+            case SLOT_ORES -> ShopCategory.ORES;
             case SLOT_TOKENS -> ShopCategory.TOKENS;
-            case SLOT_END -> ShopCategory.END;
-            case SLOT_NETHER -> ShopCategory.NETHER;
             default -> null;
         };
         if (slot == SLOT_CLOSE) {
