@@ -184,6 +184,10 @@ function makeBot(name) {
   bot.__name = name
   bot.__chat = []
   bot.__world = null
+  bot.__coreSidebar = false
+  bot._client.on('scoreboard_display_objective', (packet) => {
+    if (packet.position === 1) bot.__coreSidebar = packet.name === 'coremc'
+  })
   const readWorld = (packet) => {
     const ws = packet?.worldState ?? packet
     if (ws && typeof ws.name === 'string') bot.__world = ws.name
@@ -619,6 +623,13 @@ async function main() {
   owner = makeBot(OWNER)
   check(await waitSpawn(owner), 'owner spawns on first boot')
   check(await waitChat(owner, /welcome to/i, 20000), 'first-join welcome received')
+  check(await waitUntil(() => owner.__coreSidebar, 5000), 'CoreMC sidebar appears on join')
+  owner.chat('/hud')
+  check(await waitChat(owner, /CoreMC sidebar hidden/i, 10000), '/hud hides the sidebar')
+  check(await waitUntil(() => !owner.__coreSidebar, 5000), 'hidden sidebar is removed from player display')
+  owner.chat('/hud')
+  check(await waitChat(owner, /CoreMC sidebar enabled/i, 10000), '/hud restores the sidebar')
+  check(await waitUntil(() => owner.__coreSidebar, 5000), 'sidebar display is restored')
   clearChat(owner)
   owner.chat('/event')
   check(await waitChat(owner, /CORE HOUR is live/i, 10000), '/event reports the active Core Hour')

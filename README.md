@@ -29,6 +29,7 @@ honest feature-by-feature release gate is in [`docs/RECOVERY_MATRIX.md`](docs/RE
 | Chat colours (`/chatcolour`, `/chatcolor`) | Eight solid colours + five gradients (legacy `§x` hex — **no MiniMessage**), bold toggle, live preview and reset. Only stable style ids + a bold flag are persisted; ownership is grantable by crates (`CHAT_STYLE` reward), store or staff. |
 | Chat format | `<RANK> <TAG> Player: Message`, fully config-driven (`chat.yml`: format string, separators, rank table, GUI slots, safety limits). Rendered via Paper's async chat **renderer** at a configurable priority with `ignore-cancelled` — mutes/moderation always win, and chat is never duplicated. |
 | Scheduled events | Core Hour runs for one hour every four hours, persists its schedule across restarts, shows a four-step boss bar and `/event` countdown, and doubles island XP, slaying money and Omni-Tool XP through their normal reward paths. |
+| Player sidebar | Live balances, role and Omni-Tool levels, island level, quest shortcut and Core Hour state; toggle with `/hud`. |
 | First-join welcome, `/coremc`, `/profile`, `/heal` | Branded welcome; `/coremc info|reload|help`; profiles; self/other heal. |
 | Branding | Standard Minecraft `&` colour codes and legacy hex only (MiniMessage is intentionally not used). Bundled YAML defaults merge into existing config files, preserving admin values. |
 

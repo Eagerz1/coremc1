@@ -25,6 +25,11 @@ events:
     slaying-money: 2.0
     omnitool-xp: 2.0
 
+scoreboard:
+  enabled: true
+  title: "&b&lCOREMC"
+  update-ticks: 40
+
 island:
   # World islands live in. CoreMC creates this world automatically when it
   # does not exist (as empty void terrain — the dedicated island world).

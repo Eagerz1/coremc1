@@ -20,7 +20,7 @@ not count as a feature.
 | Events | Scheduled gameplay events with visible state and rewards | One-hour Core Hour every four hours; persisted schedule, four-step boss bar, `/event` status, and 2x island XP/slaying money/Omni-Tool XP wired into normal reward paths | In progress — awaiting release build + live journey |
 | Lootboxes | Non-pay-to-win reward definitions, preview/open flow and persistence | Crates exist; promised separate lootbox system not implemented | Missing |
 | Store | Bundles/subscriptions/cosmetics delivery with explicit non-P2W rules | Grant hooks exist; no complete store service or GUI | Missing |
-| Scoreboard | Live currencies, role/tool progress, island and objective context | Not implemented | Missing |
+| Scoreboard | Live currencies, role/tool progress, island and objective context | Configurable sidebar updates every two seconds; `/hud` toggle; live values include balances, role/tool levels, island level, quests and Core Hour | In progress — awaiting release build + live journey |
 | Island mastery | Connected long-term goals across generators, mobs, shop and missions | Individual island upgrades exist; mastery loop not implemented | Missing |
 | Master player journey | Normal-player audit of every menu and unlock loop | Existing journey validates important mechanics, not the full specification | In progress |
 

@@ -103,6 +103,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private com.coremc.core.chat.ChatFormatService chatFormatService;
     private com.coremc.core.moderation.ModerationService moderationService;
     private com.coremc.core.event.EventService eventService;
+    private com.coremc.core.scoreboard.ScoreboardService scoreboardService;
 
     /**
      * Creates (or attaches to) the dedicated island world. Islands live in
@@ -219,6 +220,8 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.omniToolService = new OmniToolService(this);
         this.roleService = new RoleService(this);
         final int omniUpgrades = omniToolService.load();
+        this.scoreboardService = new com.coremc.core.scoreboard.ScoreboardService(this);
+        scoreboardService.start();
 
         // 3f. Placeables: generators + spawners.
         this.placeableService = new PlaceableService(this);
@@ -274,6 +277,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         pluginManager.registerEvents(islandActivityEffects, this);
         pluginManager.registerEvents(islandProgressService, this);
         pluginManager.registerEvents(eventService, this);
+        pluginManager.registerEvents(scoreboardService, this);
         pluginManager.registerEvents(guiService, this);
         pluginManager.registerEvents(new OmniToolListener(this), this);
         pluginManager.registerEvents(hatOverlayService, this);
@@ -383,6 +387,9 @@ public final class CoreMCPlugin extends JavaPlugin {
         if (eventService != null) {
             eventService.shutdown();
         }
+        if (scoreboardService != null) {
+            scoreboardService.shutdown();
+        }
         if (companionService != null) {
             companionService.shutdown();
         }
@@ -435,6 +442,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.rankService = null;
         this.moderationService = null;
         this.eventService = null;
+        this.scoreboardService = null;
         this.omniToolService = null;
         this.roleService = null;
         getLogger().info("CoreMC disabled — all player data saved, all tasks cancelled.");
@@ -445,6 +453,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         coreConfig.load();
         messageService.load();
         eventService.load();
+        if (scoreboardService != null) scoreboardService.refreshNow();
         // Re-apply the autosave interval with fresh configuration.
         playerDataService.startAutosave(coreConfig.autosaveSeconds());
         skinService.load();
@@ -514,6 +523,12 @@ public final class CoreMCPlugin extends JavaPlugin {
             throw new IllegalStateException("Command 'event' missing from plugin.yml");
         }
         event.setExecutor(new com.coremc.core.event.EventCommand(this));
+
+        final PluginCommand hud = getCommand("hud");
+        if (hud == null) {
+            throw new IllegalStateException("Command 'hud' missing from plugin.yml");
+        }
+        hud.setExecutor(new com.coremc.core.scoreboard.HudCommand(this));
 
         final PluginCommand role = getCommand("role");
         if (role == null) {
@@ -663,6 +678,11 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Recurring event schedule and live reward multipliers. */
     public com.coremc.core.event.EventService events() {
         return eventService;
+    }
+
+    /** Live player sidebar and /hud visibility toggle. */
+    public com.coremc.core.scoreboard.ScoreboardService scoreboard() {
+        return scoreboardService;
     }
 
     /** Typed plugin configuration. */

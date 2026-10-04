@@ -48,6 +48,11 @@ commands:
     usage: /event
     permission: coremc.command.event
     permission-message: "&cYou do not have permission to use this command."
+  hud:
+    description: Toggle the CoreMC player sidebar.
+    usage: /hud
+    permission: coremc.command.hud
+    permission-message: "&cYou do not have permission to use this command."
   role:
     description: Choose your CoreMC role and view progression.
     usage: /role [miner|logger|fisher|slayer|farmer|universal|info]
@@ -339,6 +344,9 @@ permissions:
     default: true
   coremc.command.event:
     description: Allows checking the Core Hour event schedule.
+    default: true
+  coremc.command.hud:
+    description: Allows toggling the CoreMC sidebar.
     default: true
   coremc.command.role:
     description: Allows choosing a role and viewing progression.
