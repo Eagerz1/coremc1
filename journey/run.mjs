@@ -188,6 +188,11 @@ function makeBot(name) {
   bot._client.on('scoreboard_display_objective', (packet) => {
     if (packet.position === 1) bot.__coreSidebar = packet.name === 'coremc'
   })
+  bot._client.on('scoreboard_objective', (packet) => {
+    if (packet.name === 'coremc' && (packet.action === 1 || packet.mode === 1)) {
+      bot.__coreSidebar = false
+    }
+  })
   const readWorld = (packet) => {
     const ws = packet?.worldState ?? packet
     if (ws && typeof ws.name === 'string') bot.__world = ws.name

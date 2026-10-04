@@ -72,7 +72,7 @@ public final class ScoreboardService implements Listener {
     public boolean toggle(final Player player) {
         if (!enabled()) {
             hidden.add(player.getUniqueId());
-            player.setScoreboard(mainBoard());
+            hideSidebar(player);
             return false;
         }
         final UUID id = player.getUniqueId();
@@ -81,8 +81,19 @@ public final class ScoreboardService implements Listener {
             return true;
         }
         hidden.add(id);
-        player.setScoreboard(mainBoard());
+        hideSidebar(player);
         return false;
+    }
+
+    private void hideSidebar(final Player player) {
+        final Scoreboard board = boards.get(player.getUniqueId());
+        if (board == null) {
+            player.setScoreboard(mainBoard());
+            return;
+        }
+        final Objective objective = board.getObjective("coremc");
+        if (objective != null) objective.unregister();
+        player.setScoreboard(board);
     }
 
     private boolean enabled() {
