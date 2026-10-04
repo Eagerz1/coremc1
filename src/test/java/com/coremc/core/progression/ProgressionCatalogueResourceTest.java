@@ -27,6 +27,27 @@ class ProgressionCatalogueResourceTest {
         }
     }
 
+    private static Map<String, Object> pluginDescription() throws IOException {
+        try (InputStream stream = ProgressionCatalogueResourceTest.class.getResourceAsStream("/plugin.yml")) {
+            assertNotNull(stream, "plugin.yml must be bundled");
+            return RawYaml.parseMap(new String(stream.readAllBytes(), StandardCharsets.UTF_8));
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void progressionMenusAreAvailableToRegularPlayers() throws IOException {
+        final Map<String, Object> permissions =
+                (Map<String, Object>) pluginDescription().get("permissions");
+        assertNotNull(permissions);
+        for (final String permission : List.of("coremc.command.companions", "coremc.command.quests")) {
+            final Map<String, Object> definition = (Map<String, Object>) permissions.get(permission);
+            assertNotNull(definition, permission + " must be declared explicitly");
+            assertEquals(Boolean.TRUE, definition.get("default"),
+                    permission + " must be available to non-op players");
+        }
+    }
+
     @Test
     @SuppressWarnings("unchecked")
     void shipsTwentyFourUsableGenerators() throws IOException {

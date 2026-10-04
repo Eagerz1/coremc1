@@ -337,6 +337,12 @@ permissions:
   coremc.command.gens:
     description: Allows opening the generator market.
     default: true
+  coremc.command.companions:
+    description: Allows opening the companion collection.
+    default: true
+  coremc.command.quests:
+    description: Allows opening the daily mission board.
+    default: true
   coremc.command.spawners:
     description: Allows viewing spawner progression and purchasing spawners.
     default: true
