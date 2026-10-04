@@ -974,9 +974,9 @@ async function main() {
         reward ? reward[0] : 'no reward line')
       const moneyAfter = await moneyOf(owner)
       const tokensAfter = await tokensOf(owner)
-      check(moneyAfter > moneyBefore, 'spawner kill grants Core money',
+      check(moneyAfter === moneyBefore + 6, 'Core Hour doubles the 3-money spawner reward to 6',
         `${moneyBefore} -> ${moneyAfter}`)
-      check(tokensAfter > tokensBefore, 'spawner kill grants Sky Tokens',
+      check(tokensAfter === tokensBefore + 1, 'spawner kill grants the configured single Sky Token',
         `${tokensBefore} -> ${tokensAfter}`)
     }
   }
@@ -1554,6 +1554,10 @@ async function main() {
       path.join(PLUGIN_DIR, 'islands', `${uuid}.yml`), 'utf8'))
     const island = isl.island || isl
     check(island.world === 'islands', 'island file: world=islands', String(island.world))
+    check(island.xp >= 140, 'Core Hour doubles island XP across 35 zombie kills',
+      `island XP=${island.xp}`)
+    check(profile['omnitool-xp'] >= 4, 'Core Hour doubles Omni-Tool XP from two mined blocks',
+      `Omni-Tool XP=${profile['omnitool-xp']}`)
     check(island.upgrades && island.upgrades.border === 1, 'island file: border tier persists')
     const buffTier = island.buffs && (island.buffs['mining-boost'] || island.buffs.mining_boost)
     check(buffTier === 1, 'island file: mining-boost tier persists', `tier=${buffTier}`)
