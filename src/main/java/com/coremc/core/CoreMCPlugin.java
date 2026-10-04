@@ -343,19 +343,19 @@ public final class CoreMCPlugin extends JavaPlugin {
                 "spawner-boost", java.util.List.of(10_000L, 30_000L, 80_000L, 200_000L, 500_000L));
         islandPrices.forEach((key, costs) -> config.set("island.upgrades." + key + ".costs", costs));
 
-        final java.util.Map<String, java.util.List<Long>> buffPrices = java.util.Map.of(
-                "mining-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L),
-                "farming-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L),
-                "fishing-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L),
-                "slaying-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L),
-                "logging-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L),
-                "generator-boost", java.util.List.of(10_000L, 30_000L, 80_000L, 200_000L, 500_000L),
-                "spawner-boost", java.util.List.of(10_000L, 30_000L, 80_000L, 200_000L, 500_000L),
-                "token-boost", java.util.List.of(15_000L, 45_000L, 120_000L, 300_000L, 750_000L),
-                "credit-boost", java.util.List.of(15_000L, 45_000L, 120_000L, 300_000L, 750_000L),
-                "xp-boost", java.util.List.of(10_000L, 30_000L, 80_000L, 200_000L, 500_000L),
-                "sell-boost", java.util.List.of(15_000L, 45_000L, 120_000L, 300_000L, 750_000L),
-                "island-luck", java.util.List.of(25_000L, 75_000L, 200_000L, 500_000L, 1_250_000L));
+        final java.util.Map<String, java.util.List<Long>> buffPrices = java.util.Map.ofEntries(
+                java.util.Map.entry("mining-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L)),
+                java.util.Map.entry("farming-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L)),
+                java.util.Map.entry("fishing-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L)),
+                java.util.Map.entry("slaying-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L)),
+                java.util.Map.entry("logging-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L)),
+                java.util.Map.entry("generator-boost", java.util.List.of(10_000L, 30_000L, 80_000L, 200_000L, 500_000L)),
+                java.util.Map.entry("spawner-boost", java.util.List.of(10_000L, 30_000L, 80_000L, 200_000L, 500_000L)),
+                java.util.Map.entry("token-boost", java.util.List.of(15_000L, 45_000L, 120_000L, 300_000L, 750_000L)),
+                java.util.Map.entry("credit-boost", java.util.List.of(15_000L, 45_000L, 120_000L, 300_000L, 750_000L)),
+                java.util.Map.entry("xp-boost", java.util.List.of(10_000L, 30_000L, 80_000L, 200_000L, 500_000L)),
+                java.util.Map.entry("sell-boost", java.util.List.of(15_000L, 45_000L, 120_000L, 300_000L, 750_000L)),
+                java.util.Map.entry("island-luck", java.util.List.of(25_000L, 75_000L, 200_000L, 500_000L, 1_250_000L)));
         buffPrices.forEach((key, costs) -> config.set("island-buffs." + key + ".costs", costs));
 
         config.set("coremc-config-version", 12);

@@ -744,7 +744,7 @@ async function main() {
       await click(owner, 10)
       check(await waitChat(owner, /upgrade purchased/i), 'upgrade purchase confirms')
       const after = await tokensOf(owner)
-      check(after === before - 10, 'border T1 costs exactly 10 tokens', `${before} -> ${after}`)
+      check(after === before - 2500, 'border T1 costs exactly 2500 tokens', `${before} -> ${after}`)
     }
     await closeWin(owner)
   }
@@ -769,7 +769,7 @@ async function main() {
     await click(owner, buffSlot)
     check(await waitChat(owner, /purchased! level/i), 'buff purchase confirms')
     const after = await tokensOf(owner)
-    check(after === before - 100, 'mining-boost T1 costs exactly 100 tokens', `${before} -> ${after}`)
+    check(after === before - 5000, 'mining-boost T1 costs exactly 5000 tokens', `${before} -> ${after}`)
     await closeWin(owner)
   }
 
@@ -803,7 +803,7 @@ async function main() {
   if (win) await closeWin(owner)
 
   // ------------------------------------------------ P5 spawners
-  phase(5, '/spawners: lanes, 25 real kills, unlock, buy, place, spawner kill rewards')
+  phase(5, '/spawners: zombie starter, 35 zombie kills unlock skeleton, buy, place, rewards')
   const LANES = [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25,
     28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43]
   win = await openWindow(owner, '/spawners')
@@ -824,10 +824,8 @@ async function main() {
   check(laneSlot >= 0, 'zombie lane present', 'slot=' + laneSlot)
   check(win && laneSlot >= 0 && slotJson(win, laneSlot).includes('regular spawner'),
     'zombie entry is one regular spawner with no variants')
-  check(win && laneSlot >= 0 && slotJson(win, laneSlot).includes('25'),
-    'locked lore shows the 25-kill requirement')
-  check(win && laneSlot >= 0 && slotJson(win, laneSlot).includes('✖'),
-    'locked spawner uses the red X state')
+  check(win && laneSlot >= 0 && slotJson(win, laneSlot).includes('✔'),
+    'starter zombie spawner is unlocked without kills')
   if (win) await closeWin(owner)
 
   const sword = owner.inventory.items().find((i) => i.name === 'iron_sword')
@@ -838,7 +836,7 @@ async function main() {
   clearChat(owner)
   let kills = 0
   let died = false
-  for (let i = 0; i < 25; i++) {
+  for (let i = 0; i < 35; i++) {
     const p = owner.entity.position
     // NoAI keeps the target on the 7x7 starter platform (knockback over the
     // edge would otherwise credit kills to the void, not the player).
@@ -852,8 +850,8 @@ async function main() {
     await sleep(200)
   }
   check(!died, 'owner survives the 25-kill grind')
-  check(kills === 25, '25 zombies summoned and slain', `kills=${kills}`)
-  check(await waitChat(owner, /SPAWNER UNLOCKED/i, 20000), 'unlock fanfare at 25 kills')
+  check(kills === 35, '35 zombies summoned and slain', `kills=${kills}`)
+  check(await waitChat(owner, /SPAWNER UNLOCKED.*Skeleton/i, 20000), 'zombie kills unlock skeleton spawner')
 
   win = await openWindow(owner, '/spawners')
   const lane2 = win ? findSlotByName(win, 'zombie', 10, 31) : -1
@@ -871,11 +869,11 @@ async function main() {
     bad('zombie spawner remains visible after unlock')
   }
 
-  // ---- hostile GUI interactions on a LOCKED skeleton entry
+  // ---- hostile GUI interactions on a LOCKED spider entry
   win = await openWindow(owner, '/spawners')
   if (win) {
-    const skel = findSlotByName(win, 'skeleton', 10, 31)
-    check(skel >= 0, 'skeleton lane present for hostile-GUI test', 'slot=' + skel)
+    const skel = findSlotByName(win, 'spider', 10, 31)
+    check(skel >= 0, 'spider lane present for hostile-GUI test', 'slot=' + skel)
     if (skel >= 0) {
       const sub = owner.currentWindow
       check(sub && slotJson(sub, skel).includes('✖'), 'skeleton spawner is visibly locked')
