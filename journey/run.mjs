@@ -13,7 +13,7 @@
 //   P4  /is buffs: all 12 buffs render; buy mining-boost tier 1
 //   P4b /companions: six earnable companions, unlock + summon + persistence
 //   P4c /quests: three daily assignments render and persist
-//   P5  /spawners: 30 regular spawners across two pages, 25 REAL
+//   P5  /spawners: 30 regular spawners across two pages, 35 real
 //       kills, unlock fanfare, direct buy + place; spawner-born kill pays
 //       Core money/tokens WITHOUT counting wild progress; hostile GUI
 //       interactions (shift/number-key/drop/double-click) cannot steal
@@ -849,7 +849,7 @@ async function main() {
     kills++
     await sleep(200)
   }
-  check(!died, 'owner survives the 25-kill grind')
+  check(!died, 'owner survives the 35-kill progression grind')
   check(kills === 35, '35 zombies summoned and slain', `kills=${kills}`)
   check(await waitChat(owner, /SPAWNER UNLOCKED.*Skeleton/i, 20000), 'zombie kills unlock skeleton spawner')
 
@@ -1509,7 +1509,7 @@ async function main() {
     const profile = prof.profile || prof
     check(profile.role === 'miner', 'profile: role=miner', String(profile.role))
     const zk = (profile['kill-counts'] && profile['kill-counts'].zombie) || 0
-    check(zk === 25, 'profile: zombie kills = 25 wild kills (no spawner farming)',
+    check(zk === 35, 'profile: 35 zombie progression kills; spawner kills are tracked separately',
       `zombie=${zk}`)
     const spawnerKills = (profile.stats && profile.stats['spawner-mobs-killed']) || 0
     check(spawnerKills >= 1, 'profile: spawner-mobs-killed stat recorded', String(spawnerKills))
