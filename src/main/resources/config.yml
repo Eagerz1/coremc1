@@ -3,6 +3,8 @@
 #  Messages and branding live in messages.yml
 # ======================================================
 
+coremc-config-version: 12
+
 player-data:
   # How often dirty player profiles are flushed to disk (seconds).
   # Data is also saved on quit and on server shutdown, so this is

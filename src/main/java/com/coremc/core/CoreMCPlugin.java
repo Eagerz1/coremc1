@@ -146,6 +146,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.taskService = new TaskService(this);
 
         // 2. Configuration and messages.
+        migrateV012Configuration();
         this.coreConfig = new CoreConfig(this);
         this.coreConfig.load();
 
@@ -301,6 +302,65 @@ public final class CoreMCPlugin extends JavaPlugin {
         registerCommands();
 
         getLogger().info("CoreMC " + getDescription().getVersion() + " enabled.");
+    }
+
+    /** Applies the one-time, targeted progression and economy changes for 0.12.0. */
+    private void migrateV012Configuration() {
+        final var config = getConfig();
+        if (config.contains("coremc-config-version", true)
+                && config.getInt("coremc-config-version", 0) >= 12) {
+            return;
+        }
+
+        final var spawners = config.getConfigurationSection("spawners");
+        if (spawners != null) {
+            String previousMob = null;
+            for (final String id : spawners.getKeys(false)) {
+                final var definition = spawners.getConfigurationSection(id);
+                if (definition == null || !definition.contains("entity")) continue;
+                final String currentMob = definition.getString("entity", id).toLowerCase(java.util.Locale.ROOT);
+                definition.set("unlock-kill-key", previousMob == null ? currentMob : previousMob);
+                if (previousMob == null && currentMob.equals("zombie")) {
+                    final java.util.List<java.util.Map<?, ?>> tiers = definition.getMapList("tiers");
+                    if (tiers.isEmpty()) {
+                        definition.set("required-kills", 0);
+                    } else {
+                        @SuppressWarnings("unchecked")
+                        final java.util.Map<Object, Object> first =
+                                (java.util.Map<Object, Object>) tiers.get(0);
+                        first.put("required-kills", 0);
+                        definition.set("tiers", tiers);
+                    }
+                }
+                previousMob = currentMob;
+            }
+        }
+
+        final java.util.Map<String, java.util.List<Long>> islandPrices = java.util.Map.of(
+                "border", java.util.List.of(2_500L, 7_500L, 20_000L, 50_000L, 125_000L, 300_000L),
+                "member-slots", java.util.List.of(1_000L, 3_000L, 8_000L, 20_000L, 50_000L),
+                "generator-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L),
+                "spawner-boost", java.util.List.of(10_000L, 30_000L, 80_000L, 200_000L, 500_000L));
+        islandPrices.forEach((key, costs) -> config.set("island.upgrades." + key + ".costs", costs));
+
+        final java.util.Map<String, java.util.List<Long>> buffPrices = java.util.Map.of(
+                "mining-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L),
+                "farming-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L),
+                "fishing-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L),
+                "slaying-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L),
+                "logging-boost", java.util.List.of(5_000L, 15_000L, 40_000L, 100_000L, 250_000L),
+                "generator-boost", java.util.List.of(10_000L, 30_000L, 80_000L, 200_000L, 500_000L),
+                "spawner-boost", java.util.List.of(10_000L, 30_000L, 80_000L, 200_000L, 500_000L),
+                "token-boost", java.util.List.of(15_000L, 45_000L, 120_000L, 300_000L, 750_000L),
+                "credit-boost", java.util.List.of(15_000L, 45_000L, 120_000L, 300_000L, 750_000L),
+                "xp-boost", java.util.List.of(10_000L, 30_000L, 80_000L, 200_000L, 500_000L),
+                "sell-boost", java.util.List.of(15_000L, 45_000L, 120_000L, 300_000L, 750_000L),
+                "island-luck", java.util.List.of(25_000L, 75_000L, 200_000L, 500_000L, 1_250_000L));
+        buffPrices.forEach((key, costs) -> config.set("island-buffs." + key + ".costs", costs));
+
+        config.set("coremc-config-version", 12);
+        saveConfig();
+        getLogger().info("Applied CoreMC 0.12.0 spawner progression and island price migration.");
     }
 
     @Override
