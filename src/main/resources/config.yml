@@ -69,11 +69,11 @@ island:
       # (legacy fallback when sizes: is absent).
       step-blocks: 25
       max-tier: 6
-      costs: [10, 20, 30, 40, 50, 75]
+      costs: [2500, 7500, 20000, 50000, 125000, 300000]
     member-slots:
       # Each tier adds one member slot (on top of member-slots above).
       max-tier: 5
-      costs: [5, 10, 15, 20, 25]
+      costs: [1000, 3000, 8000, 20000, 50000]
     generator-boost:
       # Generation speed: each tier cuts generator harvest cooldowns on
       # the island by cooldown-reduction-percent-per-level (floored at 1s).
@@ -81,7 +81,7 @@ island:
       # product, plus +1 base product every bonus-product-every-n-tiers.
       # Rare blocks: rare-percent-per-level rolls rare-products (weighted).
       max-tier: 5
-      costs: [100, 200, 350, 550, 800]
+      costs: [5000, 15000, 40000, 100000, 250000]
       cooldown-reduction-percent-per-level: 8
       bonus-yield-percent-per-level: 10
       bonus-product-every-n-tiers: 2
@@ -102,7 +102,7 @@ island:
       # currency/soul/key entries are rejected at parse so spawner
       # farms can never print economy (anti-abuse, by design).
       max-tier: 5
-      costs: [150, 300, 500, 800, 1200]
+      costs: [10000, 30000, 80000, 200000, 500000]
       delay-reduction-percent-per-level: 10
       extra-spawn-percent-per-level: 5
       drop-bonus-percent-per-level: 10
@@ -432,51 +432,51 @@ omnitool:
 island-buffs:
   mining-boost:
     max-tier: 5
-    costs: [100, 200, 400, 700, 1100]
+    costs: [5000, 15000, 40000, 100000, 250000]
     percent-per-level: 10
   farming-boost:
     max-tier: 5
-    costs: [100, 200, 400, 700, 1100]
+    costs: [5000, 15000, 40000, 100000, 250000]
     percent-per-level: 10
   fishing-boost:
     max-tier: 5
-    costs: [100, 200, 400, 700, 1100]
+    costs: [5000, 15000, 40000, 100000, 250000]
     percent-per-level: 10
   slaying-boost:
     max-tier: 5
-    costs: [100, 200, 400, 700, 1100]
+    costs: [5000, 15000, 40000, 100000, 250000]
     percent-per-level: 10
   logging-boost:
     max-tier: 5
-    costs: [100, 200, 400, 700, 1100]
+    costs: [5000, 15000, 40000, 100000, 250000]
     percent-per-level: 10
   generator-boost:
     max-tier: 5
-    costs: [150, 300, 500, 800, 1200]
+    costs: [10000, 30000, 80000, 200000, 500000]
     percent-per-level: 10
   spawner-boost:
     max-tier: 5
-    costs: [150, 300, 500, 800, 1200]
+    costs: [10000, 30000, 80000, 200000, 500000]
     percent-per-level: 8
   token-boost:
     max-tier: 5
-    costs: [200, 400, 700, 1100, 1600]
+    costs: [15000, 45000, 120000, 300000, 750000]
     percent-per-level: 8
   credit-boost:
     max-tier: 5
-    costs: [200, 400, 700, 1100, 1600]
+    costs: [15000, 45000, 120000, 300000, 750000]
     percent-per-level: 8
   xp-boost:
     max-tier: 5
-    costs: [150, 300, 500, 800, 1200]
+    costs: [10000, 30000, 80000, 200000, 500000]
     percent-per-level: 10
   sell-boost:
     max-tier: 5
-    costs: [200, 400, 700, 1100, 1600]
+    costs: [15000, 45000, 120000, 300000, 750000]
     percent-per-level: 5
   island-luck:
     max-tier: 5
-    costs: [250, 500, 900, 1400, 2000]
+    costs: [25000, 75000, 200000, 500000, 1250000]
     percent-per-level: 5
 
 # --------------------------------------------------------------------------
@@ -774,14 +774,16 @@ spawners:
     sky-tokens: 1
     island-xp: 2
   zombie:
+    unlock-kill-key: zombie
     display: "&2Zombie"
     entity: ZOMBIE
     icon: ZOMBIE_SPAWN_EGG
-    required-kills: 25
+    required-kills: 0
     price: 5
     spawn-count: 1
     spawn-delay-ticks: 400
   skeleton:
+    unlock-kill-key: zombie
     display: "&7Skeleton"
     entity: SKELETON
     icon: SKELETON_SPAWN_EGG
@@ -790,6 +792,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   spider:
+    unlock-kill-key: skeleton
     display: "&cSpider"
     entity: SPIDER
     icon: SPIDER_SPAWN_EGG
@@ -798,6 +801,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   creeper:
+    unlock-kill-key: spider
     display: "&aCreeper"
     entity: CREEPER
     icon: CREEPER_SPAWN_EGG
@@ -806,6 +810,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   cave-spider:
+    unlock-kill-key: creeper
     display: "&4Cave Spider"
     entity: CAVE_SPIDER
     icon: CAVE_SPIDER_SPAWN_EGG
@@ -814,6 +819,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   drowned:
+    unlock-kill-key: cave-spider
     display: "&3Drowned"
     entity: DROWNED
     icon: DROWNED_SPAWN_EGG
@@ -822,6 +828,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   slime:
+    unlock-kill-key: drowned
     display: "&aSlime"
     entity: SLIME
     icon: SLIME_SPAWN_EGG
@@ -830,6 +837,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   witch:
+    unlock-kill-key: slime
     display: "&5Witch"
     entity: WITCH
     icon: WITCH_SPAWN_EGG
@@ -838,6 +846,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   enderman:
+    unlock-kill-key: witch
     display: "&dEnderman"
     entity: ENDERMAN
     icon: ENDERMAN_SPAWN_EGG
@@ -846,6 +855,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   piglin:
+    unlock-kill-key: enderman
     display: "&6Piglin"
     entity: PIGLIN
     icon: PIGLIN_SPAWN_EGG
@@ -854,6 +864,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   guardian:
+    unlock-kill-key: piglin
     display: "&bGuardian"
     entity: GUARDIAN
     icon: GUARDIAN_SPAWN_EGG
@@ -862,6 +873,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   magma-cube:
+    unlock-kill-key: guardian
     display: "&cMagma Cube"
     entity: MAGMA_CUBE
     icon: MAGMA_CUBE_SPAWN_EGG
@@ -870,6 +882,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   blaze:
+    unlock-kill-key: magma-cube
     display: "&eBlaze"
     entity: BLAZE
     icon: BLAZE_SPAWN_EGG
@@ -878,6 +891,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   ghast:
+    unlock-kill-key: blaze
     display: "&fGhast"
     entity: GHAST
     icon: GHAST_SPAWN_EGG
@@ -886,6 +900,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   wither-skeleton:
+    unlock-kill-key: ghast
     display: "&7Wither Skeleton"
     entity: WITHER_SKELETON
     icon: WITHER_SKELETON_SPAWN_EGG
@@ -894,6 +909,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   husk:
+    unlock-kill-key: wither-skeleton
     display: "&eHusk"
     entity: HUSK
     icon: HUSK_SPAWN_EGG
@@ -902,6 +918,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   stray:
+    unlock-kill-key: husk
     display: "&bStray"
     entity: STRAY
     icon: STRAY_SPAWN_EGG
@@ -910,6 +927,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   zombie-villager:
+    unlock-kill-key: stray
     display: "&2Zombie Villager"
     entity: ZOMBIE_VILLAGER
     icon: ZOMBIE_VILLAGER_SPAWN_EGG
@@ -918,6 +936,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   bogged:
+    unlock-kill-key: zombie-villager
     display: "&2Bogged"
     entity: BOGGED
     icon: BOGGED_SPAWN_EGG
@@ -926,6 +945,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   silverfish:
+    unlock-kill-key: bogged
     display: "&7Silverfish"
     entity: SILVERFISH
     icon: SILVERFISH_SPAWN_EGG
@@ -934,6 +954,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   endermite:
+    unlock-kill-key: silverfish
     display: "&dEndermite"
     entity: ENDERMITE
     icon: ENDERMITE_SPAWN_EGG
@@ -942,6 +963,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   pillager:
+    unlock-kill-key: endermite
     display: "&7Pillager"
     entity: PILLAGER
     icon: PILLAGER_SPAWN_EGG
@@ -950,6 +972,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   vindicator:
+    unlock-kill-key: pillager
     display: "&8Vindicator"
     entity: VINDICATOR
     icon: VINDICATOR_SPAWN_EGG
@@ -958,6 +981,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   evoker:
+    unlock-kill-key: vindicator
     display: "&5Evoker"
     entity: EVOKER
     icon: EVOKER_SPAWN_EGG
@@ -966,6 +990,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   ravager:
+    unlock-kill-key: evoker
     display: "&4Ravager"
     entity: RAVAGER
     icon: RAVAGER_SPAWN_EGG
@@ -974,6 +999,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   phantom:
+    unlock-kill-key: ravager
     display: "&9Phantom"
     entity: PHANTOM
     icon: PHANTOM_SPAWN_EGG
@@ -982,6 +1008,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   breeze:
+    unlock-kill-key: phantom
     display: "&bBreeze"
     entity: BREEZE
     icon: BREEZE_SPAWN_EGG
@@ -990,6 +1017,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   shulker:
+    unlock-kill-key: breeze
     display: "&dShulker"
     entity: SHULKER
     icon: SHULKER_SPAWN_EGG
@@ -998,6 +1026,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   hoglin:
+    unlock-kill-key: shulker
     display: "&cHoglin"
     entity: HOGLIN
     icon: HOGLIN_SPAWN_EGG
@@ -1006,6 +1035,7 @@ spawners:
     spawn-count: 1
     spawn-delay-ticks: 400
   zombified-piglin:
+    unlock-kill-key: hoglin
     display: "&dZombified Piglin"
     entity: ZOMBIFIED_PIGLIN
     icon: ZOMBIFIED_PIGLIN_SPAWN_EGG

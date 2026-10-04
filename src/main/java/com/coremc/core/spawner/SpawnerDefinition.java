@@ -19,15 +19,26 @@ public record SpawnerDefinition(
         String display,
         EntityType entityType,
         Material icon,
-        List<SpawnerTier> tiers) {
+        List<SpawnerTier> tiers,
+        String unlockKillKey) {
 
     public SpawnerDefinition {
         tiers = List.copyOf(tiers == null ? List.of() : tiers);
     }
 
+    public SpawnerDefinition(final String id, final String display, final EntityType entityType,
+            final Material icon, final List<SpawnerTier> tiers) {
+        this(id, display, entityType, icon, tiers, null);
+    }
+
     /** Kill-counter key used in the player profile — lowercase entity name. */
     public String killKey() {
         return entityType.name().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /** Wild-mob counter required to unlock this lane. */
+    public String requiredKillKey() {
+        return unlockKillKey == null || unlockKillKey.isBlank() ? killKey() : unlockKillKey;
     }
 
     /** Legacy-coloured mob display name (menus). */

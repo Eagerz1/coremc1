@@ -58,6 +58,16 @@ class SpawnerProgressionTest {
     }
 
     @Test
+    void progressionCanUseAnotherMobKillCounter() {
+        final SpawnerDefinition skeleton = new SpawnerDefinition(
+                "skeleton", "&7Skeleton", EntityType.SKELETON, Material.SKELETON_SPAWN_EGG,
+                List.of(new SpawnerTier("skeleton-1", 1, "&7Skeleton Spawner", 35, 8, 1, 400)), "zombie");
+
+        assertEquals("skeleton", skeleton.killKey(), "kills remain attributed to the killed mob");
+        assertEquals("zombie", skeleton.requiredKillKey(), "unlock requirement uses the prior mob lane");
+    }
+
+    @Test
     void throughputLineDescribesTheRegularSpawner() {
         assertEquals("spawns 1 every ~20s", regular(25).throughputLine());
     }

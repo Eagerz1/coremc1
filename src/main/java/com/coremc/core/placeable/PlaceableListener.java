@@ -41,6 +41,7 @@ public final class PlaceableListener implements Listener {
 
     private final CoreMCPlugin plugin;
     private final PlaceableService placeables;
+    private final SpawnerHolograms spawnerHolograms;
 
     /** per-player-per-block last harvest millis; bounded, swept on growth. */
     private final Map<String, Long> lastHarvest = new HashMap<>();
@@ -48,6 +49,7 @@ public final class PlaceableListener implements Listener {
     public PlaceableListener(final CoreMCPlugin plugin) {
         this.plugin = plugin;
         this.placeables = plugin.placeables();
+        this.spawnerHolograms = new SpawnerHolograms(plugin);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -58,10 +60,18 @@ public final class PlaceableListener implements Listener {
             return;
         }
         final Block block = event.getBlockPlaced();
+        final int stackCount = id.get().getKey() == PlaceableService.Type.SPAWNER
+                && event.getPlayer().isSneaking() ? event.getItemInHand().getAmount() : 1;
+        if (id.get().getKey() == PlaceableService.Type.SPAWNER && event.getPlayer().isSneaking()
+                && event.getItemInHand().getAmount() > 1) {
+            event.getItemInHand().setAmount(0);
+        }
         placeables.register(
                 block.getWorld().getName(), block.getX(), block.getY(), block.getZ(),
-                id.get().getKey(), id.get().getValue(), event.getPlayer().getUniqueId());
+                id.get().getKey(), id.get().getValue(), event.getPlayer().getUniqueId(), stackCount);
+        placeables.save();
         if (id.get().getKey() == PlaceableService.Type.SPAWNER) {
+            spawnerHolograms.sync(block.getLocation(), placeables.at(block.getLocation()).orElse(null));
             plugin.spawners().tierFor(id.get().getValue()).ifPresent(ref -> {
                 if (block.getState() instanceof org.bukkit.block.CreatureSpawner) {
                     // "Better tiers" are real world-level behaviour: more mobs
@@ -99,13 +109,28 @@ public final class PlaceableListener implements Listener {
             return;
         }
         event.setDropItems(false);
+        final var current = placement.get();
+        if (current.type() == PlaceableService.Type.SPAWNER && current.stackCount() > 1
+                && !event.getPlayer().isSneaking()) {
+            event.setCancelled(true);
+            final var updated = placeables.setStackCount(event.getBlock().getLocation(), current.stackCount() - 1);
+            updated.ifPresent(value -> {
+                spawnerHolograms.sync(event.getBlock().getLocation(), value);
+                placeables.save();
+            });
+            dropSpawnerItems(event.getBlock().getLocation(), current.id(), 1);
+            return;
+        }
         placeables.unregister(event.getBlock().getLocation());
-        final ItemStack returned = switch (placement.get().type()) {
-            case GENERATOR -> plugin.generators().mint(placement.get().id()).orElse(null);
-            case SPAWNER -> plugin.spawners().mint(placement.get().id()).orElse(null);
-        };
-        if (returned != null) {
-            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), returned);
+        placeables.save();
+        spawnerHolograms.remove(event.getBlock().getLocation());
+        final int returnedAmount = current.type() == PlaceableService.Type.SPAWNER
+                ? current.stackCount() : 1;
+        if (current.type() == PlaceableService.Type.SPAWNER) {
+            dropSpawnerItems(event.getBlock().getLocation(), current.id(), returnedAmount);
+        } else {
+            plugin.generators().mint(current.id()).ifPresent(item ->
+                    event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), item));
         }
     }
 
@@ -141,7 +166,20 @@ public final class PlaceableListener implements Listener {
 
     private void clearAffected(final List<Block> blocks) {
         for (final Block block : blocks) {
+            spawnerHolograms.remove(block.getLocation());
             placeables.unregister(block.getLocation());
+        }
+    }
+
+    private void dropSpawnerItems(final Location location, final String id, final int amount) {
+        int remaining = amount;
+        while (remaining > 0) {
+            final ItemStack item = plugin.spawners().mint(id).orElse(null);
+            if (item == null) return;
+            final int count = Math.min(64, remaining);
+            item.setAmount(count);
+            location.getWorld().dropItemNaturally(location, item);
+            remaining -= count;
         }
     }
 
@@ -151,6 +189,39 @@ public final class PlaceableListener implements Listener {
     public void onInteract(final PlayerInteractEvent event) {
         if (!event.getAction().isRightClick() || event.getClickedBlock() == null) {
             return;
+        }
+        final Optional<java.util.Map.Entry<PlaceableService.Type, String>> heldId =
+                placeables.idOf(event.getItem());
+        if (event.getPlayer().isSneaking() && heldId.isPresent()
+                && heldId.get().getKey() == PlaceableService.Type.SPAWNER) {
+            final Location target = event.getClickedBlock().getLocation();
+            final Optional<PlaceableService.Placement> existing = placeables.at(target);
+            if (existing.isPresent() && existing.get().type() == PlaceableService.Type.SPAWNER
+                    && existing.get().id().equals(heldId.get().getValue())) {
+                event.setCancelled(true);
+                final Player player = event.getPlayer();
+                final UUID owner = existing.get().owner();
+                if (owner != null && !owner.equals(player.getUniqueId())
+                        && !player.hasPermission("coremc.island.bypass")) {
+                    plugin.messages().sendPrefixed(player, "gen.not-yours", Map.of());
+                    return;
+                }
+                final int available = 3000 - existing.get().stackCount();
+                final int added = Math.min(available, event.getItem().getAmount());
+                if (added <= 0) {
+                    player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cThis spawner stack is already at 3,000."));
+                    return;
+                }
+                final int total = existing.get().stackCount() + added;
+                event.getItem().setAmount(event.getItem().getAmount() - added);
+                final var updated = placeables.setStackCount(target, total);
+                updated.ifPresent(value -> {
+                    spawnerHolograms.sync(target, value);
+                    placeables.save();
+                });
+                player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&aSpawner stack: &f" + total + "x"));
+                return;
+            }
         }
         final Optional<PlaceableService.Placement> placement =
                 placeables.at(event.getClickedBlock().getLocation());

@@ -43,6 +43,8 @@ public final class IslandMainGui implements Gui {
     private static final int SLOT_LEAVE = 24;
     private static final int SLOT_BUFFS = 25;
     private static final int SLOT_CLOSE = 53;
+    private static final int SLOT_HEADER = 4;
+    private static final int SLOT_OVERVIEW = 49;
 
     /** All actionable slots — exported so audits and tests never duplicate the layout. */
     public static final java.util.Set<Integer> ACTION_SLOTS =
@@ -56,7 +58,7 @@ public final class IslandMainGui implements Gui {
 
     @Override
     public String title() {
-        return "&b&lCOREMC &8» &fIsland";
+        return "&3&lCOREMC &8» &fIsland Nexus";
     }
 
     @Override
@@ -70,6 +72,18 @@ public final class IslandMainGui implements Gui {
         final boolean hasIsland = island.isPresent();
         final boolean owner = hasIsland && island.get().owner().equals(viewer.getUniqueId());
         final Map<String, String> placeholders = plugin.islands().placeholdersOf(viewer.getUniqueId());
+
+        inventory.setItem(SLOT_HEADER, GuiService.item(Material.NETHER_STAR, "&b&lISLAND NEXUS",
+                hasIsland
+                        ? List.of("&7Your island controls in one place.",
+                                "&7Level &f" + placeholders.get("island_level") + " &8• &7Border &f"
+                                        + placeholders.get("island_border"),
+                                "&7Role: " + (owner ? "&6Owner" : "&bMember"))
+                        : List.of("&7Create an island to unlock your", "&7team, upgrades and island buffs.")));
+        for (int slot = 0; slot < 9; slot++) {
+            if (slot != SLOT_HEADER) inventory.setItem(slot,
+                    GuiService.item(Material.CYAN_STAINED_GLASS_PANE, "&8✦", List.of()));
+        }
 
         if (hasIsland) {
             inventory.setItem(SLOT_HOME, GuiService.item(
@@ -86,8 +100,8 @@ public final class IslandMainGui implements Gui {
                 Material.PLAYER_HEAD,
                 "&dMembers",
                 hasIsland
-                        ? List.of("&7Manage your island team.", "", "&eClick to view members.")
-                        : List.of("&8Create an island first.")));
+                        ? List.of("&a✔ Island available", "&7Manage your island team.", "", "&eClick to view members.")
+                        : List.of("&c✖ No island yet", "&8Create one to manage a team.")));
         inventory.setItem(SLOT_INFO, GuiService.item(
                 Material.BOOK,
                 "&bInformation",
@@ -101,7 +115,9 @@ public final class IslandMainGui implements Gui {
         inventory.setItem(SLOT_UPGRADES, GuiService.item(
                 Material.CRAFTING_TABLE,
                 "&6Upgrades",
-                List.of("&7Upgrade categories: Mining, Fishing,", "&7Farming, Slaying, Logging and Island.", "", "&eClick to open upgrades.")));
+                List.of("&7Mining, Fishing, Farming, Slaying,", "&7Logging and island progression.",
+                        hasIsland ? "&a✔ Island upgrades available" : "&c✖ Create an island first",
+                        "", "&eClick to open upgrades.")));
         inventory.setItem(SLOT_SETTINGS, GuiService.item(
                 hasIsland && !owner ? Material.GRAY_DYE : Material.REPEATER,
                 "&eSettings",
@@ -134,7 +150,8 @@ public final class IslandMainGui implements Gui {
         inventory.setItem(SLOT_SPAWNERS, GuiService.item(
                 Material.SPAWNER,
                 "&6Spawners",
-                List.of("&7Unlock 30 regular spawners", "&7with mob kills, then buy them.", "", "&eClick to open spawners.")));
+                List.of("&a✔ Zombie spawners start unlocked", "&7Kill each mob to unlock the next.",
+                        "&7Regular spawners stack to &f3,000", "", "&eClick to open spawners.")));
         if (hasIsland) {
             final var islandValue = island.get();
             final int borderTier = islandValue.upgrades().getOrDefault("border", 0);
@@ -174,7 +191,17 @@ public final class IslandMainGui implements Gui {
                 hasIsland
                         ? List.of("&7Island-wide multipliers: drops,", "&7currency, XP, gens, spawners.", "", "&eClick to open buffs.")
                         : List.of("&8Create an island first.")));
-        inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
+        inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of("&7Close this menu.")));
+        inventory.setItem(SLOT_OVERVIEW, GuiService.item(Material.MAP, "&bIsland status",
+                hasIsland
+                        ? List.of("&a✔ Island ready", "&7Owner: &f" + placeholders.get("island_owner"),
+                                "&7Members: &f" + placeholders.get("island_members"),
+                                "&7Use the panels above to manage it.")
+                        : List.of("&c✖ Island not created", "&7Select Create your island to begin.")));
+        for (int slot = 45; slot < 53; slot++) {
+            if (slot != SLOT_OVERVIEW) inventory.setItem(slot,
+                    GuiService.item(Material.BLUE_STAINED_GLASS_PANE, "&8✦", List.of()));
+        }
 
         GuiService.fillGaps(inventory);
     }

@@ -58,7 +58,14 @@ public final class PlaceableService {
     }
 
     /** Immutable placement record. */
-    public record Placement(Type type, String id, UUID owner, int x, int y, int z) {}
+    public record Placement(Type type, String id, UUID owner, int x, int y, int z, int stackCount) {
+        public Placement(Type type, String id, UUID owner, int x, int y, int z) {
+            this(type, id, owner, x, y, z, 1);
+        }
+        public Placement {
+            stackCount = Math.max(1, Math.min(3000, stackCount));
+        }
+    }
 
     private final CoreMCPlugin plugin;
     private final NamespacedKey placeableKey;
@@ -135,7 +142,7 @@ public final class PlaceableService {
                                 type, id, owner,
                                 Integer.parseInt(parts[1]),
                                 Integer.parseInt(parts[2]),
-                                Integer.parseInt(parts[3])));
+                                Integer.parseInt(parts[3]), yaml.getInt(key + ".stack-count", 1)));
             } catch (NumberFormatException ignored) {
                 // drop corrupt row; load stays total
             }
@@ -159,6 +166,7 @@ public final class PlaceableService {
             final Placement p = entry.getValue();
             yaml.set(key + ".type", p.type().tag());
             yaml.set(key + ".id", p.id());
+            yaml.set(key + ".stack-count", p.stackCount());
             if (p.owner() != null) {
                 yaml.set(key + ".owner", p.owner().toString());
             }
@@ -175,7 +183,21 @@ public final class PlaceableService {
 
     public void register(final String worldName, final int x, final int y, final int z,
                          final Type type, final String id, final UUID owner) {
-        placements.put(keyOf(worldName, x, y, z), new Placement(type, id, owner, x, y, z));
+        register(worldName, x, y, z, type, id, owner, 1);
+    }
+
+    public void register(final String worldName, final int x, final int y, final int z,
+                         final Type type, final String id, final UUID owner, final int stackCount) {
+        placements.put(keyOf(worldName, x, y, z), new Placement(type, id, owner, x, y, z, stackCount));
+    }
+
+    public Optional<Placement> setStackCount(final Location location, final int stackCount) {
+        final Optional<Placement> current = at(location);
+        if (current.isEmpty() || location.getWorld() == null) return current;
+        final Placement p = current.get();
+        final Placement updated = new Placement(p.type(), p.id(), p.owner(), p.x(), p.y(), p.z(), stackCount);
+        placements.put(keyOf(location.getWorld().getName(), p.x(), p.y(), p.z()), updated);
+        return Optional.of(updated);
     }
 
     public Optional<Placement> at(final Location location) {

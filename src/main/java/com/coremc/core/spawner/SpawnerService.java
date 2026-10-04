@@ -108,7 +108,8 @@ public final class SpawnerService {
             }
             final SpawnerDefinition mob = new SpawnerDefinition(
                     id, mobDisplay, entity,
-                    icon == null ? Material.SPAWNER : icon, tiers);
+                    icon == null ? Material.SPAWNER : icon, tiers,
+                    def.getString("unlock-kill-key", id.equals("zombie") ? "zombie" : ""));
             lanes.put(id, mob);
             for (final SpawnerTier tier : tiers) {
                 purchasables.put(tier.tierId(), new TierRef(mob, tier));
@@ -335,7 +336,7 @@ public final class SpawnerService {
     // ------------------------------------------------------------------ progress
 
     public long killsOf(final PlayerProfile profile, final SpawnerDefinition mob) {
-        return profile.killCountOf(mob.killKey());
+        return profile.killCountOf(mob.requiredKillKey());
     }
 
     /** Kill-accounted unlock check for one purchasable tier. */
@@ -436,7 +437,8 @@ public final class SpawnerService {
             return;
         }
         final long after = before + amount;
-        for (final SpawnerDefinition mob : affectedLanes) {
+        for (final SpawnerDefinition mob : lanes.values()) {
+            if (!mob.requiredKillKey().equals(key)) continue;
             for (final SpawnerTier tier : mob.tiers()) {
                 if (before < tier.requiredKills() && after >= tier.requiredKills()) {
                     plugin.messages().sendPrefixed(
@@ -483,6 +485,14 @@ public final class SpawnerService {
             lore.add(ColorUtil.colorize("&7Regular Spawner &8— " + ref.tier().throughputLine()));
             lore.add(ColorUtil.colorize("&7Place me to set me down."));
             meta.setLore(lore);
+            stack.setItemMeta(meta);
+        }
+        if (meta != null) {
+            meta.setLore(List.of(
+                    ColorUtil.colorize("&7Spawner stack item"),
+                    ColorUtil.colorize("&7Place normally for &f1"),
+                    ColorUtil.colorize("&eShift-place to use the full stack"),
+                    ColorUtil.colorize("&7Placed stacks hold up to &f3,000")));
             stack.setItemMeta(meta);
         }
         return plugin.placeables().identify(stack, PlaceableService.Type.SPAWNER, ref.tier().tierId());

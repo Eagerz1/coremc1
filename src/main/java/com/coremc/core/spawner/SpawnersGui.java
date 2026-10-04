@@ -71,6 +71,8 @@ public final class SpawnersGui implements Gui {
             final List<String> lore = new ArrayList<>();
             lore.add("&8Regular Spawner");
             lore.add("");
+            final String unlockMob = mob.requiredKillKey().replace('-', ' ');
+            lore.add("&7Unlock kills: &f" + titleCase(unlockMob));
             lore.add("&7Kill progress: &f" + String.format(Locale.ROOT, "%,d", kills)
                     + "&7/&f" + String.format(Locale.ROOT, "%,d", spawner.requiredKills()));
             lore.add(unlocked
@@ -104,6 +106,15 @@ public final class SpawnersGui implements Gui {
         }
         inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
         GuiService.fillGaps(inventory);
+    }
+
+    private static String titleCase(final String value) {
+        final StringBuilder result = new StringBuilder();
+        for (final String word : value.split(" ")) {
+            if (!result.isEmpty()) result.append(' ');
+            if (!word.isEmpty()) result.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+        }
+        return result.toString();
     }
 
     @Override

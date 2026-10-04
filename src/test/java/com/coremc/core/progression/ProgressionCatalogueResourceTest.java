@@ -87,14 +87,33 @@ class ProgressionCatalogueResourceTest {
             assertNotNull(Material.matchMaterial(String.valueOf(def.get("icon"))),
                     row.getKey() + " has an invalid icon");
             assertTrue(!def.containsKey("tiers"), row.getKey() + " must not ship variants");
-            assertTrue(((Number) def.get("required-kills")).longValue() > 0L,
-                    row.getKey() + " needs a kill gate");
+            final long requiredKills = ((Number) def.get("required-kills")).longValue();
+            assertTrue(requiredKills >= 0L, row.getKey() + " cannot have a negative kill gate");
+            assertNotNull(def.get("unlock-kill-key"), row.getKey() + " needs an explicit mob progression key");
             assertTrue(((Number) def.get("price")).longValue() > 0L,
                     row.getKey() + " needs a token price");
             assertEquals(1, ((Number) def.get("spawn-count")).intValue(),
                     row.getKey() + " must be a regular single-spawn spawner");
         }
         assertEquals(30, lanes, "spawner lane baseline changed");
+        final Map<String, Object> zombie = (Map<String, Object>) spawners.get("zombie");
+        assertEquals(0L, ((Number) zombie.get("required-kills")).longValue(),
+                "the starter zombie spawner must be immediately available");
+        final Map<String, Object> skeleton = (Map<String, Object>) spawners.get("skeleton");
+        assertEquals("zombie", skeleton.get("unlock-kill-key"),
+                "the next spawner must progress from zombie kills");
+        final Map<String, Object> spider = (Map<String, Object>) spawners.get("spider");
+        assertEquals("skeleton", spider.get("unlock-kill-key"),
+                "spawner progression must chain through the previous mob");
+        final Map<String, Object> buffs = (Map<String, Object>) config().get("island-buffs");
+        assertEquals(12, buffs.size());
+        for (final Map.Entry<String, Object> buff : buffs.entrySet()) {
+            final List<?> costs = (List<?>) ((Map<String, Object>) buff.getValue()).get("costs");
+            assertTrue(((Number) costs.get(0)).longValue() >= 5_000L,
+                    buff.getKey() + " first tier must be expensive");
+            assertTrue(((Number) costs.get(costs.size() - 1)).longValue() >= 250_000L,
+                    buff.getKey() + " max tier must be late-game");
+        }
     }
 
     @Test
