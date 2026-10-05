@@ -1,7 +1,6 @@
 package com.coremc.core.spawner;
 
 import com.coremc.core.CoreMCPlugin;
-import com.coremc.core.economy.Currency;
 import com.coremc.core.player.PlayerProfile;
 import com.coremc.core.util.ColorUtil;
 import java.util.Map;
@@ -35,7 +34,6 @@ public final class SellCommand implements CommandExecutor {
             player.sendMessage(ColorUtil.colorize("&eYou have no sellable CoreMC rare drops, or your balance cannot fit the payout."));
             return true;
         }
-        plugin.playerData().persistAfterEconomyChange(profile, Currency.MONEY.premiumWriteThrough());
         player.sendMessage(ColorUtil.colorize("&aSold your CoreMC rare drops for &f" + String.format(java.util.Locale.ROOT, "%,d", payout) + " &aCore Money."));
         return true;
     }
