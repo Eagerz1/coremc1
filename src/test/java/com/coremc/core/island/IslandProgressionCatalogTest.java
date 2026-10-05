@@ -31,7 +31,7 @@ class IslandProgressionCatalogTest {
 
     @Test
     void masteryObjectivesUseExistingPersistedIslandCounters() {
-        assertEquals(6, IslandProgressionCatalog.masteryObjectives().size());
+        assertEquals(7, IslandProgressionCatalog.masteryObjectives().size());
         assertTrue(IslandProgressionCatalog.masteryObjectives().stream()
                 .allMatch(objective -> objective.target() > 0L && !objective.statKey().isBlank()));
     }
