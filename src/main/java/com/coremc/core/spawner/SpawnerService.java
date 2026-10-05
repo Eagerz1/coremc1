@@ -499,12 +499,27 @@ public final class SpawnerService {
         return plugin.placeables().identify(stack, PlaceableService.Type.SPAWNER, ref.tier().tierId());
     }
 
+    /** Island level required for each ten-mob slaying section. */
+    public int requiredIslandLevel(final TierRef ref) {
+        final int index = new ArrayList<>(lanes.values()).indexOf(ref.mob());
+        if (index < 0) return IslandProgressionCatalog.requiredIslandLevel("spawners");
+        return 5 + (index / 10) * 5;
+    }
+
     /**
      * Attempts a spawner purchase: tier must be unlocked and affordable.
      * Withdraws Sky Tokens and grants the item (overflow to ender chest,
      * refund on total delivery failure).
      */
     public boolean buy(final Player player, final PlayerProfile profile, final TierRef ref) {
+        final var island = plugin.islands().islandOf(player.getUniqueId()).orElse(null);
+        final int requiredLevel = requiredIslandLevel(ref);
+        if (island == null || plugin.islandProgress().levelFor(island) < requiredLevel) {
+            final int current = island == null ? 0 : plugin.islandProgress().levelFor(island);
+            plugin.messages().sendPrefixed(player, "progression.locked", Map.of(
+                    "system", "Slaying Section", "level", String.valueOf(requiredLevel), "yours", String.valueOf(current)));
+            return false;
+        }
         if (!isUnlocked(profile, ref)) {
             plugin.messages().sendPrefixed(player, "spawner.locked", Map.of(
                     "kills", String.valueOf(killsOf(profile, ref.mob())),
