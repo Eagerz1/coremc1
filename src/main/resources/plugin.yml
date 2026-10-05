@@ -24,7 +24,7 @@ commands:
     permission-message: "&cYou do not have permission to use this command."
   island:
     description: CoreMC Skyblock island commands.
-    usage: /island [create|home|invite|accept|leave|kick|delete|info|upgrades|help]
+    usage: /island [create|home|invite|accept|leave|kick|delete|info|upgrades|progression|mastery|help]
     permission: coremc.command.island
     permission-message: "&cYou do not have permission to use this command."
     aliases: [is, isle, block]
