@@ -50,7 +50,8 @@ public final class IslandProgressionCatalog {
             new Mastery("farmer", "Harvest Keeper", "crops-harvested", 25_000L, 80L),
             new Mastery("logger", "Forest Keeper", "logs-chopped", 10_000L, 60L),
             new Mastery("fisher", "Deep Catch", "fish-caught", 2_500L, 60L),
-            new Mastery("generator", "Core Operator", "generator-harvests", 5_000L, 100L));
+            new Mastery("generator", "Core Operator", "generator-harvests", 5_000L, 100L),
+            new Mastery("missions", "Mission Regular", "missions-completed", 25L, 100L));
 
     private IslandProgressionCatalog() {}
 
