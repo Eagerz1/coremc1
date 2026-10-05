@@ -84,6 +84,11 @@ commands:
     description: View spawner unlock progress and buy spawners.
     usage: /spawners
     permission: coremc.command.spawners
+  sets:
+    description: View and claim activity-earned equipment sets.
+    usage: /sets [claim <role> <piece>]
+    permission: coremc.command.sets
+    permission-message: "&cYou do not have permission to use this command."
   sell:
     description: Sell CoreMC spawner rare drops in your inventory.
     usage: /sell
@@ -195,6 +200,7 @@ permissions:
       coremc.command.companions: true
       coremc.command.quests: true
       coremc.command.spawners: true
+      coremc.command.sets: true
       coremc.command.crates: true
       coremc.command.skins: true
       coremc.command.shop: true
@@ -365,6 +371,9 @@ permissions:
     default: true
   coremc.command.spawners:
     description: Allows viewing spawner progression and purchasing spawners.
+    default: true
+  coremc.command.sets:
+    description: Allows viewing and claiming equipment sets.
     default: true
   coremc.command.skins:
     description: Allows opening the /skins menu.
