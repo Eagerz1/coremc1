@@ -70,7 +70,7 @@ public final class IslandProgressionCatalog {
     public static int requiredIslandLevel(final String system) {
         return switch (system == null ? "" : system.toLowerCase(java.util.Locale.ROOT)) {
             case "generators" -> 3;
-            case "spawners" -> 5;
+            case "spawners" -> 1;
             case "companions" -> 8;
             case "equipment-sets" -> 10;
             case "advanced-spawners" -> 15;
