@@ -50,6 +50,7 @@ import com.coremc.core.role.xp.MiningXpListener;
 import com.coremc.core.role.xp.SlayerXpListener;
 import com.coremc.core.spawner.KillProgressListener;
 import com.coremc.core.spawner.SpawnerService;
+import com.coremc.core.spawner.RareDropService;
 import com.coremc.core.spawner.SpawnersCommand;
 import com.coremc.core.scheduler.TaskService;
 import com.coremc.core.shop.ShopCommand;
@@ -86,6 +87,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private PlaceableService placeableService;
     private GeneratorService generatorService;
     private SpawnerService spawnerService;
+    private RareDropService rareDropService;
     private ShopService shopService;
     private EnchantService enchantService;
     private EnchantEngine enchantEngine;
@@ -227,6 +229,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.placeableService = new PlaceableService(this);
         this.generatorService = new GeneratorService(this);
         this.spawnerService = new SpawnerService(this);
+        this.rareDropService = new RareDropService(this);
 
         // 3g. Load persistent world/service data (after worlds exist).
         placeableService.load();
@@ -570,6 +573,12 @@ public final class CoreMCPlugin extends JavaPlugin {
         }
         spawners.setExecutor(new SpawnersCommand(this));
 
+        final PluginCommand sell = getCommand("sell");
+        if (sell == null) {
+            throw new IllegalStateException("Command 'sell' missing from plugin.yml");
+        }
+        sell.setExecutor(new com.coremc.core.spawner.SellCommand(this));
+
         final PluginCommand crates = getCommand("crates");
         if (crates == null) {
             throw new IllegalStateException("Command 'crates' missing from plugin.yml");
@@ -813,6 +822,11 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Assigned daily missions, gameplay progress and claims. */
     public QuestService quests() {
         return questService;
+    }
+
+    /** Mob-specific rare drops and their Core Money sale values. */
+    public RareDropService rareDrops() {
+        return rareDropService;
     }
 
     /** Spawner catalogue, unlock progression and purchases. */
