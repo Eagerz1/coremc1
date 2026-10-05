@@ -23,9 +23,9 @@ import org.bukkit.event.player.PlayerFishEvent;
  * Team actions on the island feed per-island counters (blocks-mined,
  * logs-chopped, crops-harvested, fish-caught, mobs-killed,
  * generator-harvests) plus weighted island XP. Level is a pure
- * function of stored XP + purchased upgrade tiers:
- * {@code 1 + floor(sqrt(score / divisor))} — meaningful, unbounded,
- * and fully config-tuned ({@code island.level}).
+ * function of stored XP + purchased upgrade tiers using the existing
+ * square-root curve, capped at the 30-level seasonal track defined by
+ * {@link IslandProgressionCatalog}.
  *
  * Writes are batched: every record marks the island dirty and a
  * once-a-minute timer flushes dirty islands (plus a shutdown flush),
