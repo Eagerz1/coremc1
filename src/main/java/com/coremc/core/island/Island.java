@@ -202,7 +202,7 @@ public final class Island {
                 border,
                 asLong(map.get("created-millis")));
         if (map.get("level") instanceof Number level) {
-            island.level = Math.max(1, level.intValue());
+            island.level = Math.max(1, Math.min(IslandProgressionCatalog.MAX_LEVEL, level.intValue()));
         }
         if (map.get("xp") instanceof Number xp) {
             island.xp = Math.max(0L, xp.longValue());
@@ -293,7 +293,7 @@ public final class Island {
     }
 
     public void level(final int level) {
-        this.level = Math.max(1, level);
+        this.level = Math.max(1, Math.min(IslandProgressionCatalog.MAX_LEVEL, level));
     }
 
     /** Lifetime island progression score (feeds the level calculation). */
