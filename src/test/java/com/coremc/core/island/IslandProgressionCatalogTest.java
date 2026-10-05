@@ -20,6 +20,16 @@ class IslandProgressionCatalogTest {
     }
 
     @Test
+    void connectedSystemsUnlockAtTheirSeasonLevels() {
+        assertEquals(3, IslandProgressionCatalog.requiredIslandLevel("generators"));
+        assertEquals(1, IslandProgressionCatalog.requiredIslandLevel("spawners"));
+        assertEquals(8, IslandProgressionCatalog.requiredIslandLevel("companions"));
+        assertEquals(10, IslandProgressionCatalog.requiredIslandLevel("equipment-sets"));
+        assertEquals(15, IslandProgressionCatalog.requiredIslandLevel("advanced-spawners"));
+        assertEquals("Second slaying section", IslandProgressionCatalog.level(5).unlocks().getFirst());
+    }
+
+    @Test
     void masteryObjectivesUseExistingPersistedIslandCounters() {
         assertEquals(6, IslandProgressionCatalog.masteryObjectives().size());
         assertTrue(IslandProgressionCatalog.masteryObjectives().stream()
