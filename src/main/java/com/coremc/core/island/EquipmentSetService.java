@@ -123,16 +123,15 @@ public final class EquipmentSetService implements Listener, CommandExecutor, Tab
             player.sendMessage(ColorUtil.colorize("&cYour profile is still loading."));
             return;
         }
+        if (!profile.claimEquipmentSetPiece(island.islandId(), set.id(), piece.id())) {
+            player.sendMessage(ColorUtil.colorize("&eYou already claimed that piece for this island."));
+            return;
+        }
         final ItemStack item = createPiece(set, piece, needed);
         final var delivery = com.coremc.core.util.ItemDelivery.deliverDetailed(player, item);
         if (delivery == com.coremc.core.util.ItemDelivery.Result.FAILED) {
-            player.sendMessage(ColorUtil.colorize("&cMake inventory space before claiming this set piece."));
-            return;
-        }
-        if (!profile.claimEquipmentSetPiece(island.islandId(), set.id(), piece.id())) {
-            // A duplicate claim is prevented before this point in normal use; remove this copy if a stale menu raced.
-            item.setAmount(0);
-            player.sendMessage(ColorUtil.colorize("&eYou already claimed that piece for this island."));
+            profile.unclaimEquipmentSetPiece(island.islandId(), set.id(), piece.id());
+            player.sendMessage(ColorUtil.colorize("&cMake inventory and ender chest space before claiming this set piece."));
             return;
         }
         plugin.playerData().persistImportant(profile);
