@@ -2,6 +2,7 @@ package com.coremc.core.spawner;
 
 import com.coremc.core.CoreMCPlugin;
 import com.coremc.core.economy.Currency;
+import com.coremc.core.island.IslandProgressionCatalog;
 import com.coremc.core.placeable.PlaceableService;
 import com.coremc.core.player.PlayerProfile;
 import com.coremc.core.util.ColorUtil;
