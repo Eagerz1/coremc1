@@ -17,7 +17,8 @@ import java.util.UUID;
  * chat style, lifetime stats, subscription claims, store rank;
  * 7 = + animated skins (owned ids, per-role equipped tool skins, equipped hat);
  * 8 = + owned chat styles (cosmetic chat colour/gradient ownership);
- * 9 = + claim-once island mastery reward ids.
+ * 9 = + claim-once island mastery reward ids;
+ * 10 = + role equipment-set piece claim ids.
  * All loads are tolerant: unknown/missing fields become defaults.
  *
  * A profile is created the first time a player connects and survives
@@ -37,7 +38,7 @@ import java.util.UUID;
 public final class PlayerProfile {
 
     /** Current on-disk schema version. */
-    public static final int SCHEMA_VERSION = 9;
+    public static final int SCHEMA_VERSION = 10;
 
     private final UUID uuid;
 
@@ -100,6 +101,8 @@ public final class PlayerProfile {
     private final java.util.Set<String> playtimeClaimed = new java.util.LinkedHashSet<>();
     /** Island UUID + mastery id claim keys (per-player, persisted). */
     private final java.util.Set<String> islandMasteryClaims = new java.util.LinkedHashSet<>();
+    /** Activity-set piece claim keys (island UUID + set id + slot). */
+    private final java.util.Set<String> equipmentSetClaims = new java.util.LinkedHashSet<>();
     /** Selected chat colour/gradient id ("none" = default). */
     private String chatColor = "none";
     /** Whether the chat colour applies bold. */
@@ -250,6 +253,13 @@ public final class PlayerProfile {
                 if (!key.isEmpty()) profile.islandMasteryClaims.add(key);
             }
         }
+        final Object setClaimsObject = map.get("equipment-set-claims");
+        if (setClaimsObject instanceof java.util.List<?> setClaims) {
+            for (final Object entry : setClaims) {
+                final String key = String.valueOf(entry).trim();
+                if (!key.isEmpty()) profile.equipmentSetClaims.add(key);
+            }
+        }
         profile.chatColor =
                 String.valueOf(map.getOrDefault("chat-color", "none")).trim().toLowerCase(java.util.Locale.ROOT);
         if (profile.chatColor.isEmpty()) {
@@ -356,6 +366,7 @@ public final class PlayerProfile {
         map.put("playtime-minutes", playtimeMinutes);
         map.put("playtime-claimed", new java.util.ArrayList<>(playtimeClaimed));
         map.put("island-mastery-claims", new java.util.ArrayList<>(islandMasteryClaims));
+        map.put("equipment-set-claims", new java.util.ArrayList<>(equipmentSetClaims));
         map.put("chat-color", chatColor);
         map.put("chat-bold", chatBold);
         map.put("owned-chat-styles", new java.util.ArrayList<>(ownedChatStyles));
@@ -694,6 +705,19 @@ public final class PlayerProfile {
 
     public java.util.Set<String> islandMasteryClaims() {
         return java.util.Set.copyOf(islandMasteryClaims);
+    }
+
+    /** Claims a role-set piece for this player and island. */
+    public boolean claimEquipmentSetPiece(final UUID islandId, final String setId, final String slot) {
+        if (islandId == null || setId == null || setId.isBlank() || slot == null || slot.isBlank()) return false;
+        return equipmentSetClaims.add(islandId + ":" + setId.trim().toLowerCase(java.util.Locale.ROOT)
+                + ":" + slot.trim().toLowerCase(java.util.Locale.ROOT));
+    }
+
+    public boolean equipmentSetPieceClaimed(final UUID islandId, final String setId, final String slot) {
+        if (islandId == null || setId == null || slot == null) return false;
+        return equipmentSetClaims.contains(islandId + ":" + setId.trim().toLowerCase(java.util.Locale.ROOT)
+                + ":" + slot.trim().toLowerCase(java.util.Locale.ROOT));
     }
 
     // --- chat ---
