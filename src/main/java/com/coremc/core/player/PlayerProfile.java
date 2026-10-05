@@ -720,6 +720,13 @@ public final class PlayerProfile {
                 + ":" + slot.trim().toLowerCase(java.util.Locale.ROOT));
     }
 
+    /** Rolls back a set-piece claim when inventory delivery cannot complete. */
+    public boolean unclaimEquipmentSetPiece(final UUID islandId, final String setId, final String slot) {
+        if (islandId == null || setId == null || slot == null) return false;
+        return equipmentSetClaims.remove(islandId + ":" + setId.trim().toLowerCase(java.util.Locale.ROOT)
+                + ":" + slot.trim().toLowerCase(java.util.Locale.ROOT));
+    }
+
     // --- chat ---
 
     public String chatColor() {
