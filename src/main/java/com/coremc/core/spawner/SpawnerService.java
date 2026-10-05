@@ -391,7 +391,17 @@ public final class SpawnerService {
             return; // throttled: no rewards
         }
         profile.addStat("spawner-mobs-killed", 1L);
+        final TierRef source = tags.tierIdOf(victim).flatMap(this::tierFor).orElse(null);
+        long sourceKills = 0L;
+        if (source != null) {
+            final String statKey = "spawner-kills-" + source.mob().id();
+            sourceKills = profile.statOf(statKey) + 1L;
+            profile.addStat(statKey, 1L);
+        }
         plugin.playerData().markDirty(profile.uuid());
+        if (source != null && plugin.rareDrops() != null) {
+            plugin.rareDrops().tryDrop(killer, source.mob(), sourceKills);
+        }
 
         // Team-island scope: spawner farms only pay where the killer belongs.
         final var at = victim.getLocation();
