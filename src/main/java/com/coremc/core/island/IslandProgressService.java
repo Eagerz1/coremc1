@@ -151,15 +151,12 @@ public final class IslandProgressService implements Listener {
         final long perTier =
                 Math.max(0L, plugin.getConfig().getLong("island.level.xp-per-upgrade-tier", 10L));
         final long divisor = plugin.getConfig().getLong("island.level.xp-divisor", 100L);
-        return scoreToLevel(island.xp() + tiers * perTier, divisor);
+        return IslandProgressionCatalog.levelForScore(island.xp() + tiers * perTier, divisor);
     }
 
     /** level = 1 + floor(sqrt(score / divisor)); non-positive score/divisor → 1. Pure. */
     public static int scoreToLevel(final long score, final long divisor) {
-        if (score <= 0L || divisor <= 0L) {
-            return 1;
-        }
-        return 1 + (int) Math.floor(Math.sqrt(score / (double) divisor));
+        return IslandProgressionCatalog.levelForScore(score, divisor);
     }
 
     /**
