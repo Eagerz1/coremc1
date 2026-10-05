@@ -84,7 +84,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             case "upgrades" -> plugin.gui().open(player, new IslandUpgradesGui(plugin));
             case "buffs" -> plugin.gui().open(player, new IslandBuffsGui(plugin));
             case "progression", "progress" -> progression(player);
-            case "mastery" -> mastery(player);
+            case "mastery" -> mastery(player, args);
             case "top" -> top(player);
             default -> help(player, label);
         }
@@ -348,21 +348,61 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
                 + String.join(", ", next.unlocks())));
     }
 
-    private void mastery(final Player player) {
+    private void mastery(final Player player, final String[] args) {
         final Optional<Island> optional = islands.islandOf(player.getUniqueId());
         if (optional.isEmpty()) {
             messages.sendPrefixed(player, "island.none", Map.of());
             return;
         }
         final Island island = optional.get();
+        if (args.length >= 2 && args[1].equalsIgnoreCase("claim")) {
+            claimMastery(player, island, args);
+            return;
+        }
         player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&d&lIsland Mastery &8• &7Lifetime island goals"));
         for (final IslandProgressionCatalog.Mastery objective : IslandProgressionCatalog.masteryObjectives()) {
             final long progress = Math.min(objective.target(), island.statOf(objective.statKey()));
-            final String status = progress >= objective.target() ? "&a✓" : "&e" + progress + "/" + objective.target();
+            final String status = progress >= objective.target() ? "&aComplete" : "&e" + progress + "/" + objective.target();
             player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&f" + objective.title()
                     + " &8— &7" + objective.statKey().replace('-', ' ') + " &8["
-                    + status + "&8]"));
+                    + status + "&8] &7Reward: &b" + objective.rewardSkyTokens() + " Sky Tokens"));
         }
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7Claim a completed reward: &f/is mastery claim <id>"));
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&8IDs: miner, slayer, farmer, logger, fisher, generator"));
+    }
+
+    private void claimMastery(final Player player, final Island island, final String[] args) {
+        if (args.length < 3) {
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cUsage: /is mastery claim <id>"));
+            return;
+        }
+        final IslandProgressionCatalog.Mastery objective = IslandProgressionCatalog.masteryObjectives().stream()
+                .filter(value -> value.id().equalsIgnoreCase(args[2])).findFirst().orElse(null);
+        if (objective == null) {
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cUnknown mastery id. Use &f/is mastery&c."));
+            return;
+        }
+        if (island.statOf(objective.statKey()) < objective.target()) {
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cThat mastery goal is not complete yet."));
+            return;
+        }
+        final var profile = plugin.playerData().profileOf(player.getUniqueId()).orElse(null);
+        if (profile == null) {
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cYour profile is still loading."));
+            return;
+        }
+        final long reward = objective.rewardSkyTokens();
+        if (!plugin.economy().fitsDeposit(profile, com.coremc.core.economy.Currency.SKY_TOKENS, reward)) {
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cYour Sky Token balance is full; spend some before claiming."));
+            return;
+        }
+        if (!profile.claimIslandMastery(island.islandId(), objective.id())) {
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&eYou already claimed this island mastery reward."));
+            return;
+        }
+        plugin.economy().deposit(profile, com.coremc.core.economy.Currency.SKY_TOKENS, reward);
+        plugin.playerData().persistImportant(profile);
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&aMastery reward claimed: &b" + reward + " Sky Tokens&a."));
     }
 
     private void top(final Player player) {
@@ -444,7 +484,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(messages.get("island.help-upgrades", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-buffs", Map.of("label", label)));
         player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7/" + label + " progression &8- &fView island level unlocks."));
-        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7/" + label + " mastery &8- &fTrack lifetime island goals."));
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7/" + label + " mastery [claim <id>] &8- &fTrack and claim lifetime island goals."));
         player.sendMessage(messages.get("island.help-top", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-delete", Map.of("label", label)));
     }
@@ -466,6 +506,14 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
                 }
             }
             return completions;
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("mastery") && "claim".startsWith(args[1].toLowerCase())) {
+            completions.add("claim");
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("mastery") && args[1].equalsIgnoreCase("claim")) {
+            for (final IslandProgressionCatalog.Mastery objective : IslandProgressionCatalog.masteryObjectives()) {
+                if (objective.id().startsWith(args[2].toLowerCase())) completions.add(objective.id());
+            }
         }
         if (args.length == 2 && (args[0].equalsIgnoreCase("invite") || args[0].equalsIgnoreCase("visit"))) {
             final String partial = args[1].toLowerCase();
