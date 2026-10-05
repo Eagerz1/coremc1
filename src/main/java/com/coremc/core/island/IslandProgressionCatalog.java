@@ -45,12 +45,12 @@ public final class IslandProgressionCatalog {
             new Level(30, "Season Complete", List.of("Season completion reward")));
 
     private static final List<Mastery> MASTERY = List.of(
-            new Mastery("miner", "Ore Breaker", "blocks-mined", 25_000L),
-            new Mastery("slayer", "Mob Hunter", "mobs-killed", 5_000L),
-            new Mastery("farmer", "Harvest Keeper", "crops-harvested", 25_000L),
-            new Mastery("logger", "Forest Keeper", "logs-chopped", 10_000L),
-            new Mastery("fisher", "Deep Catch", "fish-caught", 2_500L),
-            new Mastery("generator", "Core Operator", "generator-harvests", 5_000L));
+            new Mastery("miner", "Ore Breaker", "blocks-mined", 25_000L, 80L),
+            new Mastery("slayer", "Mob Hunter", "mobs-killed", 5_000L, 80L),
+            new Mastery("farmer", "Harvest Keeper", "crops-harvested", 25_000L, 80L),
+            new Mastery("logger", "Forest Keeper", "logs-chopped", 10_000L, 60L),
+            new Mastery("fisher", "Deep Catch", "fish-caught", 2_500L, 60L),
+            new Mastery("generator", "Core Operator", "generator-harvests", 5_000L, 100L));
 
     private IslandProgressionCatalog() {}
 
@@ -64,6 +64,18 @@ public final class IslandProgressionCatalog {
 
     public static List<Mastery> masteryObjectives() {
         return MASTERY;
+    }
+
+    /** Minimum island level for each connected progression system. */
+    public static int requiredIslandLevel(final String system) {
+        return switch (system == null ? "" : system.toLowerCase(java.util.Locale.ROOT)) {
+            case "generators" -> 3;
+            case "spawners" -> 5;
+            case "companions" -> 8;
+            case "equipment-sets" -> 10;
+            case "advanced-spawners" -> 15;
+            default -> 1;
+        };
     }
 
     /** Existing curve, capped to the 30-level season track. */
@@ -90,5 +102,5 @@ public final class IslandProgressionCatalog {
         }
     }
 
-    public record Mastery(String id, String title, String statKey, long target) {}
+    public record Mastery(String id, String title, String statKey, long target, long rewardSkyTokens) {}
 }
