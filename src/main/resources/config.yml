@@ -790,6 +790,16 @@ spawners:
     money: 3
     sky-tokens: 1
     island-xp: 2
+
+  # Mob-specific rare drops unlock after sustained kills on each spawner lane.
+  # The enchanted version is a 1-in-10 upgrade of a normal rare drop.
+  rare-drops:
+    unlock-kills: 1000
+    chance: 0.10
+    enchanted-chance: 0.10
+    base-value: 500
+    value-per-lane: 100
+    enchanted-multiplier: 50
   zombie:
     unlock-kill-key: zombie
     display: "&2Zombie"
