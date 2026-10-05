@@ -83,6 +83,8 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             case "info" -> info(player);
             case "upgrades" -> plugin.gui().open(player, new IslandUpgradesGui(plugin));
             case "buffs" -> plugin.gui().open(player, new IslandBuffsGui(plugin));
+            case "progression", "progress" -> progression(player);
+            case "mastery" -> mastery(player);
             case "top" -> top(player);
             default -> help(player, label);
         }
@@ -314,6 +316,55 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(messages.get("island.info-created", Map.of("value", created)));
     }
 
+    private void progression(final Player player) {
+        final Optional<Island> optional = islands.islandOf(player.getUniqueId());
+        if (optional.isEmpty()) {
+            messages.sendPrefixed(player, "island.none", Map.of());
+            return;
+        }
+        final Island island = optional.get();
+        final int level = plugin.islandProgress().levelFor(island);
+        final IslandProgressionCatalog.Level current = IslandProgressionCatalog.level(level);
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize(
+                "&6&lIsland Progression &8• &fLevel " + level + "/" + IslandProgressionCatalog.MAX_LEVEL
+                        + " &7" + current.title()));
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7Unlocked: &f"
+                + String.join(", ", current.unlocks())));
+        if (level >= IslandProgressionCatalog.MAX_LEVEL) {
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&aYou have completed the season level track."));
+            return;
+        }
+        final long divisor = plugin.getConfig().getLong("island.level.xp-divisor", 100L);
+        final long upgradeXp = Math.max(0L,
+                plugin.getConfig().getLong("island.level.xp-per-upgrade-tier", 10L));
+        final long upgradeTiers = island.upgrades().values().stream().mapToLong(Integer::longValue).sum();
+        final long score = island.xp() + upgradeTiers * upgradeXp;
+        final long required = IslandProgressionCatalog.requiredScore(level + 1, divisor);
+        final IslandProgressionCatalog.Level next = IslandProgressionCatalog.level(level + 1);
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&eNext: &fLevel "
+                + next.number() + " &7" + next.title() + " &8(" + Math.max(0L, required - score)
+                + " progression score remaining)"));
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7Unlocks: &f"
+                + String.join(", ", next.unlocks())));
+    }
+
+    private void mastery(final Player player) {
+        final Optional<Island> optional = islands.islandOf(player.getUniqueId());
+        if (optional.isEmpty()) {
+            messages.sendPrefixed(player, "island.none", Map.of());
+            return;
+        }
+        final Island island = optional.get();
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&d&lIsland Mastery &8• &7Lifetime island goals"));
+        for (final IslandProgressionCatalog.Mastery objective : IslandProgressionCatalog.masteryObjectives()) {
+            final long progress = Math.min(objective.target(), island.statOf(objective.statKey()));
+            final String status = progress >= objective.target() ? "&a✓" : "&e" + progress + "/" + objective.target();
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&f" + objective.title()
+                    + " &8— &7" + objective.statKey().replace('-', ' ') + " &8["
+                    + status + "&8]"));
+        }
+    }
+
     private void top(final Player player) {
         final List<Island> ranked = new ArrayList<>(islands.allIslands());
         ranked.sort((left, right) -> {
@@ -392,6 +443,8 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(messages.get("island.help-info", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-upgrades", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-buffs", Map.of("label", label)));
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7/" + label + " progression &8- &fView island level unlocks."));
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7/" + label + " mastery &8- &fTrack lifetime island goals."));
         player.sendMessage(messages.get("island.help-top", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-delete", Map.of("label", label)));
     }
@@ -407,7 +460,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             final String partial = args[0].toLowerCase();
             for (final String sub : List.of(
                     "create", "home", "visit", "invite", "accept", "leave", "kick", "delete", "info", "upgrades",
-                    "buffs", "top", "help")) {
+                    "buffs", "progression", "progress", "mastery", "top", "help")) {
                 if (sub.startsWith(partial)) {
                     completions.add(sub);
                 }
