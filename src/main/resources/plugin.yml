@@ -84,6 +84,9 @@ commands:
     description: View spawner unlock progress and buy spawners.
     usage: /spawners
     permission: coremc.command.spawners
+  sell:
+    description: Sell CoreMC spawner rare drops in your inventory.
+    usage: /sell
   crates:
     description: Open the crate lineup.
     usage: /crates
