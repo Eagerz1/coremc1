@@ -253,6 +253,8 @@ public final class SpawnerService {
         spawner.setSpawnedEntity(entry);
         spawner.setPotentialSpawns(List.of(entry));
         spawner.setSpawnCount(Math.max(1, ref.tier().spawnCount()));
+        spawner.setMaxNearbyEntities(16);
+        spawner.setRequiredPlayerRange(16);
         final int delay = Math.max(20, delayTicks);
         spawner.setMinSpawnDelay(delay);
         spawner.setMaxSpawnDelay(delay);
@@ -305,8 +307,11 @@ public final class SpawnerService {
                 continue;
             }
             final TierRef ref = tierFor(placement.id()).orElse(null);
-            final boolean needsPotentials = spawner.getPotentialSpawns().isEmpty();
-            if (ref != null && (needsPotentials || spawner.getSpawnCount() <= 0)) {
+            final boolean needsRepair = ref != null
+                    && (spawner.getPotentialSpawns().isEmpty()
+                            || spawner.getSpawnCount() <= 0
+                            || spawner.getSpawnedType() != ref.mob().entityType());
+            if (needsRepair) {
                 applyToState(spawner, ref, ref.tier().spawnDelayTicks(),
                         ref.tier().spawnDelayTicks());
                 spawner.update(true);
