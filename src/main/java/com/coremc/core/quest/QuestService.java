@@ -143,6 +143,10 @@ public final class QuestService implements Listener {
             plugin.economy().deposit(profile, Currency.SKY_TOKENS, quest.rewardTokens());
         }
         write(profile, quest.id(), new QuestRotation.Progress(current.amount(), true, true));
+        plugin.islands().islandOf(player.getUniqueId()).ifPresent(island -> {
+            island.addStat("missions-completed", 1L);
+            plugin.islands().markDirty(island);
+        });
         plugin.playerData().persistImportant(profile);
         plugin.messages().sendPrefixed(player, "quest.claimed", Map.of(
                 "credits", String.valueOf(quest.rewardCredits()),
