@@ -28,6 +28,7 @@ import com.coremc.core.gui.GuiService;
 import com.coremc.core.island.IslandCommand;
 import com.coremc.core.island.IslandProtectionListener;
 import com.coremc.core.island.IslandVoidRescueListener;
+import com.coremc.core.island.EquipmentSetService;
 import com.coremc.core.island.IslandService;
 import com.coremc.core.island.YamlIslandDataStore;
 import com.coremc.core.player.PlayerDataService;
@@ -98,6 +99,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private com.coremc.core.island.IslandUpgradeEffects islandUpgradeEffects;
     private com.coremc.core.island.IslandActivityEffects islandActivityEffects;
     private com.coremc.core.island.IslandProgressService islandProgressService;
+    private EquipmentSetService equipmentSetService;
     private com.coremc.core.island.IslandBuffService islandBuffService;
     private com.coremc.core.chat.TagService tagService;
     private com.coremc.core.chat.ChatStyleService chatStyleService;
@@ -195,6 +197,8 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.islandActivityEffects = new com.coremc.core.island.IslandActivityEffects(this);
         this.islandProgressService = new com.coremc.core.island.IslandProgressService(this);
         this.islandProgressService.start(taskService);
+        this.equipmentSetService = new EquipmentSetService(this);
+        this.equipmentSetService.start(taskService);
         this.islandBuffService = new com.coremc.core.island.IslandBuffService(this);
         if (this.islandService.islandWorld().isEmpty()) {
             getLogger().warning("Island world '" + coreConfig.islandWorldName()
@@ -279,6 +283,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         pluginManager.registerEvents(islandUpgradeEffects, this);
         pluginManager.registerEvents(islandActivityEffects, this);
         pluginManager.registerEvents(islandProgressService, this);
+        pluginManager.registerEvents(equipmentSetService, this);
         pluginManager.registerEvents(eventService, this);
         pluginManager.registerEvents(scoreboardService, this);
         pluginManager.registerEvents(guiService, this);
@@ -428,6 +433,7 @@ public final class CoreMCPlugin extends JavaPlugin {
             placeableService = null;
         }
         this.generatorService = null;
+        this.equipmentSetService = null;
         this.companionService = null;
         this.questService = null;
         this.spawnerService = null;
@@ -572,6 +578,13 @@ public final class CoreMCPlugin extends JavaPlugin {
             throw new IllegalStateException("Command 'spawners' missing from plugin.yml");
         }
         spawners.setExecutor(new SpawnersCommand(this));
+
+        final PluginCommand sets = getCommand("sets");
+        if (sets == null) {
+            throw new IllegalStateException("Command 'sets' missing from plugin.yml");
+        }
+        sets.setExecutor(equipmentSetService);
+        sets.setTabCompleter(equipmentSetService);
 
         final PluginCommand sell = getCommand("sell");
         if (sell == null) {
