@@ -26,7 +26,7 @@ class PlayerProfileV7Test {
         assertTrue(profile.ownedSkins().isEmpty(), "nothing is auto-granted");
         assertTrue(profile.equippedToolSkin("miner").isEmpty(), "no equipped skins");
         assertEquals("none", profile.equippedHat(), "no hat equipped");
-        assertEquals(9, PlayerProfile.SCHEMA_VERSION);
+        assertEquals(10, PlayerProfile.SCHEMA_VERSION);
     }
 
     @Test
