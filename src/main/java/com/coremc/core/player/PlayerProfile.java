@@ -16,7 +16,8 @@ import java.util.UUID;
  * 6 = + custom enchant levels, souls, tags, companions, quests, playtime,
  * chat style, lifetime stats, subscription claims, store rank;
  * 7 = + animated skins (owned ids, per-role equipped tool skins, equipped hat);
- * 8 = + owned chat styles (cosmetic chat colour/gradient ownership).
+ * 8 = + owned chat styles (cosmetic chat colour/gradient ownership);
+ * 9 = + claim-once island mastery reward ids.
  * All loads are tolerant: unknown/missing fields become defaults.
  *
  * A profile is created the first time a player connects and survives
@@ -36,7 +37,7 @@ import java.util.UUID;
 public final class PlayerProfile {
 
     /** Current on-disk schema version. */
-    public static final int SCHEMA_VERSION = 8;
+    public static final int SCHEMA_VERSION = 9;
 
     private final UUID uuid;
 
@@ -97,6 +98,8 @@ public final class PlayerProfile {
     private long playtimeMinutes;
     /** Claimed playtime milestone ids. */
     private final java.util.Set<String> playtimeClaimed = new java.util.LinkedHashSet<>();
+    /** Island UUID + mastery id claim keys (per-player, persisted). */
+    private final java.util.Set<String> islandMasteryClaims = new java.util.LinkedHashSet<>();
     /** Selected chat colour/gradient id ("none" = default). */
     private String chatColor = "none";
     /** Whether the chat colour applies bold. */
@@ -240,6 +243,13 @@ public final class PlayerProfile {
                 profile.playtimeClaimed.add(String.valueOf(entry));
             }
         }
+        final Object masteryClaimsObject = map.get("island-mastery-claims");
+        if (masteryClaimsObject instanceof java.util.List<?> masteryClaims) {
+            for (final Object entry : masteryClaims) {
+                final String key = String.valueOf(entry).trim();
+                if (!key.isEmpty()) profile.islandMasteryClaims.add(key);
+            }
+        }
         profile.chatColor =
                 String.valueOf(map.getOrDefault("chat-color", "none")).trim().toLowerCase(java.util.Locale.ROOT);
         if (profile.chatColor.isEmpty()) {
@@ -345,6 +355,7 @@ public final class PlayerProfile {
         map.put("quest-progress", deepCopyRecords(questProgress));
         map.put("playtime-minutes", playtimeMinutes);
         map.put("playtime-claimed", new java.util.ArrayList<>(playtimeClaimed));
+        map.put("island-mastery-claims", new java.util.ArrayList<>(islandMasteryClaims));
         map.put("chat-color", chatColor);
         map.put("chat-bold", chatBold);
         map.put("owned-chat-styles", new java.util.ArrayList<>(ownedChatStyles));
@@ -666,6 +677,23 @@ public final class PlayerProfile {
 
     public boolean playtimeMilestoneClaimed(final String milestoneId) {
         return playtimeClaimed.contains(milestoneId);
+    }
+
+    /** Claims one island mastery reward for this player and island. */
+    public boolean claimIslandMastery(final UUID islandId, final String masteryId) {
+        if (islandId == null || masteryId == null || masteryId.isBlank()) {
+            return false;
+        }
+        return islandMasteryClaims.add(islandId + ":" + masteryId.trim().toLowerCase(java.util.Locale.ROOT));
+    }
+
+    public boolean islandMasteryClaimed(final UUID islandId, final String masteryId) {
+        return islandId != null && masteryId != null
+                && islandMasteryClaims.contains(islandId + ":" + masteryId.trim().toLowerCase(java.util.Locale.ROOT));
+    }
+
+    public java.util.Set<String> islandMasteryClaims() {
+        return java.util.Set.copyOf(islandMasteryClaims);
     }
 
     // --- chat ---
