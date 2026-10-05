@@ -40,7 +40,8 @@ public final class RareDropService {
         final ItemStack item = create(mob, enchanted);
         final var result = com.coremc.core.util.ItemDelivery.deliverDetailed(player, item);
         if (result == com.coremc.core.util.ItemDelivery.Result.FAILED) {
-            player.sendMessage(ColorUtil.colorize("&cYour rare drop could not be delivered. Free inventory space and contact staff."));
+            player.getWorld().dropItemNaturally(player.getLocation(), item);
+            player.sendMessage(ColorUtil.colorize("&eYour rare drop was placed beside you because your inventory is full."));
             return;
         }
         player.sendMessage(ColorUtil.colorize("&dRare drop: " + item.getItemMeta().getDisplayName()));
@@ -83,7 +84,7 @@ public final class RareDropService {
         if (total <= 0L || !plugin.economy().fitsDeposit(profile, Currency.MONEY, total)) return 0L;
 
         for (int slot = 0; slot < contents.length; slot++) {
-            if (isRareDrop(contents[slot])) contents[slot] = null;
+            if (isRareDrop(contents[slot]) && valueOf(contents[slot]) > 0L) contents[slot] = null;
         }
         player.getInventory().setContents(contents);
         plugin.economy().deposit(profile, Currency.MONEY, total);
