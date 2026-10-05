@@ -14,15 +14,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.data.Levelled;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 
 /**
  * Mining-activity enchant pipeline (miner role + universal):
@@ -39,10 +44,12 @@ public final class MiningEnchantHandler implements Listener {
 
     private final CoreMCPlugin plugin;
     private final EnchantEngine engine;
+    private final NamespacedKey generatorBlocksKey;
 
     public MiningEnchantHandler(final CoreMCPlugin plugin, final EnchantEngine engine) {
         this.plugin = plugin;
         this.engine = engine;
+        this.generatorBlocksKey = new NamespacedKey(plugin, "vein-generator-blocks");
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -114,7 +121,15 @@ public final class MiningEnchantHandler implements Listener {
 
     private void breakVeins(final Player player, final Block origin, final ItemStack tool,
             final List<EnchantService.EnchantLevel> active) {
-        if (!EnchantBlocks.isOre(origin.getType())) {
+        final var island = plugin.islands().islandAt(
+                origin.getWorld().getName(), origin.getX(), origin.getZ()).orElse(null);
+        if (island == null) {
+            return;
+        }
+        final boolean miningCube = EnchantBlocks.isOre(origin.getType())
+                && plugin.miningCube().isCubeBlock(island, origin);
+        final boolean generator = isTrackedGeneratorBlock(origin);
+        if (!miningCube && !generator) {
             return;
         }
         for (final EnchantService.EnchantLevel owned : active) {
@@ -130,8 +145,96 @@ public final class MiningEnchantHandler implements Listener {
             engine.markCooldown(player.getUniqueId(), enchant.id());
             veinBreak(player, origin, tool,
                     Math.max(1, (int) Math.floor(enchant.valueAt(owned.level()))),
-                    boolValue(enchant.values(), "break-containers", false));
+                    boolValue(enchant.values(), "break-containers", false),
+                    island, miningCube, origin.getType());
         }
+    }
+
+    /** Marks blocks formed by a source-water/source-lava cobble generator. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onGeneratorBlockForm(final BlockFormEvent event) {
+        final BlockState state = event.getNewState();
+        if (!isGeneratorMaterial(state.getType()) || !hasWaterAndLavaSources(state.getBlock())) {
+            return;
+        }
+        markGeneratorBlock(state.getBlock());
+    }
+
+    /** Drop the marker when the block is mined so stale locations cannot be reused. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onGeneratorBlockBreak(final BlockBreakEvent event) {
+        unmarkGeneratorBlock(event.getBlock());
+    }
+
+    private boolean hasWaterAndLavaSources(final Block block) {
+        boolean water = false;
+        boolean lava = false;
+        for (int dy = -2; dy <= 2; dy++) {
+            for (int dx = -2; dx <= 2; dx++) {
+                for (int dz = -2; dz <= 2; dz++) {
+                    final Block nearby = block.getRelative(dx, dy, dz);
+                    if (nearby.getBlockData() instanceof Levelled levelled && levelled.getLevel() == 0) {
+                        water |= nearby.getType() == Material.WATER;
+                        lava |= nearby.getType() == Material.LAVA;
+                    }
+                }
+            }
+        }
+        return water && lava;
+    }
+
+    private void markGeneratorBlock(final Block block) {
+        final long[] marked = block.getChunk().getPersistentDataContainer()
+                .get(generatorBlocksKey, PersistentDataType.LONG_ARRAY);
+        final long position = packedPosition(block);
+        if (marked != null && java.util.Arrays.stream(marked).anyMatch(value -> value == position)) {
+            return;
+        }
+        final long[] updated = marked == null ? new long[] {position}
+                : java.util.Arrays.copyOf(marked, marked.length + 1);
+        if (marked != null) {
+            updated[updated.length - 1] = position;
+        }
+        block.getChunk().getPersistentDataContainer()
+                .set(generatorBlocksKey, PersistentDataType.LONG_ARRAY, updated);
+    }
+
+    private void unmarkGeneratorBlock(final Block block) {
+        final var pdc = block.getChunk().getPersistentDataContainer();
+        final long[] marked = pdc.get(generatorBlocksKey, PersistentDataType.LONG_ARRAY);
+        if (marked == null) {
+            return;
+        }
+        final long position = packedPosition(block);
+        final long[] updated = java.util.Arrays.stream(marked)
+                .filter(value -> value != position).toArray();
+        if (updated.length == 0) {
+            pdc.remove(generatorBlocksKey);
+        } else if (updated.length != marked.length) {
+            pdc.set(generatorBlocksKey, PersistentDataType.LONG_ARRAY, updated);
+        }
+    }
+
+    private boolean isTrackedGeneratorBlock(final Block block) {
+        if (!isGeneratorMaterial(block.getType())) {
+            return false;
+        }
+        final long[] marked = block.getChunk().getPersistentDataContainer()
+                .get(generatorBlocksKey, PersistentDataType.LONG_ARRAY);
+        if (marked == null) {
+            return false;
+        }
+        final long position = packedPosition(block);
+        return java.util.Arrays.stream(marked).anyMatch(value -> value == position);
+    }
+
+    private static long packedPosition(final Block block) {
+        return ((long) block.getY() << 8) | ((long) (block.getX() & 15) << 4) | (block.getZ() & 15);
+    }
+
+    private static boolean isGeneratorMaterial(final Material material) {
+        return material == Material.COBBLESTONE || material == Material.STONE
+                || material == Material.BASALT || material == Material.BLACKSTONE;
     }
 
     private void fireCataclysm(final Player player, final PlayerProfile profile, final String role,
@@ -185,7 +288,8 @@ public final class MiningEnchantHandler implements Listener {
 
     /** Breadth-first break of the connected ore vein (face-neighbours only). */
     private void veinBreak(final Player player, final Block origin, final ItemStack tool, final int cap,
-            final boolean breakContainers) {
+            final boolean breakContainers, final com.coremc.core.island.Island island,
+            final boolean miningCube, final Material generatorMaterial) {
         final Set<Location> visited = new HashSet<>();
         final Deque<Block> queue = new ArrayDeque<>();
         visited.add(origin.getLocation());
@@ -196,7 +300,10 @@ public final class MiningEnchantHandler implements Listener {
             if (!visited.add(current.getLocation())) {
                 continue;
             }
-            if (!EnchantBlocks.isOre(current.getType())) {
+            final boolean allowed = miningCube
+                    ? EnchantBlocks.isOre(current.getType()) && plugin.miningCube().isCubeBlock(island, current)
+                    : current.getType() == generatorMaterial && isTrackedGeneratorBlock(current);
+            if (!allowed) {
                 continue;
             }
             if (engine.breakExtra(player, current, tool, breakContainers)) {
