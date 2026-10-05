@@ -514,7 +514,11 @@ public final class SpawnerService {
     public int requiredIslandLevel(final TierRef ref) {
         final int index = new ArrayList<>(lanes.values()).indexOf(ref.mob());
         if (index < 0) return IslandProgressionCatalog.requiredIslandLevel("spawners");
-        return 5 + (index / 10) * 5;
+        return switch (index / 10) {
+            case 0 -> 1;
+            case 1 -> 5;
+            default -> 15;
+        };
     }
 
     /**
