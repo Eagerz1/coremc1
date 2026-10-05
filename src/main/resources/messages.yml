@@ -8,6 +8,9 @@
 prefix: "&b&lCOREMC &8» &f"
 
 no-permission: "&cYou do not have permission to do that."
+
+progression:
+  locked: "&c{system} unlock at island level &f{level}&c; yours is &f{yours}&c."
 player-only: "That command can only be used by players."
 reload-success: "Configuration reloaded."
 unknown-subcommand: "Unknown subcommand. Usage: {usage}"
