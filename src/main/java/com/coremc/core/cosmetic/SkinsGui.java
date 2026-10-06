@@ -39,11 +39,11 @@ public final class SkinsGui implements Gui {
         28, 29, 30, 31, 32, 33, 34
     };
 
-    private static final int SLOT_PREV = 36;
-    private static final int SLOT_PREVIEW = 38;
-    private static final int SLOT_APPLY = 40;
-    private static final int SLOT_CLEAR = 42;
-    private static final int SLOT_NEXT = 44;
+    private static final int SLOT_PREV = 45;
+    private static final int SLOT_PREVIEW = 47;
+    private static final int SLOT_APPLY = 49;
+    private static final int SLOT_CLEAR = 51;
+    private static final int SLOT_NEXT = 53;
 
     private final CoreMCPlugin plugin;
     private final SkinService skins;
@@ -67,7 +67,7 @@ public final class SkinsGui implements Gui {
 
     @Override
     public int size() {
-        return 45;
+        return 54;
     }
 
     @Override

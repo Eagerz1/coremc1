@@ -39,21 +39,21 @@ keys:
     icon: PAPER
   river:
     display: "&bRiver Key"
-    icon: HEART_OF_THE_SEA
+    icon: TRIPWIRE_HOOK
   crimson:
     display: "&cCrimson Key"
-    icon: CRIMSON_FUNGUS
+    icon: BLAZE_POWDER
   boost:
     display: "&dBoost Key"
-    icon: ECHO_SHARD
+    icon: AMETHYST_SHARD
   core:
-    display: "&bCore Lootbox Key"
+    display: "&bCore Lootbox"
     icon: TRIPWIRE_HOOK
   monthly:
-    display: "&dMonthly Lootbox Key"
+    display: "&dMonthly Lootbox"
     icon: TRIPWIRE_HOOK
   seasonal:
-    display: "&6Seasonal Lootbox Key"
+    display: "&6Seasonal Lootbox"
     icon: TRIPWIRE_HOOK
 
 crates:

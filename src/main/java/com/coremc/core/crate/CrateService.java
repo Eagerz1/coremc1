@@ -267,6 +267,17 @@ public final class CrateService {
         return Optional.ofNullable(crates.get(id.toLowerCase(Locale.ROOT)));
     }
 
+    /** Crate that accepts a physical key id, if one is configured. */
+    public Optional<CrateDefinition> crateForKey(final String keyId) {
+        return crates.values().stream().filter(crate -> crate.keys().stream()
+                .anyMatch(id -> id.equalsIgnoreCase(keyId))).findFirst();
+    }
+
+    /** Formatted reward label for key lore and previews. */
+    public String rewardLabel(final CrateReward reward) {
+        return labelFor(reward);
+    }
+
     /**
      * Weighted roll over the pool: {@code roll01} in [0,1) picks the
      * reward. Pure (unit-tested); null only when the pool has no weight.
@@ -345,16 +356,27 @@ public final class CrateService {
      * @return true when a reward paid out
      */
     public boolean open(final Player player, final CrateDefinition crate) {
+        return open(player, crate, null);
+    }
+
+    /** Opens with the exact right-clicked key, or any accepted key when preferredKeyId is null. */
+    public boolean open(final Player player, final CrateDefinition crate, final String preferredKeyId) {
         final PlayerProfile profile = plugin.playerData().profileOf(player.getUniqueId()).orElse(null);
         if (profile == null) {
             plugin.messages().sendPrefixed(player, "shop.unavailable", Map.of());
             return false;
         }
         String keyUsed = null;
-        for (final String keyId : crate.keys()) {
-            if (plugin.keys().countKeys(player, keyId) > 0) {
-                keyUsed = keyId;
-                break;
+        if (preferredKeyId != null
+                && crate.keys().stream().anyMatch(id -> id.equalsIgnoreCase(preferredKeyId))
+                && plugin.keys().countKeys(player, preferredKeyId) > 0) {
+            keyUsed = preferredKeyId;
+        } else if (preferredKeyId == null) {
+            for (final String keyId : crate.keys()) {
+                if (plugin.keys().countKeys(player, keyId) > 0) {
+                    keyUsed = keyId;
+                    break;
+                }
             }
         }
         if (keyUsed == null) {

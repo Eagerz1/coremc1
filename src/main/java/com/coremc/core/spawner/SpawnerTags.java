@@ -76,7 +76,7 @@ public final class SpawnerTags {
                 .map(ref -> ChatColor.stripColor(ColorUtil.colorize(ref.mob().display())))
                 .filter(name -> name != null && !name.isBlank())
                 .orElseGet(() -> SpawnerMobTagger.prettyEntityName(entity.getType().name()));
-        living.setCustomName(ColorUtil.colorize("&c" + display));
+        living.setCustomName(ColorUtil.colorize("&c" + display + " &7Spawner"));
         living.setCustomNameVisible(true);
     }
 

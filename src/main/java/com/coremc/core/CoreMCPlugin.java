@@ -99,6 +99,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private com.coremc.core.island.IslandUpgradeEffects islandUpgradeEffects;
     private com.coremc.core.island.IslandActivityEffects islandActivityEffects;
     private com.coremc.core.island.IslandProgressService islandProgressService;
+    private com.coremc.core.island.IslandDisqualificationService islandDisqualificationService;
     private EquipmentSetService equipmentSetService;
     private com.coremc.core.island.IslandBuffService islandBuffService;
     private com.coremc.core.chat.TagService tagService;
@@ -190,6 +191,8 @@ public final class CoreMCPlugin extends JavaPlugin {
                 playerDataService,
                 getDataFolder().toPath().resolve("islands"));
         this.islandService.start();
+        this.islandDisqualificationService = new com.coremc.core.island.IslandDisqualificationService(this);
+        this.islandDisqualificationService.load();
         this.miningCubeService = new com.coremc.core.island.MiningCubeService(this);
         this.miningCubeService.load();
         this.miningCubeService.startRegeneration(taskService);
@@ -299,6 +302,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         pluginManager.registerEvents(new PlaceableListener(this), this);
         pluginManager.registerEvents(new com.coremc.core.spawner.SpawnerMobTagger(
                 this, spawnerService.tags()), this);
+        pluginManager.registerEvents(new com.coremc.core.crate.CrateKeyListener(this), this);
         pluginManager.registerEvents(new KillProgressListener(this), this);
         pluginManager.registerEvents(enchantEngine, this);
         pluginManager.registerEvents(new MiningEnchantHandler(this, enchantEngine), this);
@@ -514,6 +518,13 @@ public final class CoreMCPlugin extends JavaPlugin {
         final HealCommand healCommand = new HealCommand(this);
         heal.setExecutor(healCommand);
         heal.setTabCompleter(healCommand);
+
+        final PluginCommand wipe = getCommand("wipe");
+        if (wipe == null) throw new IllegalStateException("Command 'wipe' missing from plugin.yml");
+        wipe.setExecutor(new com.coremc.core.admin.WipeCommand(this));
+        final PluginCommand dq = getCommand("dq");
+        if (dq == null) throw new IllegalStateException("Command 'dq' missing from plugin.yml");
+        dq.setExecutor(new com.coremc.core.admin.DqCommand(this));
 
         final PluginCommand island = getCommand("island");
         if (island == null) {
@@ -754,6 +765,11 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Live effects of the per-activity island upgrade tracks. */
     public com.coremc.core.island.IslandActivityEffects islandActivity() {
         return islandActivityEffects;
+    }
+
+    /** Island score disqualification records. */
+    public com.coremc.core.island.IslandDisqualificationService islandDisqualifications() {
+        return islandDisqualificationService;
     }
 
     /** Island stats, XP and level progression. */

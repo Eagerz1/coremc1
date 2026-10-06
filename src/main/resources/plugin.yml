@@ -22,6 +22,14 @@ commands:
     usage: /heal [player]
     permission: coremc.command.heal
     permission-message: "&cYou do not have permission to use this command."
+  wipe:
+    description: Reset a player's island and CoreMC progression, preserving Credits.
+    usage: /wipe <player>
+    permission: coremc.admin.wipe
+  dq:
+    description: Disqualify an island from the island leaderboard for 1 to 8 weeks.
+    usage: /DQ <islandowner> <1-8 weeks> <reason>
+    permission: coremc.admin.dq
   island:
     description: CoreMC Skyblock island commands.
     usage: /island [create|home|invite|accept|leave|kick|delete|info|upgrades|progression|mastery|help]
@@ -186,6 +194,12 @@ permissions:
     children:
       coremc.command.*: true
       coremc.moderation.*: true
+  coremc.admin.wipe:
+    description: Allows resetting a player's island and progression.
+    default: op
+  coremc.admin.dq:
+    description: Allows disqualifying islands from the leaderboard.
+    default: op
   coremc.command.*:
     description: Grants all CoreMC command permissions.
     children:

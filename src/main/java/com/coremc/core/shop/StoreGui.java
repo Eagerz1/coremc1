@@ -62,11 +62,27 @@ public final class StoreGui implements Gui {
             if (!product.kind().equals(kind) || index >= slots.length || !available(product)) continue;
             final long balance = plugin.playerData().profileOf(viewer.getUniqueId())
                     .map(PlayerProfile::credits).orElse(0L);
-            inventory.setItem(slots[index++], GuiService.item(product.icon(), product.name(),
-                    List.of("&7Price: &f" + String.format(Locale.ROOT, "%,d", product.price()) + " Credits",
-                            "&7Balance: &f" + String.format(Locale.ROOT, "%,d", balance),
-                            (balance >= product.price() ? "&a✔ Affordable" : "&c✖ Need more Credits"),
-                            "&eLeft-click to buy.")));
+            ItemStack icon;
+            if (product.kind().equals("key") || product.kind().equals("box")) {
+                icon = plugin.keys().mint(product.grants().get(0).keyId(), 1);
+            } else {
+                icon = new ItemStack(product.icon());
+            }
+            if (icon == null) icon = new ItemStack(product.icon());
+            final var meta = icon.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName(ColorUtil.colorize(product.name()));
+                final java.util.List<String> lore = new java.util.ArrayList<>();
+                if ((product.kind().equals("key") || product.kind().equals("box"))
+                        && meta.hasLore() && meta.getLore() != null) lore.addAll(meta.getLore());
+                lore.add(ColorUtil.colorize("&7&lPrice: &f&l" + String.format(Locale.ROOT, "%,d", product.price()) + " Credits"));
+                lore.add(ColorUtil.colorize("&7&lBalance: &f&l" + String.format(Locale.ROOT, "%,d", balance)));
+                lore.add(ColorUtil.colorize(balance >= product.price() ? "&a&l✔ Affordable" : "&c&l✖ Need more Credits"));
+                lore.add(ColorUtil.colorize("&e&lLeft-click to buy."));
+                meta.setLore(lore);
+                icon.setItemMeta(meta);
+            }
+            inventory.setItem(slots[index++], icon);
         }
     }
     private boolean available(final Product product) {
@@ -81,12 +97,13 @@ public final class StoreGui implements Gui {
     @Override
     public boolean onRightClick(final Player viewer, final int slot) {
         final Product product = productAt(slot);
-        if (product == null) return onClick(viewer, slot);
+        if (product == null) return false;
+        if (product.kind().equals("bundle")) return false;
         final String keyId = product.grants().get(0).keyId();
         final CrateDefinition crate = plugin.crates().all().stream()
                 .filter(candidate -> candidate.keys().contains(keyId)).findFirst().orElse(null);
         if (crate == null) {
-            viewer.sendMessage(ColorUtil.colorize("&cNo lootbox is configured for that key yet."));
+            plugin.messages().sendPrefixed(viewer, "store.no-lootbox", java.util.Map.of());
             return false;
         }
         plugin.gui().open(viewer, new CratePreviewGui(plugin, crate.id()));
@@ -101,12 +118,12 @@ public final class StoreGui implements Gui {
     private boolean purchase(final Player viewer, final Product product) {
         final PlayerProfile profile = plugin.playerData().profileOf(viewer.getUniqueId()).orElse(null);
         if (profile == null || !available(product)) {
-            viewer.sendMessage(ColorUtil.colorize("&cThis store item is unavailable right now."));
+            plugin.messages().sendPrefixed(viewer, "shop.unavailable", java.util.Map.of());
             return false;
         }
         if (!plugin.economy().withdraw(profile, Currency.CREDITS, product.price())) {
-            viewer.sendMessage(ColorUtil.colorize("&cInsufficient Credits: need "
-                    + String.format(Locale.ROOT, "%,d", product.price()) + "."));
+            plugin.messages().sendPrefixed(viewer, "shop.insufficient", java.util.Map.of(
+                    "price", String.format(Locale.ROOT, "%,d", product.price()), "currency", "Credits"));
             return false;
         }
         final ItemStack[] items = product.grants().stream()
@@ -115,11 +132,12 @@ public final class StoreGui implements Gui {
         if (java.util.Arrays.stream(items).anyMatch(java.util.Objects::isNull)
                 || !ItemDelivery.deliver(viewer, items)) {
             plugin.economy().deposit(profile, Currency.CREDITS, product.price());
-            viewer.sendMessage(ColorUtil.colorize("&cInventory and ender chest full; Credits refunded."));
+            plugin.messages().sendPrefixed(viewer, "shop.overflow", java.util.Map.of());
             return false;
         }
-        viewer.sendMessage(ColorUtil.colorize("&aPurchased " + ColorUtil.colorize(product.name())
-                + "&a for &f" + String.format(Locale.ROOT, "%,d", product.price()) + " Credits."));
+        plugin.messages().sendPrefixed(viewer, "store.purchased", java.util.Map.of(
+                "item", ColorUtil.colorize(product.name()),
+                "price", String.format(Locale.ROOT, "%,d", product.price())));
         return true;
     }
 }

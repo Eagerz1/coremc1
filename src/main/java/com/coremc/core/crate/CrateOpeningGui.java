@@ -17,11 +17,16 @@ public final class CrateOpeningGui implements Gui {
     private static final int[] RING = {10, 11, 12, 14, 15, 16, 22, 21, 20, 19};
     private final CoreMCPlugin plugin;
     private final String crateId;
+    private final String preferredKeyId;
     private BukkitTask task;
     private int frame;
     public CrateOpeningGui(final CoreMCPlugin plugin, final String crateId) {
+        this(plugin, crateId, null);
+    }
+    public CrateOpeningGui(final CoreMCPlugin plugin, final String crateId, final String preferredKeyId) {
         this.plugin = plugin;
         this.crateId = crateId;
+        this.preferredKeyId = preferredKeyId;
     }
     @Override public String title() { return "&b&lLOOTBOX &8» &fOpening..."; }
     @Override public int size() { return 27; }
@@ -52,7 +57,7 @@ public final class CrateOpeningGui implements Gui {
             if (frame >= 24) {
                 cancel();
                 viewer.playSound(viewer.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 0.8f, 1.1f);
-                plugin.crates().crate(crateId).ifPresent(crate -> plugin.crates().open(viewer, crate));
+                plugin.crates().crate(crateId).ifPresent(crate -> plugin.crates().open(viewer, crate, preferredKeyId));
                 if (viewer.isOnline()) viewer.closeInventory();
             }
         }, 0L, 2L);

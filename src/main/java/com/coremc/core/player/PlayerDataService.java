@@ -152,6 +152,29 @@ public final class PlayerDataService {
         return Optional.empty();
     }
 
+    /** Replaces all gameplay data while preserving only the player's Credits balance. */
+    public void wipeProfile(final UUID uuid, final java.util.function.Consumer<Boolean> completion) {
+        final PlayerProfile cached = cache.get(uuid);
+        io.execute(() -> {
+            try {
+                final PlayerProfile current = cached != null ? cached : store.load(uuid).orElse(null);
+                if (current == null) {
+                    org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> completion.accept(false));
+                    return;
+                }
+                final PlayerProfile reset = PlayerProfile.createNew(uuid, current.username(), System.currentTimeMillis());
+                reset.setBalanceInternal(com.coremc.core.economy.Currency.CREDITS, current.credits());
+                store.save(reset);
+                cache.put(uuid, reset);
+                dirty.remove(uuid);
+                org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> completion.accept(true));
+            } catch (final IOException exception) {
+                logger.log(Level.SEVERE, "Failed to wipe profile " + uuid, exception);
+                org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> completion.accept(false));
+            }
+        });
+    }
+
     /** Saves and evicts the profile of a disconnecting player. */
     public void handleQuit(final UUID uuid) {
         final PlayerProfile profile = cache.get(uuid);

@@ -43,6 +43,7 @@ heal:
   by-other: "You have been healed by {sender}."
 
 island:
+  dq-active: "&cIsland progress and upgrades are paused while this island is disqualified."
   starting: "Islands are still loading — try again in a moment."
   created-themed: "Your {theme} &7island has been created!"
   theme-unknown: "&cUnknown island theme. Available themes: &f{themes}"
@@ -251,7 +252,22 @@ enchant:
 key:
   received: "&e+{amount} {name}&7."
 
+wipe:
+  usage: "&cUsage: /wipe <player>"
+  unknown-player: "&cUnknown player '&f{player}&c'."
+  success: "&aWiped &f{player}&a. Credits were preserved."
+  failed: "&cCould not wipe &f{player}&c; see the server log."
+dq:
+  usage: "&cUsage: /DQ <islandowner> <1-8 weeks> <reason>"
+  invalid-weeks: "&cDuration must be a whole number from 1 to 8 weeks."
+  unknown-player: "&cUnknown player '&f{player}&c'."
+  no-island: "&c{player} does not own an island."
+  success: "&aIsland owner &f{player}&a is disqualified from /is top for &f{weeks} week(s)&a. Reason: &f{reason}&a."
+store:
+  purchased: "&aPurchased {item}&a for &f{price} Credits."
+  no-lootbox: "&cNo lootbox is configured for that item."
 crate:
+  key-unconfigured: "&cThis key has no lootbox configured."
   opened: "{crate} &7opened — you won {reward}&7!"
   pity: "&d&lPITY! &7{crate} &7grants {reward}&7."
   no-key: "&cYou need {key}&c to open {crate}&c."

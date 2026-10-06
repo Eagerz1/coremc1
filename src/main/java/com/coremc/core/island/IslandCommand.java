@@ -406,7 +406,9 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
     }
 
     private void top(final Player player) {
-        final List<Island> ranked = new ArrayList<>(islands.allIslands());
+        final List<Island> ranked = new ArrayList<>(islands.allIslands().stream()
+                .filter(island -> !plugin.islandDisqualifications().isActive(island.owner()))
+                .toList());
         ranked.sort((left, right) -> {
             final int byLevel = Integer.compare(right.level(), left.level());
             return byLevel != 0 ? byLevel : Long.compare(right.xp(), left.xp());

@@ -8,6 +8,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.world.ChunkLoadEvent;
 
 /**
@@ -47,6 +49,19 @@ public final class SpawnerMobTagger implements Listener {
             return;
         }
         tags.tag(event.getEntity(), tierId);
+        // Some server forks rewrite mob attributes after CreatureSpawnEvent.
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (event.getEntity().isValid() && !event.getEntity().isDead()) tags.tag(event.getEntity(), tierId);
+        });
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void oneHitKill(final EntityDamageByEntityEvent event) {
+        if (!tags.isSpawnerBorn(event.getEntity())) return;
+        final Entity attacker = event.getDamager();
+        final boolean playerAttack = attacker instanceof org.bukkit.entity.Player
+                || (attacker instanceof Projectile projectile && projectile.getShooter() instanceof org.bukkit.entity.Player);
+        if (playerAttack) event.setDamage(Math.max(event.getDamage(), 2048.0));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

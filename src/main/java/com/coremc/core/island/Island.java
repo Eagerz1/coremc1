@@ -82,7 +82,7 @@ public final class Island {
     }
 
     private final UUID islandId;
-    private final UUID owner;
+    private UUID owner;
     private final Set<UUID> members = new LinkedHashSet<>();
     private final String worldName;
     private final int centerX;
@@ -258,6 +258,15 @@ public final class Island {
 
     public UUID owner() {
         return owner;
+    }
+
+    /** Promote an existing team member when the current owner is removed. */
+    public UUID transferOwner(final UUID newOwner) {
+        Objects.requireNonNull(newOwner, "newOwner");
+        if (!members.remove(newOwner)) throw new IllegalArgumentException("New owner must be a team member");
+        final UUID previous = owner;
+        owner = newOwner;
+        return previous;
     }
 
     public Set<UUID> members() {

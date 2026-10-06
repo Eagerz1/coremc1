@@ -11,8 +11,8 @@ import org.bukkit.inventory.Inventory;
 
 /** First page of /skins: choose one of the six Omni-Tools. */
 public final class SkinsToolSelectGui implements Gui {
-    private static final int[] SLOTS = {10, 11, 12, 14, 15, 16};
-    private static final int SLOT_CLOSE = 22;
+    private static final int[] SLOTS = {20, 22, 24, 29, 31, 33};
+    private static final int SLOT_CLOSE = 53;
     private final CoreMCPlugin plugin;
 
     public SkinsToolSelectGui(final CoreMCPlugin plugin) {
@@ -26,7 +26,7 @@ public final class SkinsToolSelectGui implements Gui {
 
     @Override
     public int size() {
-        return 27;
+        return 54;
     }
 
     @Override
@@ -35,6 +35,8 @@ public final class SkinsToolSelectGui implements Gui {
             inventory.setItem(slot, GuiService.item(
                     Material.GRAY_STAINED_GLASS_PANE, " ", List.of()));
         }
+        inventory.setItem(4, GuiService.item(Material.BOOK, "&b&lCHOOSE AN OMNITOOL",
+                List.of("&7Choose a tool to browse its skins.")));
         final var profile = plugin.playerData()
                 .profileOf(viewer.getUniqueId()).orElse(null);
         final Role[] roles = Role.values();
@@ -49,6 +51,8 @@ public final class SkinsToolSelectGui implements Gui {
                     List.of("&7Owned skins: &f" + owned + "&7/&f" + count,
                             "&eClick to browse this tool.")));
         }
+        inventory.setItem(49, GuiService.item(Material.PAPER, "&7Skin collection",
+                List.of("&7Select a tool to see its available skins.")));
         inventory.setItem(SLOT_CLOSE, GuiService.item(
                 Material.BARRIER, "&c&lClose", List.of()));
     }
