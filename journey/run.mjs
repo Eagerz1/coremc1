@@ -795,26 +795,11 @@ async function main() {
   }
 
   // ------------------------------------------------ P4b companions
-  phase('4b', '/companions: six earnable companions; unlock and summon Ore Sprite')
-  win = await openWindow(owner, '/companions')
-  check(win && win.inventoryStart === 54, '/companions opens 54-slot panel')
-  const COMPANION_SLOTS = [10, 12, 14, 16, 29, 33]
-  check(win && COMPANION_SLOTS.every((s) => slotType(win, s)), 'all six companions render')
-  check(win && slotJson(win, 10).includes('ore sprite'), 'Ore Sprite leads the companion collection')
-  if (win) {
-    const before = await tokensOf(owner)
-    clearChat(owner)
-    await click(owner, 10)
-    check(await waitChat(owner, /companion unlocked/i), 'companion unlock confirms')
-    const after = await tokensOf(owner)
-    check(after === before - 150, 'Ore Sprite costs exactly 150 Sky Tokens', `${before} -> ${after}`)
-    check(slotJson(owner.currentWindow, 10).includes('summoned'), 'unlocked companion is immediately summoned')
-    await closeWin(owner)
-  }
-  const follower = await waitUntil(() => Object.values(owner.entities).some((e) => e !== owner.entity
-    && /armor_stand/i.test(String(e.name || ''))
-    && e.position && e.position.distanceTo(owner.entity.position) < 4), 15000, 500)
-  check(!!follower, 'summoned companion visibly follows the player')
+  phase('4b', '/companions: progression gate protects the level-8 unlock')
+  clearChat(owner)
+  owner.chat('/companions')
+  check(await waitChat(owner, /companions unlock at island level 8/i, 10000),
+    'companions stay locked below island level 8')
 
   // ------------------------------------------------ P4c quests
   phase('4c', '/quests: three daily gameplay missions are assigned')
@@ -1157,55 +1142,11 @@ async function main() {
   }
 
   // ------------------------------------------------ P9 generators
-  phase(9, '/gens: 24 generators render; buy cobble gen, place, harvest')
-  win = await openWindow(owner, '/gens')
-  check(win && win.inventoryStart === 54, '/gens opens 54-slot market')
-  const GEN_SLOTS = [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23,
-    24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39]
-  check(win && GEN_SLOTS.every((s) => slotType(win, s) !== null), 'all 24 generators render')
-  check(win && slotJson(win, 10).includes('cobble'), 'cobble gen leads the market')
-  if (win) {
-    const before = await creditsOf(owner)
-    clearChat(owner)
-    await click(owner, 10)
-    check(await waitChat(owner, /purchased/i), 'gen purchase confirms')
-    const after = await creditsOf(owner)
-    check(after === before - 5000, 'cobble gen costs exactly 5000 credits', `${before} -> ${after}`)
-    check(invHas(owner, 'observer'), 'gen item delivered')
-    await closeWin(owner)
-  }
-  let genAt = null
-  for (let r = 1; r <= 3 && !genAt; r++) {
-    for (const [dx, dz] of [[0, r], [0, -r], [r, 0], [-r, 0]]) {
-      if (solidAt(owner, HX + dx, GY, HZ + dz) && airAbove(owner, HX + dx, GY, HZ + dz)) {
-        genAt = { x: HX + dx, y: GY, z: HZ + dz }
-        break
-      }
-    }
-  }
-  check(!!genAt, 'found a free platform cell for the gen')
-  if (genAt) {
-    const item = owner.inventory.items().find((i) => i.name === 'observer')
-    let placed = false
-    if (item) {
-      await owner.equip(item, 'hand')
-      try {
-        await owner.placeBlock(owner.blockAt(v3(genAt.x, genAt.y, genAt.z)), v3(0, 1, 0))
-        await sleep(800)
-        const b = owner.blockAt(v3(genAt.x, genAt.y + 1, genAt.z))
-        placed = !!b && b.name === 'observer'
-      } catch (e) { log('[gen] place failed: ' + e.message) }
-    }
-    check(placed, 'gen places on the island')
-    if (placed) {
-      await sleep(6500) // cobble cooldown is 5s
-      clearChat(owner)
-      const genBlock = owner.blockAt(v3(genAt.x, genAt.y + 1, genAt.z))
-      try { await owner.activateBlock(genBlock) } catch (e) { log('[gen] harvest click: ' + e.message) }
-      check(await waitChat(owner, /\+\d+.*cobble/i, 15000), 'harvest pays cobblestone to chat')
-      check(invCount(owner, 'cobblestone') >= 1, 'harvested cobble lands in inventory')
-    }
-  }
+  phase(9, '/gens: progression gate protects the level-3 unlock')
+  clearChat(owner)
+  owner.chat('/gens')
+  check(await waitChat(owner, /generators unlock at island level 3/i, 10000),
+    'generators stay locked below island level 3')
 
   // ------------------------------------------------ P10 void rescue
   phase(10, 'void rescue')
@@ -1492,9 +1433,10 @@ async function main() {
   win = await openWindow(owner, '/role')
   check(win && slotJson(win, 4).includes('miner'), 'role still Miner after restart')
   await closeWin(win)
-  win = await openWindow(owner, '/companions')
-  check(win && slotJson(win, 10).includes('summoned'), 'companion ownership and summon state persist after restart')
-  if (win) await closeWin(owner)
+  clearChat(owner)
+  owner.chat('/companions')
+  check(await waitChat(owner, /companions unlock at island level 8/i, 10000),
+    'companion remains progression-locked after restart')
   const hatBack = await waitUntil(() => {
     return Object.values(owner.entities).some((e) => e !== owner.entity
       && /display/i.test(String(e.name || ''))
@@ -1548,7 +1490,7 @@ async function main() {
     const profileRaw = fs.readFileSync(path.join(PLUGIN_DIR, 'profiles', `${uuid}.yml`), 'utf8')
     check(!profileRaw.includes('\u00a7') && !profileRaw.includes('#ff5555'),
       'profile: no rendered colour output is ever persisted')
-    check(profile['schema-version'] === 8, 'profile: schema migrated to v8',
+    check(profile['schema-version'] === 10, 'profile: schema migrated to v10',
       String(profile['schema-version']))
     const enchLvl = (profile['enchant-levels'] && profile['enchant-levels']['miner.treasure-miner']) || 0
     check(enchLvl >= 1, 'profile: dotted treasure-miner id persisted literally', `level=${enchLvl}`)
@@ -1574,10 +1516,10 @@ async function main() {
       String(equippedSkin))
     check(profile['equipped-hat'] === 'ember_crown', 'profile: equipped hat persists',
       String(profile['equipped-hat']))
-    check(profile.companions && profile.companions['ore-sprite'],
-      'profile: companion ownership and progression persist')
-    check(profile['equipped-companion'] === 'ore-sprite',
-      'profile: equipped companion persists by stable id', String(profile['equipped-companion']))
+    check(!profile.companions || !profile.companions['ore-sprite'],
+      'profile: locked companion is not granted below level 8')
+    check(profile['equipped-companion'] !== 'ore-sprite',
+      'profile: locked companion is not equipped below level 8', String(profile['equipped-companion']))
     check(Array.isArray(profile['daily-quests']) && profile['daily-quests'].length === 3,
       'profile: three daily mission assignments persist', JSON.stringify(profile['daily-quests']))
     check(typeof profile['quest-day'] === 'string' && profile['quest-day'].length === 10,
