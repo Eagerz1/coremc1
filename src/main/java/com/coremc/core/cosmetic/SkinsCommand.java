@@ -36,7 +36,7 @@ public final class SkinsCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> STAFF_SUBS =
             List.of("grant", "revoke", "set", "clear", "resetseason", "reload");
-    private static final List<String> PLAYER_SUBS = List.of("help", "list");
+    private static final List<String> PLAYER_SUBS = List.of("help", "list", "hats");
 
     private final CoreMCPlugin plugin;
     private final SkinService skins;
@@ -62,6 +62,13 @@ public final class SkinsCommand implements CommandExecutor, TabCompleter {
         switch (args[0].toLowerCase(Locale.ROOT)) {
             case "help" -> sendHelp(sender);
             case "list" -> listSkins(sender, args.length > 1 ? args[1] : null);
+            case "hats" -> {
+                if (!(sender instanceof Player player)) {
+                    messages.sendPrefixed(sender, "player-only", Map.of());
+                } else {
+                    plugin.gui().open(player, new SkinsHatsGui(plugin));
+                }
+            }
             case "grant", "revoke", "set", "clear", "resetseason", "reload" -> {
                 if (!sender.hasPermission("coremc.skins.admin")) {
                     messages.sendPrefixed(sender, "no-permission", Map.of());
@@ -76,7 +83,8 @@ public final class SkinsCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelp(final CommandSender sender) {
         sender.sendMessage(ColorUtil.colorize("&b&lCOREMC &8» &7Skins"));
-        sender.sendMessage(ColorUtil.colorize("&b/skins &8- &7open the skins menu"));
+        sender.sendMessage(ColorUtil.colorize("&b/skins &8- &7choose a tool and browse its skins"));
+        sender.sendMessage(ColorUtil.colorize("&b/skins hats &8- &7browse wearable hats"));
         sender.sendMessage(ColorUtil.colorize("&b/skins list [player] &8- &7show every skin"));
         if (sender.hasPermission("coremc.skins.admin")) {
             sender.sendMessage(ColorUtil.colorize("&b/skins grant <player> <skin> &8- &7grant ownership"));
