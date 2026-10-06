@@ -50,7 +50,7 @@ tool_skin_contract:
   preserves: [damage, enchants, upgrades, levels, role, pdc_identity]
   selection_rule: custom model layer over the soulbound OmniTool only;
     role must match the tool binding, ownership lives in the profile
-  fallback: vanilla NETHERITE_PICKAXE with role lore when pack missing
+  fallback: role-specific vanilla OmniTool material with role lore when pack missing
 hat_contract:
   mechanism: item_display passenger overlay (HEAD transform)
   preserves: real helmet slot item and all armour attributes

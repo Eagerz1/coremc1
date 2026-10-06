@@ -129,10 +129,11 @@ public final class OmniToolService {
         meta.setUnbreakable(true);
         meta.getPersistentDataContainer().set(markerKey, PersistentDataType.BYTE, (byte) 1);
         meta.getPersistentDataContainer().set(roleKey, PersistentDataType.STRING, role.key());
+        stampVisualLayer(meta, role, profile);
         // Custom model data is an optional visual layer. The NETHERITE_PICKAXE
         // fallback, OmniTool marker, role PDC, lore and upgrade enchantments
         // are unchanged when a pack is absent.
-        meta.setCustomModelData(ROLE_MODEL_IDS.getOrDefault(role, 21405));
+        stampVisualLayer(meta, role, profile);
         applyUpgradeEnchants(meta, profile);
         item.setItemMeta(meta);
         return item;

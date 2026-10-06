@@ -239,9 +239,22 @@ def check_animated_manifest(manifest, static_records):
     static_ids = {record["model_id"] for record in static_records.values()}
     if static_ids & ids:
         fail("static and animated model IDs overlap")
+    role_materials = {
+        "miner": "NETHERITE_PICKAXE",
+        "logger": "NETHERITE_AXE",
+        "fisher": "FISHING_ROD",
+        "slayer": "NETHERITE_SWORD",
+        "farmer": "NETHERITE_HOE",
+        "universal": "NETHERITE_PICKAXE",
+    }
     for item_id, record in animated.items():
         if record["material"] in {"AIR", ""}:
             fail(f"{item_id}: animated skin has no safe fallback material")
+        if item_id.startswith("tool_skin_"):
+            role = item_id.rsplit("_", 1)[-1]
+            expected_material = role_materials.get(role)
+            if expected_material is None or record["material"] != expected_material:
+                fail(f"{item_id}: expected {expected_material}, got {record['material']}")
         model = MODELS / (record["path"] + ".json")
         if not model.is_file():
             fail(f"{item_id}: missing animated skin model {model}")

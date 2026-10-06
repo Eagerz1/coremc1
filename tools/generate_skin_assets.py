@@ -55,7 +55,14 @@ TOOL_SKIN_IDS = {  # (collection, role) -> CMD id
 }
 HAT_SKIN_IDS = {"ember_crown": 21630, "rift_halo": 21631, "moonlit_cap": 21632}
 
-TOOL_MATERIAL = "NETHERITE_PICKAXE"  # the OmniTool base material
+ROLE_TOOL_MATERIAL = {
+    "miner": "NETHERITE_PICKAXE",
+    "logger": "NETHERITE_AXE",
+    "fisher": "FISHING_ROD",
+    "slayer": "NETHERITE_SWORD",
+    "farmer": "NETHERITE_HOE",
+    "universal": "NETHERITE_PICKAXE",
+}
 HAT_MATERIAL = "CARVED_PUMPKIN"      # vanilla fallback: pumpkin-on-head
 
 COLLECTION_IDS = {
@@ -176,7 +183,7 @@ def write_items_yml() -> None:
             f'      - "&7{col["lore"]}"',
             f'      - "&7Role: {plain(skin_models.ROLE_DISPLAY[role])}"',
             "    resource:",
-            f"      material: {TOOL_MATERIAL}",
+            f"      material: {ROLE_TOOL_MATERIAL[role]}",
             "      generate: false",
             f"      model_path: \"item/skins/tools/{collection}/{role}\"",
             f"      model_id: {model_id}",
@@ -225,7 +232,7 @@ def merge_manifest() -> None:
             f"  tool_skin_{collection}_{role}:\n"
             f"    model_id: {model_id}\n"
             f"    model_path: skins/tools/{collection}/{role}\n"
-            f"    fallback_material: {TOOL_MATERIAL}\n"
+            f"    fallback_material: {ROLE_TOOL_MATERIAL[role]}\n"
             f"    category: tool_skin\n"
         )
     for hat_id, model_id in HAT_SKIN_IDS.items():
@@ -253,7 +260,7 @@ def merge_skin_registry() -> None:
         "  preserves: [damage, enchants, upgrades, levels, role, pdc_identity]\n"
         "  selection_rule: custom model layer over the soulbound OmniTool only;\n"
         "    role must match the tool binding, ownership lives in the profile\n"
-        "  fallback: vanilla NETHERITE_PICKAXE with role lore when pack missing\n"
+        "  fallback: role-specific vanilla OmniTool material with role lore when pack missing\n"
         "hat_contract:\n"
         "  mechanism: item_display passenger overlay (HEAD transform)\n"
         "  preserves: real helmet slot item and all armour attributes\n"
@@ -327,7 +334,7 @@ def write_plugin_catalog(texture_meta: dict[str, dict[str, object]]) -> None:
                 f'          display: "{col["display"]} {skin_models.ROLE_DISPLAY[role]}"',
                 f"          role: {role}",
                 f"          model-id: {model_id}",
-                f"          material: {TOOL_MATERIAL}",
+                f"          material: {ROLE_TOOL_MATERIAL[role]}",
                 f'          model-path: "coremc:item/skins/tools/{collection}/{role}"',
                 f'          texture: "coremc:item/skins/{metal_key}"',
                 f'          animation-frames: {texture_meta[metal_key]["frames"]}',
