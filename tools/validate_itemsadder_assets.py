@@ -351,7 +351,7 @@ def check_java_references(records):
         fail("placeable PDC identity was not found; fallback safety cannot be proven")
     if "new NamespacedKey(plugin, \"crate-key\")" not in java:
         fail("crate-key PDC identity was not found; fallback safety cannot be proven")
-    for model_id in (21000, 21001, 21002, 21003, 21004, 21005, 21006, 21007, 21008, 21009,
+    for model_id in (21000, 21001, 21002, 21003, 21004, 21005, 21006, 21007, 21008, 21009, 21010, 21011, 21012,
                      21400, 21401, 21402, 21403, 21404, 21405):
         if str(model_id) not in java:
             fail(f"Java visual model id {model_id} is missing from the source")

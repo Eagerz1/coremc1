@@ -47,7 +47,10 @@ public final class KeyService {
             Map.entry("rune", 21006),
             Map.entry("titan", 21007),
             Map.entry("mythic", 21008),
-            Map.entry("daily", 21009));
+            Map.entry("daily", 21009),
+            Map.entry("core", 21010),
+            Map.entry("monthly", 21011),
+            Map.entry("seasonal", 21012));
 
     public KeyService(final CoreMCPlugin plugin) {
         this.plugin = plugin;

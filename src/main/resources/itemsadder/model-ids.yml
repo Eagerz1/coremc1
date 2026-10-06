@@ -692,6 +692,21 @@ items:
     model_path: keys/daily_key
     fallback_material: CLOCK
     category: progression
+  core_key:
+    model_id: 21010
+    model_path: keys/sky_key
+    fallback_material: TRIPWIRE_HOOK
+    category: progression
+  monthly_key:
+    model_id: 21011
+    model_path: keys/river_key
+    fallback_material: TRIPWIRE_HOOK
+    category: progression
+  seasonal_key:
+    model_id: 21012
+    model_path: keys/crimson_key
+    fallback_material: TRIPWIRE_HOOK
+    category: progression
   core_lootbox:
     model_id: 21100
     model_path: lootboxes/core

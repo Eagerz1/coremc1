@@ -1434,6 +1434,39 @@ items:
       model_path: "item/keys/daily_key"
       model_id: 21009
 
+  core_key:
+    display_name: "Core Lootbox Key"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: TRIPWIRE_HOOK"
+    resource:
+      material: TRIPWIRE_HOOK
+      generate: false
+      model_path: "item/keys/sky_key"
+      model_id: 21010
+
+  monthly_key:
+    display_name: "Monthly Lootbox Key"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: TRIPWIRE_HOOK"
+    resource:
+      material: TRIPWIRE_HOOK
+      generate: false
+      model_path: "item/keys/river_key"
+      model_id: 21011
+
+  seasonal_key:
+    display_name: "Seasonal Lootbox Key"
+    lore:
+      - "&8CoreMC progression visual"
+      - "&7Vanilla fallback: TRIPWIRE_HOOK"
+    resource:
+      material: TRIPWIRE_HOOK
+      generate: false
+      model_path: "item/keys/crimson_key"
+      model_id: 21012
+
   core_lootbox:
     display_name: "Core Lootbox"
     lore:
