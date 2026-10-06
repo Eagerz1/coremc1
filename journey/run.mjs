@@ -1024,7 +1024,13 @@ async function main() {
     check(after === before - 1, 'overlay: treasure-miner costs 1 token', `${before} -> ${after}`)
     await closeWin(owner)
   }
-  // mine two natural platform blocks (overlay: each procs a sky key)
+  // Re-equip after closing the menu so the next BlockBreakEvent is
+  // guaranteed to run with the owner's OmniTool in the main hand.
+  const miningTool = owner.inventory.items().find((i) => i.name === 'netherite_pickaxe')
+  check(!!miningTool, 'OmniTool remains in inventory after enchant menu')
+  if (miningTool) await owner.equip(miningTool, 'hand')
+  // Use two valid platform cells, then normalize them to STONE so this
+  // journey exercises MiningXpListener deterministically on every run.
   const mined = []
   for (let r = 2; r <= 3 && mined.length < 2; r++) {
     for (const [dx, dz] of [[r, 1], [r, -1], [1, r], [-1, r]]) {
@@ -1037,10 +1043,12 @@ async function main() {
       // can strand the client without chunks); the target stays within reach.
       const sx = bx - Math.sign(bx - HX), sz = bz - Math.sign(bz - HZ)
       await walkTo(owner, sx + 0.5, sz + 0.5)
-      const ready = await waitBlockReady(owner, bx, GY, bz, true, 10000)
+      await rc(`execute in ${DIM} run setblock ${bx} ${GY} ${bz} minecraft:stone`)
+      const ready = await waitUntil(
+        () => owner.blockAt(v3(bx, GY, bz))?.name === 'stone', 10000, 300)
       if (!ready) continue
       const target = owner.blockAt(v3(bx, GY, bz))
-      if (!target || target.name === 'air' || !owner.canDigBlock(target)) continue
+      if (!target || target.name !== 'stone' || !owner.canDigBlock(target)) continue
       clearChat(owner)
       let digTimedOut = false
       try {
