@@ -157,7 +157,7 @@ public final class SkinsHatsGui implements Gui {
             return false;
         }
         if (slot == SLOT_TAB_TOOLS) {
-            plugin.gui().open(viewer, new SkinsGui(plugin));
+            plugin.gui().open(viewer, new SkinsToolSelectGui(plugin));
             return false;
         }
         for (int i = 0; i < HAT_SLOTS.length; i++) {
