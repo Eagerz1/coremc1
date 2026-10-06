@@ -355,7 +355,9 @@ public final class SpawnerService {
             final TierRef ref = tierFor(placement.id()).orElse(null);
             final boolean needsRepair = ref != null
                     && (spawner.getPotentialSpawns().isEmpty()
-                            || spawner.getSpawnCount() <= 0
+                            || spawner.getSpawnCount() != ref.tier().spawnCount()
+                            || spawner.getSpawnRange() != SPAWN_RANGE_BLOCKS
+                            || spawner.getRequiredPlayerRange() != 16
                             || spawner.getSpawnedType() != ref.mob().entityType());
             if (needsRepair) {
                 applyToState(spawner, ref, ref.tier().spawnDelayTicks(),
