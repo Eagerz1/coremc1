@@ -46,6 +46,15 @@ keys:
   boost:
     display: "&dBoost Key"
     icon: ECHO_SHARD
+  core:
+    display: "&bCore Lootbox Key"
+    icon: TRIPWIRE_HOOK
+  monthly:
+    display: "&dMonthly Lootbox Key"
+    icon: TRIPWIRE_HOOK
+  seasonal:
+    display: "&6Seasonal Lootbox Key"
+    icon: TRIPWIRE_HOOK
 
 crates:
   sky:
@@ -127,3 +136,52 @@ crates:
       - { type: CURRENCY, currency: CREDITS, min: 10, max: 25, weight: 8, rarity: epic }
       - { type: SKIN, ref: tidecaller_fisher, weight: 3, rarity: epic }
       - { type: KEY, key: daily, amount: 1, weight: 2, rarity: legendary }
+
+  core:
+    display: "&bCore Lootbox"
+    icon: ENDER_CHEST
+    key: core
+    pity-count: 8
+    pity-reward: { type: CURRENCY, currency: CREDITS, min: 50, max: 50, rarity: rare }
+    rewards:
+      - { type: CURRENCY, currency: CREDITS, min: 10, max: 30, weight: 15, rarity: common }
+      - { type: CURRENCY, currency: MONEY, min: 100, max: 250, weight: 15, rarity: common }
+      - { type: ITEM, material: IRON_INGOT, amount: 8, weight: 12, rarity: common }
+      - { type: ITEM, material: GOLD_INGOT, amount: 4, weight: 12, rarity: common }
+      - { type: KEY, key: vote, amount: 1, weight: 10, rarity: common }
+      - { type: CURRENCY, currency: SKY_TOKENS, min: 5, max: 5, weight: 10, rarity: common }
+      - { type: ITEM, material: BREAD, amount: 12, weight: 10, rarity: common }
+      - { type: CURRENCY, currency: CREDITS, min: 50, max: 75, weight: 10, rarity: uncommon }
+      - { type: ITEM, material: DIAMOND, amount: 3, weight: 4, rarity: legendary }
+  monthly:
+    display: "&dMonthly Lootbox"
+    icon: ENDER_CHEST
+    key: monthly
+    pity-count: 10
+    pity-reward: { type: CURRENCY, currency: SKY_TOKENS, min: 50, max: 50, rarity: rare }
+    rewards:
+      - { type: CURRENCY, currency: CREDITS, min: 100, max: 250, weight: 20, rarity: common }
+      - { type: CURRENCY, currency: SKY_TOKENS, min: 10, max: 20, weight: 18, rarity: common }
+      - { type: ITEM, material: DIAMOND, amount: 2, weight: 12, rarity: common }
+      - { type: ITEM, material: NETHERITE_SCRAP, amount: 2, weight: 12, rarity: common }
+      - { type: CURRENCY, currency: MONEY, min: 1000, max: 3000, weight: 14, rarity: common }
+      - { type: KEY, key: sky, amount: 1, weight: 10, rarity: common }
+      - { type: SPAWNER, ref: zombie-1, weight: 8, rarity: uncommon }
+      - { type: ITEM, material: GOLD_INGOT, amount: 16, weight: 6, rarity: uncommon }
+      - { type: SPAWNER, ref: skeleton-1, weight: 3, rarity: legendary }
+  seasonal:
+    display: "&6Seasonal Lootbox"
+    icon: ENDER_CHEST
+    key: seasonal
+    pity-count: 12
+    pity-reward: { type: GENERATOR, ref: obsidian, rarity: epic }
+    rewards:
+      - { type: CURRENCY, currency: CREDITS, min: 250, max: 500, weight: 20, rarity: common }
+      - { type: CURRENCY, currency: SKY_TOKENS, min: 20, max: 50, weight: 18, rarity: common }
+      - { type: ITEM, material: DIAMOND_BLOCK, amount: 2, weight: 12, rarity: common }
+      - { type: ITEM, material: NETHERITE_SCRAP, amount: 4, weight: 12, rarity: common }
+      - { type: CURRENCY, currency: MONEY, min: 5000, max: 10000, weight: 14, rarity: common }
+      - { type: KEY, key: monthly, amount: 1, weight: 10, rarity: common }
+      - { type: SPAWNER, ref: enderman-1, weight: 8, rarity: uncommon }
+      - { type: GENERATOR, ref: quartz, weight: 6, rarity: uncommon }
+      - { type: ITEM, material: ELYTRA, amount: 1, weight: 3, rarity: legendary }

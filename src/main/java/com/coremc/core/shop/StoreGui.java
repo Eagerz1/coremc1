@@ -29,13 +29,13 @@ public final class StoreGui implements Gui {
         new Product("sky", "&bSky Key", Material.TRIPWIRE_HOOK, 250, "key", List.of(new Grant("sky", 1))),
         new Product("crimson", "&cCrimson Key", Material.TRIPWIRE_HOOK, 400, "key", List.of(new Grant("crimson", 1))),
         new Product("boost", "&dBoost Key", Material.TRIPWIRE_HOOK, 300, "key", List.of(new Grant("boost", 1))),
-        new Product("box-sky", "&bSky Lootbox", Material.ENDER_CHEST, 500, "box", List.of(new Grant("sky", 1))),
-        new Product("box-ember", "&cEmber Lootbox", Material.ENDER_CHEST, 1000, "box", List.of(new Grant("ember", 1))),
-        new Product("box-rune", "&dRune Lootbox", Material.ENDER_CHEST, 1500, "box", List.of(new Grant("rune", 1))),
-        new Product("starter", "&aStarter Bundle", Material.CHEST, 500, "bundle", List.of(new Grant("vote", 2), new Grant("sky", 1))),
+        new Product("box-core", "&bCore Lootbox", Material.ENDER_CHEST, 500, "box", List.of(new Grant("core", 1))),
+        new Product("box-monthly", "&dMonthly Lootbox", Material.ENDER_CHEST, 1000, "box", List.of(new Grant("monthly", 1))),
+        new Product("box-seasonal", "&6Seasonal Lootbox", Material.ENDER_CHEST, 1500, "box", List.of(new Grant("seasonal", 1))),
+        new Product("starter", "&aStarter Bundle", Material.CHEST, 500, "bundle", List.of(new Grant("vote", 1), new Grant("core", 1))),
         new Product("sky-bundle", "&bSky Bundle", Material.CHEST, 1000, "bundle", List.of(new Grant("river", 2), new Grant("sky", 2))),
         new Product("crimson-bundle", "&cCrimson Bundle", Material.CHEST, 1750, "bundle", List.of(new Grant("crimson", 2), new Grant("boost", 2))),
-        new Product("season-bundle", "&dSeason Bundle", Material.CHEST, 3000, "bundle", List.of(new Grant("sky", 2), new Grant("ember", 2), new Grant("rune", 2)))
+        new Product("season-bundle", "&dSeason Bundle", Material.CHEST, 3000, "bundle", List.of(new Grant("core", 2), new Grant("monthly", 2), new Grant("seasonal", 2)))
     );
     private final CoreMCPlugin plugin;
     public StoreGui(final CoreMCPlugin plugin) { this.plugin = plugin; }
@@ -65,6 +65,7 @@ public final class StoreGui implements Gui {
             inventory.setItem(slots[index++], GuiService.item(product.icon(), product.name(),
                     List.of("&7Price: &f" + String.format(Locale.ROOT, "%,d", product.price()) + " Credits",
                             "&7Balance: &f" + String.format(Locale.ROOT, "%,d", balance),
+                            (balance >= product.price() ? "&a✔ Affordable" : "&c✖ Need more Credits"),
                             "&eLeft-click to buy.")));
         }
     }
@@ -80,7 +81,7 @@ public final class StoreGui implements Gui {
     @Override
     public boolean onRightClick(final Player viewer, final int slot) {
         final Product product = productAt(slot);
-        if (product == null || !product.kind().equals("box")) return onClick(viewer, slot);
+        if (product == null) return onClick(viewer, slot);
         final String keyId = product.grants().get(0).keyId();
         final CrateDefinition crate = plugin.crates().all().stream()
                 .filter(candidate -> candidate.keys().contains(keyId)).findFirst().orElse(null);

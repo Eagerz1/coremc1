@@ -119,9 +119,11 @@ public final class CratePreviewGui implements Gui {
             return false;
         }
         if (slot == SLOT_OPEN) {
-            return plugin.crates().crate(crateId)
-                    .map(crate -> plugin.crates().open(viewer, crate))
-                    .orElse(false);
+            if (plugin.crates().crate(crateId).isEmpty()) return false;
+            final CrateOpeningGui opening = new CrateOpeningGui(plugin, crateId);
+            plugin.gui().open(viewer, opening);
+            opening.start(viewer);
+            return false;
         }
         return false;
     }
