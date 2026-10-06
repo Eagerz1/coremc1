@@ -1,0 +1,55 @@
+{
+  "model": {
+    "type": "minecraft:range_dispatch",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "entries": [
+      {
+        "threshold": 21404,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/tools/omnitool_logger"
+        }
+      },
+      {
+        "threshold": 21601,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/emberforge/logger"
+        }
+      },
+      {
+        "threshold": 21607,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/riftbound/logger"
+        }
+      },
+      {
+        "threshold": 21613,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/astral/logger"
+        }
+      },
+      {
+        "threshold": 21619,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/tidecaller/logger"
+        }
+      },
+      {
+        "threshold": 21625,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/overgrown/logger"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/netherite_axe"
+    }
+  }
+}

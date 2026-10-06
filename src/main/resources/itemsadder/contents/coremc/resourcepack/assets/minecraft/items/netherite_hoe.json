@@ -1,0 +1,55 @@
+{
+  "model": {
+    "type": "minecraft:range_dispatch",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "entries": [
+      {
+        "threshold": 21401,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/tools/omnitool_farmer"
+        }
+      },
+      {
+        "threshold": 21604,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/emberforge/farmer"
+        }
+      },
+      {
+        "threshold": 21610,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/riftbound/farmer"
+        }
+      },
+      {
+        "threshold": 21616,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/astral/farmer"
+        }
+      },
+      {
+        "threshold": 21622,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/tidecaller/farmer"
+        }
+      },
+      {
+        "threshold": 21628,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/overgrown/farmer"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/netherite_hoe"
+    }
+  }
+}

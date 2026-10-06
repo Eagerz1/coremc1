@@ -1,0 +1,97 @@
+{
+  "model": {
+    "type": "minecraft:range_dispatch",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "entries": [
+      {
+        "threshold": 21400,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/tools/omnitool_miner"
+        }
+      },
+      {
+        "threshold": 21405,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/tools/omnitool_universal"
+        }
+      },
+      {
+        "threshold": 21600,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/emberforge/miner"
+        }
+      },
+      {
+        "threshold": 21605,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/emberforge/universal"
+        }
+      },
+      {
+        "threshold": 21606,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/riftbound/miner"
+        }
+      },
+      {
+        "threshold": 21611,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/riftbound/universal"
+        }
+      },
+      {
+        "threshold": 21612,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/astral/miner"
+        }
+      },
+      {
+        "threshold": 21617,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/astral/universal"
+        }
+      },
+      {
+        "threshold": 21618,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/tidecaller/miner"
+        }
+      },
+      {
+        "threshold": 21623,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/tidecaller/universal"
+        }
+      },
+      {
+        "threshold": 21624,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/overgrown/miner"
+        }
+      },
+      {
+        "threshold": 21629,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/overgrown/universal"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/netherite_pickaxe"
+    }
+  }
+}

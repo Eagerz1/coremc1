@@ -261,6 +261,47 @@ def check_animated_manifest(manifest, static_records):
     return animated
 
 
+def check_modern_item_models(animated):
+    role_materials = {
+        "miner": "NETHERITE_PICKAXE",
+        "logger": "NETHERITE_AXE",
+        "fisher": "FISHING_ROD",
+        "slayer": "NETHERITE_SWORD",
+        "farmer": "NETHERITE_HOE",
+        "universal": "NETHERITE_PICKAXE",
+    }
+    role_model_ids = {
+        "miner": 21400,
+        "farmer": 21401,
+        "fisher": 21402,
+        "slayer": 21403,
+        "logger": 21404,
+        "universal": 21405,
+    }
+    item_dir = PACK / "resourcepack/assets/minecraft/items"
+    for role, material in role_materials.items():
+        item_path = item_dir / (material.lower() + ".json")
+        if not item_path.is_file():
+            fail(f"{role}: missing modern item model definition {item_path}")
+        model = json.loads(item_path.read_text(encoding="utf-8")).get("model", {})
+        if material == "FISHING_ROD":
+            if model.get("type") != "minecraft:condition" or model.get("property") != "minecraft:fishing_rod/cast":
+                fail("fishing_rod item model must retain the vanilla cast condition")
+            model = model.get("on_false", {})
+        if model.get("type") != "minecraft:range_dispatch" or model.get("property") != "minecraft:custom_model_data":
+            fail(f"{role}: item model must select models through custom_model_data floats")
+        entries = {
+            int(entry["threshold"]): entry["model"].get("model")
+            for entry in model.get("entries", [])
+        }
+        expected = {role_model_ids[role]: f"coremc:item/tools/omnitool_{role}"}
+        for item_id, record in animated.items():
+            if item_id.startswith("tool_skin_") and item_id.rsplit("_", 1)[-1] == role:
+                expected[record["model_id"]] = "coremc:item/" + record["path"]
+        if entries != expected:
+            fail(f"{role}: modern item model entries do not match its OmniTool and skins")
+
+
 def check_java_references(records):
     crates = (ROOT / "src/main/resources/crates.yml").read_text(encoding="utf-8")
     key_section = crates.split("keys:\n", 1)[1].split("\ncrates:\n", 1)[0]
@@ -327,6 +368,7 @@ def main():
     check_assets(records)
     check_manifest(records, static_manifest)
     animated = check_animated_manifest(manifest, records)
+    check_modern_item_models(animated)
     check_java_references(records)
     catalog_text = CATALOG.read_text(encoding="utf-8")
     for rarity in RANGES:

@@ -1,0 +1,55 @@
+{
+  "model": {
+    "type": "minecraft:range_dispatch",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "entries": [
+      {
+        "threshold": 21403,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/tools/omnitool_slayer"
+        }
+      },
+      {
+        "threshold": 21603,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/emberforge/slayer"
+        }
+      },
+      {
+        "threshold": 21609,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/riftbound/slayer"
+        }
+      },
+      {
+        "threshold": 21615,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/astral/slayer"
+        }
+      },
+      {
+        "threshold": 21621,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/tidecaller/slayer"
+        }
+      },
+      {
+        "threshold": 21627,
+        "model": {
+          "type": "minecraft:model",
+          "model": "coremc:item/skins/tools/overgrown/slayer"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/netherite_sword"
+    }
+  }
+}
