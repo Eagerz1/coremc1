@@ -1,21 +1,19 @@
 package com.coremc.core.spawner;
 
 import com.coremc.core.CoreMCPlugin;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 
 /**
- * Gives every mob produced by a CoreMC spawner block its identity:
- * the {@code spawner-born} marker (other listeners already tag vanilla
- * SPAWNER-reason mobs generically; this handler enriches CoreMC's own),
- * the stable purchasable spawner id.
- *
- * Runs at NORMAL so later listeners (slots, boosts) can inspect the
- * identity. Mobs from
- * non-CoreMC spawner blocks (dungeon spawners, other plugins) only ever
- * receive the generic marker from the slayer handler — never a tier id.
+ * Adds CoreMC identity and presentation to mobs from registered spawners.
+ * Also upgrades tagged mobs already saved in loaded chunks after a plugin
+ * update, and when an old entity is loaded from disk.
  */
 public final class SpawnerMobTagger implements Listener {
 
@@ -25,6 +23,8 @@ public final class SpawnerMobTagger implements Listener {
     public SpawnerMobTagger(final CoreMCPlugin plugin, final SpawnerTags tags) {
         this.plugin = plugin;
         this.tags = tags;
+        // The server's initial chunks are loaded before plugin listeners.
+        Bukkit.getScheduler().runTask(plugin, this::refreshLoadedEntities);
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -43,11 +43,32 @@ public final class SpawnerMobTagger implements Listener {
             return;
         }
         final String tierId = placement.get().id();
-        final var ref = plugin.spawners().tierFor(tierId);
-        if (ref.isEmpty()) {
+        if (plugin.spawners().tierFor(tierId).isEmpty()) {
             return;
         }
         tags.tag(event.getEntity(), tierId);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onChunkLoad(final ChunkLoadEvent event) {
+        for (final Entity entity : event.getChunk().getEntities()) {
+            refresh(entity);
+        }
+    }
+
+    private void refreshLoadedEntities() {
+        for (final World world : Bukkit.getWorlds()) {
+            for (final Entity entity : world.getLivingEntities()) {
+                refresh(entity);
+            }
+        }
+    }
+
+    private void refresh(final Entity entity) {
+        if (!tags.isSpawnerBorn(entity)) {
+            return;
+        }
+        tags.tierIdOf(entity).ifPresent(tierId -> tags.tag(entity, tierId));
     }
 
     /** ZOMBIFIED_PIGLIN -> "Zombified Piglin" for player-facing names. */
