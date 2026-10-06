@@ -97,6 +97,11 @@ commands:
     usage: /crates
     permission: coremc.command.crates
     permission-message: "&cYou do not have permission to use this command."
+  store:
+    description: Open the CoreMC Credits store for keys, lootboxes and bundles.
+    usage: /store
+    permission: coremc.command.store
+    permission-message: "&cYou do not have permission to use this command."
   shop:
     description: Open the CoreMC shop (optionally straight into a category).
     usage: /shop [blocks|food|redstone|misc|ores]
@@ -202,6 +207,7 @@ permissions:
       coremc.command.spawners: true
       coremc.command.sets: true
       coremc.command.crates: true
+      coremc.command.store: true
       coremc.command.skins: true
       coremc.command.shop: true
       coremc.command.tokenshop: true

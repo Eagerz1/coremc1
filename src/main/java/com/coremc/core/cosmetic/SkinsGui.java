@@ -51,21 +51,22 @@ public final class SkinsGui implements Gui {
 
     private final CoreMCPlugin plugin;
     private final SkinService skins;
+    private final Role toolRole;
 
     /** Per-open view state (this GUI instance lives exactly one open). */
     private String collectionFilter; // null = all
-    private Role roleFilter; // null = all
     private int page;
     private String previewSkinId; // null = no preview selected
 
-    public SkinsGui(final CoreMCPlugin plugin) {
+    public SkinsGui(final CoreMCPlugin plugin, final Role toolRole) {
         this.plugin = plugin;
         this.skins = plugin.skins();
+        this.toolRole = java.util.Objects.requireNonNull(toolRole, "toolRole");
     }
 
     @Override
     public String title() {
-        return "&b&lCOREMC &8» &7Tool Skins";
+        return "&b&lCOREMC &8» &7" + ColorUtil.colorize(toolRole.display()) + " Skins";
     }
 
     @Override
@@ -84,13 +85,12 @@ public final class SkinsGui implements Gui {
             inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&cClose", List.of()));
             return;
         }
-        // tabs
+        // The submenu is scoped to one selected tool.
         inventory.setItem(SLOT_TAB_TOOLS, GuiService.item(
-                Material.NETHERITE_PICKAXE, "&b&lTOOL SKINS &8(you are here)",
-                List.of("&7Animated skins for your Omni-Tool.")));
+                Material.ARROW, "&e&lBack to Tools", List.of("&7Choose a different Omni-Tool.")));
         inventory.setItem(SLOT_TAB_HATS, GuiService.item(
-                Material.CARVED_PUMPKIN, "&d&lHATS",
-                List.of("&7Wearable animated 3D hats.", "&eClick to open.")));
+                toolRole.toolMaterial(), toolRole.display(),
+                List.of("&7Skins for this tool only.")));
         inventory.setItem(SLOT_INFO, GuiService.item(
                 Material.BOOK, "&b&lSKINS",
                 List.of(
@@ -121,29 +121,11 @@ public final class SkinsGui implements Gui {
             }
             inventory.setItem(slot++, item);
         }
-        // role filters
         inventory.setItem(SLOT_ROLE_ALL, GuiService.item(
-                Material.COMPASS,
-                (roleFilter == null ? "&a&l" : "&7") + "All Roles",
-                List.of(roleFilter == null ? "&aSelected" : "&eClick to show all.")));
-        slot = SLOT_ROLE_BASE;
-        for (final Role role : Role.values()) {
-            final boolean active = role == roleFilter;
-            final List<String> lore = new ArrayList<>();
-            final String equipped = profile.equippedToolSkin(role.key()).orElse(null);
-            lore.add(equipped == null
-                    ? "&7Equipped skin: &fnone"
-                    : "&7Equipped skin: &f" + equipped);
-            lore.add(active ? "&aSelected" : "&eClick to filter.");
-            final ItemStack item = GuiService.item(
-                    role.icon(), (active ? "&a&l" : "") + role.display(), lore);
-            if (active) {
-                glint(item);
-            }
-            inventory.setItem(slot++, item);
-        }
+                toolRole.toolMaterial(), "&b&l" + toolRole.display(),
+                List.of("&7Showing skins for this tool only.")));
         // grid
-        final List<Skin> visible = skins.toolSkins(collectionFilter, roleFilter);
+        final List<Skin> visible = skins.toolSkins(collectionFilter, toolRole);
         final int pages = Math.max(1, (visible.size() + GRID_SLOTS.length - 1) / GRID_SLOTS.length);
         if (page >= pages) {
             page = pages - 1;
@@ -237,8 +219,8 @@ public final class SkinsGui implements Gui {
         lore.add("&7Returns the tool to its default look.");
         if (preview != null) {
             lore.add("&7Resets: &f" + preview.role().display());
-        } else if (roleFilter != null) {
-            lore.add("&7Resets: &f" + roleFilter.display());
+        } else if (toolRole != null) {
+            lore.add("&7Resets: &f" + toolRole.display());
         } else {
             lore.add("&7Resets: &fall roles");
         }
@@ -267,8 +249,8 @@ public final class SkinsGui implements Gui {
             viewer.closeInventory();
             return false;
         }
-        if (slot == SLOT_TAB_HATS) {
-            plugin.gui().open(viewer, new SkinsHatsGui(plugin));
+        if (slot == SLOT_TAB_TOOLS) {
+            plugin.gui().open(viewer, new SkinsToolSelectGui(plugin));
             return false;
         }
         if (slot == SLOT_COLLECTION_ALL) {
@@ -286,20 +268,6 @@ public final class SkinsGui implements Gui {
                 return true;
             }
         }
-        if (slot == SLOT_ROLE_ALL) {
-            roleFilter = null;
-            page = 0;
-            return true;
-        }
-        if (slot >= SLOT_ROLE_BASE && slot < SLOT_ROLE_BASE + 6) {
-            final Role[] roles = Role.values();
-            final int index = slot - SLOT_ROLE_BASE;
-            if (index < roles.length) {
-                roleFilter = roles[index];
-                page = 0;
-                return true;
-            }
-        }
         if (slot == SLOT_PREV) {
             if (page > 0) {
                 page--;
@@ -307,7 +275,7 @@ public final class SkinsGui implements Gui {
             return true;
         }
         if (slot == SLOT_NEXT) {
-            final List<Skin> visible = skins.toolSkins(collectionFilter, roleFilter);
+            final List<Skin> visible = skins.toolSkins(collectionFilter, toolRole);
             final int pages = Math.max(1, (visible.size() + GRID_SLOTS.length - 1) / GRID_SLOTS.length);
             if (page < pages - 1) {
                 page++;
@@ -318,7 +286,7 @@ public final class SkinsGui implements Gui {
             if (slot != GRID_SLOTS[i]) {
                 continue;
             }
-            final List<Skin> visible = skins.toolSkins(collectionFilter, roleFilter);
+            final List<Skin> visible = skins.toolSkins(collectionFilter, toolRole);
             final int index = page * GRID_SLOTS.length + i;
             if (index < visible.size()) {
                 previewSkinId = visible.get(index).id();
@@ -348,7 +316,7 @@ public final class SkinsGui implements Gui {
             if (profile == null) {
                 return false;
             }
-            final List<Skin> visible = skins.toolSkins(collectionFilter, roleFilter);
+            final List<Skin> visible = skins.toolSkins(collectionFilter, toolRole);
             final int index = page * GRID_SLOTS.length + i;
             if (index >= visible.size()) {
                 return false;
@@ -383,14 +351,8 @@ public final class SkinsGui implements Gui {
         final Skin preview = previewSkin();
         if (preview != null) {
             skins.clearToolSkin(viewer, profile, preview.role());
-        } else if (roleFilter != null) {
-            skins.clearToolSkin(viewer, profile, roleFilter);
         } else {
-            for (final Role role : Role.values()) {
-                profile.equipToolSkin(role.key(), null);
-            }
-            plugin.playerData().persistImportant(profile);
-            plugin.omniTool().refreshHeldTools(viewer, profile);
+            skins.clearToolSkin(viewer, profile, toolRole);
         }
         plugin.messages().sendPrefixed(viewer, "skins.cleared", java.util.Map.of());
     }

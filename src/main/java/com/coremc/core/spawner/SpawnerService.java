@@ -284,6 +284,52 @@ public final class SpawnerService {
         }
     }
 
+
+    /**
+     * Vanilla spawner tiles can repeatedly fail on void-island geometry even
+     * when their potential list and timer are valid. On a confirmed stall,
+     * spawn the configured cycle on nearby solid platform blocks, preserving
+     * the vanilla nearby-entity cap and stamping the same CoreMC identity.
+     */
+    private int spawnFallback(final Block spawnerBlock, final TierRef ref) {
+        final World world = spawnerBlock.getWorld();
+        final int range = 16;
+        final long nearby = world.getNearbyEntities(spawnerBlock.getLocation(),
+                        range, range, range).stream()
+                .filter(entity -> entity instanceof org.bukkit.entity.LivingEntity
+                        && entity.getType() == ref.mob().entityType())
+                .count();
+        int remaining = Math.min(ref.tier().spawnCount(), Math.max(0, 16 - (int) nearby));
+        int spawned = 0;
+        for (int dx = -SPAWN_RANGE_BLOCKS; dx <= SPAWN_RANGE_BLOCKS && remaining > 0; dx++) {
+            for (int dz = -SPAWN_RANGE_BLOCKS; dz <= SPAWN_RANGE_BLOCKS && remaining > 0; dz++) {
+                if (dx == 0 && dz == 0) {
+                    continue; // the spawner tile itself is not a spawn position
+                }
+                final Block feet = world.getBlockAt(
+                        spawnerBlock.getX() + dx, spawnerBlock.getY(), spawnerBlock.getZ() + dz);
+                if (!feet.getType().isAir()
+                        || !feet.getRelative(0, 1, 0).isPassable()
+                        || !feet.getRelative(0, 2, 0).isPassable()
+                        || !feet.getRelative(0, -1, 0).getType().isSolid()) {
+                    continue;
+                }
+                try {
+                    final org.bukkit.entity.Entity entity = world.spawnEntity(
+                            feet.getLocation().add(0.5, 0, 0.5), ref.mob().entityType());
+                    tags.tag(entity, ref.tier().tierId());
+                    spawned++;
+                    remaining--;
+                } catch (final RuntimeException exception) {
+                    plugin.getLogger().fine("Spawner fallback could not spawn "
+                            + ref.mob().entityType() + " at " + feet.getLocation() + ": "
+                            + exception.getMessage());
+                }
+            }
+        }
+        return spawned;
+    }
+
     private void tickWatchdog() {
         for (final Map.Entry<String, PlaceableService.Placement> entry
                 : plugin.placeables().placements().entrySet()) {
@@ -326,12 +372,13 @@ public final class SpawnerService {
             if (spawner.getDelay() <= 0 && playerInRange) {
                 final int strikes = stalled.merge(key, 1, Integer::sum);
                 if (strikes >= 2 && ref != null) {
+                    final int recovered = spawnFallback(block, ref);
                     applyToState(spawner, ref, ref.tier().spawnDelayTicks(),
                             REROLL_DELAY_TICKS);
                     spawner.update(true);
                     stalled.remove(key);
                     plugin.getLogger().fine("Re-armed stalled spawner at " + key
-                            + " (" + placement.id() + ")");
+                            + " (" + placement.id() + "); fallback spawned " + recovered + " mob(s)");
                 }
             } else {
                 stalled.remove(key);

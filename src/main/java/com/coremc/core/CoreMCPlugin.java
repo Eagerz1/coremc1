@@ -592,6 +592,10 @@ public final class CoreMCPlugin extends JavaPlugin {
         }
         sell.setExecutor(new com.coremc.core.spawner.SellCommand(this));
 
+        final PluginCommand store = getCommand("store");
+        if (store == null) throw new IllegalStateException("Command 'store' missing from plugin.yml");
+        store.setExecutor(new com.coremc.core.shop.StoreCommand(this));
+
         final PluginCommand crates = getCommand("crates");
         if (crates == null) {
             throw new IllegalStateException("Command 'crates' missing from plugin.yml");

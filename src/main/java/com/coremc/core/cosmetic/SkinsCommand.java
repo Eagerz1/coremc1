@@ -56,7 +56,7 @@ public final class SkinsCommand implements CommandExecutor, TabCompleter {
                 messages.sendPrefixed(sender, "player-only", Map.of());
                 return true;
             }
-            plugin.gui().open(player, new SkinsGui(plugin));
+            plugin.gui().open(player, new SkinsToolSelectGui(plugin));
             return true;
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
