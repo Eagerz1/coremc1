@@ -26,28 +26,24 @@ import org.bukkit.inventory.ItemStack;
  */
 public final class SkinsGui implements Gui {
 
-    private static final int SLOT_TAB_TOOLS = 0;
-    private static final int SLOT_TAB_HATS = 1;
+    private static final int SLOT_BACK = 0;
     private static final int SLOT_INFO = 4;
+    private static final int SLOT_CLOSE = 8;
 
-    private static final int SLOT_COLLECTION_ALL = 9;
-    private static final int SLOT_COLLECTION_BASE = 10; // 10..14 = five collections
+    private static final int SLOT_COLLECTION_ALL = 10;
+    private static final int SLOT_COLLECTION_BASE = 11; // 11..15 = five collections
 
-    private static final int SLOT_ROLE_ALL = 18;
-    private static final int SLOT_ROLE_BASE = 19; // 19..24 = six roles
-
-    /** 14 grid slots: rows 3 and 4 minus the edge columns. */
+    /** Two centered rows of seven skin entries. */
     private static final int[] GRID_SLOTS = {
-        28, 29, 30, 31, 32, 33, 34,
-        37, 38, 39, 40, 41, 42, 43
+        19, 20, 21, 22, 23, 24, 25,
+        28, 29, 30, 31, 32, 33, 34
     };
 
-    private static final int SLOT_PREV = 45;
-    private static final int SLOT_NEXT = 46;
-    private static final int SLOT_PREVIEW = 47;
-    private static final int SLOT_APPLY = 49;
-    private static final int SLOT_CLEAR = 51;
-    private static final int SLOT_CLOSE = 53;
+    private static final int SLOT_PREV = 36;
+    private static final int SLOT_PREVIEW = 38;
+    private static final int SLOT_APPLY = 40;
+    private static final int SLOT_CLEAR = 42;
+    private static final int SLOT_NEXT = 44;
 
     private final CoreMCPlugin plugin;
     private final SkinService skins;
@@ -71,7 +67,7 @@ public final class SkinsGui implements Gui {
 
     @Override
     public int size() {
-        return 54;
+        return 45;
     }
 
     @Override
@@ -85,12 +81,9 @@ public final class SkinsGui implements Gui {
             inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&cClose", List.of()));
             return;
         }
-        // The submenu is scoped to one selected tool.
-        inventory.setItem(SLOT_TAB_TOOLS, GuiService.item(
+        // Keep the header balanced: back, context, close.
+        inventory.setItem(SLOT_BACK, GuiService.item(
                 Material.ARROW, "&e&lBack to Tools", List.of("&7Choose a different Omni-Tool.")));
-        inventory.setItem(SLOT_TAB_HATS, GuiService.item(
-                toolRole.toolMaterial(), toolRole.display(),
-                List.of("&7Skins for this tool only.")));
         inventory.setItem(SLOT_INFO, GuiService.item(
                 Material.BOOK, "&b&lSKINS",
                 List.of(
@@ -121,9 +114,6 @@ public final class SkinsGui implements Gui {
             }
             inventory.setItem(slot++, item);
         }
-        inventory.setItem(SLOT_ROLE_ALL, GuiService.item(
-                toolRole.toolMaterial(), "&b&l" + toolRole.display(),
-                List.of("&7Showing skins for this tool only.")));
         // grid
         final List<Skin> visible = skins.toolSkins(collectionFilter, toolRole);
         final int pages = Math.max(1, (visible.size() + GRID_SLOTS.length - 1) / GRID_SLOTS.length);
@@ -249,7 +239,7 @@ public final class SkinsGui implements Gui {
             viewer.closeInventory();
             return false;
         }
-        if (slot == SLOT_TAB_TOOLS) {
+        if (slot == SLOT_BACK) {
             plugin.gui().open(viewer, new SkinsToolSelectGui(plugin));
             return false;
         }
