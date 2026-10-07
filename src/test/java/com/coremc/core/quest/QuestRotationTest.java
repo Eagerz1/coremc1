@@ -23,6 +23,16 @@ class QuestRotationTest {
     }
 
     @Test
+    void weeklyAssignmentIsStableForAPlayerAndWeekKey() {
+        final List<String> ids = List.of("a", "b", "c", "d", "e", "f", "g", "h");
+        final UUID player = UUID.fromString("00000000-0000-0000-0000-000000000010");
+        final List<String> assigned = QuestRotation.select(ids, player, "2026-10-05", 3);
+        assertEquals(assigned, QuestRotation.select(ids, player, "2026-10-05", 3));
+        assertEquals(3, assigned.size());
+        assertEquals(3, assigned.stream().distinct().count());
+    }
+
+    @Test
     void progressCapsAtTargetAndCannotMoveAfterClaim() {
         final QuestRotation.Progress start = new QuestRotation.Progress(9, false, false);
         final QuestRotation.Progress done = QuestRotation.advance(start, 5, 10);

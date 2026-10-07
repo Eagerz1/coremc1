@@ -12,7 +12,7 @@
 //   P3  /is upgrades: six categories render; buy border tier 1
 //   P4  /is buffs: all 12 buffs render; buy mining-boost tier 1
 //   P4b /companions: six earnable companions, unlock + summon + persistence
-//   P4c /quests: three daily assignments render and persist
+//   P4c /quests: daily + weekly assignments render and persist; /store cosmetics browse
 //   P5  /spawners: 30 regular spawners across two pages, 35 real
 //       kills, unlock fanfare, direct buy + place; spawner-born kill pays
 //       Core money/tokens WITHOUT counting wild progress; hostile GUI
@@ -802,11 +802,31 @@ async function main() {
     'companions stay locked below island level 8')
 
   // ------------------------------------------------ P4c quests
-  phase('4c', '/quests: three daily gameplay missions are assigned')
+  phase('4c', '/quests: daily and weekly gameplay missions are assigned; /store cosmetics browse')
   win = await openWindow(owner, '/quests')
   check(win && win.inventoryStart === 54, '/quests opens 54-slot mission board')
   check(win && [20, 22, 24].every((s) => slotType(win, s)), 'three daily missions render')
   if (win) await closeWin(owner)
+  win = await openWindow(owner, '/quests weekly')
+  check(win && win.inventoryStart === 54, '/quests weekly opens the weekly mission board')
+  check(win && [20, 22, 24].every((s) => slotType(win, s)), 'three weekly missions render')
+  if (win) await closeWin(owner)
+
+  win = await openWindow(owner, '/store')
+  check(win && slotType(win, 40), '/store shows the cosmetic catalog entry')
+  if (win) {
+    await click(owner, 40)
+    await sleep(350)
+    win = owner.currentWindow
+    check(win && slotType(win, 20), 'cosmetic store categories render')
+    if (win) {
+      await click(owner, 20)
+      await sleep(350)
+      win = owner.currentWindow
+      check(win && slotType(win, 10), 'tool skin offers render')
+      if (win) await closeWin(owner)
+    }
+  }
 
   // ------------------------------------------------ P5 spawners
   phase(5, '/spawners: zombie starter, 35 zombie kills unlock skeleton, buy, place, rewards')
@@ -1530,6 +1550,9 @@ async function main() {
       'profile: locked companion is not equipped below level 8', String(profile['equipped-companion']))
     check(Array.isArray(profile['daily-quests']) && profile['daily-quests'].length === 3,
       'profile: three daily mission assignments persist', JSON.stringify(profile['daily-quests']))
+    const weeklyMeta = (profile['quest-progress'] || {})['weekly:__meta']
+    check(Array.isArray(weeklyMeta?.quests) && weeklyMeta.quests.length === 3,
+      'profile: weekly mission assignment persists', JSON.stringify(weeklyMeta))
     check(typeof profile['quest-day'] === 'string' && profile['quest-day'].length === 10,
       'profile: daily mission reset key persists', String(profile['quest-day']))
     check(!ownedSkins.includes('riftbound_universal'), 'profile: no phantom skins granted')

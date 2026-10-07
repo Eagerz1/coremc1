@@ -8,7 +8,7 @@ honest feature-by-feature release gate is in [`docs/RECOVERY_MATRIX.md`](docs/RE
 - **Language:** Java 21
 - **Build:** Maven (`mvn package`) — one consistent build system for the project
 
-## Current feature set (v0.12.0)
+## Current feature set (v0.12.1)
 
 | Area | Details |
 |---|---|
@@ -20,9 +20,11 @@ honest feature-by-feature release gate is in [`docs/RECOVERY_MATRIX.md`](docs/RE
 | Spawners | 30 regular mob spawners in a polished paginated GUI. Each has a kill requirement, direct Sky Token purchase, clear `✔`/`✖` states, real block-spawner configuration and a liveness watchdog. No tier or Ancient variants. |
 | Generators | 24 material/crop generator blocks in a paginated market (purchase, place, timed harvest, break returns exactly one core item, piston protection). |
 | Companions (`/companions`, `/pets`) | Six earnable companions bought with Sky Tokens, a collection/summon GUI, visible followers, 20 levels and category XP abilities. Ownership, equipped state and progress persist. |
-| Daily missions (`/quests`, `/missions`) | Three deterministic per-player objectives drawn daily from ten mining, logging, farming, fishing and slaying missions. Live event progress, persistent claim state and earned Credit/Sky Token rewards. |
+| Missions (`/quests`, `/missions`) | Daily objectives plus `/quests weekly`; deterministic per-player assignments, separate daily/weekly progress and claims, UTC reset keys, and Credit/Sky Token rewards. |
 | Crates | Six config-driven crates with physical PDC-tagged keys, weighted rolls, pity counters, preview GUIs; keys are consumed exactly once per open. |
 | Animated skins (`/skins`) | 30 animated tool skins (5 collections — Emberforge, Riftbound, Astral, Tidecaller, Overgrown — × one distinct 3D model per role: Miner, Logger, Fisher, Slayer, Farmer, Universal OmniTool) + 3 animated hats (Ember Crown, Rift Halo, Moonlit Cap), all original artwork. A skin is a **visual layer only**: it changes `custom_model_data` plus one cosmetic PDC marker — damage, enchants, upgrades, levels and identity PDC are never touched. Ownership persists in the profile by stable id; grant/revoke hooks feed crates (`type: SKIN` rewards), events and the store; nothing is auto-granted and purchased skins survive season resets by config. Hats are worn as a client-visible overlay entity riding the head (real helmet + armour fully preserved — vanilla has no cosmetic armour slot). |
+| Credits store (`/store`) | Buy keys, lootboxes and bundles, plus paginated tool skins, hats, tags and chat styles. Cosmetic prices are configurable; unlocks use the existing stable cosmetic IDs and grant services. |
+| Island season rewards (`/is top rewards`) | Configurable top-three Credit rewards; staff settle with `/is top settle`, which snapshots the DQ-filtered leaderboard and prevents duplicate payments for a season id. |
 | Shop & economy | Three currencies (Core money, Credits, Sky Tokens), a 219-item paginated `/shop` across Blocks, Food, Redstone, Misc and Ores, `/tokenshop` exchange, affordability markers and admin grant commands; every purchase is withdraw-then-deliver with overflow/refund safety. |
 | Protection & security | Island build/break/bucket/hanging/entity protection, ownership checks on registered blocks, GUI click/drag theft sweeps, soulbound item guards, kill-cap anti-abuse, economy overflow checks. |
 | Chat tags (`/tags`) | 20 config-driven cosmetic tags (`grinder`…`legend`) in a CoreMC GUI with owned/locked/selected/clear states. Ownership and selection persist by **stable id** (never display name); unlock hooks for crates (`TAG` reward), store and events; staff `/tags grant|revoke|check|clear|reload`. |
