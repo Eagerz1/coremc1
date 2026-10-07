@@ -188,6 +188,9 @@ commands:
     usage: /tiercorrect <player> <tier> <set|add> <amount> [reason]
 
 permissions:
+  coremc.admin.island-season:
+    description: Settle the configured island leaderboard season.
+    default: op
   coremc.*:
     description: Grants all CoreMC permissions.
     default: op

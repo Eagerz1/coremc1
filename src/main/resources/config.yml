@@ -31,6 +31,13 @@ scoreboard:
   update-ticks: 40
 
 island:
+
+  season:
+    id: season-1
+    top-rewards:
+      1: 25000
+      2: 15000
+      3: 10000
   # World islands live in. CoreMC creates this world automatically when it
   # does not exist (as empty void terrain — the dedicated island world).
   # Islands created before the dedicated world existed keep working in

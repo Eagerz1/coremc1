@@ -85,7 +85,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             case "buffs" -> plugin.gui().open(player, new IslandBuffsGui(plugin));
             case "progression", "progress" -> progression(player);
             case "mastery" -> mastery(player, args);
-            case "top" -> top(player);
+            case "top" -> top(player, args);
             default -> help(player, label);
         }
         return true;
@@ -405,10 +405,22 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&aMastery reward claimed: &b" + reward + " Sky Tokens&a."));
     }
 
-    private void top(final Player player) {
-        final List<Island> ranked = new ArrayList<>(islands.allIslands().stream()
-                .filter(island -> !plugin.islandDisqualifications().isActive(island.owner()))
-                .toList());
+    private void top(final Player player, final String[] args) {
+        if (args.length > 1 && args[1].equalsIgnoreCase("rewards")) {
+            final String season = plugin.getConfig().getString("island.season.id", "season-1");
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&6&lSeason rewards &8(" + season + ")"));
+            for (int rank = 1; rank <= 3; rank++) {
+                final long reward = Math.max(0L, plugin.getConfig().getLong("island.season.top-rewards." + rank, 0L));
+                player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&e#" + rank + " &7— &f" + reward + " Credits"));
+            }
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7Staff settle the season with &f/is top settle&7."));
+            return;
+        }
+        if (args.length > 1 && args[1].equalsIgnoreCase("settle")) {
+            settleSeason(player);
+            return;
+        }
+        final List<Island> ranked = rankedIslands();
         ranked.sort((left, right) -> {
             final int byLevel = Integer.compare(right.level(), left.level());
             return byLevel != 0 ? byLevel : Long.compare(right.xp(), left.xp());
@@ -425,6 +437,80 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
                     "owner", resolveName(island.owner()),
                     "level", String.valueOf(island.level()),
                     "score", String.valueOf(island.xp()))));
+        }
+    }
+
+    private List<Island> rankedIslands() {
+        final List<Island> ranked = new ArrayList<>(islands.allIslands().stream()
+                .filter(island -> !plugin.islandDisqualifications().isActive(island.owner())).toList());
+        ranked.sort((left, right) -> {
+            final int byLevel = Integer.compare(right.level(), left.level());
+            return byLevel != 0 ? byLevel : Long.compare(right.xp(), left.xp());
+        });
+        return ranked;
+    }
+
+    private void settleSeason(final Player actor) {
+        if (!actor.hasPermission("coremc.admin.island-season")) {
+            messages.sendPrefixed(actor, "no-permission", Map.of());
+            return;
+        }
+        final String season = plugin.getConfig().getString("island.season.id", "season-1").trim();
+        if (season.isEmpty()) {
+            actor.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cSet island.season.id before settling."));
+            return;
+        }
+        final java.io.File ledgerFile = new java.io.File(plugin.getDataFolder(), "island-season-rewards.yml");
+        final org.bukkit.configuration.file.YamlConfiguration ledger =
+                org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(ledgerFile);
+        final String base = "seasons." + season;
+        if (ledger.getBoolean(base + ".complete", false)) {
+            actor.sendMessage(com.coremc.core.util.ColorUtil.colorize("&eSeason " + season + " has already been settled."));
+            return;
+        }
+        if (!ledger.contains(base + ".snapshot")) {
+            final List<String> snapshot = rankedIslands().stream().limit(3)
+                    .map(island -> island.owner().toString()).toList();
+            ledger.set(base + ".snapshot", snapshot);
+            if (!saveSeasonLedger(ledger, ledgerFile, actor)) return;
+        }
+        final List<String> snapshot = ledger.getStringList(base + ".snapshot");
+        int paid = 0;
+        for (int index = 0; index < snapshot.size() && index < 3; index++) {
+            final int rank = index + 1;
+            final long reward = Math.max(0L, plugin.getConfig().getLong("island.season.top-rewards." + rank, 0L));
+            if (reward == 0L) continue;
+            final java.util.UUID owner;
+            try { owner = java.util.UUID.fromString(snapshot.get(index)); }
+            catch (final IllegalArgumentException ignored) { continue; }
+            final var profile = plugin.playerData().cachedOrLoad(owner).orElse(null);
+            if (profile == null) continue;
+            final String claimId = "island-season:" + season + ":rank:" + rank;
+            if (profile.playtimeMilestoneClaimed(claimId)) continue;
+            if (!plugin.economy().fitsDeposit(profile, com.coremc.core.economy.Currency.CREDITS, reward)) {
+                actor.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cCould not pay #" + rank + " due to Credits overflow."));
+                continue;
+            }
+            plugin.economy().deposit(profile, com.coremc.core.economy.Currency.CREDITS, reward);
+            profile.claimPlaytimeMilestone(claimId);
+            plugin.playerData().persistImportant(profile);
+            paid++;
+        }
+        ledger.set(base + ".complete", true);
+        if (saveSeasonLedger(ledger, ledgerFile, actor)) {
+            actor.sendMessage(com.coremc.core.util.ColorUtil.colorize("&aSettled " + season + " and paid " + paid + " island reward(s)."));
+        }
+    }
+
+    private boolean saveSeasonLedger(final org.bukkit.configuration.file.YamlConfiguration ledger,
+            final java.io.File file, final Player actor) {
+        try {
+            ledger.save(file);
+            return true;
+        } catch (final java.io.IOException exception) {
+            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Could not save island season reward ledger.", exception);
+            actor.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cSeason ledger save failed; retry with the same season id."));
+            return false;
         }
     }
 
