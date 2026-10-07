@@ -65,6 +65,16 @@ public final class LootboxWorldAnimation {
             box.teleport(base.clone().add(Math.sin(shake * 2.4) * 0.18, 5.0,
                     Math.cos(shake * 2.4) * 0.10));
             if (shake == 1) releaseRewards();
+            if (shake <= 14 && visuals.size() == 9) {
+                final double radius = 2.0 * shake / 14.0;
+                for (int i = 0; i < 8; i++) {
+                    final double angle = 2.0 * Math.PI * i / 8.0;
+                    final Item regular = visuals.get(i);
+                    regular.teleport(base.clone().add(Math.cos(angle) * radius, 4.9,
+                            Math.sin(angle) * radius));
+                    if (shake % 3 == 0) particles(regular.getLocation());
+                }
+            }
             if (shake % 4 == 0) {
                 particles(box.getLocation());
                 player.playSound(box.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 0.75f,
