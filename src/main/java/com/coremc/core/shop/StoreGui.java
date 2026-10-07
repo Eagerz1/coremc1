@@ -53,6 +53,8 @@ public final class StoreGui implements Gui {
         putProducts(inventory, viewer, KEY_SLOTS, "key");
         putProducts(inventory, viewer, BOX_SLOTS, "box");
         putProducts(inventory, viewer, BUNDLE_SLOTS, "bundle");
+        inventory.setItem(40, GuiService.item(Material.NETHER_STAR, "&d&lCOSMETICS",
+                List.of("&7Skins, hats, tags and chat styles.", "&eClick to browse.")));
         inventory.setItem(49, GuiService.item(Material.BARRIER, "&c&lClose", List.of()));
         GuiService.fillGaps(inventory);
     }
@@ -91,6 +93,7 @@ public final class StoreGui implements Gui {
     @Override
     public boolean onClick(final Player viewer, final int slot) {
         if (slot == 49) { viewer.closeInventory(); return false; }
+        if (slot == 40) { plugin.gui().open(viewer, new CosmeticStoreGui(plugin)); return false; }
         final Product product = productAt(slot);
         return product != null && purchase(viewer, product);
     }
