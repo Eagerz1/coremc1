@@ -162,7 +162,7 @@ public final class SpawnerService {
                     Math.max(0L, longOf(requiredKills, 0L)),
                     Math.max(0L, longOf(price, 0L)),
                     (int) Math.max(2L, longOf(spawnCount, 2L)),
-                    (int) Math.max(20L, Math.min(200L, longOf(spawnDelayTicks, 200L))));
+                    (int) Math.max(20L, Math.min(200L, longOf(spawnDelayTicks, 200L)))));
         } catch (IllegalArgumentException e) {
             plugin.getLogger().warning("Spawner tier '" + mobId + "-" + index
                     + "' skipped: " + e.getMessage());
