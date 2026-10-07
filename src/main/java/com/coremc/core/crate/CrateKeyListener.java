@@ -29,6 +29,17 @@ public final class CrateKeyListener implements Listener {
             plugin.messages().sendPrefixed(event.getPlayer(), "crate.key-unconfigured", Map.of());
             return;
         }
+        if (plugin.crates().isLootbox(crate) && event.getClickedBlock() != null) {
+            final org.bukkit.block.Block target = event.getClickedBlock().getRelative(event.getBlockFace());
+            if (target.getType().isAir() || target.isPassable()) {
+                final var rewards = plugin.crates().beginLootbox(event.getPlayer(), crate, keyId);
+                if (rewards.size() == 9) {
+                    new LootboxWorldAnimation(plugin, event.getPlayer(), crate,
+                            event.getItem().clone(), target.getLocation(), rewards).start();
+                }
+                return;
+            }
+        }
         final CrateOpeningGui opening = new CrateOpeningGui(plugin, crate.id(), keyId);
         plugin.gui().open(event.getPlayer(), opening);
         opening.start(event.getPlayer());

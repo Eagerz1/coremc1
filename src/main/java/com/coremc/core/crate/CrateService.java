@@ -40,6 +40,10 @@ public final class CrateService {
     private final CoreMCPlugin plugin;
     private final Map<String, CrateDefinition> crates = new LinkedHashMap<>();
 
+    /** Reward selected and validated before a lootbox consumes its key. */
+    public record PreparedLootboxReward(CrateReward reward, ItemStack resolvedItem) {
+    }
+
     public CrateService(final CoreMCPlugin plugin) {
         this.plugin = plugin;
     }
@@ -346,6 +350,126 @@ public final class CrateService {
                             ? Material.CARVED_PUMPKIN : skin.material())
                     .orElse(Material.NAME_TAG);
         };
+    }
+
+    /** True for the physical 8+1 animated lootboxes. */
+    public boolean isLootbox(final CrateDefinition crate) {
+        return crate != null && (crate.id().equalsIgnoreCase("core")
+                || crate.id().equalsIgnoreCase("monthly")
+                || crate.id().equalsIgnoreCase("seasonal"));
+    }
+
+    /** Selects eight regular rewards and one jackpot, consuming a key only after validation. */
+    public List<PreparedLootboxReward> beginLootbox(
+            final Player player, final CrateDefinition crate, final String preferredKeyId) {
+        if (!isLootbox(crate)) return List.of();
+        final PlayerProfile profile = plugin.playerData().profileOf(player.getUniqueId()).orElse(null);
+        if (profile == null) {
+            plugin.messages().sendPrefixed(player, "shop.unavailable", Map.of());
+            return List.of();
+        }
+        String keyUsed = null;
+        if (preferredKeyId != null && crate.keys().stream()
+                .anyMatch(id -> id.equalsIgnoreCase(preferredKeyId))
+                && plugin.keys().countKeys(player, preferredKeyId) > 0) keyUsed = preferredKeyId;
+        if (keyUsed == null) for (final String id : crate.keys()) {
+            if (plugin.keys().countKeys(player, id) > 0) { keyUsed = id; break; }
+        }
+        if (keyUsed == null) {
+            plugin.messages().sendPrefixed(player, "crate.no-key", Map.of(
+                    "key", ColorUtil.colorize(crate.keys().get(0)),
+                    "crate", ColorUtil.colorize(crate.display())));
+            return List.of();
+        }
+
+        final List<CrateReward> regular = crate.rewards().stream()
+                .filter(reward -> !CrateReward.isJackpot(reward.rarity()) && reward.weight() > 0).toList();
+        List<CrateReward> jackpot = crate.rewards().stream()
+                .filter(reward -> CrateReward.isJackpot(reward.rarity()) && reward.weight() > 0).toList();
+        if (regular.isEmpty()) {
+            plugin.messages().sendPrefixed(player, "crate.broken", Map.of());
+            return List.of();
+        }
+        if (jackpot.isEmpty()) {
+            final int top = crate.rewards().stream()
+                    .mapToInt(reward -> rarityRank(reward.rarity())).max().orElse(4);
+            jackpot = crate.rewards().stream()
+                    .filter(reward -> rarityRank(reward.rarity()) == top && reward.weight() > 0).toList();
+        }
+        final long seen = profile.statOf(crate.pityStatKey()) + 1L;
+        final boolean pityDue = crate.pityReward() != null && crate.pityCount() > 0
+                && seen >= crate.pityCount();
+        final List<CrateReward> selected = new ArrayList<>(9);
+        for (int i = 0; i < 8; i++) selected.add(rollFrom(regular));
+        selected.add(pityDue ? crate.pityReward() : rollFrom(jackpot));
+        if (selected.stream().anyMatch(java.util.Objects::isNull)) {
+            plugin.messages().sendPrefixed(player, "crate.broken", Map.of());
+            return List.of();
+        }
+
+        final Map<Currency, Long> currencyMaxima = new java.util.EnumMap<>(Currency.class);
+        final List<PreparedLootboxReward> prepared = new ArrayList<>(9);
+        for (final CrateReward reward : selected) {
+            final ItemStack item = preResolve(reward);
+            if (item == null && needsItem(reward)) {
+                plugin.messages().sendPrefixed(player, "crate.broken", Map.of());
+                return List.of();
+            }
+            if (reward.type() == CrateReward.RewardType.CURRENCY) {
+                currencyMaxima.merge(Currency.valueOf(reward.currency()), reward.max(), Long::sum);
+            }
+            prepared.add(new PreparedLootboxReward(reward, item));
+        }
+        for (final Map.Entry<Currency, Long> amount : currencyMaxima.entrySet()) {
+            if (!plugin.economy().fitsDeposit(profile, amount.getKey(), amount.getValue())) {
+                plugin.messages().sendPrefixed(player, "economy.error.too-large", Map.of());
+                return List.of();
+            }
+        }
+        if (!plugin.keys().takeKeys(player, keyUsed, 1)) return List.of();
+        profile.setStat(crate.pityStatKey(),
+                (pityDue || CrateReward.isJackpot(selected.get(8).rarity())) ? 0L : seen);
+        plugin.playerData().markDirty(profile.uuid());
+        return List.copyOf(prepared);
+    }
+
+    private static int rarityRank(final String rarity) {
+        return switch (rarity.toLowerCase(Locale.ROOT)) {
+            case "uncommon" -> 1;
+            case "rare" -> 2;
+            case "epic" -> 3;
+            case "legendary" -> 4;
+            default -> 0;
+        };
+    }
+
+    private static CrateReward rollFrom(final List<CrateReward> pool) {
+        final int total = pool.stream().mapToInt(reward -> Math.max(0, reward.weight())).sum();
+        if (total <= 0) return null;
+        int needle = ThreadLocalRandom.current().nextInt(total);
+        for (final CrateReward reward : pool) {
+            needle -= Math.max(0, reward.weight());
+            if (needle < 0) return reward;
+        }
+        return pool.get(pool.size() - 1);
+    }
+
+    /** Delivers the prepared nine-item payout after the ground animation. */
+    public void finishLootbox(final Player player, final CrateDefinition crate,
+            final List<PreparedLootboxReward> rewards) {
+        final PlayerProfile profile = plugin.playerData().profileOf(player.getUniqueId()).orElse(null);
+        if (profile == null || rewards == null || rewards.size() != 9) return;
+        for (final PreparedLootboxReward prepared : rewards) {
+            grant(player, profile, prepared.reward(), prepared.resolvedItem());
+        }
+        plugin.messages().sendPrefixed(player, "crate.opened", Map.of(
+                "crate", ColorUtil.colorize(crate.display()),
+                "reward", ColorUtil.colorize("&f8 rewards &7+ &6one legendary reward")));
+    }
+
+    /** Rarity ordering for lootbox pools with no explicit legendary row. */
+    private static int rarityRankUnused(final String rarity) {
+        return rarityRank(rarity);
     }
 
     /**

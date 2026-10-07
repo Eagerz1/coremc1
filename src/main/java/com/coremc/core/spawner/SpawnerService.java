@@ -161,8 +161,8 @@ public final class SpawnerService {
                     SpawnerTier.tierId(mobId, index), index, display,
                     Math.max(0L, longOf(requiredKills, 0L)),
                     Math.max(0L, longOf(price, 0L)),
-                    (int) Math.max(1L, longOf(spawnCount, 1L)),
-                    (int) Math.max(20L, longOf(spawnDelayTicks, 400L))));
+                    (int) Math.max(2L, longOf(spawnCount, 2L)),
+                    (int) Math.max(20L, Math.min(200L, longOf(spawnDelayTicks, 200L))));
         } catch (IllegalArgumentException e) {
             plugin.getLogger().warning("Spawner tier '" + mobId + "-" + index
                     + "' skipped: " + e.getMessage());
@@ -225,10 +225,15 @@ public final class SpawnerService {
      * vanilla {@code /setblock} spawner carries.
      */
     public void configureWorldSpawner(final Block block, final TierRef ref, final int delayTicks) {
+        configureWorldSpawner(block, ref, delayTicks, 1);
+    }
+
+    public void configureWorldSpawner(final Block block, final TierRef ref,
+            final int delayTicks, final int stackCount) {
         if (!(block.getState() instanceof CreatureSpawner spawner)) {
             return;
         }
-        applyToState(spawner, ref, delayTicks, delayTicks);
+        applyToState(spawner, ref, delayTicks, delayTicks, stackCount);
         spawner.update(true);
     }
 
@@ -245,15 +250,18 @@ public final class SpawnerService {
     private static final int REROLL_DELAY_TICKS = 10;
 
     private void applyToState(final CreatureSpawner spawner, final TierRef ref,
-            final int delayTicks, final int firstDelayTicks) {
+            final int delayTicks, final int firstDelayTicks, final int stackCount) {
         final EntitySnapshot snapshot = snapshotFor(ref.mob().entityType());
         final SpawnerEntry entry = new SpawnerEntry(snapshot, 1, null);
         // NB: never call setSpawnedType() here — it resets SpawnPotentials to
         // an empty WeightedList, which makes Paper stall the tile at Delay:0.
         spawner.setSpawnedEntity(entry);
         spawner.setPotentialSpawns(List.of(entry));
-        spawner.setSpawnCount(Math.max(1, ref.tier().spawnCount()));
-        spawner.setMaxNearbyEntities(16);
+        final int batchCount = Math.max(2, ref.tier().spawnCount())
+                * Math.max(1, Math.min(3000, stackCount));
+        spawner.setSpawnCount(batchCount);
+        // Keep the nearby cap above multiple stacked batches.
+        spawner.setMaxNearbyEntities(Math.max(16, Math.min(32767, batchCount * 4)));
         spawner.setRequiredPlayerRange(16);
         final int delay = Math.max(20, delayTicks);
         spawner.setMinSpawnDelay(delay);
@@ -355,13 +363,13 @@ public final class SpawnerService {
             final TierRef ref = tierFor(placement.id()).orElse(null);
             final boolean needsRepair = ref != null
                     && (spawner.getPotentialSpawns().isEmpty()
-                            || spawner.getSpawnCount() != ref.tier().spawnCount()
+                            || spawner.getSpawnCount() != Math.max(2, ref.tier().spawnCount()) * placement.stackCount()
                             || spawner.getSpawnRange() != SPAWN_RANGE_BLOCKS
                             || spawner.getRequiredPlayerRange() != 16
                             || spawner.getSpawnedType() != ref.mob().entityType());
             if (needsRepair) {
                 applyToState(spawner, ref, ref.tier().spawnDelayTicks(),
-                        ref.tier().spawnDelayTicks());
+                        ref.tier().spawnDelayTicks(), placement.stackCount());
                 spawner.update(true);
                 stalled.remove(key);
                 plugin.getLogger().fine("Normalised spawner at " + key + " (" + placement.id() + ")");
@@ -376,7 +384,7 @@ public final class SpawnerService {
                 if (strikes >= 2 && ref != null) {
                     final int recovered = spawnFallback(block, ref);
                     applyToState(spawner, ref, ref.tier().spawnDelayTicks(),
-                            REROLL_DELAY_TICKS);
+                            REROLL_DELAY_TICKS, placement.stackCount());
                     spawner.update(true);
                     stalled.remove(key);
                     plugin.getLogger().fine("Re-armed stalled spawner at " + key

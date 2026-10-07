@@ -89,7 +89,7 @@ public final class PlaceableListener implements Listener {
                     // Writes entity, SpawnPotentials, count, delays and a positive
                     // first delay — a tile missing SpawnPotentials stalls forever
                     // once Paper refuses a spawn while the mob cap is reached.
-                    plugin.spawners().configureWorldSpawner(block, ref, delay);
+                    plugin.spawners().configureWorldSpawner(block, ref, delay, stackCount);
                 }
             });
         }
