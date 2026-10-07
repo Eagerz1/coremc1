@@ -16,7 +16,7 @@ public enum Role {
     // Universal aggregates every category but still carries a single physical
     // OmniTool; a Netherite Pickaxe is the most versatile default (mines and
     // still deals melee damage), matching the historical Universal tool form.
-    UNIVERSAL("universal", "&dUniversal", Material.NETHER_STAR, Material.NETHERITE_PICKAXE, null);
+    UNIVERSAL("universal", "&dUniversal", Material.NETHERITE_PICKAXE, Material.NETHERITE_PICKAXE, null);
 
     private final String key;
     private final String display;

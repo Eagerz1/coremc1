@@ -1,11 +1,15 @@
 package com.coremc.core.spawner;
 
 import com.coremc.core.CoreMCPlugin;
+import com.coremc.core.util.ColorUtil;
 import java.util.Optional;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.persistence.PersistentDataType;
 
 /**
@@ -23,10 +27,12 @@ import org.bukkit.persistence.PersistentDataType;
  */
 public final class SpawnerTags {
 
+    private final CoreMCPlugin plugin;
     private final NamespacedKey bornKey;
     private final NamespacedKey idKey;
 
     public SpawnerTags(final CoreMCPlugin plugin) {
+        this.plugin = plugin;
         this.bornKey = new NamespacedKey(plugin, "spawner-born");
         this.idKey = new NamespacedKey(plugin, "spawner-id");
     }
@@ -50,6 +56,28 @@ public final class SpawnerTags {
         // mobs with e.g. @e[tag=!coremc.spawner]; the PDC marker is the
         // plugin's source of truth, this mirrors it for commands.
         entity.addScoreboardTag(VANILLA_SPAWNER_TAG);
+
+        if (!(entity instanceof LivingEntity living)) {
+            return;
+        }
+        if (living instanceof Mob mob) {
+            mob.setAI(false);
+        }
+        living.setGravity(true);
+        living.setCollidable(true);
+        living.setInvulnerable(false);
+        living.setAbsorptionAmount(0.0);
+        living.setHealth(1.0);
+
+        // The visible entity nameplate is the mob's hologram. It follows
+        // naturally with the entity and remains above its head as it falls
+        // or a player pushes it.
+        final String display = plugin.spawners().tierFor(tierId)
+                .map(ref -> ChatColor.stripColor(ColorUtil.colorize(ref.mob().display())))
+                .filter(name -> name != null && !name.isBlank())
+                .orElseGet(() -> SpawnerMobTagger.prettyEntityName(entity.getType().name()));
+        living.setCustomName(ColorUtil.colorize("&c" + display + " &7Spawner"));
+        living.setCustomNameVisible(true);
     }
 
     public boolean isSpawnerBorn(final Entity entity) {

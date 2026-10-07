@@ -692,6 +692,21 @@ items:
     model_path: keys/daily_key
     fallback_material: CLOCK
     category: progression
+  core_key:
+    model_id: 21010
+    model_path: keys/sky_key
+    fallback_material: TRIPWIRE_HOOK
+    category: progression
+  monthly_key:
+    model_id: 21011
+    model_path: keys/river_key
+    fallback_material: TRIPWIRE_HOOK
+    category: progression
+  seasonal_key:
+    model_id: 21012
+    model_path: keys/crimson_key
+    fallback_material: TRIPWIRE_HOOK
+    category: progression
   core_lootbox:
     model_id: 21100
     model_path: lootboxes/core
@@ -901,22 +916,22 @@ items:
   tool_skin_emberforge_logger:
     model_id: 21601
     model_path: skins/tools/emberforge/logger
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_AXE
     category: tool_skin
   tool_skin_emberforge_fisher:
     model_id: 21602
     model_path: skins/tools/emberforge/fisher
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: FISHING_ROD
     category: tool_skin
   tool_skin_emberforge_slayer:
     model_id: 21603
     model_path: skins/tools/emberforge/slayer
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_SWORD
     category: tool_skin
   tool_skin_emberforge_farmer:
     model_id: 21604
     model_path: skins/tools/emberforge/farmer
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_HOE
     category: tool_skin
   tool_skin_emberforge_universal:
     model_id: 21605
@@ -931,22 +946,22 @@ items:
   tool_skin_riftbound_logger:
     model_id: 21607
     model_path: skins/tools/riftbound/logger
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_AXE
     category: tool_skin
   tool_skin_riftbound_fisher:
     model_id: 21608
     model_path: skins/tools/riftbound/fisher
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: FISHING_ROD
     category: tool_skin
   tool_skin_riftbound_slayer:
     model_id: 21609
     model_path: skins/tools/riftbound/slayer
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_SWORD
     category: tool_skin
   tool_skin_riftbound_farmer:
     model_id: 21610
     model_path: skins/tools/riftbound/farmer
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_HOE
     category: tool_skin
   tool_skin_riftbound_universal:
     model_id: 21611
@@ -961,22 +976,22 @@ items:
   tool_skin_astral_logger:
     model_id: 21613
     model_path: skins/tools/astral/logger
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_AXE
     category: tool_skin
   tool_skin_astral_fisher:
     model_id: 21614
     model_path: skins/tools/astral/fisher
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: FISHING_ROD
     category: tool_skin
   tool_skin_astral_slayer:
     model_id: 21615
     model_path: skins/tools/astral/slayer
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_SWORD
     category: tool_skin
   tool_skin_astral_farmer:
     model_id: 21616
     model_path: skins/tools/astral/farmer
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_HOE
     category: tool_skin
   tool_skin_astral_universal:
     model_id: 21617
@@ -991,22 +1006,22 @@ items:
   tool_skin_tidecaller_logger:
     model_id: 21619
     model_path: skins/tools/tidecaller/logger
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_AXE
     category: tool_skin
   tool_skin_tidecaller_fisher:
     model_id: 21620
     model_path: skins/tools/tidecaller/fisher
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: FISHING_ROD
     category: tool_skin
   tool_skin_tidecaller_slayer:
     model_id: 21621
     model_path: skins/tools/tidecaller/slayer
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_SWORD
     category: tool_skin
   tool_skin_tidecaller_farmer:
     model_id: 21622
     model_path: skins/tools/tidecaller/farmer
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_HOE
     category: tool_skin
   tool_skin_tidecaller_universal:
     model_id: 21623
@@ -1021,22 +1036,22 @@ items:
   tool_skin_overgrown_logger:
     model_id: 21625
     model_path: skins/tools/overgrown/logger
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_AXE
     category: tool_skin
   tool_skin_overgrown_fisher:
     model_id: 21626
     model_path: skins/tools/overgrown/fisher
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: FISHING_ROD
     category: tool_skin
   tool_skin_overgrown_slayer:
     model_id: 21627
     model_path: skins/tools/overgrown/slayer
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_SWORD
     category: tool_skin
   tool_skin_overgrown_farmer:
     model_id: 21628
     model_path: skins/tools/overgrown/farmer
-    fallback_material: NETHERITE_PICKAXE
+    fallback_material: NETHERITE_HOE
     category: tool_skin
   tool_skin_overgrown_universal:
     model_id: 21629

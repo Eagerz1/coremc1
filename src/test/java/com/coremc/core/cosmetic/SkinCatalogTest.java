@@ -84,7 +84,7 @@ class SkinCatalogTest {
         assertEquals(5, catalog.toolSkinsForRole(Role.FISHER).size(),
                 "one fisher skin per collection");
         assertEquals("tidecaller", catalog.skin("tidecaller_fisher").orElseThrow().collectionId());
-        assertEquals(Material.NETHERITE_PICKAXE, catalog.skin("tidecaller_fisher").orElseThrow().material());
+        assertEquals(Material.FISHING_ROD, catalog.skin("tidecaller_fisher").orElseThrow().material());
     }
 
     @Test

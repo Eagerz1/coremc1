@@ -238,6 +238,10 @@ public final class IslandService {
      * flushed immediately on success.
      */
     public boolean purchaseUpgrade(final org.bukkit.entity.Player player, final Island island, final String upgradeId) {
+        if (((com.coremc.core.CoreMCPlugin) plugin).islandDisqualifications().isActive(island.owner())) {
+            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.dq-active", Map.of());
+            return false;
+        }
         final int tier = island.upgrades().getOrDefault(upgradeId, 0);
         final int maxTier = config.upgradeMaxTier(upgradeId);
         if (tier >= maxTier) {
@@ -543,6 +547,48 @@ public final class IslandService {
     }
 
     public enum KickResult { KICKED, NOT_OWNER, TARGET_NOT_MEMBER, CANNOT_KICK_OWNER }
+
+    /** Removes a player from their island for an administrative wipe. */
+    public void removeForWipe(final UUID target) throws IOException {
+        final Island island = islandOf(target).orElse(null);
+        if (island == null) return;
+        final Player player = Bukkit.getPlayer(target);
+        if (island.owner().equals(target)) {
+            if (!island.members().isEmpty()) {
+                final UUID nextOwner = island.members().iterator().next();
+                islandsByOwner.remove(target, island);
+                islandsByMember.remove(nextOwner, island);
+                island.transferOwner(nextOwner);
+                islandsByOwner.put(nextOwner, island);
+                io.execute(() -> {
+                    try {
+                        store.delete(target);
+                        store.save(island);
+                        playerData.clearIslandAssociationIfMatches(target, island.islandId());
+                    } catch (final IOException exception) {
+                        logger.log(Level.SEVERE, "Failed to transfer island ownership during wipe.", exception);
+                    }
+                });
+                setAssociation(target, null);
+                rescueForWipe(player);
+            } else {
+                deleteIsland(target);
+            }
+        } else {
+            island.removeMember(target);
+            islandsByMember.remove(target, island);
+            setAssociation(target, null);
+            io.execute(() -> playerData.clearIslandAssociationIfMatches(target, island.islandId()));
+            flush(island);
+            rescueForWipe(player);
+        }
+    }
+
+    private void rescueForWipe(final Player player) {
+        if (player == null) return;
+        final World main = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
+        if (main != null) player.teleport(main.getSpawnLocation());
+    }
 
     /** Owner kicks a member. */
     public KickResult kick(final Player ownerActor, final UUID target) {

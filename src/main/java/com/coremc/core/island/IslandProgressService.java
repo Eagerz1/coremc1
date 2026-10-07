@@ -23,9 +23,9 @@ import org.bukkit.event.player.PlayerFishEvent;
  * Team actions on the island feed per-island counters (blocks-mined,
  * logs-chopped, crops-harvested, fish-caught, mobs-killed,
  * generator-harvests) plus weighted island XP. Level is a pure
- * function of stored XP + purchased upgrade tiers:
- * {@code 1 + floor(sqrt(score / divisor))} — meaningful, unbounded,
- * and fully config-tuned ({@code island.level}).
+ * function of stored XP + purchased upgrade tiers using the existing
+ * square-root curve, capped at the 30-level seasonal track defined by
+ * {@link IslandProgressionCatalog}.
  *
  * Writes are batched: every record marks the island dirty and a
  * once-a-minute timer flushes dirty islands (plus a shutdown flush),
@@ -113,7 +113,7 @@ public final class IslandProgressService implements Listener {
      * island XP gain.
      */
     public void awardKillXp(final Island island, final Player actor, final long bonusXp) {
-        if (bonusXp <= 0L) {
+        if (plugin.islandDisqualifications().isActive(island.owner()) || bonusXp <= 0L) {
             return;
         }
         final long awardedXp = Math.max(0L,
@@ -129,6 +129,7 @@ public final class IslandProgressService implements Listener {
     }
 
     private void record(final Island island, final String stat, final Player actor) {
+        if (plugin.islandDisqualifications().isActive(island.owner())) return;
         final long weight =
                 Math.max(0L, plugin.getConfig().getLong("island.level.weights." + stat, 1L));
         island.addStat(stat, 1L);
@@ -151,15 +152,12 @@ public final class IslandProgressService implements Listener {
         final long perTier =
                 Math.max(0L, plugin.getConfig().getLong("island.level.xp-per-upgrade-tier", 10L));
         final long divisor = plugin.getConfig().getLong("island.level.xp-divisor", 100L);
-        return scoreToLevel(island.xp() + tiers * perTier, divisor);
+        return IslandProgressionCatalog.levelForScore(island.xp() + tiers * perTier, divisor);
     }
 
     /** level = 1 + floor(sqrt(score / divisor)); non-positive score/divisor → 1. Pure. */
     public static int scoreToLevel(final long score, final long divisor) {
-        if (score <= 0L || divisor <= 0L) {
-            return 1;
-        }
-        return 1 + (int) Math.floor(Math.sqrt(score / (double) divisor));
+        return IslandProgressionCatalog.levelForScore(score, divisor);
     }
 
     /**

@@ -95,10 +95,14 @@ public final class EnchantGui implements Gui {
             if (locked) {
                 icon = Material.GRAY_DYE;
                 name = "&8&lLOCKED: " + name;
-            } else if (level >= enchant.maxLevel()) {
-                icon = Material.NETHER_STAR;
             }
-            inventory.setItem(GRID_SLOTS[index], GuiService.item(icon, name, lore));
+            final org.bukkit.inventory.ItemStack enchantItem = GuiService.item(icon, name, lore);
+            if (level >= enchant.maxLevel() && !locked) {
+                final var meta = enchantItem.getItemMeta();
+                meta.setEnchantmentGlintOverride(true);
+                enchantItem.setItemMeta(meta);
+            }
+            inventory.setItem(GRID_SLOTS[index], enchantItem);
         }
 
         inventory.setItem(SLOT_ROLE_INFO, roleInfo(profile, selectedRole, roleView, toolView));

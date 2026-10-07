@@ -28,6 +28,7 @@ import com.coremc.core.gui.GuiService;
 import com.coremc.core.island.IslandCommand;
 import com.coremc.core.island.IslandProtectionListener;
 import com.coremc.core.island.IslandVoidRescueListener;
+import com.coremc.core.island.EquipmentSetService;
 import com.coremc.core.island.IslandService;
 import com.coremc.core.island.YamlIslandDataStore;
 import com.coremc.core.player.PlayerDataService;
@@ -50,6 +51,7 @@ import com.coremc.core.role.xp.MiningXpListener;
 import com.coremc.core.role.xp.SlayerXpListener;
 import com.coremc.core.spawner.KillProgressListener;
 import com.coremc.core.spawner.SpawnerService;
+import com.coremc.core.spawner.RareDropService;
 import com.coremc.core.spawner.SpawnersCommand;
 import com.coremc.core.scheduler.TaskService;
 import com.coremc.core.shop.ShopCommand;
@@ -86,6 +88,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private PlaceableService placeableService;
     private GeneratorService generatorService;
     private SpawnerService spawnerService;
+    private RareDropService rareDropService;
     private ShopService shopService;
     private EnchantService enchantService;
     private EnchantEngine enchantEngine;
@@ -96,6 +99,8 @@ public final class CoreMCPlugin extends JavaPlugin {
     private com.coremc.core.island.IslandUpgradeEffects islandUpgradeEffects;
     private com.coremc.core.island.IslandActivityEffects islandActivityEffects;
     private com.coremc.core.island.IslandProgressService islandProgressService;
+    private com.coremc.core.island.IslandDisqualificationService islandDisqualificationService;
+    private EquipmentSetService equipmentSetService;
     private com.coremc.core.island.IslandBuffService islandBuffService;
     private com.coremc.core.chat.TagService tagService;
     private com.coremc.core.chat.ChatStyleService chatStyleService;
@@ -186,6 +191,8 @@ public final class CoreMCPlugin extends JavaPlugin {
                 playerDataService,
                 getDataFolder().toPath().resolve("islands"));
         this.islandService.start();
+        this.islandDisqualificationService = new com.coremc.core.island.IslandDisqualificationService(this);
+        this.islandDisqualificationService.load();
         this.miningCubeService = new com.coremc.core.island.MiningCubeService(this);
         this.miningCubeService.load();
         this.miningCubeService.startRegeneration(taskService);
@@ -193,6 +200,8 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.islandActivityEffects = new com.coremc.core.island.IslandActivityEffects(this);
         this.islandProgressService = new com.coremc.core.island.IslandProgressService(this);
         this.islandProgressService.start(taskService);
+        this.equipmentSetService = new EquipmentSetService(this);
+        this.equipmentSetService.start(taskService);
         this.islandBuffService = new com.coremc.core.island.IslandBuffService(this);
         if (this.islandService.islandWorld().isEmpty()) {
             getLogger().warning("Island world '" + coreConfig.islandWorldName()
@@ -227,6 +236,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         this.placeableService = new PlaceableService(this);
         this.generatorService = new GeneratorService(this);
         this.spawnerService = new SpawnerService(this);
+        this.rareDropService = new RareDropService(this);
 
         // 3g. Load persistent world/service data (after worlds exist).
         placeableService.load();
@@ -276,6 +286,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         pluginManager.registerEvents(islandUpgradeEffects, this);
         pluginManager.registerEvents(islandActivityEffects, this);
         pluginManager.registerEvents(islandProgressService, this);
+        pluginManager.registerEvents(equipmentSetService, this);
         pluginManager.registerEvents(eventService, this);
         pluginManager.registerEvents(scoreboardService, this);
         pluginManager.registerEvents(guiService, this);
@@ -291,6 +302,7 @@ public final class CoreMCPlugin extends JavaPlugin {
         pluginManager.registerEvents(new PlaceableListener(this), this);
         pluginManager.registerEvents(new com.coremc.core.spawner.SpawnerMobTagger(
                 this, spawnerService.tags()), this);
+        pluginManager.registerEvents(new com.coremc.core.crate.CrateKeyListener(this), this);
         pluginManager.registerEvents(new KillProgressListener(this), this);
         pluginManager.registerEvents(enchantEngine, this);
         pluginManager.registerEvents(new MiningEnchantHandler(this, enchantEngine), this);
@@ -425,6 +437,7 @@ public final class CoreMCPlugin extends JavaPlugin {
             placeableService = null;
         }
         this.generatorService = null;
+        this.equipmentSetService = null;
         this.companionService = null;
         this.questService = null;
         this.spawnerService = null;
@@ -506,6 +519,13 @@ public final class CoreMCPlugin extends JavaPlugin {
         heal.setExecutor(healCommand);
         heal.setTabCompleter(healCommand);
 
+        final PluginCommand wipe = getCommand("wipe");
+        if (wipe == null) throw new IllegalStateException("Command 'wipe' missing from plugin.yml");
+        wipe.setExecutor(new com.coremc.core.admin.WipeCommand(this));
+        final PluginCommand dq = getCommand("dq");
+        if (dq == null) throw new IllegalStateException("Command 'dq' missing from plugin.yml");
+        dq.setExecutor(new com.coremc.core.admin.DqCommand(this));
+
         final PluginCommand island = getCommand("island");
         if (island == null) {
             throw new IllegalStateException("Command 'island' missing from plugin.yml");
@@ -569,6 +589,23 @@ public final class CoreMCPlugin extends JavaPlugin {
             throw new IllegalStateException("Command 'spawners' missing from plugin.yml");
         }
         spawners.setExecutor(new SpawnersCommand(this));
+
+        final PluginCommand sets = getCommand("sets");
+        if (sets == null) {
+            throw new IllegalStateException("Command 'sets' missing from plugin.yml");
+        }
+        sets.setExecutor(equipmentSetService);
+        sets.setTabCompleter(equipmentSetService);
+
+        final PluginCommand sell = getCommand("sell");
+        if (sell == null) {
+            throw new IllegalStateException("Command 'sell' missing from plugin.yml");
+        }
+        sell.setExecutor(new com.coremc.core.spawner.SellCommand(this));
+
+        final PluginCommand store = getCommand("store");
+        if (store == null) throw new IllegalStateException("Command 'store' missing from plugin.yml");
+        store.setExecutor(new com.coremc.core.shop.StoreCommand(this));
 
         final PluginCommand crates = getCommand("crates");
         if (crates == null) {
@@ -730,6 +767,11 @@ public final class CoreMCPlugin extends JavaPlugin {
         return islandActivityEffects;
     }
 
+    /** Island score disqualification records. */
+    public com.coremc.core.island.IslandDisqualificationService islandDisqualifications() {
+        return islandDisqualificationService;
+    }
+
     /** Island stats, XP and level progression. */
     public com.coremc.core.island.IslandProgressService islandProgress() {
         return islandProgressService;
@@ -813,6 +855,11 @@ public final class CoreMCPlugin extends JavaPlugin {
     /** Assigned daily missions, gameplay progress and claims. */
     public QuestService quests() {
         return questService;
+    }
+
+    /** Mob-specific rare drops and their Core Money sale values. */
+    public RareDropService rareDrops() {
+        return rareDropService;
     }
 
     /** Spawner catalogue, unlock progression and purchases. */

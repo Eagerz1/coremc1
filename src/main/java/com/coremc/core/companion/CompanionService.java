@@ -93,6 +93,14 @@ public final class CompanionService implements Listener {
     }
 
     public boolean purchase(final Player player, final PlayerProfile profile, final CompanionDefinition companion) {
+        final var island = plugin.islands().islandOf(player.getUniqueId()).orElse(null);
+        final int requiredLevel = com.coremc.core.island.IslandProgressionCatalog.requiredIslandLevel("companions");
+        if (island == null || plugin.islandProgress().levelFor(island) < requiredLevel) {
+            final int current = island == null ? 0 : plugin.islandProgress().levelFor(island);
+            plugin.messages().sendPrefixed(player, "progression.locked", Map.of(
+                    "system", "Companions", "level", String.valueOf(requiredLevel), "yours", String.valueOf(current)));
+            return false;
+        }
         if (owns(profile, companion.id())) {
             plugin.messages().sendPrefixed(player, "companion.already-owned", Map.of());
             return false;

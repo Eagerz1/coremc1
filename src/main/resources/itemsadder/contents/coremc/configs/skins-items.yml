@@ -24,7 +24,7 @@ items:
       - "&7Flowing magma, forged metal, pulsing heat"
       - "&7Role: Logger"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_AXE
       generate: false
       model_path: "item/skins/tools/emberforge/logger"
       model_id: 21601
@@ -36,7 +36,7 @@ items:
       - "&7Flowing magma, forged metal, pulsing heat"
       - "&7Role: Fisher"
     resource:
-      material: NETHERITE_PICKAXE
+      material: FISHING_ROD
       generate: false
       model_path: "item/skins/tools/emberforge/fisher"
       model_id: 21602
@@ -48,7 +48,7 @@ items:
       - "&7Flowing magma, forged metal, pulsing heat"
       - "&7Role: Slayer"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_SWORD
       generate: false
       model_path: "item/skins/tools/emberforge/slayer"
       model_id: 21603
@@ -60,7 +60,7 @@ items:
       - "&7Flowing magma, forged metal, pulsing heat"
       - "&7Role: Farmer"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_HOE
       generate: false
       model_path: "item/skins/tools/emberforge/farmer"
       model_id: 21604
@@ -96,7 +96,7 @@ items:
       - "&7Fractured dark metal, moving violet rift energy"
       - "&7Role: Logger"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_AXE
       generate: false
       model_path: "item/skins/tools/riftbound/logger"
       model_id: 21607
@@ -108,7 +108,7 @@ items:
       - "&7Fractured dark metal, moving violet rift energy"
       - "&7Role: Fisher"
     resource:
-      material: NETHERITE_PICKAXE
+      material: FISHING_ROD
       generate: false
       model_path: "item/skins/tools/riftbound/fisher"
       model_id: 21608
@@ -120,7 +120,7 @@ items:
       - "&7Fractured dark metal, moving violet rift energy"
       - "&7Role: Slayer"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_SWORD
       generate: false
       model_path: "item/skins/tools/riftbound/slayer"
       model_id: 21609
@@ -132,7 +132,7 @@ items:
       - "&7Fractured dark metal, moving violet rift energy"
       - "&7Role: Farmer"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_HOE
       generate: false
       model_path: "item/skins/tools/riftbound/farmer"
       model_id: 21610
@@ -168,7 +168,7 @@ items:
       - "&7Star-metal, orbiting constellations, soft celestial light"
       - "&7Role: Logger"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_AXE
       generate: false
       model_path: "item/skins/tools/astral/logger"
       model_id: 21613
@@ -180,7 +180,7 @@ items:
       - "&7Star-metal, orbiting constellations, soft celestial light"
       - "&7Role: Fisher"
     resource:
-      material: NETHERITE_PICKAXE
+      material: FISHING_ROD
       generate: false
       model_path: "item/skins/tools/astral/fisher"
       model_id: 21614
@@ -192,7 +192,7 @@ items:
       - "&7Star-metal, orbiting constellations, soft celestial light"
       - "&7Role: Slayer"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_SWORD
       generate: false
       model_path: "item/skins/tools/astral/slayer"
       model_id: 21615
@@ -204,7 +204,7 @@ items:
       - "&7Star-metal, orbiting constellations, soft celestial light"
       - "&7Role: Farmer"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_HOE
       generate: false
       model_path: "item/skins/tools/astral/farmer"
       model_id: 21616
@@ -240,7 +240,7 @@ items:
       - "&7Carved sea-glass, moving water and bioluminescence"
       - "&7Role: Logger"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_AXE
       generate: false
       model_path: "item/skins/tools/tidecaller/logger"
       model_id: 21619
@@ -252,7 +252,7 @@ items:
       - "&7Carved sea-glass, moving water and bioluminescence"
       - "&7Role: Fisher"
     resource:
-      material: NETHERITE_PICKAXE
+      material: FISHING_ROD
       generate: false
       model_path: "item/skins/tools/tidecaller/fisher"
       model_id: 21620
@@ -264,7 +264,7 @@ items:
       - "&7Carved sea-glass, moving water and bioluminescence"
       - "&7Role: Slayer"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_SWORD
       generate: false
       model_path: "item/skins/tools/tidecaller/slayer"
       model_id: 21621
@@ -276,7 +276,7 @@ items:
       - "&7Carved sea-glass, moving water and bioluminescence"
       - "&7Role: Farmer"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_HOE
       generate: false
       model_path: "item/skins/tools/tidecaller/farmer"
       model_id: 21622
@@ -312,7 +312,7 @@ items:
       - "&7Ancient wood and stone, growing vines and drifting spores"
       - "&7Role: Logger"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_AXE
       generate: false
       model_path: "item/skins/tools/overgrown/logger"
       model_id: 21625
@@ -324,7 +324,7 @@ items:
       - "&7Ancient wood and stone, growing vines and drifting spores"
       - "&7Role: Fisher"
     resource:
-      material: NETHERITE_PICKAXE
+      material: FISHING_ROD
       generate: false
       model_path: "item/skins/tools/overgrown/fisher"
       model_id: 21626
@@ -336,7 +336,7 @@ items:
       - "&7Ancient wood and stone, growing vines and drifting spores"
       - "&7Role: Slayer"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_SWORD
       generate: false
       model_path: "item/skins/tools/overgrown/slayer"
       model_id: 21627
@@ -348,7 +348,7 @@ items:
       - "&7Ancient wood and stone, growing vines and drifting spores"
       - "&7Role: Farmer"
     resource:
-      material: NETHERITE_PICKAXE
+      material: NETHERITE_HOE
       generate: false
       model_path: "item/skins/tools/overgrown/farmer"
       model_id: 21628

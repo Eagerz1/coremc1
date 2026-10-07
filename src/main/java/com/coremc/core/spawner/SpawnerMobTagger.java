@@ -1,21 +1,25 @@
 package com.coremc.core.spawner;
 
 import com.coremc.core.CoreMCPlugin;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityCombustEvent;
+import org.bukkit.entity.Projectile;
+import org.bukkit.event.world.ChunkLoadEvent;
 
 /**
- * Gives every mob produced by a CoreMC spawner block its identity:
- * the {@code spawner-born} marker (other listeners already tag vanilla
- * SPAWNER-reason mobs generically; this handler enriches CoreMC's own),
- * the stable purchasable spawner id.
- *
- * Runs at NORMAL so later listeners (slots, boosts) can inspect the
- * identity. Mobs from
- * non-CoreMC spawner blocks (dungeon spawners, other plugins) only ever
- * receive the generic marker from the slayer handler — never a tier id.
+ * Adds CoreMC identity and presentation to mobs from registered spawners.
+ * Also upgrades tagged mobs already saved in loaded chunks after a plugin
+ * update, and when an old entity is loaded from disk.
  */
 public final class SpawnerMobTagger implements Listener {
 
@@ -25,6 +29,8 @@ public final class SpawnerMobTagger implements Listener {
     public SpawnerMobTagger(final CoreMCPlugin plugin, final SpawnerTags tags) {
         this.plugin = plugin;
         this.tags = tags;
+        // The server's initial chunks are loaded before plugin listeners.
+        Bukkit.getScheduler().runTask(plugin, this::refreshLoadedEntities);
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -43,11 +49,86 @@ public final class SpawnerMobTagger implements Listener {
             return;
         }
         final String tierId = placement.get().id();
-        final var ref = plugin.spawners().tierFor(tierId);
-        if (ref.isEmpty()) {
+        if (plugin.spawners().tierFor(tierId).isEmpty()) {
             return;
         }
         tags.tag(event.getEntity(), tierId);
+        applySpawnerMobState(event.getEntity());
+        // Reapply after the spawn tick in case the server fork rewrites mob attributes.
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (event.getEntity().isValid() && !event.getEntity().isDead()) {
+                tags.tag(event.getEntity(), tierId);
+                applySpawnerMobState(event.getEntity());
+            }
+        });
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void oneHitKill(final EntityDamageByEntityEvent event) {
+        if (!tags.isSpawnerBorn(event.getEntity())) {
+            return;
+        }
+        // A sword sweep creates damage events for nearby mobs as well as the
+        // one the player clicked. Keep each hit to exactly one spawner mob.
+        if (event.getCause() == EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK) {
+            event.setCancelled(true);
+            return;
+        }
+        final Entity attacker = event.getDamager();
+        final boolean playerAttack = attacker instanceof org.bukkit.entity.Player
+                || (attacker instanceof Projectile projectile
+                        && projectile.getShooter() instanceof org.bukkit.entity.Player);
+        if (playerAttack) {
+            event.setDamage(Math.max(event.getDamage(), 2048.0));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void preventSpawnerMobCombustion(final EntityCombustEvent event) {
+        if (tags.isSpawnerBorn(event.getEntity())) {
+            event.setCancelled(true);
+            event.getEntity().setFireTicks(0);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onChunkLoad(final ChunkLoadEvent event) {
+        for (final Entity entity : event.getChunk().getEntities()) {
+            refresh(entity);
+        }
+    }
+
+    private void refreshLoadedEntities() {
+        for (final World world : Bukkit.getWorlds()) {
+            for (final Entity entity : world.getLivingEntities()) {
+                refresh(entity);
+            }
+        }
+    }
+
+    private void refresh(final Entity entity) {
+        if (!tags.isSpawnerBorn(entity)) {
+            return;
+        }
+        tags.tierIdOf(entity).ifPresent(tierId -> tags.tag(entity, tierId));
+        applySpawnerMobState(entity);
+    }
+
+    /** Keeps spawner mobs passive, grounded, pushable, and clearly labelled. */
+    private void applySpawnerMobState(final Entity entity) {
+        if (entity instanceof Mob mob) {
+            mob.setAI(false);
+        }
+        entity.setGravity(true);
+        if (entity instanceof LivingEntity living) {
+            living.setCollidable(true);
+        }
+        entity.setFireTicks(0);
+        if (entity instanceof LivingEntity living) {
+            living.setCustomName(com.coremc.core.util.ColorUtil.colorize(
+                    "&2&l" + prettyEntityName(entity.getType().name()) + " Spawner"));
+            living.setCustomNameVisible(true);
+        }
     }
 
     /** ZOMBIFIED_PIGLIN -> "Zombified Piglin" for player-facing names. */

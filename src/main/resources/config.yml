@@ -31,6 +31,13 @@ scoreboard:
   update-ticks: 40
 
 island:
+
+  season:
+    id: season-1
+    top-rewards:
+      1: 25000
+      2: 15000
+      3: 10000
   # World islands live in. CoreMC creates this world automatically when it
   # does not exist (as empty void terrain — the dedicated island world).
   # Islands created before the dedicated world existed keep working in
@@ -790,6 +797,16 @@ spawners:
     money: 3
     sky-tokens: 1
     island-xp: 2
+
+  # Mob-specific rare drops unlock after sustained kills on each spawner lane.
+  # The enchanted version is a 1-in-10 upgrade of a normal rare drop.
+  rare-drops:
+    unlock-kills: 1000
+    chance: 0.10
+    enchanted-chance: 0.10
+    base-value: 500
+    value-per-lane: 100
+    enchanted-multiplier: 50
   zombie:
     unlock-kill-key: zombie
     display: "&2Zombie"
@@ -797,8 +814,8 @@ spawners:
     icon: ZOMBIE_SPAWN_EGG
     required-kills: 0
     price: 5
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   skeleton:
     unlock-kill-key: zombie
     display: "&7Skeleton"
@@ -806,8 +823,8 @@ spawners:
     icon: SKELETON_SPAWN_EGG
     required-kills: 35
     price: 8
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   spider:
     unlock-kill-key: skeleton
     display: "&cSpider"
@@ -815,8 +832,8 @@ spawners:
     icon: SPIDER_SPAWN_EGG
     required-kills: 50
     price: 12
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   creeper:
     unlock-kill-key: spider
     display: "&aCreeper"
@@ -824,8 +841,8 @@ spawners:
     icon: CREEPER_SPAWN_EGG
     required-kills: 75
     price: 20
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   cave-spider:
     unlock-kill-key: creeper
     display: "&4Cave Spider"
@@ -833,8 +850,8 @@ spawners:
     icon: CAVE_SPIDER_SPAWN_EGG
     required-kills: 90
     price: 25
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   drowned:
     unlock-kill-key: cave-spider
     display: "&3Drowned"
@@ -842,8 +859,8 @@ spawners:
     icon: DROWNED_SPAWN_EGG
     required-kills: 100
     price: 30
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   slime:
     unlock-kill-key: drowned
     display: "&aSlime"
@@ -851,8 +868,8 @@ spawners:
     icon: SLIME_SPAWN_EGG
     required-kills: 110
     price: 30
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   witch:
     unlock-kill-key: slime
     display: "&5Witch"
@@ -860,8 +877,8 @@ spawners:
     icon: WITCH_SPAWN_EGG
     required-kills: 130
     price: 40
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   enderman:
     unlock-kill-key: witch
     display: "&dEnderman"
@@ -869,8 +886,8 @@ spawners:
     icon: ENDERMAN_SPAWN_EGG
     required-kills: 150
     price: 50
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   piglin:
     unlock-kill-key: enderman
     display: "&6Piglin"
@@ -878,8 +895,8 @@ spawners:
     icon: PIGLIN_SPAWN_EGG
     required-kills: 170
     price: 55
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   guardian:
     unlock-kill-key: piglin
     display: "&bGuardian"
@@ -887,8 +904,8 @@ spawners:
     icon: GUARDIAN_SPAWN_EGG
     required-kills: 200
     price: 65
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   magma-cube:
     unlock-kill-key: guardian
     display: "&cMagma Cube"
@@ -896,8 +913,8 @@ spawners:
     icon: MAGMA_CUBE_SPAWN_EGG
     required-kills: 220
     price: 70
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   blaze:
     unlock-kill-key: magma-cube
     display: "&eBlaze"
@@ -905,8 +922,8 @@ spawners:
     icon: BLAZE_SPAWN_EGG
     required-kills: 250
     price: 80
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   ghast:
     unlock-kill-key: blaze
     display: "&fGhast"
@@ -914,8 +931,8 @@ spawners:
     icon: GHAST_SPAWN_EGG
     required-kills: 300
     price: 100
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   wither-skeleton:
     unlock-kill-key: ghast
     display: "&7Wither Skeleton"
@@ -923,8 +940,8 @@ spawners:
     icon: WITHER_SKELETON_SPAWN_EGG
     required-kills: 350
     price: 120
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   husk:
     unlock-kill-key: wither-skeleton
     display: "&eHusk"
@@ -932,8 +949,8 @@ spawners:
     icon: HUSK_SPAWN_EGG
     required-kills: 400
     price: 140
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   stray:
     unlock-kill-key: husk
     display: "&bStray"
@@ -941,8 +958,8 @@ spawners:
     icon: STRAY_SPAWN_EGG
     required-kills: 450
     price: 160
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   zombie-villager:
     unlock-kill-key: stray
     display: "&2Zombie Villager"
@@ -950,8 +967,8 @@ spawners:
     icon: ZOMBIE_VILLAGER_SPAWN_EGG
     required-kills: 500
     price: 180
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   bogged:
     unlock-kill-key: zombie-villager
     display: "&2Bogged"
@@ -959,8 +976,8 @@ spawners:
     icon: BOGGED_SPAWN_EGG
     required-kills: 550
     price: 200
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   silverfish:
     unlock-kill-key: bogged
     display: "&7Silverfish"
@@ -968,8 +985,8 @@ spawners:
     icon: SILVERFISH_SPAWN_EGG
     required-kills: 600
     price: 220
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   endermite:
     unlock-kill-key: silverfish
     display: "&dEndermite"
@@ -977,8 +994,8 @@ spawners:
     icon: ENDERMITE_SPAWN_EGG
     required-kills: 650
     price: 240
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   pillager:
     unlock-kill-key: endermite
     display: "&7Pillager"
@@ -986,8 +1003,8 @@ spawners:
     icon: PILLAGER_SPAWN_EGG
     required-kills: 700
     price: 260
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   vindicator:
     unlock-kill-key: pillager
     display: "&8Vindicator"
@@ -995,8 +1012,8 @@ spawners:
     icon: VINDICATOR_SPAWN_EGG
     required-kills: 750
     price: 280
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   evoker:
     unlock-kill-key: vindicator
     display: "&5Evoker"
@@ -1004,8 +1021,8 @@ spawners:
     icon: EVOKER_SPAWN_EGG
     required-kills: 825
     price: 310
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   ravager:
     unlock-kill-key: evoker
     display: "&4Ravager"
@@ -1013,8 +1030,8 @@ spawners:
     icon: RAVAGER_SPAWN_EGG
     required-kills: 900
     price: 350
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   phantom:
     unlock-kill-key: ravager
     display: "&9Phantom"
@@ -1022,8 +1039,8 @@ spawners:
     icon: PHANTOM_SPAWN_EGG
     required-kills: 1000
     price: 390
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   breeze:
     unlock-kill-key: phantom
     display: "&bBreeze"
@@ -1031,8 +1048,8 @@ spawners:
     icon: BREEZE_SPAWN_EGG
     required-kills: 1100
     price: 430
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   shulker:
     unlock-kill-key: breeze
     display: "&dShulker"
@@ -1040,8 +1057,8 @@ spawners:
     icon: SHULKER_SPAWN_EGG
     required-kills: 1200
     price: 480
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   hoglin:
     unlock-kill-key: shulker
     display: "&cHoglin"
@@ -1049,8 +1066,8 @@ spawners:
     icon: HOGLIN_SPAWN_EGG
     required-kills: 1300
     price: 530
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
   zombified-piglin:
     unlock-kill-key: hoglin
     display: "&dZombified Piglin"
@@ -1058,8 +1075,8 @@ spawners:
     icon: ZOMBIFIED_PIGLIN_SPAWN_EGG
     required-kills: 1400
     price: 580
-    spawn-count: 1
-    spawn-delay-ticks: 400
+    spawn-count: 2
+    spawn-delay-ticks: 200
 
 # ======================================================
 #  Staff tools + moderation (UUID based, CoreMC only)
@@ -1207,3 +1224,49 @@ moderation:
           display: "Inappropriate IGN"
           enabled: true
           requires-acknowledgement: true
+
+
+# Weekly mission rotation. Three objectives are assigned per player each UTC week.
+weekly-quests:
+  mine_blocks:
+    display: "&fMine 1,500 blocks"
+    icon: IRON_PICKAXE
+    metric: MINE_BLOCK
+    target: 1500
+    reward-credits: 2500
+    reward-sky-tokens: 20
+  harvest_crops:
+    display: "&aHarvest 750 crops"
+    icon: WHEAT
+    metric: HARVEST_CROP
+    target: 750
+    reward-credits: 2500
+    reward-sky-tokens: 20
+  chop_logs:
+    display: "&6Chop 500 logs"
+    icon: IRON_AXE
+    metric: CHOP_LOG
+    target: 500
+    reward-credits: 2500
+    reward-sky-tokens: 20
+  catch_fish:
+    display: "&bCatch 250 fish"
+    icon: FISHING_ROD
+    metric: CATCH_FISH
+    target: 250
+    reward-credits: 3000
+    reward-sky-tokens: 25
+  kill_mobs:
+    display: "&cDefeat 600 mobs"
+    icon: IRON_SWORD
+    metric: KILL_MOB
+    target: 600
+    reward-credits: 3000
+    reward-sky-tokens: 25
+
+store:
+  cosmetic-prices:
+    tool-skin: 5000
+    hat: 2500
+    tag: 1500
+    chat-style: 1500

@@ -92,8 +92,10 @@ class ProgressionCatalogueResourceTest {
             assertNotNull(def.get("unlock-kill-key"), row.getKey() + " needs an explicit mob progression key");
             assertTrue(((Number) def.get("price")).longValue() > 0L,
                     row.getKey() + " needs a token price");
-            assertEquals(1, ((Number) def.get("spawn-count")).intValue(),
-                    row.getKey() + " must be a regular single-spawn spawner");
+            assertEquals(2, ((Number) def.get("spawn-count")).intValue(),
+                    row.getKey() + " must spawn two mobs per spawner cycle");
+            assertEquals(200, ((Number) def.get("spawn-delay-ticks")).intValue(),
+                    row.getKey() + " must use a ten-second base spawn cycle");
         }
         assertEquals(30, lanes, "spawner lane baseline changed");
         final Map<String, Object> zombie = (Map<String, Object>) spawners.get("zombie");

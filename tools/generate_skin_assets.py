@@ -55,8 +55,24 @@ TOOL_SKIN_IDS = {  # (collection, role) -> CMD id
 }
 HAT_SKIN_IDS = {"ember_crown": 21630, "rift_halo": 21631, "moonlit_cap": 21632}
 
-TOOL_MATERIAL = "NETHERITE_PICKAXE"  # the OmniTool base material
+ROLE_TOOL_MATERIAL = {
+    "miner": "NETHERITE_PICKAXE",
+    "logger": "NETHERITE_AXE",
+    "fisher": "FISHING_ROD",
+    "slayer": "NETHERITE_SWORD",
+    "farmer": "NETHERITE_HOE",
+    "universal": "NETHERITE_PICKAXE",
+}
 HAT_MATERIAL = "CARVED_PUMPKIN"      # vanilla fallback: pumpkin-on-head
+ROLE_BASE_MODEL_IDS = {
+    "miner": 21400,
+    "farmer": 21401,
+    "fisher": 21402,
+    "slayer": 21403,
+    "logger": 21404,
+    "universal": 21405,
+}
+ITEM_MODELS = CONTENTS / "resourcepack/assets/minecraft/items"
 
 COLLECTION_IDS = {
     "emberforge": "emberforge",
@@ -176,7 +192,7 @@ def write_items_yml() -> None:
             f'      - "&7{col["lore"]}"',
             f'      - "&7Role: {plain(skin_models.ROLE_DISPLAY[role])}"',
             "    resource:",
-            f"      material: {TOOL_MATERIAL}",
+            f"      material: {ROLE_TOOL_MATERIAL[role]}",
             "      generate: false",
             f"      model_path: \"item/skins/tools/{collection}/{role}\"",
             f"      model_id: {model_id}",
@@ -199,6 +215,58 @@ def write_items_yml() -> None:
         ]
     ITEMS_FILE.parent.mkdir(parents=True, exist_ok=True)
     ITEMS_FILE.write_text("\n".join(lines))
+
+
+# ----------------------------------------------------------------------
+#  modern item model definitions (Minecraft 1.21.4+)
+# ----------------------------------------------------------------------
+
+def write_modern_item_models() -> None:
+    entries_by_material: dict[str, list[tuple[int, str]]] = {}
+    for role, model_id in ROLE_BASE_MODEL_IDS.items():
+        material = ROLE_TOOL_MATERIAL[role]
+        entries_by_material.setdefault(material, []).append(
+            (model_id, f"coremc:item/tools/omnitool_{role}")
+        )
+    for (collection, role), model_id in TOOL_SKIN_IDS.items():
+        material = ROLE_TOOL_MATERIAL[role]
+        entries_by_material.setdefault(material, []).append(
+            (model_id, f"coremc:item/skins/tools/{collection}/{role}")
+        )
+
+    ITEM_MODELS.mkdir(parents=True, exist_ok=True)
+    for material, entries in entries_by_material.items():
+        vanilla_item = material.lower()
+        range_dispatch = {
+            "type": "minecraft:range_dispatch",
+            "property": "minecraft:custom_model_data",
+            "index": 0,
+            "entries": [
+                {
+                    "threshold": model_id,
+                    "model": {"type": "minecraft:model", "model": model_path},
+                }
+                for model_id, model_path in sorted(entries)
+            ],
+            "fallback": {
+                "type": "minecraft:model",
+                "model": f"minecraft:item/{vanilla_item}",
+            },
+        }
+        if material == "FISHING_ROD":
+            model = {
+                "type": "minecraft:condition",
+                "property": "minecraft:fishing_rod/cast",
+                "on_true": {
+                    "type": "minecraft:model",
+                    "model": "minecraft:item/fishing_rod_cast",
+                },
+                "on_false": range_dispatch,
+            }
+        else:
+            model = range_dispatch
+        path = ITEM_MODELS / f"{vanilla_item}.json"
+        path.write_text(json.dumps({"model": model}, indent=2) + "\\n")
 
 
 # ----------------------------------------------------------------------
@@ -225,7 +293,7 @@ def merge_manifest() -> None:
             f"  tool_skin_{collection}_{role}:\n"
             f"    model_id: {model_id}\n"
             f"    model_path: skins/tools/{collection}/{role}\n"
-            f"    fallback_material: {TOOL_MATERIAL}\n"
+            f"    fallback_material: {ROLE_TOOL_MATERIAL[role]}\n"
             f"    category: tool_skin\n"
         )
     for hat_id, model_id in HAT_SKIN_IDS.items():
@@ -253,7 +321,7 @@ def merge_skin_registry() -> None:
         "  preserves: [damage, enchants, upgrades, levels, role, pdc_identity]\n"
         "  selection_rule: custom model layer over the soulbound OmniTool only;\n"
         "    role must match the tool binding, ownership lives in the profile\n"
-        "  fallback: vanilla NETHERITE_PICKAXE with role lore when pack missing\n"
+        "  fallback: role-specific vanilla OmniTool material with role lore when pack missing\n"
         "hat_contract:\n"
         "  mechanism: item_display passenger overlay (HEAD transform)\n"
         "  preserves: real helmet slot item and all armour attributes\n"
@@ -327,7 +395,7 @@ def write_plugin_catalog(texture_meta: dict[str, dict[str, object]]) -> None:
                 f'          display: "{col["display"]} {skin_models.ROLE_DISPLAY[role]}"',
                 f"          role: {role}",
                 f"          model-id: {model_id}",
-                f"          material: {TOOL_MATERIAL}",
+                f"          material: {ROLE_TOOL_MATERIAL[role]}",
                 f'          model-path: "coremc:item/skins/tools/{collection}/{role}"',
                 f'          texture: "coremc:item/skins/{metal_key}"',
                 f'          animation-frames: {texture_meta[metal_key]["frames"]}',
@@ -363,6 +431,7 @@ def main() -> None:
     for hat_id in HAT_SKIN_IDS:
         model_paths.append(write_hat_model(hat_id))
     write_items_yml()
+    write_modern_item_models()
     merge_manifest()
     merge_skin_registry()
     write_plugin_catalog(texture_meta)

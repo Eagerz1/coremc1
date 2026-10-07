@@ -18,7 +18,7 @@ import org.bukkit.inventory.Inventory;
  */
 public final class CratesGui implements Gui {
 
-    private static final int[] SLOTS_CRATES = {19, 20, 21, 23, 24, 25};
+    private static final int[] SLOTS_CRATES = {19, 20, 21, 23, 24, 25, 28, 29, 30};
     private static final int SLOT_CLOSE = 53;
 
     private final CoreMCPlugin plugin;

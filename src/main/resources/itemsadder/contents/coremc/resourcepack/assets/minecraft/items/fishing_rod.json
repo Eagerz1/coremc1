@@ -1,0 +1,63 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "minecraft:fishing_rod/cast",
+    "on_true": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/fishing_rod_cast"
+    },
+    "on_false": {
+      "type": "minecraft:range_dispatch",
+      "property": "minecraft:custom_model_data",
+      "index": 0,
+      "entries": [
+        {
+          "threshold": 21402,
+          "model": {
+            "type": "minecraft:model",
+            "model": "coremc:item/tools/omnitool_fisher"
+          }
+        },
+        {
+          "threshold": 21602,
+          "model": {
+            "type": "minecraft:model",
+            "model": "coremc:item/skins/tools/emberforge/fisher"
+          }
+        },
+        {
+          "threshold": 21608,
+          "model": {
+            "type": "minecraft:model",
+            "model": "coremc:item/skins/tools/riftbound/fisher"
+          }
+        },
+        {
+          "threshold": 21614,
+          "model": {
+            "type": "minecraft:model",
+            "model": "coremc:item/skins/tools/astral/fisher"
+          }
+        },
+        {
+          "threshold": 21620,
+          "model": {
+            "type": "minecraft:model",
+            "model": "coremc:item/skins/tools/tidecaller/fisher"
+          }
+        },
+        {
+          "threshold": 21626,
+          "model": {
+            "type": "minecraft:model",
+            "model": "coremc:item/skins/tools/overgrown/fisher"
+          }
+        }
+      ],
+      "fallback": {
+        "type": "minecraft:model",
+        "model": "minecraft:item/fishing_rod"
+      }
+    }
+  }
+}

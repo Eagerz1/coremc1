@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The two feature branches both used schema v7 for different additive fields.
- * The final schema is v8 and must load either v7 shape without dropping data.
+ * The latest schema is v10 and must load either v7 shape without dropping data.
  */
 class PlayerProfileSchemaMigrationTest {
 
@@ -32,7 +32,7 @@ class PlayerProfileSchemaMigrationTest {
         final PlayerProfile loaded = PlayerProfile.fromMap(UUID_A, v6);
         final Map<String, Object> migrated = loaded.toMap();
 
-        assertEquals(8, migrated.get("schema-version"));
+        assertEquals(10, migrated.get("schema-version"));
         assertEquals(1200L, migrated.get("money"));
         assertEquals(List.of("grinder"), migrated.get("owned-tags"));
         assertEquals("sunset", migrated.get("chat-color"));
@@ -57,7 +57,7 @@ class PlayerProfileSchemaMigrationTest {
         assertEquals("emberforge_miner", loaded.equippedToolSkin("miner").orElseThrow());
         assertEquals("ember_crown", loaded.equippedHat());
         assertTrue(loaded.ownedChatStyles().isEmpty());
-        assertEquals(8, loaded.toMap().get("schema-version"));
+        assertEquals(10, loaded.toMap().get("schema-version"));
     }
 
     @Test
@@ -75,6 +75,6 @@ class PlayerProfileSchemaMigrationTest {
         assertTrue(loaded.hasChatStyle("bold"));
         assertEquals(List.of("sunset", "bold"), loaded.toMap().get("owned-chat-styles"));
         assertTrue(loaded.ownedSkins().isEmpty());
-        assertEquals(8, loaded.toMap().get("schema-version"));
+        assertEquals(10, loaded.toMap().get("schema-version"));
     }
 }

@@ -239,13 +239,70 @@ def check_animated_manifest(manifest, static_records):
     static_ids = {record["model_id"] for record in static_records.values()}
     if static_ids & ids:
         fail("static and animated model IDs overlap")
+    role_materials = {
+        "miner": "NETHERITE_PICKAXE",
+        "logger": "NETHERITE_AXE",
+        "fisher": "FISHING_ROD",
+        "slayer": "NETHERITE_SWORD",
+        "farmer": "NETHERITE_HOE",
+        "universal": "NETHERITE_PICKAXE",
+    }
     for item_id, record in animated.items():
         if record["material"] in {"AIR", ""}:
             fail(f"{item_id}: animated skin has no safe fallback material")
+        if item_id.startswith("tool_skin_"):
+            role = item_id.rsplit("_", 1)[-1]
+            expected_material = role_materials.get(role)
+            if expected_material is None or record["material"] != expected_material:
+                fail(f"{item_id}: expected {expected_material}, got {record['material']}")
         model = MODELS / (record["path"] + ".json")
         if not model.is_file():
             fail(f"{item_id}: missing animated skin model {model}")
     return animated
+
+
+def check_modern_item_models(animated):
+    role_materials = {
+        "miner": "NETHERITE_PICKAXE",
+        "logger": "NETHERITE_AXE",
+        "fisher": "FISHING_ROD",
+        "slayer": "NETHERITE_SWORD",
+        "farmer": "NETHERITE_HOE",
+        "universal": "NETHERITE_PICKAXE",
+    }
+    role_model_ids = {
+        "miner": 21400,
+        "farmer": 21401,
+        "fisher": 21402,
+        "slayer": 21403,
+        "logger": 21404,
+        "universal": 21405,
+    }
+    item_dir = PACK / "resourcepack/assets/minecraft/items"
+    for material in sorted(set(role_materials.values())):
+        roles = [role for role, item_material in role_materials.items() if item_material == material]
+        item_path = item_dir / (material.lower() + ".json")
+        if not item_path.is_file():
+            fail(f"{material}: missing modern item model definition {item_path}")
+        model = json.loads(item_path.read_text(encoding="utf-8")).get("model", {})
+        if material == "FISHING_ROD":
+            if model.get("type") != "minecraft:condition" or model.get("property") != "minecraft:fishing_rod/cast":
+                fail("fishing_rod item model must retain the vanilla cast condition")
+            model = model.get("on_false", {})
+        if model.get("type") != "minecraft:range_dispatch" or model.get("property") != "minecraft:custom_model_data":
+            fail(f"{material}: item model must select models through custom_model_data floats")
+        entries = {
+            int(entry["threshold"]): entry["model"].get("model")
+            for entry in model.get("entries", [])
+        }
+        expected = {}
+        for role in roles:
+            expected[role_model_ids[role]] = f"coremc:item/tools/omnitool_{role}"
+        for item_id, record in animated.items():
+            if item_id.startswith("tool_skin_") and item_id.rsplit("_", 1)[-1] in roles:
+                expected[record["model_id"]] = "coremc:item/" + record["path"]
+        if entries != expected:
+            fail(f"{material}: modern item model entries do not match its OmniTools and skins")
 
 
 def check_java_references(records):
@@ -294,7 +351,7 @@ def check_java_references(records):
         fail("placeable PDC identity was not found; fallback safety cannot be proven")
     if "new NamespacedKey(plugin, \"crate-key\")" not in java:
         fail("crate-key PDC identity was not found; fallback safety cannot be proven")
-    for model_id in (21000, 21001, 21002, 21003, 21004, 21005, 21006, 21007, 21008, 21009,
+    for model_id in (21000, 21001, 21002, 21003, 21004, 21005, 21006, 21007, 21008, 21009, 21010, 21011, 21012,
                      21400, 21401, 21402, 21403, 21404, 21405):
         if str(model_id) not in java:
             fail(f"Java visual model id {model_id} is missing from the source")
@@ -314,6 +371,7 @@ def main():
     check_assets(records)
     check_manifest(records, static_manifest)
     animated = check_animated_manifest(manifest, records)
+    check_modern_item_models(animated)
     check_java_references(records)
     catalog_text = CATALOG.read_text(encoding="utf-8")
     for rarity in RANGES:

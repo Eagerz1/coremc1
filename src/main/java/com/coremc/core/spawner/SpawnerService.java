@@ -2,6 +2,7 @@ package com.coremc.core.spawner;
 
 import com.coremc.core.CoreMCPlugin;
 import com.coremc.core.economy.Currency;
+import com.coremc.core.island.IslandProgressionCatalog;
 import com.coremc.core.placeable.PlaceableService;
 import com.coremc.core.player.PlayerProfile;
 import com.coremc.core.util.ColorUtil;
@@ -160,8 +161,8 @@ public final class SpawnerService {
                     SpawnerTier.tierId(mobId, index), index, display,
                     Math.max(0L, longOf(requiredKills, 0L)),
                     Math.max(0L, longOf(price, 0L)),
-                    (int) Math.max(1L, longOf(spawnCount, 1L)),
-                    (int) Math.max(20L, longOf(spawnDelayTicks, 400L))));
+                    (int) Math.max(2L, longOf(spawnCount, 2L)),
+                    (int) Math.max(20L, Math.min(200L, longOf(spawnDelayTicks, 200L)))));
         } catch (IllegalArgumentException e) {
             plugin.getLogger().warning("Spawner tier '" + mobId + "-" + index
                     + "' skipped: " + e.getMessage());
@@ -224,10 +225,15 @@ public final class SpawnerService {
      * vanilla {@code /setblock} spawner carries.
      */
     public void configureWorldSpawner(final Block block, final TierRef ref, final int delayTicks) {
+        configureWorldSpawner(block, ref, delayTicks, 1);
+    }
+
+    public void configureWorldSpawner(final Block block, final TierRef ref,
+            final int delayTicks, final int stackCount) {
         if (!(block.getState() instanceof CreatureSpawner spawner)) {
             return;
         }
-        applyToState(spawner, ref, delayTicks, delayTicks);
+        applyToState(spawner, ref, delayTicks, delayTicks, stackCount);
         spawner.update(true);
     }
 
@@ -244,14 +250,19 @@ public final class SpawnerService {
     private static final int REROLL_DELAY_TICKS = 10;
 
     private void applyToState(final CreatureSpawner spawner, final TierRef ref,
-            final int delayTicks, final int firstDelayTicks) {
+            final int delayTicks, final int firstDelayTicks, final int stackCount) {
         final EntitySnapshot snapshot = snapshotFor(ref.mob().entityType());
         final SpawnerEntry entry = new SpawnerEntry(snapshot, 1, null);
         // NB: never call setSpawnedType() here — it resets SpawnPotentials to
         // an empty WeightedList, which makes Paper stall the tile at Delay:0.
         spawner.setSpawnedEntity(entry);
         spawner.setPotentialSpawns(List.of(entry));
-        spawner.setSpawnCount(Math.max(1, ref.tier().spawnCount()));
+        final int batchCount = Math.max(2, ref.tier().spawnCount())
+                * Math.max(1, Math.min(3000, stackCount));
+        spawner.setSpawnCount(batchCount);
+        // Keep the nearby cap above multiple stacked batches.
+        spawner.setMaxNearbyEntities(Math.max(16, Math.min(32767, batchCount * 4)));
+        spawner.setRequiredPlayerRange(16);
         final int delay = Math.max(20, delayTicks);
         spawner.setMinSpawnDelay(delay);
         spawner.setMaxSpawnDelay(delay);
@@ -281,6 +292,52 @@ public final class SpawnerService {
         }
     }
 
+
+    /**
+     * Vanilla spawner tiles can repeatedly fail on void-island geometry even
+     * when their potential list and timer are valid. On a confirmed stall,
+     * spawn the configured cycle on nearby solid platform blocks, preserving
+     * the vanilla nearby-entity cap and stamping the same CoreMC identity.
+     */
+    private int spawnFallback(final Block spawnerBlock, final TierRef ref) {
+        final World world = spawnerBlock.getWorld();
+        final int range = 16;
+        final long nearby = world.getNearbyEntities(spawnerBlock.getLocation(),
+                        range, range, range).stream()
+                .filter(entity -> entity instanceof org.bukkit.entity.LivingEntity
+                        && entity.getType() == ref.mob().entityType())
+                .count();
+        int remaining = Math.min(ref.tier().spawnCount(), Math.max(0, 16 - (int) nearby));
+        int spawned = 0;
+        for (int dx = -SPAWN_RANGE_BLOCKS; dx <= SPAWN_RANGE_BLOCKS && remaining > 0; dx++) {
+            for (int dz = -SPAWN_RANGE_BLOCKS; dz <= SPAWN_RANGE_BLOCKS && remaining > 0; dz++) {
+                if (dx == 0 && dz == 0) {
+                    continue; // the spawner tile itself is not a spawn position
+                }
+                final Block feet = world.getBlockAt(
+                        spawnerBlock.getX() + dx, spawnerBlock.getY(), spawnerBlock.getZ() + dz);
+                if (!feet.getType().isAir()
+                        || !feet.getRelative(0, 1, 0).isPassable()
+                        || !feet.getRelative(0, 2, 0).isPassable()
+                        || !feet.getRelative(0, -1, 0).getType().isSolid()) {
+                    continue;
+                }
+                try {
+                    final org.bukkit.entity.Entity entity = world.spawnEntity(
+                            feet.getLocation().add(0.5, 0, 0.5), ref.mob().entityType());
+                    tags.tag(entity, ref.tier().tierId());
+                    spawned++;
+                    remaining--;
+                } catch (final RuntimeException exception) {
+                    plugin.getLogger().fine("Spawner fallback could not spawn "
+                            + ref.mob().entityType() + " at " + feet.getLocation() + ": "
+                            + exception.getMessage());
+                }
+            }
+        }
+        return spawned;
+    }
+
     private void tickWatchdog() {
         for (final Map.Entry<String, PlaceableService.Placement> entry
                 : plugin.placeables().placements().entrySet()) {
@@ -304,10 +361,15 @@ public final class SpawnerService {
                 continue;
             }
             final TierRef ref = tierFor(placement.id()).orElse(null);
-            final boolean needsPotentials = spawner.getPotentialSpawns().isEmpty();
-            if (ref != null && (needsPotentials || spawner.getSpawnCount() <= 0)) {
+            final boolean needsRepair = ref != null
+                    && (spawner.getPotentialSpawns().isEmpty()
+                            || spawner.getSpawnCount() != Math.max(2, ref.tier().spawnCount()) * placement.stackCount()
+                            || spawner.getSpawnRange() != SPAWN_RANGE_BLOCKS
+                            || spawner.getRequiredPlayerRange() != 16
+                            || spawner.getSpawnedType() != ref.mob().entityType());
+            if (needsRepair) {
                 applyToState(spawner, ref, ref.tier().spawnDelayTicks(),
-                        ref.tier().spawnDelayTicks());
+                        ref.tier().spawnDelayTicks(), placement.stackCount());
                 spawner.update(true);
                 stalled.remove(key);
                 plugin.getLogger().fine("Normalised spawner at " + key + " (" + placement.id() + ")");
@@ -320,12 +382,13 @@ public final class SpawnerService {
             if (spawner.getDelay() <= 0 && playerInRange) {
                 final int strikes = stalled.merge(key, 1, Integer::sum);
                 if (strikes >= 2 && ref != null) {
+                    final int recovered = spawnFallback(block, ref);
                     applyToState(spawner, ref, ref.tier().spawnDelayTicks(),
-                            REROLL_DELAY_TICKS);
+                            REROLL_DELAY_TICKS, placement.stackCount());
                     spawner.update(true);
                     stalled.remove(key);
                     plugin.getLogger().fine("Re-armed stalled spawner at " + key
-                            + " (" + placement.id() + ")");
+                            + " (" + placement.id() + "); fallback spawned " + recovered + " mob(s)");
                 }
             } else {
                 stalled.remove(key);
@@ -390,7 +453,17 @@ public final class SpawnerService {
             return; // throttled: no rewards
         }
         profile.addStat("spawner-mobs-killed", 1L);
+        final TierRef source = tags.tierIdOf(victim).flatMap(this::tierFor).orElse(null);
+        long sourceKills = 0L;
+        if (source != null) {
+            final String statKey = "spawner-kills-" + source.mob().id();
+            sourceKills = profile.statOf(statKey) + 1L;
+            profile.addStat(statKey, 1L);
+        }
         plugin.playerData().markDirty(profile.uuid());
+        if (source != null && plugin.rareDrops() != null) {
+            plugin.rareDrops().tryDrop(killer, source.mob(), sourceKills);
+        }
 
         // Team-island scope: spawner farms only pay where the killer belongs.
         final var at = victim.getLocation();
@@ -499,12 +572,31 @@ public final class SpawnerService {
         return plugin.placeables().identify(stack, PlaceableService.Type.SPAWNER, ref.tier().tierId());
     }
 
+    /** Island level required for each ten-mob slaying section. */
+    public int requiredIslandLevel(final TierRef ref) {
+        final int index = new ArrayList<>(lanes.values()).indexOf(ref.mob());
+        if (index < 0) return IslandProgressionCatalog.requiredIslandLevel("spawners");
+        return switch (index / 10) {
+            case 0 -> 1;
+            case 1 -> 5;
+            default -> 15;
+        };
+    }
+
     /**
      * Attempts a spawner purchase: tier must be unlocked and affordable.
      * Withdraws Sky Tokens and grants the item (overflow to ender chest,
      * refund on total delivery failure).
      */
     public boolean buy(final Player player, final PlayerProfile profile, final TierRef ref) {
+        final var island = plugin.islands().islandOf(player.getUniqueId()).orElse(null);
+        final int requiredLevel = requiredIslandLevel(ref);
+        if (island == null || plugin.islandProgress().levelFor(island) < requiredLevel) {
+            final int current = island == null ? 0 : plugin.islandProgress().levelFor(island);
+            plugin.messages().sendPrefixed(player, "progression.locked", Map.of(
+                    "system", "Slaying Section", "level", String.valueOf(requiredLevel), "yours", String.valueOf(current)));
+            return false;
+        }
         if (!isUnlocked(profile, ref)) {
             plugin.messages().sendPrefixed(player, "spawner.locked", Map.of(
                     "kills", String.valueOf(killsOf(profile, ref.mob())),

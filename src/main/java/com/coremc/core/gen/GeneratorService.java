@@ -95,6 +95,14 @@ public final class GeneratorService {
      * @return true on completed purchase
      */
     public boolean buy(final Player player, final PlayerProfile profile, final GeneratorDefinition def) {
+        final var island = plugin.islands().islandOf(player.getUniqueId()).orElse(null);
+        final int requiredLevel = com.coremc.core.island.IslandProgressionCatalog.requiredIslandLevel("generators");
+        if (island == null || plugin.islandProgress().levelFor(island) < requiredLevel) {
+            final int current = island == null ? 0 : plugin.islandProgress().levelFor(island);
+            plugin.messages().sendPrefixed(player, "progression.locked", Map.of(
+                    "system", "Generators", "level", String.valueOf(requiredLevel), "yours", String.valueOf(current)));
+            return false;
+        }
         final String price = String.format(Locale.ROOT, "%,d", def.priceCredits());
         final boolean free = def.priceCredits() <= 0L;
         if (!free && !plugin.economy().withdraw(profile, Currency.CREDITS, def.priceCredits())) {

@@ -47,7 +47,10 @@ public final class KeyService {
             Map.entry("rune", 21006),
             Map.entry("titan", 21007),
             Map.entry("mythic", 21008),
-            Map.entry("daily", 21009));
+            Map.entry("daily", 21009),
+            Map.entry("core", 21010),
+            Map.entry("monthly", 21011),
+            Map.entry("seasonal", 21012));
 
     public KeyService(final CoreMCPlugin plugin) {
         this.plugin = plugin;
@@ -105,9 +108,24 @@ public final class KeyService {
         final ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(ColorUtil.colorize(key.display()));
-            meta.setLore(List.of(
-                    ColorUtil.colorize("&7Crate key — use at &f/crates&7."),
-                    ColorUtil.colorize("&8Single use.")));
+            final java.util.List<String> lore = new java.util.ArrayList<>();
+            final var crate = plugin.crates().crateForKey(key.id()).orElse(null);
+            if (crate != null) {
+                lore.add(ColorUtil.colorize("&d&lLootbox Rewards"));
+                for (final CrateReward reward : crate.rewards()) {
+                    lore.add(ColorUtil.colorize("&7&l" + plugin.crates().rewardLabel(reward)
+                            + " &8&l(" + CrateService.chancePct(crate, reward) + "%)"));
+                }
+                if (crate.pityReward() != null) {
+                    lore.add(ColorUtil.colorize("&6&lGuaranteed every " + crate.pityCount()
+                            + " opens: " + plugin.crates().rewardLabel(crate.pityReward())));
+                }
+            } else {
+                lore.add(ColorUtil.colorize("&7&lRight-click anywhere to use this key."));
+            }
+            lore.add(ColorUtil.colorize("&e&lRight-click anywhere to open."));
+            lore.add(ColorUtil.colorize("&8&lSingle use."));
+            meta.setLore(lore);
             meta.getPersistentDataContainer().set(markerKey, PersistentDataType.STRING, key.id());
             // Presentation is optional and deliberately applied after the
             // stable PDC marker. If the pack is absent, the vanilla icon and

@@ -83,7 +83,9 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             case "info" -> info(player);
             case "upgrades" -> plugin.gui().open(player, new IslandUpgradesGui(plugin));
             case "buffs" -> plugin.gui().open(player, new IslandBuffsGui(plugin));
-            case "top" -> top(player);
+            case "progression", "progress" -> progression(player);
+            case "mastery" -> mastery(player, args);
+            case "top" -> top(player, args);
             default -> help(player, label);
         }
         return true;
@@ -314,8 +316,111 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(messages.get("island.info-created", Map.of("value", created)));
     }
 
-    private void top(final Player player) {
-        final List<Island> ranked = new ArrayList<>(islands.allIslands());
+    private void progression(final Player player) {
+        final Optional<Island> optional = islands.islandOf(player.getUniqueId());
+        if (optional.isEmpty()) {
+            messages.sendPrefixed(player, "island.none", Map.of());
+            return;
+        }
+        final Island island = optional.get();
+        final int level = plugin.islandProgress().levelFor(island);
+        final IslandProgressionCatalog.Level current = IslandProgressionCatalog.level(level);
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize(
+                "&6&lIsland Progression &8• &fLevel " + level + "/" + IslandProgressionCatalog.MAX_LEVEL
+                        + " &7" + current.title()));
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7Unlocked: &f"
+                + String.join(", ", current.unlocks())));
+        if (level >= IslandProgressionCatalog.MAX_LEVEL) {
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&aYou have completed the season level track."));
+            return;
+        }
+        final long divisor = plugin.getConfig().getLong("island.level.xp-divisor", 100L);
+        final long upgradeXp = Math.max(0L,
+                plugin.getConfig().getLong("island.level.xp-per-upgrade-tier", 10L));
+        final long upgradeTiers = island.upgrades().values().stream().mapToLong(Integer::longValue).sum();
+        final long score = island.xp() + upgradeTiers * upgradeXp;
+        final long required = IslandProgressionCatalog.requiredScore(level + 1, divisor);
+        final IslandProgressionCatalog.Level next = IslandProgressionCatalog.level(level + 1);
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&eNext: &fLevel "
+                + next.number() + " &7" + next.title() + " &8(" + Math.max(0L, required - score)
+                + " progression score remaining)"));
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7Unlocks: &f"
+                + String.join(", ", next.unlocks())));
+    }
+
+    private void mastery(final Player player, final String[] args) {
+        final Optional<Island> optional = islands.islandOf(player.getUniqueId());
+        if (optional.isEmpty()) {
+            messages.sendPrefixed(player, "island.none", Map.of());
+            return;
+        }
+        final Island island = optional.get();
+        if (args.length >= 2 && args[1].equalsIgnoreCase("claim")) {
+            claimMastery(player, island, args);
+            return;
+        }
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&d&lIsland Mastery &8• &7Lifetime island goals"));
+        for (final IslandProgressionCatalog.Mastery objective : IslandProgressionCatalog.masteryObjectives()) {
+            final long progress = Math.min(objective.target(), island.statOf(objective.statKey()));
+            final String status = progress >= objective.target() ? "&aComplete" : "&e" + progress + "/" + objective.target();
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&f" + objective.title()
+                    + " &8— &7" + objective.statKey().replace('-', ' ') + " &8["
+                    + status + "&8] &7Reward: &b" + objective.rewardSkyTokens() + " Sky Tokens"));
+        }
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7Claim a completed reward: &f/is mastery claim <id>"));
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&8IDs: miner, slayer, farmer, logger, fisher, generator"));
+    }
+
+    private void claimMastery(final Player player, final Island island, final String[] args) {
+        if (args.length < 3) {
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cUsage: /is mastery claim <id>"));
+            return;
+        }
+        final IslandProgressionCatalog.Mastery objective = IslandProgressionCatalog.masteryObjectives().stream()
+                .filter(value -> value.id().equalsIgnoreCase(args[2])).findFirst().orElse(null);
+        if (objective == null) {
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cUnknown mastery id. Use &f/is mastery&c."));
+            return;
+        }
+        if (island.statOf(objective.statKey()) < objective.target()) {
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cThat mastery goal is not complete yet."));
+            return;
+        }
+        final var profile = plugin.playerData().profileOf(player.getUniqueId()).orElse(null);
+        if (profile == null) {
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cYour profile is still loading."));
+            return;
+        }
+        final long reward = objective.rewardSkyTokens();
+        if (!plugin.economy().fitsDeposit(profile, com.coremc.core.economy.Currency.SKY_TOKENS, reward)) {
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cYour Sky Token balance is full; spend some before claiming."));
+            return;
+        }
+        if (!profile.claimIslandMastery(island.islandId(), objective.id())) {
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&eYou already claimed this island mastery reward."));
+            return;
+        }
+        plugin.economy().deposit(profile, com.coremc.core.economy.Currency.SKY_TOKENS, reward);
+        plugin.playerData().persistImportant(profile);
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&aMastery reward claimed: &b" + reward + " Sky Tokens&a."));
+    }
+
+    private void top(final Player player, final String[] args) {
+        if (args.length > 1 && args[1].equalsIgnoreCase("rewards")) {
+            final String season = plugin.getConfig().getString("island.season.id", "season-1");
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&6&lSeason rewards &8(" + season + ")"));
+            for (int rank = 1; rank <= 3; rank++) {
+                final long reward = Math.max(0L, plugin.getConfig().getLong("island.season.top-rewards." + rank, 0L));
+                player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&e#" + rank + " &7— &f" + reward + " Credits"));
+            }
+            player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7Staff settle the season with &f/is top settle&7."));
+            return;
+        }
+        if (args.length > 1 && args[1].equalsIgnoreCase("settle")) {
+            settleSeason(player);
+            return;
+        }
+        final List<Island> ranked = rankedIslands();
         ranked.sort((left, right) -> {
             final int byLevel = Integer.compare(right.level(), left.level());
             return byLevel != 0 ? byLevel : Long.compare(right.xp(), left.xp());
@@ -332,6 +437,80 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
                     "owner", resolveName(island.owner()),
                     "level", String.valueOf(island.level()),
                     "score", String.valueOf(island.xp()))));
+        }
+    }
+
+    private List<Island> rankedIslands() {
+        final List<Island> ranked = new ArrayList<>(islands.allIslands().stream()
+                .filter(island -> !plugin.islandDisqualifications().isActive(island.owner())).toList());
+        ranked.sort((left, right) -> {
+            final int byLevel = Integer.compare(right.level(), left.level());
+            return byLevel != 0 ? byLevel : Long.compare(right.xp(), left.xp());
+        });
+        return ranked;
+    }
+
+    private void settleSeason(final Player actor) {
+        if (!actor.hasPermission("coremc.admin.island-season")) {
+            messages.sendPrefixed(actor, "no-permission", Map.of());
+            return;
+        }
+        final String season = plugin.getConfig().getString("island.season.id", "season-1").trim();
+        if (season.isEmpty()) {
+            actor.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cSet island.season.id before settling."));
+            return;
+        }
+        final java.io.File ledgerFile = new java.io.File(plugin.getDataFolder(), "island-season-rewards.yml");
+        final org.bukkit.configuration.file.YamlConfiguration ledger =
+                org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(ledgerFile);
+        final String base = "seasons." + season;
+        if (ledger.getBoolean(base + ".complete", false)) {
+            actor.sendMessage(com.coremc.core.util.ColorUtil.colorize("&eSeason " + season + " has already been settled."));
+            return;
+        }
+        if (!ledger.contains(base + ".snapshot")) {
+            final List<String> snapshot = rankedIslands().stream().limit(3)
+                    .map(island -> island.owner().toString()).toList();
+            ledger.set(base + ".snapshot", snapshot);
+            if (!saveSeasonLedger(ledger, ledgerFile, actor)) return;
+        }
+        final List<String> snapshot = ledger.getStringList(base + ".snapshot");
+        int paid = 0;
+        for (int index = 0; index < snapshot.size() && index < 3; index++) {
+            final int rank = index + 1;
+            final long reward = Math.max(0L, plugin.getConfig().getLong("island.season.top-rewards." + rank, 0L));
+            if (reward == 0L) continue;
+            final java.util.UUID owner;
+            try { owner = java.util.UUID.fromString(snapshot.get(index)); }
+            catch (final IllegalArgumentException ignored) { continue; }
+            final var profile = plugin.playerData().cachedOrLoad(owner).orElse(null);
+            if (profile == null) continue;
+            final String claimId = "island-season:" + season + ":rank:" + rank;
+            if (profile.playtimeMilestoneClaimed(claimId)) continue;
+            if (!plugin.economy().fitsDeposit(profile, com.coremc.core.economy.Currency.CREDITS, reward)) {
+                actor.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cCould not pay #" + rank + " due to Credits overflow."));
+                continue;
+            }
+            plugin.economy().deposit(profile, com.coremc.core.economy.Currency.CREDITS, reward);
+            profile.claimPlaytimeMilestone(claimId);
+            plugin.playerData().persistImportant(profile);
+            paid++;
+        }
+        ledger.set(base + ".complete", true);
+        if (saveSeasonLedger(ledger, ledgerFile, actor)) {
+            actor.sendMessage(com.coremc.core.util.ColorUtil.colorize("&aSettled " + season + " and paid " + paid + " island reward(s)."));
+        }
+    }
+
+    private boolean saveSeasonLedger(final org.bukkit.configuration.file.YamlConfiguration ledger,
+            final java.io.File file, final Player actor) {
+        try {
+            ledger.save(file);
+            return true;
+        } catch (final java.io.IOException exception) {
+            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Could not save island season reward ledger.", exception);
+            actor.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cSeason ledger save failed; retry with the same season id."));
+            return false;
         }
     }
 
@@ -392,6 +571,8 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(messages.get("island.help-info", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-upgrades", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-buffs", Map.of("label", label)));
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7/" + label + " progression &8- &fView island level unlocks."));
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize("&7/" + label + " mastery [claim <id>] &8- &fTrack and claim lifetime island goals."));
         player.sendMessage(messages.get("island.help-top", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-delete", Map.of("label", label)));
     }
@@ -407,12 +588,20 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             final String partial = args[0].toLowerCase();
             for (final String sub : List.of(
                     "create", "home", "visit", "invite", "accept", "leave", "kick", "delete", "info", "upgrades",
-                    "buffs", "top", "help")) {
+                    "buffs", "progression", "progress", "mastery", "top", "help")) {
                 if (sub.startsWith(partial)) {
                     completions.add(sub);
                 }
             }
             return completions;
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("mastery") && "claim".startsWith(args[1].toLowerCase())) {
+            completions.add("claim");
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("mastery") && args[1].equalsIgnoreCase("claim")) {
+            for (final IslandProgressionCatalog.Mastery objective : IslandProgressionCatalog.masteryObjectives()) {
+                if (objective.id().startsWith(args[2].toLowerCase())) completions.add(objective.id());
+            }
         }
         if (args.length == 2 && (args[0].equalsIgnoreCase("invite") || args[0].equalsIgnoreCase("visit"))) {
             final String partial = args[1].toLowerCase();
