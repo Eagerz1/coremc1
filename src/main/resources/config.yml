@@ -1217,3 +1217,42 @@ moderation:
           display: "Inappropriate IGN"
           enabled: true
           requires-acknowledgement: true
+
+
+# Weekly mission rotation. Three objectives are assigned per player each UTC week.
+weekly-quests:
+  mine_blocks:
+    display: "&fMine 1,500 blocks"
+    icon: IRON_PICKAXE
+    metric: MINE_BLOCK
+    target: 1500
+    reward-credits: 2500
+    reward-sky-tokens: 20
+  harvest_crops:
+    display: "&aHarvest 750 crops"
+    icon: WHEAT
+    metric: HARVEST_CROP
+    target: 750
+    reward-credits: 2500
+    reward-sky-tokens: 20
+  chop_logs:
+    display: "&6Chop 500 logs"
+    icon: IRON_AXE
+    metric: CHOP_LOG
+    target: 500
+    reward-credits: 2500
+    reward-sky-tokens: 20
+  catch_fish:
+    display: "&bCatch 250 fish"
+    icon: FISHING_ROD
+    metric: CATCH_FISH
+    target: 250
+    reward-credits: 3000
+    reward-sky-tokens: 25
+  kill_mobs:
+    display: "&cDefeat 600 mobs"
+    icon: IRON_SWORD
+    metric: KILL_MOB
+    target: 600
+    reward-credits: 3000
+    reward-sky-tokens: 25

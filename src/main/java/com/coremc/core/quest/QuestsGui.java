@@ -18,14 +18,18 @@ public final class QuestsGui implements Gui {
     private static final int SLOT_INFO = 4;
     private static final int SLOT_CLOSE = 53;
     private final CoreMCPlugin plugin;
+    private final boolean weekly;
 
-    public QuestsGui(final CoreMCPlugin plugin) {
+    public QuestsGui(final CoreMCPlugin plugin) { this(plugin, false); }
+
+    public QuestsGui(final CoreMCPlugin plugin, final boolean weekly) {
         this.plugin = plugin;
+        this.weekly = weekly;
     }
 
     @Override
     public String title() {
-        return ColorUtil.colorize("&b&lCOREMC &8» &fDaily Missions");
+        return ColorUtil.colorize("&b&lCOREMC &8» &f" + (weekly ? "Weekly Missions" : "Daily Missions"));
     }
 
     @Override
@@ -39,16 +43,16 @@ public final class QuestsGui implements Gui {
         if (profile == null) {
             return;
         }
-        plugin.quests().ensureToday(profile);
-        inventory.setItem(SLOT_INFO, GuiService.item(Material.CLOCK, "&eDaily Missions",
-                List.of("&7Three objectives reset each UTC day.", "&7Progress and claims persist.")));
-        final List<String> assigned = profile.dailyQuests();
+        if (weekly) plugin.quests().ensureWeekly(profile); else plugin.quests().ensureToday(profile);
+        inventory.setItem(SLOT_INFO, GuiService.item(Material.CLOCK, weekly ? "&eWeekly Missions" : "&eDaily Missions",
+                List.of(weekly ? "&7Three objectives reset each UTC week." : "&7Three objectives reset each UTC day.", "&7Progress and claims persist.")));
+        final List<String> assigned = weekly ? plugin.quests().weeklyAssigned(profile) : profile.dailyQuests();
         for (int i = 0; i < SLOTS.length && i < assigned.size(); i++) {
-            final QuestDefinition quest = plugin.quests().definition(assigned.get(i)).orElse(null);
+            final QuestDefinition quest = (weekly ? plugin.quests().weeklyDefinition(assigned.get(i)) : plugin.quests().definition(assigned.get(i))).orElse(null);
             if (quest == null) {
                 continue;
             }
-            final QuestRotation.Progress progress = plugin.quests().progress(profile, quest.id());
+            final QuestRotation.Progress progress = weekly ? plugin.quests().weeklyProgress(profile, quest.id()) : plugin.quests().progress(profile, quest.id());
             final List<String> lore = new ArrayList<>();
             lore.add("&7Progress: &f" + progress.amount() + "&7/&f" + quest.target());
             lore.add("&7Reward: &e" + quest.rewardCredits() + " Credits &8+ &b"
@@ -79,12 +83,12 @@ public final class QuestsGui implements Gui {
         if (profile == null) {
             return false;
         }
-        plugin.quests().ensureToday(profile);
-        final List<String> assigned = profile.dailyQuests();
+        if (weekly) plugin.quests().ensureWeekly(profile); else plugin.quests().ensureToday(profile);
+        final List<String> assigned = weekly ? plugin.quests().weeklyAssigned(profile) : profile.dailyQuests();
         for (int i = 0; i < SLOTS.length && i < assigned.size(); i++) {
             if (slot == SLOTS[i]) {
-                return plugin.quests().definition(assigned.get(i))
-                        .map(quest -> plugin.quests().claim(viewer, profile, quest)).orElse(false);
+                return (weekly ? plugin.quests().weeklyDefinition(assigned.get(i)) : plugin.quests().definition(assigned.get(i)))
+                        .map(quest -> weekly ? plugin.quests().claimWeekly(viewer, profile, quest) : plugin.quests().claim(viewer, profile, quest)).orElse(false);
             }
         }
         return false;

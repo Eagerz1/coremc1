@@ -27,6 +27,7 @@ public final class QuestService implements Listener {
 
     private final CoreMCPlugin plugin;
     private final Map<String, QuestDefinition> definitions = new LinkedHashMap<>();
+    private final Map<String, QuestDefinition> weeklyDefinitions = new LinkedHashMap<>();
 
     public QuestService(final CoreMCPlugin plugin) {
         this.plugin = plugin;
@@ -34,10 +35,9 @@ public final class QuestService implements Listener {
 
     public int load() {
         definitions.clear();
+        weeklyDefinitions.clear();
         final var section = plugin.getConfig().getConfigurationSection("daily-quests");
-        if (section == null) {
-            return 0;
-        }
+        if (section != null) {
         for (final String rawId : section.getKeys(false)) {
             final var row = section.getConfigurationSection(rawId);
             if (row == null) {
@@ -62,8 +62,27 @@ public final class QuestService implements Listener {
                     id, row.getString("display", "&f" + id), icon, metric, target,
                     Math.max(0L, row.getLong("reward-credits", 0L)),
                     Math.max(0L, row.getLong("reward-sky-tokens", 0L))));
+        }}
+        final var weekly = plugin.getConfig().getConfigurationSection("weekly-quests");
+        if (weekly != null) for (final String rawId : weekly.getKeys(false)) {
+            final var row = weekly.getConfigurationSection(rawId);
+            if (row == null) continue;
+            final Material icon = Material.matchMaterial(row.getString("icon", "PAPER"));
+            final QuestDefinition.Metric metric;
+            try {
+                metric = QuestDefinition.Metric.valueOf(row.getString("metric", "MINE_BLOCK").toUpperCase(Locale.ROOT));
+            } catch (final IllegalArgumentException exception) {
+                plugin.getLogger().warning("Weekly quest '" + rawId + "' has an invalid metric; skipped.");
+                continue;
+            }
+            final long target = row.getLong("target", 0L);
+            if (icon == null || target <= 0L) continue;
+            final String id = rawId.toLowerCase(Locale.ROOT);
+            weeklyDefinitions.put(id, new QuestDefinition(id, row.getString("display", "&f" + id), icon, metric,
+                    target, Math.max(0L, row.getLong("reward-credits", 0L)),
+                    Math.max(0L, row.getLong("reward-sky-tokens", 0L))));
         }
-        return definitions.size();
+        return definitions.size() + weeklyDefinitions.size();
     }
 
     public List<QuestDefinition> all() {
@@ -72,6 +91,32 @@ public final class QuestService implements Listener {
 
     public Optional<QuestDefinition> definition(final String id) {
         return Optional.ofNullable(definitions.get(id));
+    }
+
+    public List<String> weeklyAssigned(final PlayerProfile profile) {
+        ensureWeekly(profile);
+        final Object raw = profile.questProgressOf("weekly:__meta").get("quests");
+        return raw instanceof List<?> values ? values.stream().map(String::valueOf).toList() : List.of();
+    }
+
+    public void ensureWeekly(final PlayerProfile profile) {
+        final String week = weekKey();
+        final Map<String, Object> meta = profile.questProgressOf("weekly:__meta");
+        if (week.equals(meta.get("week")) && meta.get("quests") instanceof List<?> values && !values.isEmpty()) return;
+        final List<String> assigned = QuestRotation.select(new ArrayList<>(weeklyDefinitions.keySet()), profile.uuid(), week, 3);
+        profile.setQuestProgress("weekly:__meta", new LinkedHashMap<>(Map.of("week", week, "quests", assigned)));
+        for (final String id : assigned) writeWeekly(profile, id, new QuestRotation.Progress(0L, false, false));
+        plugin.playerData().persistImportant(profile);
+    }
+
+    public Optional<QuestDefinition> weeklyDefinition(final String id) {
+        return Optional.ofNullable(weeklyDefinitions.get(id));
+    }
+
+    public QuestRotation.Progress weeklyProgress(final PlayerProfile profile, final String id) {
+        final Map<String, Object> row = profile.questProgressOf("weekly:" + id);
+        return new QuestRotation.Progress(number(row.get("progress")), Boolean.TRUE.equals(row.get("done")),
+                Boolean.TRUE.equals(row.get("claimed")));
     }
 
     public void ensureToday(final PlayerProfile profile) {
@@ -118,6 +163,18 @@ public final class QuestService implements Listener {
                 }
             }
         }
+        ensureWeekly(profile);
+        for (final String id : weeklyAssigned(profile)) {
+            final QuestDefinition quest = weeklyDefinitions.get(id);
+            if (quest == null || quest.metric() != metric) continue;
+            final QuestRotation.Progress before = weeklyProgress(profile, id);
+            final QuestRotation.Progress after = QuestRotation.advance(before, amount, quest.target());
+            if (!after.equals(before)) {
+                writeWeekly(profile, id, after);
+                changed = true;
+                if (!before.done() && after.done()) plugin.messages().sendPrefixed(player, "quest.completed", Map.of("quest", quest.display()));
+            }
+        }
         if (changed) {
             plugin.playerData().markDirty(profile.uuid());
         }
@@ -154,6 +211,33 @@ public final class QuestService implements Listener {
         return true;
     }
 
+    public boolean claimWeekly(final Player player, final PlayerProfile profile, final QuestDefinition quest) {
+        ensureWeekly(profile);
+        final QuestRotation.Progress current = weeklyProgress(profile, quest.id());
+        if (!current.done() || current.claimed()) return false;
+        if ((quest.rewardCredits() > 0L && !plugin.economy().fitsDeposit(profile, Currency.CREDITS, quest.rewardCredits()))
+                || (quest.rewardTokens() > 0L && !plugin.economy().fitsDeposit(profile, Currency.SKY_TOKENS, quest.rewardTokens()))) {
+            plugin.messages().sendPrefixed(player, "quest.overflow", Map.of());
+            return false;
+        }
+        if (quest.rewardCredits() > 0L) plugin.economy().deposit(profile, Currency.CREDITS, quest.rewardCredits());
+        if (quest.rewardTokens() > 0L) plugin.economy().deposit(profile, Currency.SKY_TOKENS, quest.rewardTokens());
+        writeWeekly(profile, quest.id(), new QuestRotation.Progress(current.amount(), true, true));
+        plugin.islands().islandOf(player.getUniqueId()).ifPresent(island -> {
+            island.addStat("missions-completed", 1L);
+            plugin.islands().markDirty(island);
+        });
+        plugin.playerData().persistImportant(profile);
+        plugin.messages().sendPrefixed(player, "quest.claimed", Map.of(
+                "credits", String.valueOf(quest.rewardCredits()), "tokens", String.valueOf(quest.rewardTokens())));
+        return true;
+    }
+
+    private void writeWeekly(final PlayerProfile profile, final String id, final QuestRotation.Progress progress) {
+        profile.setQuestProgress("weekly:" + id, new LinkedHashMap<>(Map.of(
+                "progress", progress.amount(), "done", progress.done(), "claimed", progress.claimed())));
+    }
+
     private void write(final PlayerProfile profile, final String id, final QuestRotation.Progress progress) {
         profile.setQuestProgress(id, new LinkedHashMap<>(Map.of(
                 "progress", progress.amount(), "done", progress.done(), "claimed", progress.claimed())));
@@ -161,6 +245,10 @@ public final class QuestService implements Listener {
 
     private static long number(final Object value) {
         return value instanceof Number number ? Math.max(0L, number.longValue()) : 0L;
+    }
+
+    private static String weekKey() {
+        return LocalDate.now(ZoneOffset.UTC).with(java.time.DayOfWeek.MONDAY).toString();
     }
 
     private static String dayKey() {

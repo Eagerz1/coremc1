@@ -666,7 +666,7 @@ public final class PlayerProfile {
     }
 
     public void clearQuestProgress() {
-        questProgress.clear();
+        questProgress.keySet().removeIf(key -> !key.startsWith("weekly:"));
     }
 
     // --- playtime ---

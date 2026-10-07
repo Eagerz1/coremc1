@@ -23,7 +23,7 @@ public final class QuestsCommand implements CommandExecutor {
             plugin.messages().sendPrefixed(sender, "player-only", Map.of());
             return true;
         }
-        plugin.gui().open(player, new QuestsGui(plugin));
+        plugin.gui().open(player, new QuestsGui(plugin, args.length > 0 && args[0].equalsIgnoreCase("weekly")));
         return true;
     }
 }
