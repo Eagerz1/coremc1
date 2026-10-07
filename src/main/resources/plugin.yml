@@ -84,7 +84,7 @@ commands:
     permission-message: "&cYou do not have permission to use this command."
   quests:
     description: View and claim daily gameplay missions.
-    usage: /quests
+    usage: /quests [daily|weekly]
     aliases: [missions, daily]
     permission: coremc.command.quests
     permission-message: "&cYou do not have permission to use this command."

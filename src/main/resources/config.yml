@@ -1270,10 +1270,3 @@ store:
     hat: 2500
     tag: 1500
     chat-style: 1500
-
-store:
-  cosmetic-prices:
-    tool-skin: 5000
-    hat: 2500
-    tag: 1500
-    chat-style: 1500
