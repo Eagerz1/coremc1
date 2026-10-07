@@ -120,7 +120,9 @@ public final class SpawnerMobTagger implements Listener {
             mob.setAI(false);
         }
         entity.setGravity(true);
-        entity.setCollidable(true);
+        if (entity instanceof LivingEntity living) {
+            living.setCollidable(true);
+        }
         entity.setFireTicks(0);
         if (entity instanceof LivingEntity living) {
             living.setCustomName(com.coremc.core.util.ColorUtil.colorize(
