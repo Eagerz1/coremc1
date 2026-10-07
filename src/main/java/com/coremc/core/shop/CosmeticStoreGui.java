@@ -99,7 +99,7 @@ public final class CosmeticStoreGui implements Gui {
                     .forEach(style -> result.add(new Offer(style.id(), style.display(),
                             Material.matchMaterial(style.material()) == null ? Material.PAPER : Material.matchMaterial(style.material()),
                             style.gradient() ? style.fromHex() + " → " + style.toHex() : style.colour(),
-                            plugin.chatStyles().owns(viewer, profile, style)));
+                            plugin.chatStyles().owns(viewer, profile, style))));
             default -> { }
         }
         return result;
