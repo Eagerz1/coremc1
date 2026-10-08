@@ -80,8 +80,17 @@ public final class IslandLevelTrack {
         if (score <= 0L || xpDivisor <= 0L) {
             return 1;
         }
-        final int level = 1 + (int) Math.floor(Math.sqrt(score / (double) xpDivisor));
-        return Math.min(MAX_LEVEL, Math.max(1, level));
+        for (int level = MAX_LEVEL; level > 1; level--) {
+            final long distance = level - 1L;
+            final long square = distance * distance;
+            if (square > Long.MAX_VALUE / xpDivisor) {
+                continue; // this level's threshold cannot be represented by a long score
+            }
+            if (score >= square * xpDivisor) {
+                return level;
+            }
+        }
+        return 1;
     }
 
     /** The definition for a level, if it belongs to the season track. */
