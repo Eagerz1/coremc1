@@ -27,6 +27,8 @@ final class IslandLevelTrackTest {
         assertEquals(3, IslandLevelTrack.levelForScore(400L, 100L));
         assertEquals(30, IslandLevelTrack.levelForScore(84_100L, 100L));
         assertEquals(30, IslandLevelTrack.levelForScore(Long.MAX_VALUE, 100L));
+        assertEquals(30, IslandLevelTrack.levelForScore(Long.MAX_VALUE, 1L));
+        assertEquals(2, IslandLevelTrack.levelForScore(Long.MAX_VALUE, Long.MAX_VALUE));
         assertEquals(1, IslandLevelTrack.levelForScore(Long.MAX_VALUE, 0L));
     }
 
