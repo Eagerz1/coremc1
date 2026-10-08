@@ -40,13 +40,13 @@ public final class IslandProgressionGui implements Gui {
     @Override
     public void build(final Player viewer, final Inventory inventory) {
         final Island island = plugin.islands().islandOf(viewer.getUniqueId()).orElse(null);
+        final long divisor = plugin.getConfig().getLong("island.level.xp-divisor", 100L);
+        final int currentLevel = island == null ? 0 : plugin.islandProgress().levelFor(island);
+        final long score = island == null ? 0L : plugin.islandProgress().scoreFor(island);
         if (island == null) {
             inventory.setItem(4, GuiService.item(Material.BOOK, "&bIsland Progression",
                     List.of("&7Create or join an island to", "&7start the 30-level season track.")));
         } else {
-            final long divisor = plugin.getConfig().getLong("island.level.xp-divisor", 100L);
-            final int currentLevel = plugin.islandProgress().levelFor(island);
-            final long score = plugin.islandProgress().scoreFor(island);
             final long currentRequirement = IslandLevelTrack.level(currentLevel, divisor)
                     .orElseThrow().requiredScore();
             inventory.setItem(4, GuiService.item(Material.NETHER_STAR, "&b&lISLAND PROGRESSION",
@@ -66,8 +66,7 @@ public final class IslandProgressionGui implements Gui {
             }
         }
 
-        final List<IslandLevelTrack.Level> levels = IslandLevelTrack.levels(
-                plugin.getConfig().getLong("island.level.xp-divisor", 100L));
+        final List<IslandLevelTrack.Level> levels = IslandLevelTrack.levels(divisor);
         final int start = page * LEVEL_SLOTS.length;
         for (int i = 0; i < LEVEL_SLOTS.length; i++) {
             final int index = start + i;
@@ -75,10 +74,8 @@ public final class IslandProgressionGui implements Gui {
                 break;
             }
             final IslandLevelTrack.Level level = levels.get(index);
-            final boolean completed = island != null
-                    && plugin.islandProgress().levelFor(island) > level.level();
-            final boolean current = island != null
-                    && plugin.islandProgress().levelFor(island) == level.level();
+            final boolean completed = currentLevel > level.level();
+            final boolean current = currentLevel == level.level();
             final Material icon = completed ? Material.LIME_DYE : current
                     ? Material.EXPERIENCE_BOTTLE : Material.GRAY_DYE;
             final List<String> lore = new ArrayList<>();
@@ -135,7 +132,7 @@ public final class IslandProgressionGui implements Gui {
     private static String progressLine(final long score, final long from, final long to) {
         final long span = Math.max(1L, to - from);
         final long progress = Math.max(0L, Math.min(span, score - from));
-        final int filled = (int) Math.min(10L, progress * 10L / span);
+        final int filled = (int) Math.min(10L, Math.round(progress * 10.0 / span));
         return "&7Next level: &f" + Math.max(0L, to - score) + " score &8["
                 + "&a" + "|".repeat(filled) + "&7" + "|".repeat(10 - filled) + "&8]";
     }
