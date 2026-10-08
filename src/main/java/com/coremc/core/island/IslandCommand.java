@@ -33,6 +33,7 @@ import org.bukkit.entity.Player;
  *   info              island position, border, level, members, creation
  *   upgrades          open the island upgrades panel
  *   buffs             open the island buffs panel
+ *   progression       view the 30-level island progression track
  *   help              this summary
  *
  * All island state lives in {@link IslandService}; this class only
@@ -83,6 +84,8 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             case "info" -> info(player);
             case "upgrades" -> plugin.gui().open(player, new IslandUpgradesGui(plugin));
             case "buffs" -> plugin.gui().open(player, new IslandBuffsGui(plugin));
+            case "progression", "progress", "levels" ->
+                    plugin.gui().open(player, new IslandProgressionGui(plugin));
             case "top" -> top(player);
             default -> help(player, label);
         }
@@ -392,6 +395,8 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(messages.get("island.help-info", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-upgrades", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-buffs", Map.of("label", label)));
+        player.sendMessage(com.coremc.core.util.ColorUtil.colorize(
+                "&7/" + label + " progression &8- View the 30-level island progression track."));
         player.sendMessage(messages.get("island.help-top", Map.of("label", label)));
         player.sendMessage(messages.get("island.help-delete", Map.of("label", label)));
     }
@@ -407,7 +412,7 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             final String partial = args[0].toLowerCase();
             for (final String sub : List.of(
                     "create", "home", "visit", "invite", "accept", "leave", "kick", "delete", "info", "upgrades",
-                    "buffs", "top", "help")) {
+                    "buffs", "progression", "progress", "levels", "top", "help")) {
                 if (sub.startsWith(partial)) {
                     completions.add(sub);
                 }
