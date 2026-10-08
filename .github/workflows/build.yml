@@ -28,6 +28,12 @@ jobs:
       - name: Validate CoreMC ItemsAdder source pack
         run: python3 tools/validate_itemsadder_assets.py
 
+      - name: Build CoreMC resource pack
+        run: python3 tools/build_pack.py dist/CoreMC-ResourcePack.zip
+
+      - name: Validate animated skins and built resource pack
+        run: python3 tools/validate_skin_assets.py
+
       - name: Build with Maven (compile + JUnit tests + jar)
         run: |
           set -o pipefail
@@ -64,6 +70,15 @@ jobs:
           name: coremc-jar
           path: target/CoreMC-*.jar
           if-no-files-found: error
+
+      - name: Upload CoreMC resource pack
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coremc-resource-pack
+          path: dist/CoreMC-ResourcePack.zip
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload Surefire reports
         if: always()

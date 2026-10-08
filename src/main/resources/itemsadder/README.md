@@ -89,3 +89,11 @@ in the ItemsAdder console that its generated pack reports the `coremc`
 namespace and no missing model/texture warnings. Reload CoreMC only if its
 configuration changed; a resource-only update needs the ItemsAdder reload and
 zip steps above.
+
+## Compatibility and delivery notes
+
+CoreMC keeps the ItemsAdder `resource` + stable `model_id` definitions as the source format so older 1.21.x clients retain the legacy model path. The standalone builder also emits the newer `assets/minecraft/items/` item-model dispatch used by 1.21.4+ clients. Do not replace these definitions with `graphics:` until the deployed ItemsAdder version and minimum client version are confirmed; ItemsAdder's modern graphics workflow requires ItemsAdder 4.0.13+ and Minecraft 1.21.4+ on both client and server. See the [modern item guide](https://wiki.itemsadder.com/adding-content/items/modern-items-creation/) and [legacy resource guide](https://wiki.itemsadder.com/adding-content/items/item-properties/resource/).
+
+The build workflow now creates `dist/CoreMC-ResourcePack.zip`, validates the animated skin geometry and both model-dispatch paths against that built zip, and uploads the zip as the `coremc-resource-pack` Actions artifact. This checks the deliverable players receive, not only the source PNGs and models.
+
+For an ItemsAdder server, keep this under the existing `coremc` namespace and let ItemsAdder generate the single server pack with `/iazip`. ItemsAdder 4.0.17+ provides [simple self-hosting](https://wiki.itemsadder.com/plugin-usage/plugin-configuration/resourcepack-hosting/simple-self-host/); regenerate the pack after resource changes and make sure a second plugin or `server.properties` resource-pack URL is not replacing it. See [ItemsAdder's pack troubleshooting guide](https://wiki.itemsadder.com/faq/identify-why-textures-are-not-shown/).

@@ -53,6 +53,9 @@ public final class GuiService implements Listener {
         if (event.getClickedInventory() == null || !event.getClickedInventory().equals(event.getInventory())) {
             return; // click in the player inventory below — ignore
         }
+        if (!MenuClickPolicy.isActionClick(event.getClick())) {
+            return; // number keys, shift-clicks and double-clicks never activate a button
+        }
         final boolean refresh = event.isRightClick()
                 ? holder.gui().onRightClick(player, event.getRawSlot())
                 : holder.gui().onClick(player, event.getRawSlot());
@@ -93,14 +96,12 @@ public final class GuiService implements Listener {
     /** Total panes used by a full GUI: {@value #MAX_FILL_PANES} (<= player inventory). */
     public static final int MAX_FILL_PANES = 45;
 
-    /** Title for every transparent filler showing the pane budget (lives as an item name). */
-    public static final String FILL_TITLE = "&8" + MAX_FILL_PANES + " fill panes (still cheap)";
+    /** Blank item name keeps decorative panes visually silent. */
+    public static final String FILL_TITLE = " ";
 
     /**
-     * Background-panes every empty slot with a title that tells the fill
-     * budget: a full double chest uses 45 panes, well under a vanilla
-     * inventory's worth of items, keeping click visuals consistent without
-     * heavy inventory traffic.
+     * Background-panes every empty slot while keeping the item name invisible.
+     * Call at the end of build() so intentional GUI items are preserved.
      */
     public static void fillGaps(final Inventory inventory) {
         for (int slot = 0; slot < inventory.getSize(); slot++) {
