@@ -20,7 +20,7 @@ import org.bukkit.inventory.Inventory;
  *   10 Home / Create     11 Members      12 Info      13 Upgrades
  *   14 Settings          15 Permissions  16 Invite    22 Delete
  *   19 Gens              20 Spawners     21 Border    23 Visit
- *   24 Leave             25 Buffs        53 Close
+ *   24 Leave             25 Buffs        26 Progression  53 Close
  * </pre>
  * Actions route through the chat commands (single source of behaviour)
  * except the panel-to-panel opens (theme select / members / upgrades /
@@ -42,13 +42,14 @@ public final class IslandMainGui implements Gui {
     private static final int SLOT_VISIT = 23;
     private static final int SLOT_LEAVE = 24;
     private static final int SLOT_BUFFS = 25;
+    private static final int SLOT_PROGRESSION = 26;
     private static final int SLOT_CLOSE = 53;
     private static final int SLOT_HEADER = 4;
     private static final int SLOT_OVERVIEW = 49;
 
     /** All actionable slots — exported so audits and tests never duplicate the layout. */
     public static final java.util.Set<Integer> ACTION_SLOTS =
-            java.util.Set.of(10, 11, 12, 13, 14, 15, 16, 22, 19, 20, 21, 23, 24, 25, 53);
+            java.util.Set.of(10, 11, 12, 13, 14, 15, 16, 22, 19, 20, 21, 23, 24, 25, 26, 53);
 
     private final CoreMCPlugin plugin;
 
@@ -191,6 +192,10 @@ public final class IslandMainGui implements Gui {
                 hasIsland
                         ? List.of("&7Island-wide multipliers: drops,", "&7currency, XP, gens, spawners.", "", "&eClick to open buffs.")
                         : List.of("&8Create an island first.")));
+        inventory.setItem(SLOT_PROGRESSION, GuiService.item(
+                Material.EXPERIENCE_BOTTLE, "&bProgression",
+                List.of("&7View the 30-level island track.", "&7See score requirements and milestones.",
+                        "", "&eClick to view progression.")));
         inventory.setItem(SLOT_CLOSE, GuiService.item(Material.BARRIER, "&c&lClose", List.of("&7Close this menu.")));
         inventory.setItem(SLOT_OVERVIEW, GuiService.item(Material.MAP, "&bIsland status",
                 hasIsland
@@ -274,6 +279,7 @@ public final class IslandMainGui implements Gui {
                     plugin.gui().open(viewer, new IslandBuffsGui(plugin));
                 }
             }
+            case SLOT_PROGRESSION -> plugin.gui().open(viewer, new IslandProgressionGui(plugin));
             case SLOT_CLOSE -> viewer.closeInventory();
             default -> {
             }
