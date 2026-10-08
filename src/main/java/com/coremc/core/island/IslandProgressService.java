@@ -24,8 +24,8 @@ import org.bukkit.event.player.PlayerFishEvent;
  * logs-chopped, crops-harvested, fish-caught, mobs-killed,
  * generator-harvests) plus weighted island XP. Level is a pure
  * function of stored XP + purchased upgrade tiers:
- * {@code 1 + floor(sqrt(score / divisor))} — meaningful, unbounded,
- * and fully config-tuned ({@code island.level}).
+ * {@code 1 + floor(sqrt(score / divisor))}, capped to the 30-level
+ * season catalog. Existing XP and activity counters remain authoritative.
  *
  * Writes are batched: every record marks the island dirty and a
  * once-a-minute timer flushes dirty islands (plus a shutdown flush),
@@ -151,15 +151,12 @@ public final class IslandProgressService implements Listener {
         final long perTier =
                 Math.max(0L, plugin.getConfig().getLong("island.level.xp-per-upgrade-tier", 10L));
         final long divisor = plugin.getConfig().getLong("island.level.xp-divisor", 100L);
-        return scoreToLevel(island.xp() + tiers * perTier, divisor);
+        return IslandLevelTrack.levelForScore(island.xp() + tiers * perTier, divisor);
     }
 
-    /** level = 1 + floor(sqrt(score / divisor)); non-positive score/divisor → 1. Pure. */
+    /** level = 1 + floor(sqrt(score / divisor)), clamped to the season's 30 levels. */
     public static int scoreToLevel(final long score, final long divisor) {
-        if (score <= 0L || divisor <= 0L) {
-            return 1;
-        }
-        return 1 + (int) Math.floor(Math.sqrt(score / (double) divisor));
+        return IslandLevelTrack.levelForScore(score, divisor);
     }
 
     /**
