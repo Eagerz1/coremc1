@@ -38,6 +38,35 @@ def fail(message: str):
     raise AssertionError(message)
 
 
+def is_missing_texture_fallback(pixels, width: int, height: int) -> bool:
+    """Reject obvious opaque missing-texture tiles without banning valid ink pixels."""
+    if len(pixels) != width * height or any(pixel[3] != 255 for pixel in pixels):
+        return False
+
+    magenta = (255, 0, 255)
+    black = (0, 0, 0)
+    colors = {pixel[:3] for pixel in pixels}
+    if colors == {magenta}:
+        return True
+    if colors != {magenta, black}:
+        return False
+
+    # Minecraft's missing-texture tile is an alternating magenta/black
+    # checkerboard. Test common pixel/block scales used when it is resized.
+    for block in (1, 2, 4, 8, 16):
+        if width % (2 * block) or height % (2 * block):
+            continue
+        for phase in (0, 1):
+            if all(
+                pixels[y * width + x][:3]
+                == (magenta if (((x // block) + (y // block) + phase) % 2 == 0) else black)
+                for y in range(height)
+                for x in range(width)
+            ):
+                return True
+    return False
+
+
 def png_info(path: Path):
     data = path.read_bytes()
     if not data.startswith(b"\x89PNG\r\n\x1a\n"):
@@ -79,10 +108,8 @@ def png_info(path: Path):
     opaque = [pixel for pixel in pixels if pixel[3] > 0]
     if not opaque:
         fail(f"{path}: fully transparent texture")
-    if any(pixel[:3] == (255, 0, 255) for pixel in opaque):
-        fail(f"{path}: purple fallback pixel detected")
-    if any(pixel[:3] == (0, 0, 0) for pixel in opaque):
-        fail(f"{path}: pure black fallback pixel detected")
+    if is_missing_texture_fallback(pixels, width, height):
+        fail(f"{path}: missing-texture fallback tile detected")
     return width, height, hashlib.sha256(data).hexdigest()
 
 
@@ -324,7 +351,7 @@ def main():
     print(f"PASS ItemsAdder source: {len(records)} item definitions, 120 fish (24 x 5), {len(records)} static models, {len(records)} static textures")
     print(f"PASS animated skin integration: {len(animated)} models, IDs 21600-21632, disjoint fallback materials")
     print("PASS stable model IDs: unique, range-checked, and no orphan mappings")
-    print("PASS PNGs: valid 32x32 RGBA, non-empty, no purple/black fallback pixels")
+    print("PASS PNGs: valid 32x32 RGBA, non-empty, no missing-texture fallback tiles")
     print("PASS Java/config compatibility: existing crate key lookups and role tool identities covered")
 
 
