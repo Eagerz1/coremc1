@@ -147,10 +147,14 @@ public final class IslandProgressService implements Listener {
     /** Current computed score for an island (stored XP + purchased upgrade tiers). */
     public long scoreFor(final Island island) {
         final long tiers =
-                island.upgrades().values().stream().mapToLong(Integer::longValue).sum();
+                Math.max(0L, island.upgrades().values().stream().mapToLong(Integer::longValue).sum());
         final long perTier =
                 Math.max(0L, plugin.getConfig().getLong("island.level.xp-per-upgrade-tier", 10L));
-        return island.xp() + tiers * perTier;
+        final long tierScore = perTier != 0L && tiers > Long.MAX_VALUE / perTier
+                ? Long.MAX_VALUE
+                : tiers * perTier;
+        final long xp = Math.max(0L, island.xp());
+        return xp > Long.MAX_VALUE - tierScore ? Long.MAX_VALUE : xp + tierScore;
     }
 
     /** Current computed level for an island, clamped to the season track. */
