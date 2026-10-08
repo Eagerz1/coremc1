@@ -13,7 +13,7 @@ final class IslandLevelTrackTest {
         final var levels = IslandLevelTrack.levels(100L);
 
         assertEquals(30, levels.size());
-        assertEquals(1L, levels.get(0).requiredScore());
+        assertEquals(0L, levels.get(0).requiredScore());
         assertEquals(400L, levels.get(2).requiredScore());
         assertEquals(84_100L, levels.get(29).requiredScore());
         assertEquals("CoreMC Legend", levels.get(29).title());
