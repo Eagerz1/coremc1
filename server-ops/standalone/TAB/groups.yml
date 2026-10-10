@@ -1,0 +1,26 @@
+# Optional TAB group cosmetics. Set groups in LuckPerms; TAB should see them.
+# Merge with TAB-generated groups.yml after reviewing the installed version.
+_DEFAULT_:
+  tabprefix: "&7"
+  tabsuffix: ""
+owner:
+  tabprefix: "&4&lOWNER &r&7"
+  tabsuffix: ""
+admin:
+  tabprefix: "&c&lADMIN &r&7"
+  tabsuffix: ""
+mod:
+  tabprefix: "&2&lMOD &r&7"
+  tabsuffix: ""
+helper:
+  tabprefix: "&a&lHELPER &r&7"
+  tabsuffix: ""
+coreplusplus:
+  tabprefix: "&6&lCORE++ &r&f"
+  tabsuffix: ""
+coreplus:
+  tabprefix: "&3&lCORE+ &r&f"
+  tabsuffix: ""
+core:
+  tabprefix: "&b&lCORE &r&f"
+  tabsuffix: ""

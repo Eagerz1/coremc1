@@ -1,0 +1,7 @@
+# FUTURE-ONLY. PROXY-BACKEND EXAMPLE. DANGEROUS IF PUBLICLY REACHABLE.
+online-mode=false
+server-ip=127.0.0.1
+server-port=25567
+enable-rcon=false
+allow-flight=true
+# For a second physical host, bind to a PRIVATE tunnel/interface and add firewall rules.

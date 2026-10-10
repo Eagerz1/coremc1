@@ -1,0 +1,42 @@
+# CoreMC permission set. Review; run commands WITHOUT leading # individually in a Paper console.
+# No economy/competitive nodes; no op, coremc.*, or luckperms.* on supporter groups.
+# Ranks map to the chat-ranks-overlay.yml permission resolver and the TAB groups file.
+lp creategroup core
+lp creategroup coreplus
+lp creategroup coreplusplus
+lp creategroup helper
+lp creategroup mod
+lp creategroup admin
+lp creategroup owner
+lp group default setweight 0
+lp group core setweight 100
+lp group coreplus setweight 200
+lp group coreplusplus setweight 300
+lp group helper setweight 700
+lp group mod setweight 800
+lp group admin setweight 900
+lp group owner setweight 1000
+lp group core parent add default
+lp group coreplus parent add core
+lp group coreplusplus parent add coreplus
+lp group helper parent add default
+lp group mod parent add helper
+lp group admin parent add mod
+lp group owner parent add admin
+lp group core permission set coremc.rank.core true
+lp group coreplus permission set coremc.rank.coreplus true
+lp group coreplusplus permission set coremc.rank.coreplusplus true
+lp group helper permission set coremc.rank.helper true
+lp group mod permission set coremc.rank.mod true
+lp group admin permission set coremc.rank.admin true
+lp group owner permission set coremc.rank.owner true
+lp group core meta setprefix 100 "&b[CORE] "
+lp group coreplus meta setprefix 200 "&3[CORE+] "
+lp group coreplusplus meta setprefix 300 "&6[CORE++] "
+lp group helper meta setprefix 700 "&a[HELPER] "
+lp group mod meta setprefix 800 "&2[MOD] "
+lp group admin meta setprefix 900 "&c[ADMIN] "
+lp group owner meta setprefix 1000 "&4[OWNER] "
+# SECURITY: permissions for moderation and full access are NOT assigned here.
+# Add precise staff nodes from CoreMC/plugin.yml and the moderation documentation
+# only after inspecting their defaults. Never infer staff authority from a chat prefix.

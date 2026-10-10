@@ -1,0 +1,15 @@
+# EXAMPLE SETTINGS TO MERGE INTO A SERVER-GENERATED server.properties
+# STANDALONE PUBLIC PAPER SERVER ONLY. Never copy proxy backend online-mode.
+online-mode=true
+enforce-secure-profile=true
+server-port=25565
+max-players=50
+view-distance=8
+simulation-distance=5
+enable-command-block=false
+allow-flight=true
+spawn-protection=16
+difficulty=normal
+enable-rcon=false
+motd=\u00a7b\u00a7lCOREMC \u00a78| \u00a7fSkyBlock Reimagined\n\u00a77Season One \u00a78\u2022 \u00a7fBuild Your Legacy
+# Publish only after world and join testing; do NOT reset level-name or the islands world.

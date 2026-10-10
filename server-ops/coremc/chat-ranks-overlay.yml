@@ -1,0 +1,19 @@
+# ADD these entries UNDER chat.ranks of the live plugins/CoreMC/chat.yml.
+# This file is a snippet, not a replacement for the shipped chat.yml.
+# Existing owner/admin/mod/helper/member rank entries remain in place.
+chat:
+  ranks:
+    coreplusplus:
+      permission: "coremc.rank.coreplusplus"
+      prefix: "&6[CORE++]"
+      weight: 50
+    coreplus:
+      permission: "coremc.rank.coreplus"
+      prefix: "&3[CORE+]"
+      weight: 45
+    core:
+      permission: "coremc.rank.core"
+      prefix: "&b[CORE]"
+      weight: 40
+# NOTE: The old vip/mvp rank defaults may exist. Keep or remove only after
+# verifying existing rank ownership and no players relying on those nodes.
