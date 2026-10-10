@@ -33,8 +33,9 @@ All navigation destinations are cosmetic until NPC interactions are verified. Wh
 6. Seasonal banner stands that replace only decorative blocks between seasons.
 
 ## Lobby shell generator
-`python3 tools/generate_lobby_commands.py --world coremc_spawn --y 100 > lobby-build-commands.txt` writes RCON/console-ready `execute in minecraft:overworld run ...`? **No**: it intentionally writes bare world-relative `fill` and `setblock` commands to execute **by a player present in the intended lobby world**. The commands are destructive where they place blocks and must be reviewed before execution. The server console has no world-relative execution context; see generator usage.
-Do not paste into an islands world. The generated shell is a greybox for blocking out paths, **not a finished lobby**.
+`python3 server-ops/tools/generate_lobby_commands.py` writes `server-ops/build/lobby-shell-commands.txt`. The file contains console/RCON-ready **`execute in minecraft:coremc_spawn run fill/setblock`** commands (not chat commands), with an explicit dimension guard. You MUST verify that this exact dimension ID is registered with /execute autocomplete; use `--dimension <id>` if different, and check whether the emitted blocks will overlap anything.
+
+Never run this against `minecraft:overworld`, `minecraft:islands`, existing player worlds or a production lobby. A complete world backup is required before testing. The commands are destructive; a non-registered dimension should fail without changing a world. The output is a **greybox layout**, not the finished artistic map.
 
 ## Final handoff and acceptance
 Map builder must supply a schematic created on matching target version, world origin info, full material list, exact NPC/leaderboard attach positions, spawn safety/fall rescue, accessible signage with color + text, nighttime lighting without darkness traps, no paid third-party model imports without a proper licence, and <5-minute render target from first join. Test with non-OP accounts at default view distance.

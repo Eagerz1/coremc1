@@ -1,7 +1,7 @@
 # FUTURE-ONLY NETWORK TEMPLATE. Not needed for launch.
 # Merge into Velocity's newly generated config, preserving its current version key.
 bind = "0.0.0.0:25565"
-motd = "&b&lCOREMC &8| &fBuild Your Legacy"
+motd = "CoreMC | SkyBlock - Build Your Legacy"
 show-max-players = 100
 online-mode = true
 player-info-forwarding-mode = "modern"
