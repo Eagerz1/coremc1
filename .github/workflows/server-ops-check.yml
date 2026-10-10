@@ -1,0 +1,24 @@
+name: CoreMC external server templates
+on:
+  push:
+    paths:
+      - "server-ops/**"
+      - ".github/workflows/server-ops-check.yml"
+  pull_request:
+    paths:
+      - "server-ops/**"
+      - ".github/workflows/server-ops-check.yml"
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Generate standalone icon
+        run: python3 server-ops/tools/build_server_icon.py
+      - name: Generate staging lobby shell
+        run: python3 server-ops/tools/generate_lobby_commands.py
+      - name: Validate templates and generated assets
+        run: python3 server-ops/tools/validate.py

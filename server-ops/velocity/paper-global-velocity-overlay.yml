@@ -1,0 +1,10 @@
+# FUTURE-ONLY Paper config/paper-global.yml snippet for each backend.
+# Manually merge into Paper's generated file, DO NOT overwrite whole file.
+# Only after a secure Velocity proxy is online and backend ports are private.
+proxies:
+  velocity:
+    enabled: true
+    online-mode: true
+    secret: "SET_USING_PRIVATE_HOST_CONFIGURATION_NEVER_COMMIT_REAL_SECRET"
+# Backend server.properties must use online-mode=false in this architecture.
+# The proxy itself MUST be online-mode=true. Forwarding is not a firewall.

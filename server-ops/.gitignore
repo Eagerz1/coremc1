@@ -1,0 +1,4 @@
+# Generated binary PNG/icon and destructive lobby commands must be reviewed before deployment.
+/build/
+__pycache__/
+*.pyc

@@ -1,0 +1,51 @@
+# CoreMC production art direction: subdued background, two accents, no excessive gradients
+identity:
+  name: CoreMC
+  tagline: "Build Your Legacy"
+  game: "SkyBlock"
+  season: "Season One"
+palette:
+  midnight: "#0C1824"
+  ink: "#06121A"
+  cloud: "#F5F4EE"
+  cyan: "#27B8D0"
+  gold: "#E7B453"
+  mint: "#6ED8B0"
+  warning: "#E77D6F"
+minecraft:
+  brand: "&b&lCOREMC"
+  primary: "&b"
+  body: "&f"
+  quiet: "&7"
+  separator: "&8"
+  premium: "&6"
+  success: "&a"
+  danger: "&c"
+sizing:
+  server_icon: "64x64 PNG"
+  discord_avatar: "512x512 PNG"
+  banner: "1920x480 PNG"
+  screenshot: "1920x1080 PNG"
+tone:
+  - "Clear, compact, reliable"
+  - "Role identities are visually distinct"
+  - "Brand blue, not rainbow everything"
+  - "No permanent animated overlay in peripheral vision"
+rank_colors:
+  member: "&7"
+  core: "&b"
+  coreplus: "&3"
+  coreplusplus: "&6"
+  helper: "&a"
+  mod: "&2"
+  admin: "&c"
+  owner: "&4"
+assets:
+  needed:
+    - "64x64 server icon (generator provided)"
+    - "Transparent CoreMC wordmark (manual)"
+    - "5 role emblems (manual)"
+    - "3 donor rank badges (manual)"
+    - "Season One banner (manual)"
+    - "Discord avatar and banner (manual)"
+    - "Five build district screenshots (take after builds are completed)"

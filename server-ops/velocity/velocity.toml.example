@@ -1,0 +1,18 @@
+# FUTURE-ONLY NETWORK TEMPLATE. Not needed for launch.
+# Merge into Velocity's newly generated config, preserving its current version key.
+bind = "0.0.0.0:25565"
+motd = "&b&lCOREMC &8| &fBuild Your Legacy"
+show-max-players = 100
+online-mode = true
+player-info-forwarding-mode = "modern"
+forwarding-secret-file = "forwarding.secret"
+announce-forge = false
+[servers]
+lobby = "127.0.0.1:25566"
+skyblock = "127.0.0.1:25567"
+try = ["lobby", "skyblock"]
+[forced-hosts]
+# If this proxy is separated from the backends, replace 127.0.0.1 with
+# PRIVATE/TUNNEL addresses and firewall ALL backend ports from public internet.
+# Create forwarding.secret outside git using cryptographic randomness; keep
+# the same value in Paper's proxies.velocity.secret.
