@@ -113,7 +113,8 @@ public final class IslandProgressService implements Listener {
      * island XP gain.
      */
     public void awardKillXp(final Island island, final Player actor, final long bonusXp) {
-        if (plugin.islandDisqualifications().isActive(island.owner()) || bonusXp <= 0L) {
+        // Leaderboard disqualification excludes ranking/rewards, not normal island activity.
+        if (bonusXp <= 0L) {
             return;
         }
         final long awardedXp = Math.max(0L,
@@ -129,7 +130,7 @@ public final class IslandProgressService implements Listener {
     }
 
     private void record(final Island island, final String stat, final Player actor) {
-        if (plugin.islandDisqualifications().isActive(island.owner())) return;
+        // A temporary leaderboard DQ must not silently freeze the entire team's XP.
         final long weight =
                 Math.max(0L, plugin.getConfig().getLong("island.level.weights." + stat, 1L));
         island.addStat(stat, 1L);

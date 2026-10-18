@@ -476,18 +476,29 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         }
         final List<String> snapshot = ledger.getStringList(base + ".snapshot");
         int paid = 0;
+        boolean hasUnpaidRewards = false;
         for (int index = 0; index < snapshot.size() && index < 3; index++) {
             final int rank = index + 1;
             final long reward = Math.max(0L, plugin.getConfig().getLong("island.season.top-rewards." + rank, 0L));
             if (reward == 0L) continue;
             final java.util.UUID owner;
             try { owner = java.util.UUID.fromString(snapshot.get(index)); }
-            catch (final IllegalArgumentException ignored) { continue; }
+            catch (final IllegalArgumentException ignored) {
+                hasUnpaidRewards = true;
+                actor.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cInvalid season reward recipient at rank #" + rank + "."));
+                continue;
+            }
             final var profile = plugin.playerData().cachedOrLoad(owner).orElse(null);
-            if (profile == null) continue;
+            if (profile == null) {
+                hasUnpaidRewards = true;
+                actor.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cCould not load rank #" + rank
+                        + " player's profile. Their reward remains pending."));
+                continue;
+            }
             final String claimId = "island-season:" + season + ":rank:" + rank;
             if (profile.playtimeMilestoneClaimed(claimId)) continue;
             if (!plugin.economy().fitsDeposit(profile, com.coremc.core.economy.Currency.CREDITS, reward)) {
+                hasUnpaidRewards = true;
                 actor.sendMessage(com.coremc.core.util.ColorUtil.colorize("&cCould not pay #" + rank + " due to Credits overflow."));
                 continue;
             }
@@ -495,6 +506,15 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             profile.claimPlaytimeMilestone(claimId);
             plugin.playerData().persistImportant(profile);
             paid++;
+        }
+        // Do not permanently close a season while a reward recipient is unpaid.
+        // Existing per-rank claim IDs make successful rewards skippable on retry.
+        if (hasUnpaidRewards) {
+            if (saveSeasonLedger(ledger, ledgerFile, actor)) {
+                actor.sendMessage(com.coremc.core.util.ColorUtil.colorize("&ePaid " + paid
+                        + " reward(s), but the season is NOT settled. Resolve the errors and rerun /is top settle."));
+            }
+            return;
         }
         ledger.set(base + ".complete", true);
         if (saveSeasonLedger(ledger, ledgerFile, actor)) {

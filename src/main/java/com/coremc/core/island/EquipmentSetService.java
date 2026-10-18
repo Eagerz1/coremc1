@@ -186,15 +186,33 @@ public final class EquipmentSetService implements Listener, CommandExecutor, Tab
     }
 
     private String fullSetOf(final Player player) {
+        // Bukkit returns armour in boots, leggings, chestplate, helmet order.
         final ItemStack[] armor = player.getInventory().getArmorContents();
         if (armor.length != PIECES.size()) return null;
-        String id = null;
-        for (final ItemStack item : armor) {
-            if (item == null || !item.hasItemMeta()) return null;
-            final String pieceSet = item.getItemMeta().getPersistentDataContainer()
-                    .get(setIdKey, PersistentDataType.STRING);
-            if (pieceSet == null || (id != null && !id.equals(pieceSet))) return null;
-            id = pieceSet;
+        final String[] setIds = new String[armor.length];
+        final String[] pieceIds = new String[armor.length];
+        for (int slot = 0; slot < armor.length; slot++) {
+            final ItemStack item = armor[slot];
+            final Piece expected = PIECES.get(PIECES.size() - 1 - slot);
+            if (item == null || item.getType() != expected.material() || !item.hasItemMeta()) return null;
+            final var pdc = item.getItemMeta().getPersistentDataContainer();
+            setIds[slot] = pdc.get(setIdKey, PersistentDataType.STRING);
+            pieceIds[slot] = pdc.get(pieceKey, PersistentDataType.STRING);
+        }
+        return matchingSet(setIds, pieceIds);
+    }
+
+    /** Validate *both* stable set IDs and position-specific piece IDs.
+     * Package-private pure seam for regression tests (no Bukkit server required).
+     */
+    static String matchingSet(final String[] setIds, final String[] pieceIds) {
+        if (setIds == null || pieceIds == null
+                || setIds.length != PIECES.size() || pieceIds.length != PIECES.size()) return null;
+        final String id = setIds[0];
+        if (id == null || SETS.stream().noneMatch(set -> set.id().equals(id))) return null;
+        for (int slot = 0; slot < PIECES.size(); slot++) {
+            if (!id.equals(setIds[slot])
+                    || !PIECES.get(PIECES.size() - 1 - slot).id().equals(pieceIds[slot])) return null;
         }
         return id;
     }
