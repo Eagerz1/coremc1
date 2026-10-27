@@ -85,3 +85,5 @@ Hermes audited the clean baseline read-only and recommended the phases and first
 
 - Production packaging succeeded after selecting the installed JDK directly: all 111 Java sources compiled with release 21 and 	arget/CoreMC-0.11.0-SNAPSHOT.jar was rebuilt. Test-source compilation and tests were skipped; no tests were added or run.
 
+
+- Hermes' final review found the purchase journal recovery ordering coherent. If an in-flight purchase save outlasts the island shutdown wait, the journal remains for recovery on the next startup; this is intentionally fail-closed and should be visible in shutdown diagnostics.
