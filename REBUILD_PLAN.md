@@ -12,6 +12,8 @@ The repository is already a substantial single-plugin implementation: Java 21, M
 
 The checkout contains 111 production Java files and 26 test source files, with 143 test annotations found by static source inspection. The docs previously claimed different test counts. A static source scan found 143 JUnit test methods, and the Maven workflow runs `mvn -B verify`; this rebuild has not executed that suite. The live Paper journey is configured as 12 phases.
 
+The counts above describe the starting commit. The current rebuild branch contains 144 production Java files, 26 test files, and 143 `@Test` annotations (static count only).
+
 ## Phases
 
 | Phase | Scope | Acceptance criteria |
@@ -145,3 +147,7 @@ Hermes audited the clean baseline read-only and recommended the phases and first
 - Fishing speed, catches, seed-efficiency refunds, wild slayer rewards, spawner-boost kill rewards, and boss damage now delegate to IslandActivityRewardCoordinator after their existing Bukkit event and island admission checks. Hook wait math, refund overflow behavior, drop snapshots, XP/currency/table order, spawner-safe rewards, and damage filtering are unchanged. Hermes reviewed the flows; clean production packaging compiled all 143 sources, with tests skipped.
 
 - IslandUpgradeEffects now remains the Bukkit listener and compatibility facade while IslandUpgradeEffectCoordinator owns crop/log/cube effects, extra spawns, fisher/slayer boosts, purchase retuning, and generator boost calculations. Listener priorities, admission gates, spawner identity, crop-drop accounting, and proc order remain unchanged. Hermes reviewed the extraction; clean production packaging compiled all 144 sources, with tests skipped.
+
+- The packaged `CoreMC-0.11.0-SNAPSHOT.jar` includes the filtered `plugin.yml` version and all six bundled YAML resources. No JUnit suite, prior-data fixture, or live Paper journey has been run in this rebuild.
+
+- README and TESTING now match the actual workflow triggers: build runs on `main`/`arena/**` pushes, pull requests, and manual dispatch; the live journey runs on `arena/**` pushes, pull requests, and manual dispatch. A PR from `codex/coremc-dev` will invoke both workflows.

@@ -27,8 +27,8 @@ copy it into a Paper server's `plugins/` directory. The plugin is the
 ## The live journey (`journey/`)
 
 `journey/run.mjs` is a fully automated end-to-end run against Paper
-1.21.11. GitHub Actions runs it on every push (the
-`journey-live-player-journey` workflow); all evidence (journey log,
+1.21.11. GitHub Actions runs it on pull requests, pushes to `arena/**`, and
+manual dispatch (the `journey-live-player-journey` workflow); all evidence (journey log,
 server log, plugin data files) is uploaded as a workflow artifact named
 `journey-evidence`.
 

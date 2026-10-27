@@ -42,11 +42,12 @@ mvn package          # produces target/CoreMC-<version>.jar
 Two workflows run from `.github/workflows/` (no artifacts are ever committed
 back to the repository):
 
-- **build** — `mvn verify` on every push/PR; the plugin jar and Surefire
-  reports are published as Actions artifacts.
-- **journey-live-player-journey** — builds the jar, downloads Paper 1.21.11,
-  and runs the automated mineflayer/RCON live journey; logs and plugin data
-  are published as the `journey-evidence` artifact.
+- **build** — `mvn verify` on pushes to `main` and `arena/**`, pull requests,
+  and manual dispatch; the plugin jar and Surefire reports are published as
+  Actions artifacts.
+- **journey-live-player-journey** — runs on pushes to `arena/**`, pull
+  requests, and manual dispatch; it builds the jar, downloads Paper 1.21.11,
+  and publishes journey logs and plugin data as `journey-evidence`.
 
 ## Configuration
 
