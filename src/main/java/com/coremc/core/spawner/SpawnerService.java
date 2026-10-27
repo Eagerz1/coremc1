@@ -1,10 +1,7 @@
 package com.coremc.core.spawner;
 
 import com.coremc.core.CoreMCPlugin;
-import com.coremc.core.economy.Currency;
-import com.coremc.core.placeable.PlaceableService;
 import com.coremc.core.player.PlayerProfile;
-import com.coremc.core.util.ColorUtil;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,6 +39,7 @@ public final class SpawnerService {
 
     private final SpawnerWorldRuntime worldRuntime;
     private final SpawnerProgressionCoordinator progression;
+    private final SpawnerLifecycleCoordinator lifecycle;
 
     /** Resolved mob + tier for one purchasable spawner id. */
     public record TierRef(SpawnerDefinition mob, SpawnerTier tier) {
@@ -52,6 +50,11 @@ public final class SpawnerService {
         this.tags = new SpawnerTags(plugin);
         this.worldRuntime = new SpawnerWorldRuntime(plugin, this);
         this.progression = new SpawnerProgressionCoordinator(plugin, this);
+        this.lifecycle = new SpawnerLifecycleCoordinator(plugin, this);
+    }
+
+    public SpawnerLifecycleCoordinator lifecycle() {
+        return lifecycle;
     }
 
     /** Shared entity tags (mob tagger, island boost extras, kill routing). */
@@ -263,27 +266,11 @@ public final class SpawnerService {
 
     /** Mints one typed deployable spawner for the purchasable id (tier or legacy alias). */
     public Optional<ItemStack> mint(final String id) {
-        return tierFor(id).map(this::mint);
+        return lifecycle.mint(id);
     }
 
     public ItemStack mint(final TierRef ref) {
-        final ItemStack stack = new ItemStack(Material.SPAWNER);
-        final var meta = stack.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(ref.tier().colouredDisplay());
-            final List<String> lore = new ArrayList<>();
-            lore.add(ColorUtil.colorize(ref.tier().ancient()
-                    ? "&7Ancient variant &8— " + ref.tier().throughputLine()
-                    : "&7Tier &b" + SpawnerTier.roman(ref.tier().index())
-                            + "&7 — " + ref.tier().throughputLine()));
-            if (!ref.tier().specialLine().isEmpty()) {
-                lore.add(ColorUtil.colorize(ref.tier().specialLine()));
-            }
-            lore.add(ColorUtil.colorize("&7Place me to set me down."));
-            meta.setLore(lore);
-            stack.setItemMeta(meta);
-        }
-        return plugin.placeables().identify(stack, PlaceableService.Type.SPAWNER, ref.tier().tierId());
+        return lifecycle.mint(ref);
     }
 
     /**
@@ -292,34 +279,6 @@ public final class SpawnerService {
      * refund on total delivery failure).
      */
     public boolean buy(final Player player, final PlayerProfile profile, final TierRef ref) {
-        if (!isUnlocked(profile, ref)) {
-            plugin.messages().sendPrefixed(player, "spawner.locked", Map.of(
-                    "kills", String.valueOf(killsOf(profile, ref.mob())),
-                    "needed", String.valueOf(ref.tier().requiredKills())));
-            return false;
-        }
-        final String price = String.format(Locale.ROOT, "%,d", ref.tier().priceSkyTokens());
-        final boolean free = ref.tier().priceSkyTokens() <= 0L;
-        synchronized (profile) {
-            if (!free && !plugin.economy().withdraw(profile, Currency.SKY_TOKENS, ref.tier().priceSkyTokens())) {
-                plugin.messages().sendPrefixed(player, "spawner.insufficient", Map.of("price", price));
-                return false;
-            }
-            final ItemStack item = mint(ref);
-            final var delivery = com.coremc.core.util.ItemDelivery.deliverDetailed(player, item);
-            if (delivery == com.coremc.core.util.ItemDelivery.Result.FAILED) {
-                if (!free) {
-                    plugin.economy().deposit(profile, Currency.SKY_TOKENS, ref.tier().priceSkyTokens());
-                }
-                plugin.messages().sendPrefixed(player, "purchase.no-space", Map.of());
-                return false;
-            }
-            if (delivery == com.coremc.core.util.ItemDelivery.Result.DELIVERED_TO_ENDER_CHEST) {
-                plugin.messages().sendPrefixed(player, "gen.bought-enderchest", Map.of());
-            }
-            plugin.messages().sendPrefixed(
-                    player, "spawner.bought", Map.of("name", ref.tier().colouredDisplay(), "price", price));
-            return true;
-        }
+        return lifecycle.buy(player, profile, ref);
     }
 }

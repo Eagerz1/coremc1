@@ -2,6 +2,7 @@ package com.coremc.core.placeable;
 
 import com.coremc.core.CoreMCPlugin;
 import com.coremc.core.gen.GeneratorLifecycleCoordinator;
+import com.coremc.core.spawner.SpawnerLifecycleCoordinator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ public final class PlaceableLifecycleCoordinator {
     private final CoreMCPlugin plugin;
     private final PlaceableService placeables;
     private final GeneratorLifecycleCoordinator generators;
+    private final SpawnerLifecycleCoordinator spawners;
 
     /** Breaks removed from storage before final event cancellation is known. */
     private final Map<BlockBreakEvent, PendingBreak> pendingBreaks = new IdentityHashMap<>();
@@ -51,6 +53,7 @@ public final class PlaceableLifecycleCoordinator {
         this.plugin = plugin;
         this.placeables = plugin.placeables();
         this.generators = plugin.generators().lifecycle();
+        this.spawners = plugin.spawners().lifecycle();
     }
     public void onPlace(final BlockPlaceEvent event) {
         final Optional<Map.Entry<PlaceableService.Type, String>> id =
@@ -67,26 +70,7 @@ public final class PlaceableLifecycleCoordinator {
             return;
         }
         if (id.get().getKey() == PlaceableService.Type.SPAWNER) {
-            plugin.spawners().tierFor(id.get().getValue()).ifPresent(ref -> {
-                if (block.getState() instanceof org.bukkit.block.CreatureSpawner) {
-                    // "Better tiers" are real world-level behaviour: more mobs
-                    // per cycle and a faster cycle, taken from the tier config.
-                    // Island spawner-boost shrinks the cycle further.
-                    final int boost = plugin.upgradeEffects().spawnerBoostTierAt(
-                            block.getWorld().getName(), block.getX(), block.getZ());
-                    final int pct = Math.max(0, plugin.getConfig().getInt(
-                            "island.upgrades.spawner-boost.delay-reduction-percent-per-level", 10));
-                    final int tuned = com.coremc.core.island.IslandUpgradeEffects
-                            .reducedDelayTicks(ref.tier().spawnDelayTicks(), boost, pct);
-                    // BUFF stage: the island spawner-boost multiplies the tuned delay.
-                    final int delay = Math.max(20, (int) Math.round(
-                            tuned * plugin.islandBuffs().spawnerDelayMult(event.getPlayer())));
-                    // Writes entity, SpawnPotentials, count, delays and a positive
-                    // first delay — a tile missing SpawnPotentials stalls forever
-                    // once Paper refuses a spawn while the mob cap is reached.
-                    plugin.spawners().configureWorldSpawner(block, ref, delay);
-                }
-            });
+            spawners.configurePlacedSpawner(block, id.get().getValue(), event.getPlayer());
         }
     }
     public void onBreak(final BlockBreakEvent event) {
@@ -140,7 +124,7 @@ public final class PlaceableLifecycleCoordinator {
         final PlaceableService.Placement placement = pending.placement();
         final ItemStack returned = switch (placement.type()) {
             case GENERATOR -> generators.mintForBreak(placement.id()).orElse(null);
-            case SPAWNER -> plugin.spawners().mint(placement.id()).orElse(null);
+            case SPAWNER -> spawners.mint(placement.id()).orElse(null);
         };
         if (returned != null) {
             pending.location().getWorld().dropItemNaturally(pending.location(), returned);
