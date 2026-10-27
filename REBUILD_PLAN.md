@@ -93,3 +93,5 @@ Hermes audited the clean baseline read-only and recommended the phases and first
 - Architecture remake started with IslandPersistence: the existing IslandService remains the compatibility facade, while the island store and ordered I/O executor now have a replaceable owner. Existing YAML storage and queue ordering are unchanged; the production package compiled all 113 Java sources.
 
 - Island creation now delegates from the existing service facade to IslandCreationCoordinator; it owns owner/cell reservations and preserves marker save, main-thread world generation, final save, index publication, reservation release, and profile association order. IslandPlatformBuilder is shared by normal creation and startup recovery. Hermes reviewed the extraction and the original association ordering has been restored.
+
+- Island ownership, member, ID, and cell maps now live in IslandRegistry; IslandService delegates lookup and writes while retaining the effective-border policy. Hermes identified and the extraction fix preserved upgraded-border lookups, as well as durable tombstone-before-removal ordering.

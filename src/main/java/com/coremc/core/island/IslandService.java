@@ -49,11 +49,7 @@ public final class IslandService implements IslandCreationHost {
    private final IslandPlatformBuilder platformBuilder;
    private final IslandCreationCoordinator creationCoordinator;
    private final TaskService taskService;
-   private final Map<UUID, Island> islandsByOwner = new ConcurrentHashMap();
-   private final Map<UUID, Island> islandsById = new ConcurrentHashMap();
-   private final Map<UUID, Island> islandsByMember = new ConcurrentHashMap();
-   private final Map<String, Island> islandsByCell = new ConcurrentHashMap();
-   private final Set<String> usedCells = ConcurrentHashMap.newKeySet();
+   private final IslandRegistry registry = new IslandRegistry();
    private final Set<String> retiredCells = ConcurrentHashMap.newKeySet();
    private final Set<UUID> deletedIslandIds = ConcurrentHashMap.newKeySet();
    private final Path retiredCellsFile;
@@ -201,11 +197,11 @@ public final class IslandService implements IslandCreationHost {
 
    private void publishLoadedIslands(List<Island> persistedIslands, int spacing) {
       for(Island island : persistedIslands) {
-         this.register(island, spacing);
+         this.registry.register(island, spacing);
       }
 
       Logger var10000 = this.logger;
-      int var10001 = this.islandsByOwner.size();
+      int var10001 = this.registry.size();
       var10000.info("Loaded " + var10001 + " island(s) (" + this.retiredCells.size() + " retired cell(s) reserved).");
       this.loaded = true;
 
@@ -324,29 +320,20 @@ public final class IslandService implements IslandCreationHost {
    }
 
    public Optional<Island> ownedIsland(UUID owner) {
-      return Optional.ofNullable((Island)this.islandsByOwner.get(owner));
+      return this.registry.ownedIsland(owner);
    }
 
    public Optional<Island> islandOf(UUID player) {
-      Island owned = (Island)this.islandsByOwner.get(player);
-      return owned != null ? Optional.of(owned) : Optional.ofNullable((Island)this.islandsByMember.get(player));
+      return this.registry.islandOf(player);
    }
 
    public Optional<Island> islandById(UUID islandId) {
-      return Optional.ofNullable((Island)this.islandsById.get(islandId));
+      return this.registry.islandById(islandId);
    }
 
    public Optional<Island> islandAt(String worldName, int x, int z) {
       int spacing = this.config.islandSpacing();
-
-      for(int[] cell : candidateCells(x, z, spacing)) {
-         Island island = (Island)this.islandsByCell.get(GridAssigner.key(cell[0], cell[1], worldName));
-         if (island != null && this.containsBlock(island, x, z)) {
-            return Optional.of(island);
-         }
-      }
-
-      return Optional.empty();
+      return this.registry.islandAt(worldName, x, z, spacing, island -> this.containsBlock(island, x, z));
    }
 
    public boolean isCreationPending(Island island) {
@@ -368,11 +355,11 @@ public final class IslandService implements IslandCreationHost {
    }
 
    public int islandCount() {
-      return this.islandsByOwner.size();
+      return this.registry.size();
    }
 
    public List<Island> allIslands() {
-      return List.copyOf(this.islandsByOwner.values());
+      return this.registry.allIslands();
    }
 
    public Optional<World> islandWorld() {
@@ -396,14 +383,14 @@ public final class IslandService implements IslandCreationHost {
 
    @Override
    public Set<String> occupiedCells() {
-      Set<String> occupied = new HashSet(this.usedCells);
+      Set<String> occupied = new HashSet(this.registry.occupiedCells());
       occupied.addAll(this.retiredCells);
       return occupied;
    }
 
    @Override
    public void registerCreated(Island island) {
-      this.register(island);
+      this.registry.register(island, this.config.islandSpacing());
    }
 
    @Override
@@ -629,7 +616,7 @@ public final class IslandService implements IslandCreationHost {
       if (this.purchaseInProgress.get()) {
          throw new IOException("An island purchase is still being saved; try deleting the island again shortly.");
       }
-      Island removed = (Island)this.islandsByOwner.get(owner);
+      Island removed = (Island)this.registry.ownedIsland(owner).orElse(null);
       if (removed == null) {
          throw new IllegalStateException("Owner has no island");
       } else {
@@ -653,10 +640,9 @@ public final class IslandService implements IslandCreationHost {
             throw exception;
          }
 
-         if (!this.islandsByOwner.remove(owner, removed)) {
+         if (!this.registry.remove(removed, spacing)) {
             throw new IllegalStateException("Island changed while deletion was being committed");
          } else {
-            this.unregisterIndexes(removed);
             this.invites.purgeIsland(removed.islandId());
             ((CoreMCPlugin)this.plugin).islandActivity().purgeIsland(removed.islandId());
             this.dirtyIslands.remove(removed.islandId());
@@ -722,7 +708,7 @@ public final class IslandService implements IslandCreationHost {
       } else if (invite.expiresAtMillis() < System.currentTimeMillis()) {
          return IslandService.AcceptResult.EXPIRED;
       } else {
-         Island island = (Island)this.islandsById.get(invite.islandId());
+         Island island = (Island)this.registry.islandById(invite.islandId()).orElse(null);
          if (island == null) {
             return IslandService.AcceptResult.ISLAND_GONE;
          } else if ((this.pendingKicks.contains(player.getUniqueId()) || this.pendingLeaves.contains(player.getUniqueId())) || this.islandOf(player.getUniqueId()).isPresent()) {
@@ -731,7 +717,7 @@ public final class IslandService implements IslandCreationHost {
             return IslandService.AcceptResult.TEAM_FULL;
          } else {
             island.addMember(player.getUniqueId());
-            this.islandsByMember.put(player.getUniqueId(), island);
+            this.registry.putMember(player.getUniqueId(), island);
             this.setAssociation(player.getUniqueId(), island.islandId());
             this.flush(island);
             return IslandService.AcceptResult.ACCEPTED;
@@ -749,7 +735,7 @@ public final class IslandService implements IslandCreationHost {
          throw new IllegalStateException("Island leave must run on the main thread");
       }
       UUID playerId = player.getUniqueId();
-      Island island = this.islandsByMember.get(playerId);
+      Island island = (Island)this.registry.islandOf(playerId).orElse(null);
       if (island == null || island.roleOf(playerId) != IslandRole.MEMBER) {
          return LeaveResult.NOT_A_MEMBER;
       }
@@ -758,7 +744,7 @@ public final class IslandService implements IslandCreationHost {
          this.pendingLeaves.remove(playerId);
          return LeaveResult.NOT_A_MEMBER;
       }
-      this.islandsByMember.remove(playerId, island);
+      this.registry.removeMember(playerId, island);
       Map<String, Object> snapshot = island.toMap();
       try {
          this.persistence.execute(() -> {
@@ -776,9 +762,9 @@ public final class IslandService implements IslandCreationHost {
                   if (online != null) this.rescueIfStranded(online, island);
                   completion.accept(LeaveResult.LEFT);
                } else {
-                  if (this.islandsById.get(island.islandId()) == island) {
+                  if (this.registry.islandById(island.islandId()).orElse(null) == island) {
                      island.addMember(playerId);
-                     this.islandsByMember.put(playerId, island);
+                     this.registry.putMember(playerId, island);
                      this.dirtyIslands.add(island.islandId());
                   }
                   this.logger.log(Level.SEVERE, "Failed to persist island leave for " + String.valueOf(playerId), result);
@@ -789,7 +775,7 @@ public final class IslandService implements IslandCreationHost {
       } catch (RejectedExecutionException exception) {
          this.pendingLeaves.remove(playerId);
          island.addMember(playerId);
-         this.islandsByMember.put(playerId, island);
+         this.registry.putMember(playerId, island);
          return LeaveResult.SAVE_FAILED;
       }
       return LeaveResult.PENDING;
@@ -808,7 +794,7 @@ public final class IslandService implements IslandCreationHost {
          this.pendingKicks.remove(target);
          return KickResult.TARGET_NOT_MEMBER;
       }
-      this.islandsByMember.remove(target, team);
+      this.registry.removeMember(target, team);
       Map<String, Object> snapshot = team.toMap();
       try {
          this.persistence.execute(() -> {
@@ -826,9 +812,9 @@ public final class IslandService implements IslandCreationHost {
                   if (kicked != null) this.rescueIfStranded(kicked, team);
                   completion.accept(KickResult.KICKED);
                } else {
-                  if (this.islandsById.get(team.islandId()) == team) {
+                  if (this.registry.islandById(team.islandId()).orElse(null) == team) {
                      team.addMember(target);
-                     this.islandsByMember.put(target, team);
+                     this.registry.putMember(target, team);
                      this.dirtyIslands.add(team.islandId());
                   }
                   this.logger.log(Level.SEVERE, "Failed to persist island kick for " + String.valueOf(target), result);
@@ -839,7 +825,7 @@ public final class IslandService implements IslandCreationHost {
       } catch (RejectedExecutionException exception) {
          this.pendingKicks.remove(target);
          team.addMember(target);
-         this.islandsByMember.put(target, team);
+         this.registry.putMember(target, team);
          return KickResult.SAVE_FAILED;
       }
       return KickResult.PENDING;
@@ -866,7 +852,7 @@ public final class IslandService implements IslandCreationHost {
    public void flushDirty() {
       for(UUID islandId : new ArrayList<UUID>(this.dirtyIslands)) {
          if (this.dirtyIslands.remove(islandId)) {
-            Island island = (Island)this.islandsById.get(islandId);
+            Island island = (Island)this.registry.islandById(islandId).orElse(null);
             if (island != null) {
                this.flush(island);
             }
@@ -884,7 +870,7 @@ public final class IslandService implements IslandCreationHost {
             try {
                this.persistence.saveSnapshot(snapshot);
             } catch (IOException exception) {
-               if (this.islandsById.get(islandId) == island) {
+               if (this.registry.islandById(islandId).orElse(null) == island) {
                   this.dirtyIslands.add(islandId);
                }
 
@@ -893,7 +879,7 @@ public final class IslandService implements IslandCreationHost {
 
          });
       } catch (RejectedExecutionException exception) {
-         if (this.islandsById.get(islandId) == island) {
+         if (this.registry.islandById(islandId).orElse(null) == island) {
             this.dirtyIslands.add(islandId);
          }
 
@@ -904,7 +890,7 @@ public final class IslandService implements IslandCreationHost {
 
    public void reconcileAssociation(PlayerProfile profile) {
       if (profile.islandId() != null) {
-         Island associatedIsland = (Island)this.islandsById.get(profile.islandId());
+         Island associatedIsland = (Island)this.registry.islandById(profile.islandId()).orElse(null);
          if (associatedIsland == null || associatedIsland.roleOf(profile.uuid()) == null) {
             Logger var10000 = this.logger;
             String var10001 = String.valueOf(profile.uuid());
@@ -935,7 +921,7 @@ public final class IslandService implements IslandCreationHost {
    public void shutdown() {
       Map<UUID, Map<String, Object>> shutdownSnapshots = new LinkedHashMap();
 
-      for(Island island : this.islandsById.values()) {
+      for(Island island : this.registry.allById()) {
          shutdownSnapshots.put(island.islandId(), island.toMap());
       }
 
@@ -945,7 +931,7 @@ public final class IslandService implements IslandCreationHost {
          this.persistence.submit(() -> {
             for(Map.Entry<UUID, Map<String, Object>> entry : shutdownSnapshots.entrySet()) {
                UUID islandId = (UUID)entry.getKey();
-               if (this.dirtyIslands.contains(islandId) && this.islandsById.containsKey(islandId)) {
+               if (this.dirtyIslands.contains(islandId) && this.registry.islandById(islandId).isPresent()) {
                   try {
                      this.persistence.saveSnapshot((Map)entry.getValue());
                      this.dirtyIslands.remove(islandId);
@@ -978,47 +964,11 @@ public final class IslandService implements IslandCreationHost {
          this.logger.log(Level.WARNING, "Interrupted while stopping island service", exception);
       }
 
-      this.islandsByOwner.clear();
-      this.islandsById.clear();
-      this.islandsByMember.clear();
-      this.islandsByCell.clear();
-      this.usedCells.clear();
+      this.registry.clear();
       this.creationCoordinator.clearTransient();
       this.pendingKicks.clear();
       this.pendingLeaves.clear();
       this.invites.clear();
-   }
-
-   private void register(Island island) {
-      this.register(island, this.config.islandSpacing());
-   }
-
-   private void register(Island island, int spacing) {
-      this.islandsByOwner.put(island.owner(), island);
-      this.islandsById.put(island.islandId(), island);
-
-      for(UUID member : island.members()) {
-         this.islandsByMember.put(member, island);
-      }
-
-      int[] cell = island.gridCell(spacing);
-      String key = GridAssigner.key(cell[0], cell[1], island.worldName());
-      this.usedCells.add(key);
-      this.islandsByCell.put(key, island);
-   }
-
-   private void unregisterIndexes(Island island) {
-      int spacing = this.config.islandSpacing();
-      int[] cell = island.gridCell(spacing);
-      String key = GridAssigner.key(cell[0], cell[1], island.worldName());
-      this.usedCells.remove(key);
-      this.islandsByCell.remove(key);
-      this.islandsById.remove(island.islandId());
-
-      for(UUID member : island.members()) {
-         this.islandsByMember.remove(member, island);
-      }
-
    }
 
    public static enum CreateResult {
