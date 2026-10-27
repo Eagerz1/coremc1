@@ -489,6 +489,16 @@ public final class PlayerProfile {
         killCounts.merge(entityKey, 1L, Long::sum);
     }
 
+    /** Adds a non-negative batch of kills without one lock acquisition per kill. */
+    public synchronized void addKillCount(final String entityKey, final long amount) {
+        if (amount < 0L) {
+            throw new IllegalArgumentException("Kill count increment cannot be negative: " + amount);
+        }
+        if (amount > 0L) {
+            killCounts.merge(entityKey, amount, Long::sum);
+        }
+    }
+
     // --- OmniTool purchased upgrades (schema v5) ---
 
     /** Level of the OmniTool upgrade {@code upgradeId} (0 = not owned). */
