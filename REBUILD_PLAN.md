@@ -97,3 +97,5 @@ Hermes audited the clean baseline read-only and recommended the phases and first
 - Island ownership, member, ID, and cell maps now live in IslandRegistry; IslandService delegates lookup and writes while retaining the effective-border policy. Hermes identified and the extraction fix preserved upgraded-border lookups, as well as durable tombstone-before-removal ordering.
 
 - Membership/invite operations now delegate to IslandMembershipCoordinator; it owns invite and pending-write reservations while IslandService retains the public methods and result enums. Leave/kick still persist detached snapshots and profile-association cleanup on the ordered island queue, then complete or roll back on the main thread.
+
+- Upgrade/buff purchase commit and startup journal replay now share IslandPurchaseCoordinator. The existing facade validations and journal YAML schema stay in place; the coordinator retains exact-balance replay, profile-before-island durability, journal clearing last, and the delete lock until a failed transaction is recovered.

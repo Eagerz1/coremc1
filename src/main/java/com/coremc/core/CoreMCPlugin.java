@@ -155,6 +155,7 @@ public final class CoreMCPlugin extends JavaPlugin {
                 coreConfig,
                 new YamlIslandDataStore(getDataFolder().toPath().resolve("islands")),
                 playerDataService,
+                economyService,
                 themeService,
                 taskService,
                 getDataFolder().toPath().resolve("islands"));

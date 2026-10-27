@@ -2,7 +2,7 @@ package com.coremc.core.island;
 
 import com.coremc.core.CoreMCPlugin;
 import com.coremc.core.config.CoreConfig;
-import com.coremc.core.economy.Currency;
+import com.coremc.core.economy.EconomyService;
 import com.coremc.core.player.PlayerDataService;
 import com.coremc.core.player.PlayerProfile;
 import com.coremc.core.scheduler.TaskService;
@@ -39,7 +39,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public final class IslandService implements IslandCreationHost, IslandMembershipHost {
+public final class IslandService implements IslandCreationHost, IslandMembershipHost, IslandPurchaseHost {
    private final JavaPlugin plugin;
    private final Logger logger;
    private final CoreConfig config;
@@ -49,17 +49,16 @@ public final class IslandService implements IslandCreationHost, IslandMembership
    private final IslandPlatformBuilder platformBuilder;
    private final IslandCreationCoordinator creationCoordinator;
    private final IslandMembershipCoordinator membershipCoordinator;
+   private final IslandPurchaseCoordinator purchaseCoordinator;
    private final TaskService taskService;
    private final IslandRegistry registry = new IslandRegistry();
    private final Set<String> retiredCells = ConcurrentHashMap.newKeySet();
    private final Set<UUID> deletedIslandIds = ConcurrentHashMap.newKeySet();
    private final Path retiredCellsFile;
-   private final IslandPurchaseJournal purchaseJournal;
-   private final java.util.concurrent.atomic.AtomicBoolean purchaseInProgress = new java.util.concurrent.atomic.AtomicBoolean();
    private final Set<UUID> dirtyIslands = ConcurrentHashMap.newKeySet();
    private volatile boolean loaded = false;
 
-   public IslandService(JavaPlugin plugin, CoreConfig config, IslandDataStore store, PlayerDataService playerData, ThemeService themes, TaskService taskService, Path islandFolder) {
+   public IslandService(JavaPlugin plugin, CoreConfig config, IslandDataStore store, PlayerDataService playerData, EconomyService economy, ThemeService themes, TaskService taskService, Path islandFolder) {
       this.plugin = plugin;
       this.logger = plugin.getLogger();
       this.config = config;
@@ -70,10 +69,13 @@ public final class IslandService implements IslandCreationHost, IslandMembership
       this.taskService = taskService;
       this.membershipCoordinator = new IslandMembershipCoordinator(
               config, registry, persistence, playerData, this.logger, this);
+      this.purchaseCoordinator = new IslandPurchaseCoordinator(
+              persistence,
+              new IslandPurchaseJournal(plugin.getDataFolder().toPath().resolve("data/island-purchase.yml")),
+              playerData, economy, this.logger, this);
       this.creationCoordinator = new IslandCreationCoordinator(
               config, persistence, platformBuilder, this.logger, this);
       this.retiredCellsFile = islandFolder.resolve("deleted-cells.txt");
-      this.purchaseJournal = new IslandPurchaseJournal(plugin.getDataFolder().toPath().resolve("data/island-purchase.yml"));
    }
 
    public void start() {
@@ -85,7 +87,7 @@ public final class IslandService implements IslandCreationHost, IslandMembership
             this.loadRetiredCells();
             loadedIslands = this.discardRetiredIslandRecords(new ArrayList(this.persistence.loadAll()), spacing);
             // Resolve purchase journals only against live islands; never charge for a tombstoned record.
-            this.recoverPendingPurchase(loadedIslands);
+            this.purchaseCoordinator.recoverPending(loadedIslands);
             persistedIslands = loadedIslands;
          } catch (RuntimeException | IOException exception) {
             this.logger.log(Level.SEVERE, "Failed to load islands; island commands remain unavailable.", exception);
@@ -96,48 +98,6 @@ public final class IslandService implements IslandCreationHost, IslandMembership
       });
    }
 
-   private void recoverPendingPurchase(List<Island> persistedIslands) throws IOException {
-      Optional<IslandPurchaseJournal.Pending> pending = this.purchaseJournal.load();
-      if (pending.isEmpty()) return;
-      IslandPurchaseJournal.Pending transaction = pending.get();
-      Island island = persistedIslands.stream()
-            .filter(candidate -> candidate.islandId().equals(transaction.islandId()))
-            .findFirst().orElseThrow(() -> new IOException("Pending island purchase refers to missing island " + transaction.islandId()));
-      PlayerProfile profile;
-      try {
-         profile = this.playerData.loadForPersistence(transaction.playerId()).get(10L, TimeUnit.SECONDS)
-               .orElseThrow(() -> new IOException("Cannot load profile for pending island purchase " + transaction.id()));
-      } catch (InterruptedException exception) {
-         Thread.currentThread().interrupt();
-         throw new IOException("Interrupted while loading profile for island purchase " + transaction.id(), exception);
-      } catch (ExecutionException | TimeoutException exception) {
-         throw new IOException("Could not load profile for island purchase " + transaction.id(), exception);
-      }
-      if (!transaction.id().equals(profile.lastIslandPurchaseId())) {
-         profile.lastIslandPurchaseId(transaction.id());
-         ((CoreMCPlugin)this.plugin).economy().setBalance(profile, Currency.SKY_TOKENS, transaction.balanceAfter());
-      }
-      if (transaction.kind().equals("upgrade")) {
-         int current = island.upgrades().getOrDefault(transaction.key(), 0);
-         if (current < transaction.tier()) island.setUpgradeTier(transaction.key(), transaction.tier());
-      } else {
-         int current = island.buffs().getOrDefault(transaction.key(), 0);
-         if (current < transaction.tier()) island.setBuffTier(transaction.key(), transaction.tier());
-      }
-      try {
-         if (!this.playerData.persistAndWait(profile).get(10L, TimeUnit.SECONDS)) {
-            throw new IOException("Profile save failed while recovering purchase " + transaction.id());
-         }
-         this.persistence.saveSnapshot(island.toMap());
-         this.purchaseJournal.clear();
-      } catch (InterruptedException exception) {
-         Thread.currentThread().interrupt();
-         throw new IOException("Interrupted while recovering island purchase " + transaction.id(), exception);
-      } catch (ExecutionException | TimeoutException exception) {
-         throw new IOException("Could not save profile while recovering island purchase " + transaction.id(), exception);
-      }
-      this.logger.info("Recovered interrupted island purchase " + transaction.id() + ".");
-   }
    private void recoverAndPublish(List<Island> persistedIslands, int spacing) {
       try {
          validatePersistedIslands(persistedIslands, spacing);
@@ -413,6 +373,16 @@ public final class IslandService implements IslandCreationHost, IslandMembership
       this.runCreationCallback(callback, operation);
    }
 
+   @Override
+   public void sendPurchaseMessage(Player player, String key, Map<String, String> placeholders) {
+      ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, key, placeholders);
+   }
+
+   @Override
+   public void schedulePurchaseCallback(Runnable callback, String operation) {
+      this.runCreationCallback(callback, operation);
+   }
+
    public int memberCapacity(Island island) {
       return this.config.islandMemberSlots() + (Integer)island.upgrades().getOrDefault("member-slots", 0);
    }
@@ -470,7 +440,7 @@ public final class IslandService implements IslandCreationHost, IslandMembership
             this.logger.warning("Ignoring negative configured island upgrade price for " + upgradeId);
             return false;
          }
-         return this.queuePurchase(player, profile, island, "upgrade", upgradeId, tier + 1, price, () -> {
+         return this.purchaseCoordinator.purchase(player, profile, island, "upgrade", upgradeId, tier + 1, price, () -> {
             ((CoreMCPlugin)this.plugin).upgradeEffects().onPurchased(island, upgradeId, tier + 1);
             ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.upgrade.bought", Map.of(
                   "tier", String.valueOf(tier + 1), "max", String.valueOf(maxTier), "price", String.valueOf(price)));
@@ -499,87 +469,13 @@ public final class IslandService implements IslandCreationHost, IslandMembership
             this.logger.warning("Ignoring negative configured island buff price for " + buffId);
             return false;
          }
-         return this.queuePurchase(player, profile, island, "buff", buffId, tier + 1, price, () -> {
+         return this.purchaseCoordinator.purchase(player, profile, island, "buff", buffId, tier + 1, price, () -> {
             ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.buff.bought", Map.of(
                   "buff", BuffCatalog.displayOf(buffId), "tier", String.valueOf(tier + 1),
                   "max", String.valueOf(maxTier), "price", String.valueOf(price)));
             if (player.isOnline()) ((CoreMCPlugin)this.plugin).gui().refresh(player);
          });
       }
-   }
-   private boolean queuePurchase(Player player, PlayerProfile profile, Island island, String kind,
-                                 String key, int tier, long price, Runnable onCommitted) {
-      if (!Bukkit.isPrimaryThread()) throw new IllegalStateException("Island purchases must start on the main thread");
-      if (!this.purchaseInProgress.compareAndSet(false, true)) {
-         ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.purchase-pending", Map.of());
-         return false;
-      }
-      String transactionId = UUID.randomUUID().toString();
-      long balanceAfter;
-      Map<String, Object> snapshot;
-      synchronized (island) {
-         synchronized (profile) {
-            long balance = profile.balanceOf(Currency.SKY_TOKENS);
-            if (balance < price) {
-               this.purchaseInProgress.set(false);
-               ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player,
-                     kind.equals("upgrade") ? "island.upgrade.insufficient" : "island.buff.insufficient",
-                     Map.of("price", String.valueOf(price)));
-               return false;
-            }
-            balanceAfter = balance - price;
-            try {
-               this.purchaseJournal.write(new IslandPurchaseJournal.Pending(transactionId, player.getUniqueId(),
-                     island.islandId(), kind, key, tier, balanceAfter));
-            } catch (IOException exception) {
-               this.purchaseInProgress.set(false);
-               this.logger.log(Level.SEVERE, "Could not write island purchase journal; purchase was not applied.", exception);
-               ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.purchase-save-failed", Map.of());
-               return false;
-            }
-            profile.lastIslandPurchaseId(transactionId);
-            ((CoreMCPlugin)this.plugin).economy().setBalance(profile, Currency.SKY_TOKENS, balanceAfter);
-            if (kind.equals("upgrade")) island.setUpgradeTier(key, tier);
-            else island.setBuffTier(key, tier);
-            snapshot = island.toMap();
-         }
-      }
-      ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.purchase-pending", Map.of());
-      try {
-         this.persistence.execute(() -> {
-            IOException lastFailure = null;
-            boolean committed = false;
-            for (int attempt = 1; attempt <= 3 && !committed; attempt++) {
-               try {
-                  if (!this.playerData.persistAndWait(profile).get(10L, TimeUnit.SECONDS)) {
-                     throw new IOException("Player profile write failed for island purchase " + transactionId);
-                  }
-                  this.persistence.saveSnapshot(snapshot);
-                  this.purchaseJournal.clear();
-                  committed = true;
-               } catch (InterruptedException exception) {
-                  Thread.currentThread().interrupt();
-                  lastFailure = new IOException("Interrupted while saving island purchase " + transactionId, exception);
-                  break;
-               } catch (ExecutionException | TimeoutException | IOException exception) {
-                  lastFailure = exception instanceof IOException ioException ? ioException
-                        : new IOException("Could not durably save island purchase " + transactionId, exception);
-               }
-            }
-            if (committed) {
-               this.purchaseInProgress.set(false);
-               this.runCreationCallback(onCommitted, "finish island purchase");
-            } else {
-               this.logger.log(Level.SEVERE, "Island purchase remains journaled and will be recovered at restart: " + transactionId, lastFailure);
-               this.runCreationCallback(() -> ((CoreMCPlugin)this.plugin).messages().sendPrefixed(
-                     player, "island.purchase-recovery-pending", Map.of()), "report pending island purchase recovery");
-            }
-         });
-      } catch (RejectedExecutionException exception) {
-         this.logger.log(Level.SEVERE, "Island purchase remains journaled and will be recovered at restart: " + transactionId, exception);
-         ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.purchase-recovery-pending", Map.of());
-      }
-      return true;
    }
    public Map<String, String> placeholdersOf(UUID player) {
       Optional<Island> island = this.islandOf(player);
@@ -623,7 +519,7 @@ public final class IslandService implements IslandCreationHost, IslandMembership
    }
 
    public void deleteIsland(UUID owner) throws IOException {
-      if (this.purchaseInProgress.get()) {
+      if (this.purchaseCoordinator.isInProgress()) {
          throw new IOException("An island purchase is still being saved; try deleting the island again shortly.");
       }
       Island removed = (Island)this.registry.ownedIsland(owner).orElse(null);
