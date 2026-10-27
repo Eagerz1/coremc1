@@ -75,6 +75,7 @@ public final class EnchantEngine implements Listener {
     private static final double MAX_DAMAGE_MULT = 10.0;
 
     private final CoreMCPlugin plugin;
+    private final EnchantDropPipeline dropPipeline;
     private final Random random = new Random();
     private final ThreadLocal<Boolean> guarded = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
@@ -107,6 +108,7 @@ public final class EnchantEngine implements Listener {
      */
     public EnchantEngine(final CoreMCPlugin plugin) {
         this.plugin = plugin;
+        this.dropPipeline = new EnchantDropPipeline(plugin, this);
     }
 
     /** Quit hook: transient stores never outlive the session. */
@@ -644,191 +646,24 @@ public final class EnchantEngine implements Listener {
         }
     }
 
-    // ------------------------------------------------------------------ shared drop stage
+    // ------------------------------------------------------------------ drop pipeline facade
 
-    /**
-     * Shared drop stage for block pipelines (mine/log/farm): smelt
-     * conversions first, then bonus rolls (DROP_BONUS +
-     * MULTIPLIER/DROPS), then magnet collection or natural drops.
-     * Returns true when vanilla drops must be suppressed (a drop
-     * enchant claimed them); false leaves vanilla behaviour intact.
-     */
     public boolean processDrops(final DropContext ctx) {
-        boolean smelt = false;
-        boolean bonus = false;
-        boolean magnet = false;
-        for (final EnchantService.EnchantLevel owned : ctx.active()) {
-            switch (owned.enchant().effect()) {
-                case SMELT -> smelt = true;
-                case DROP_BONUS -> bonus = true;
-                case MAGNET -> magnet = true;
-                default -> {
-                }
-            }
-        }
-        if (!plugin.enchants().multipliersFor(ctx.profile(), ctx.roleKey(), "DROPS").isEmpty()) {
-            bonus = true;
-        }
-        if (!smelt && !bonus && !magnet) {
-            return false;
-        }
-        List<ItemStack> drops = new ArrayList<>(ctx.block().getDrops(ctx.tool()));
-        if (smelt) {
-            drops = applySmelt(ctx, drops);
-        }
-        if (bonus) {
-            final List<ItemStack> extras = new ArrayList<>();
-            collectBlockBonus(ctx, drops, extras);
-            drops.addAll(extras);
-        }
-        final String fallback = magnet ? magnetFallback(ctx) : null;
-        if (fallback != null) {
-            collectOrDrop(ctx.player(), drops, fallback, ctx.dropAt());
-        } else {
-            for (final ItemStack stack : drops) {
-                if (stack != null && !stack.getType().isAir() && stack.getAmount() > 0) {
-                    ctx.block().getWorld().dropItemNaturally(ctx.dropAt(), stack);
-                }
-            }
-        }
-        return true;
+        return dropPipeline.process(ctx);
     }
 
-    private List<ItemStack> applySmelt(final DropContext ctx, final List<ItemStack> drops) {
-        List<ItemStack> current = drops;
-        for (final EnchantService.EnchantLevel owned : ctx.active()) {
-            final Enchant enchant = owned.enchant();
-            if (enchant.effect() != EnchantEffect.SMELT) {
-                continue;
-            }
-            if (!roll(enchant.chanceAt(owned.level())) || !cooldownReady(ctx.player().getUniqueId(), enchant)) {
-                continue;
-            }
-            markCooldown(ctx.player().getUniqueId(), enchant.id());
-            final List<ItemStack> converted = new ArrayList<>(current.size());
-            for (final ItemStack stack : current) {
-                final Material out = EnchantBlocks.smeltResult(stack.getType(), enchant.values(), this);
-                converted.add(out == null ? stack : new ItemStack(out, stack.getAmount()));
-            }
-            current = converted;
-        }
-        return current;
-    }
-
-    /** Bonus-drop rolls for a block pipeline (DROP_BONUS + MULT/DROPS with depth gates). */
     public void collectBlockBonus(final DropContext ctx, final List<ItemStack> base,
             final List<ItemStack> extras) {
-        if (base.isEmpty()) {
-            return;
-        }
-        final double mult = comboMultiplier(ctx.profile(), ctx.roleKey(), "DROPS")
-                * (1.0 + tempDropsPct(ctx.player().getUniqueId()) / 100.0);
-        for (final EnchantService.EnchantLevel owned : ctx.active()) {
-            final Enchant enchant = owned.enchant();
-            if (enchant.effect() != EnchantEffect.DROP_BONUS) {
-                continue;
-            }
-            if (!roll(enchant.chanceAt(owned.level())) || !cooldownReady(ctx.player().getUniqueId(), enchant)) {
-                continue;
-            }
-            markCooldown(ctx.player().getUniqueId(), enchant.id());
-            final int amount =
-                    Math.max(1, (int) Math.floor(enchant.valueAt(owned.level()) * mult));
-            dupeFiltered(base, amount, stringList(enchant.values(), "only-materials"), extras);
-        }
-        for (final EnchantService.EnchantLevel owned :
-                plugin.enchants().multipliersFor(ctx.profile(), ctx.roleKey(), "DROPS")) {
-            final Enchant enchant = owned.enchant();
-            final long maxY = longValue(enchant.values(), "max-y", Long.MIN_VALUE);
-            if (maxY != Long.MIN_VALUE && ctx.block().getY() > maxY) {
-                continue; // depth gate (deep-miner)
-            }
-            if (!roll(enchant.chanceAt(owned.level())) || !cooldownReady(ctx.player().getUniqueId(), enchant)) {
-                continue;
-            }
-            markCooldown(ctx.player().getUniqueId(), enchant.id());
-            final int amount =
-                    Math.max(1, (int) Math.floor(enchant.valueAt(owned.level()) * mult));
-            dupeFiltered(base, amount, stringList(enchant.values(), "only-materials"), extras);
-        }
+        dropPipeline.collectBlockBonus(ctx, base, extras);
     }
 
-    /** Rolls every MAGNET in scope; returns the winning fallback, or null when none proc. */
     public String magnetFallback(final DropContext ctx) {
-        String fallback = null;
-        for (final EnchantService.EnchantLevel owned : ctx.active()) {
-            final Enchant enchant = owned.enchant();
-            if (enchant.effect() != EnchantEffect.MAGNET) {
-                continue;
-            }
-            if (!roll(enchant.chanceAt(owned.level())) || !cooldownReady(ctx.player().getUniqueId(), enchant)) {
-                continue;
-            }
-            markCooldown(ctx.player().getUniqueId(), enchant.id());
-            fallback = stringValue(enchant.values(), "fallback", "DROP");
-        }
-        return fallback;
+        return dropPipeline.magnetFallback(ctx);
     }
 
-    /**
-     * Bonus-drop rolls for the kill pipeline (DROP_BONUS +
-     * MULT/DROPS; depth-gated multipliers need a block and skip).
-     */
-    public void collectKillBonus(
-            final Player player,
-            final PlayerProfile profile,
-            final String roleKey,
-            final List<EnchantService.EnchantLevel> active,
-            final List<ItemStack> deathDrops) {
-        if (deathDrops.isEmpty()) {
-            return;
-        }
-        final double mult = comboMultiplier(profile, roleKey, "DROPS")
-                * (1.0 + tempDropsPct(player.getUniqueId()) / 100.0);
-        final List<ItemStack> extras = new ArrayList<>();
-        for (final EnchantService.EnchantLevel owned : active) {
-            final Enchant enchant = owned.enchant();
-            if (enchant.effect() != EnchantEffect.DROP_BONUS) {
-                continue;
-            }
-            if (!roll(enchant.chanceAt(owned.level())) || !cooldownReady(player.getUniqueId(), enchant)) {
-                continue;
-            }
-            markCooldown(player.getUniqueId(), enchant.id());
-            dupeFiltered(deathDrops,
-                    Math.max(1, (int) Math.floor(enchant.valueAt(owned.level()) * mult)),
-                    stringList(enchant.values(), "only-materials"), extras);
-        }
-        for (final EnchantService.EnchantLevel owned :
-                plugin.enchants().multipliersFor(profile, roleKey, "DROPS")) {
-            final Enchant enchant = owned.enchant();
-            if (enchant.values().containsKey("max-y")) {
-                continue; // depth gates need a broken block — kills skip them
-            }
-            if (!roll(enchant.chanceAt(owned.level())) || !cooldownReady(player.getUniqueId(), enchant)) {
-                continue;
-            }
-            markCooldown(player.getUniqueId(), enchant.id());
-            dupeFiltered(deathDrops,
-                    Math.max(1, (int) Math.floor(enchant.valueAt(owned.level()) * mult)),
-                    stringList(enchant.values(), "only-materials"), extras);
-        }
-        deathDrops.addAll(extras);
-    }
-
-    private void dupeFiltered(final List<ItemStack> base, final int copies, final List<String> only,
-            final List<ItemStack> extras) {
-        for (final ItemStack stack : base) {
-            if (stack == null || stack.getType().isAir() || stack.getAmount() <= 0) {
-                continue;
-            }
-            if (!only.isEmpty() && !only.contains(stack.getType().name())) {
-                continue;
-            }
-            for (int copy = 0; copy < copies; copy++) {
-                extras.add(stack.clone());
-            }
-        }
+    public void collectKillBonus(final Player player, final PlayerProfile profile, final String roleKey,
+            final List<EnchantService.EnchantLevel> active, final List<ItemStack> deathDrops) {
+        dropPipeline.collectKillBonus(player, profile, roleKey, active, deathDrops);
     }
 
     // ------------------------------------------------------------------ bonus-block breaking

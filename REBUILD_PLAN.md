@@ -103,3 +103,5 @@ Hermes audited the clean baseline read-only and recommended the phases and first
 - Retired-cell and deleted-island tombstones now live in IslandTombstoneStore, retaining the existing deleted-cells.txt line format and atomic write/rollback behavior. Startup filtering stays in the facade for now and uses the extracted store's retirement checks.
 
 - Island deletion now delegates to IslandDeletionCoordinator; it persists tombstones before registry removal, then purges invites/activity, rescues online players, and queues profile-association cleanup before file deletion on the island I/O lane.
+
+- The custom-enchant block and kill drop lifecycle now lives in EnchantDropPipeline. The existing EnchantEngine methods remain as compatibility facades; smelting, bonus rolls, magnet collection, depth/material filters, and cloned kill extras retain their prior ordering and behavior. Clean production packaging compiled all 125 sources; tests were skipped.
