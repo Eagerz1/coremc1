@@ -99,3 +99,7 @@ Hermes audited the clean baseline read-only and recommended the phases and first
 - Membership/invite operations now delegate to IslandMembershipCoordinator; it owns invite and pending-write reservations while IslandService retains the public methods and result enums. Leave/kick still persist detached snapshots and profile-association cleanup on the ordered island queue, then complete or roll back on the main thread.
 
 - Upgrade/buff purchase commit and startup journal replay now share IslandPurchaseCoordinator. The existing facade validations and journal YAML schema stay in place; the coordinator retains exact-balance replay, profile-before-island durability, journal clearing last, and the delete lock until a failed transaction is recovered.
+
+- Retired-cell and deleted-island tombstones now live in IslandTombstoneStore, retaining the existing deleted-cells.txt line format and atomic write/rollback behavior. Startup filtering stays in the facade for now and uses the extracted store's retirement checks.
+
+- Island deletion now delegates to IslandDeletionCoordinator; it persists tombstones before registry removal, then purges invites/activity, rescues online players, and queues profile-association cleanup before file deletion on the island I/O lane.

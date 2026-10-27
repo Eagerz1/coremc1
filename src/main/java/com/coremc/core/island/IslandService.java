@@ -7,14 +7,8 @@ import com.coremc.core.player.PlayerDataService;
 import com.coremc.core.player.PlayerProfile;
 import com.coremc.core.scheduler.TaskService;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -39,7 +33,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public final class IslandService implements IslandCreationHost, IslandMembershipHost, IslandPurchaseHost {
+public final class IslandService implements IslandCreationHost, IslandMembershipHost, IslandPurchaseHost, IslandDeletionHost {
    private final JavaPlugin plugin;
    private final Logger logger;
    private final CoreConfig config;
@@ -50,11 +44,10 @@ public final class IslandService implements IslandCreationHost, IslandMembership
    private final IslandCreationCoordinator creationCoordinator;
    private final IslandMembershipCoordinator membershipCoordinator;
    private final IslandPurchaseCoordinator purchaseCoordinator;
+   private final IslandDeletionCoordinator deletionCoordinator;
    private final TaskService taskService;
    private final IslandRegistry registry = new IslandRegistry();
-   private final Set<String> retiredCells = ConcurrentHashMap.newKeySet();
-   private final Set<UUID> deletedIslandIds = ConcurrentHashMap.newKeySet();
-   private final Path retiredCellsFile;
+   private final IslandTombstoneStore tombstones;
    private final Set<UUID> dirtyIslands = ConcurrentHashMap.newKeySet();
    private volatile boolean loaded = false;
 
@@ -75,7 +68,9 @@ public final class IslandService implements IslandCreationHost, IslandMembership
               playerData, economy, this.logger, this);
       this.creationCoordinator = new IslandCreationCoordinator(
               config, persistence, platformBuilder, this.logger, this);
-      this.retiredCellsFile = islandFolder.resolve("deleted-cells.txt");
+      this.tombstones = new IslandTombstoneStore(islandFolder.resolve("deleted-cells.txt"));
+      this.deletionCoordinator = new IslandDeletionCoordinator(
+              config, registry, tombstones, persistence, playerData, membershipCoordinator, this.logger, this);
    }
 
    public void start() {
@@ -84,7 +79,7 @@ public final class IslandService implements IslandCreationHost, IslandMembership
          List<Island> loadedIslands;
          List<Island> persistedIslands;
          try {
-            this.loadRetiredCells();
+            this.tombstones.load();
             loadedIslands = this.discardRetiredIslandRecords(new ArrayList(this.persistence.loadAll()), spacing);
             // Resolve purchase journals only against live islands; never charge for a tombstoned record.
             this.purchaseCoordinator.recoverPending(loadedIslands);
@@ -162,7 +157,7 @@ public final class IslandService implements IslandCreationHost, IslandMembership
 
       Logger var10000 = this.logger;
       int var10001 = this.registry.size();
-      var10000.info("Loaded " + var10001 + " island(s) (" + this.retiredCells.size() + " retired cell(s) reserved).");
+      var10000.info("Loaded " + var10001 + " island(s) (" + this.tombstones.retiredCellCount() + " retired cell(s) reserved).");
       this.loaded = true;
 
       for(Player player : Bukkit.getOnlinePlayers()) {
@@ -208,32 +203,13 @@ public final class IslandService implements IslandCreationHost, IslandMembership
       return this.config.islandWorldName().equals(worldName);
    }
 
-   private void loadRetiredCells() throws IOException {
-      if (Files.exists(this.retiredCellsFile, new LinkOption[0])) {
-         for(String line : Files.readAllLines(this.retiredCellsFile)) {
-            if (!line.isBlank()) {
-               if (line.startsWith("island:")) {
-                  try {
-                     this.deletedIslandIds.add(UUID.fromString(line.substring("island:".length())));
-                  } catch (IllegalArgumentException exception) {
-                     throw new IOException("Invalid island tombstone in " + String.valueOf(this.retiredCellsFile) + ": " + line, exception);
-                  }
-               } else {
-                  this.retiredCells.add(line);
-               }
-            }
-         }
-
-      }
-   }
-
    private List<Island> discardRetiredIslandRecords(List<Island> persisted, int spacing) {
       List<Island> retained = new ArrayList(persisted.size());
 
       for(Island island : persisted) {
          int[] cell = island.gridCell(spacing);
          String cellKey = GridAssigner.key(cell[0], cell[1], island.worldName());
-         if (!this.deletedIslandIds.contains(island.islandId()) && !this.retiredCells.contains(cellKey)) {
+         if (!this.tombstones.isRetired(cellKey, island.islandId())) {
             retained.add(island);
          } else {
             try {
@@ -248,31 +224,6 @@ public final class IslandService implements IslandCreationHost, IslandMembership
       }
 
       return retained;
-   }
-
-   private void persistRetiredCells() throws IOException {
-      Path parent = this.retiredCellsFile.getParent();
-      if (parent != null) {
-         Files.createDirectories(parent);
-      }
-
-      Path temporary = this.retiredCellsFile.resolveSibling(String.valueOf(this.retiredCellsFile.getFileName()) + ".tmp");
-      List<String> sorted = new ArrayList(this.retiredCells);
-
-      for(UUID deletedIslandId : this.deletedIslandIds) {
-         sorted.add("island:" + String.valueOf(deletedIslandId));
-      }
-
-      Collections.sort(sorted);
-      String contents = sorted.isEmpty() ? "" : String.join(System.lineSeparator(), sorted) + System.lineSeparator();
-      Files.writeString(temporary, contents, StandardCharsets.UTF_8);
-
-      try {
-         Files.move(temporary, this.retiredCellsFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-      } catch (AtomicMoveNotSupportedException var6) {
-         Files.move(temporary, this.retiredCellsFile, StandardCopyOption.REPLACE_EXISTING);
-      }
-
    }
 
    public boolean isLoaded() {
@@ -344,7 +295,7 @@ public final class IslandService implements IslandCreationHost, IslandMembership
    @Override
    public Set<String> occupiedCells() {
       Set<String> occupied = new HashSet(this.registry.occupiedCells());
-      occupied.addAll(this.retiredCells);
+      occupied.addAll(this.tombstones.reservedCells());
       return occupied;
    }
 
@@ -381,6 +332,31 @@ public final class IslandService implements IslandCreationHost, IslandMembership
    @Override
    public void schedulePurchaseCallback(Runnable callback, String operation) {
       this.runCreationCallback(callback, operation);
+   }
+
+   @Override
+   public boolean purchaseInProgress() {
+      return this.purchaseCoordinator.isInProgress();
+   }
+
+   @Override
+   public void purgeActivity(UUID islandId) {
+      ((CoreMCPlugin)this.plugin).islandActivity().purgeIsland(islandId);
+   }
+
+   @Override
+   public void clearDirty(UUID islandId) {
+      this.dirtyIslands.remove(islandId);
+   }
+
+   @Override
+   public void rescue(Player player, Island island) {
+      this.rescueIfStranded(player, island);
+   }
+
+   @Override
+   public void notifyDeletedMember(Player player) {
+      ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.deleted-member", Map.of());
    }
 
    public int memberCapacity(Island island) {
@@ -519,77 +495,7 @@ public final class IslandService implements IslandCreationHost, IslandMembership
    }
 
    public void deleteIsland(UUID owner) throws IOException {
-      if (this.purchaseCoordinator.isInProgress()) {
-         throw new IOException("An island purchase is still being saved; try deleting the island again shortly.");
-      }
-      Island removed = (Island)this.registry.ownedIsland(owner).orElse(null);
-      if (removed == null) {
-         throw new IllegalStateException("Owner has no island");
-      } else {
-         int spacing = this.config.islandSpacing();
-         int[] cell = removed.gridCell(spacing);
-         String cellKey = GridAssigner.key(cell[0], cell[1], removed.worldName());
-         boolean newlyRetired = this.retiredCells.add(cellKey);
-         boolean newlyDeleted = this.deletedIslandIds.add(removed.islandId());
-
-         try {
-            this.persistRetiredCells();
-         } catch (IOException exception) {
-            if (newlyRetired) {
-               this.retiredCells.remove(cellKey);
-            }
-
-            if (newlyDeleted) {
-               this.deletedIslandIds.remove(removed.islandId());
-            }
-
-            throw exception;
-         }
-
-         if (!this.registry.remove(removed, spacing)) {
-            throw new IllegalStateException("Island changed while deletion was being committed");
-         } else {
-            this.membershipCoordinator.purgeIsland(removed.islandId());
-            ((CoreMCPlugin)this.plugin).islandActivity().purgeIsland(removed.islandId());
-            this.dirtyIslands.remove(removed.islandId());
-            List<UUID> scrubTargets = new ArrayList();
-            scrubTargets.add(owner);
-            scrubTargets.addAll(removed.members());
-            Player ownerPlayer = Bukkit.getPlayer(owner);
-            if (ownerPlayer != null) {
-               this.rescueIfStranded(ownerPlayer, removed);
-            }
-
-            for(UUID member : removed.members()) {
-               Player online = Bukkit.getPlayer(member);
-               if (online != null) {
-                  this.rescueIfStranded(online, removed);
-                  ((CoreMCPlugin)this.plugin).messages().sendPrefixed(online, "island.deleted-member", Map.of());
-               }
-            }
-
-            try {
-               this.persistence.execute(() -> {
-                  for(UUID player : scrubTargets) {
-                     this.playerData.clearIslandAssociationIfMatches(player, removed.islandId());
-                  }
-
-                  try {
-                     this.persistence.delete(owner);
-                     Logger var10000 = this.logger;
-                     String var10001 = String.valueOf(removed.islandId());
-                     var10000.info("Deleted island " + var10001 + " of " + String.valueOf(owner) + " (" + scrubTargets.size() + " association(s) scrubbed, cell retired).");
-                  } catch (IOException exception) {
-                     this.logger.log(Level.SEVERE, "Failed to remove tombstoned island file of " + String.valueOf(owner), exception);
-                  }
-
-               });
-            } catch (RejectedExecutionException exception) {
-               this.logger.log(Level.WARNING, "Island cleanup queued after shutdown; tombstone remains durable.", exception);
-            }
-
-         }
-      }
+      this.deletionCoordinator.deleteIsland(owner);
    }
 
    public InviteResult invite(Player inviter, Player target) {
