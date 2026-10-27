@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * A CoreMC Skyblock island (schema version 5).
+ * A CoreMC Skyblock island (schema version 6).
  *
  * Ownership & membership: exactly one owner plus a bounded member set.
  * The island FILE is authoritative for membership; player profiles only
@@ -46,6 +46,14 @@ import java.util.UUID;
  * keys default to false, preserving all existing islands.
  */
 public final class Island {
+
+    /** Current persisted island record version. Missing versions are legacy records. */
+    public static final int SCHEMA_VERSION = 6;
+
+    private static final Set<String> KNOWN_FIELDS = Set.of(
+            "schema-version", "island-id", "owner", "members", "world", "center-x", "center-y", "center-z",
+            "border-size", "level", "xp", "stats", "upgrades", "buffs", "theme", "settings",
+            "created-millis", "creation-pending");
 
     /** Default border width for brand-new islands (brief requirement). */
     public static final int DEFAULT_BORDER_SIZE = 50;
@@ -103,6 +111,8 @@ public final class Island {
     private final Map<String, Boolean> settings = new LinkedHashMap<>();
     private long xp;
     private final Map<String, Long> stats = new LinkedHashMap<>();
+    private int schemaVersion = SCHEMA_VERSION;
+    private final Map<String, Object> unknownFields = new LinkedHashMap<>();
 
     public Island(
             final UUID islandId,
@@ -171,6 +181,7 @@ public final class Island {
 
     public Map<String, Object> toMap() {
         final Map<String, Object> map = new LinkedHashMap<>();
+        map.put("schema-version", schemaVersion);
         map.put("island-id", islandId.toString());
         map.put("owner", owner.toString());
         final java.util.List<String> memberList = new java.util.ArrayList<>(members.size());
@@ -192,6 +203,7 @@ public final class Island {
         map.put("settings", new LinkedHashMap<>(settings));
         map.put("created-millis", createdMillis);
         map.put("creation-pending", creationPending);
+        unknownFields.forEach((key, value) -> map.putIfAbsent(key, copyYamlValue(value)));
         return map;
     }
 
@@ -207,6 +219,12 @@ public final class Island {
                 asInt(map.get("center-z")),
                 border,
                 asLong(map.get("created-millis")));
+        island.schemaVersion = Math.max(SCHEMA_VERSION, asInt(map.getOrDefault("schema-version", SCHEMA_VERSION)));
+        for (final Map.Entry<String, Object> entry : map.entrySet()) {
+            if (!KNOWN_FIELDS.contains(entry.getKey())) {
+                island.unknownFields.put(entry.getKey(), copyYamlValue(entry.getValue()));
+            }
+        }
         if (map.get("creation-pending") instanceof Boolean pending) {
             island.creationPending = pending;
         }
@@ -259,6 +277,24 @@ public final class Island {
             }
         }
         return island;
+    }
+
+    private static Object copyYamlValue(final Object value) {
+        if (value instanceof Map<?, ?> map) {
+            final Map<String, Object> copy = new LinkedHashMap<>();
+            for (final Map.Entry<?, ?> entry : map.entrySet()) {
+                copy.put(String.valueOf(entry.getKey()), copyYamlValue(entry.getValue()));
+            }
+            return copy;
+        }
+        if (value instanceof java.util.List<?> list) {
+            final java.util.List<Object> copy = new java.util.ArrayList<>(list.size());
+            for (final Object entry : list) {
+                copy.add(copyYamlValue(entry));
+            }
+            return copy;
+        }
+        return value;
     }
 
     public UUID islandId() {
