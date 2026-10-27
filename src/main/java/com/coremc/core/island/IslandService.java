@@ -26,8 +26,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -51,7 +49,7 @@ public final class IslandService {
    private final JavaPlugin plugin;
    private final Logger logger;
    private final CoreConfig config;
-   private final IslandDataStore store;
+   private final IslandPersistence persistence;
    private final PlayerDataService playerData;
    private final ThemeService themes;
    private final TaskService taskService;
@@ -72,11 +70,6 @@ public final class IslandService {
    private final Set<UUID> pendingLeaves = ConcurrentHashMap.newKeySet();
    private final Set<String> pendingCells = ConcurrentHashMap.newKeySet();
    private final Map<String, Island> pendingIslandsByCell = new ConcurrentHashMap<>();
-   private final ExecutorService io = Executors.newSingleThreadExecutor((runnable) -> {
-      Thread thread = new Thread(runnable, "CoreMC-Islands");
-      thread.setDaemon(true);
-      return thread;
-   });
    private volatile boolean loaded = false;
    private static final int PLATFORM_RADIUS = 3;
 
@@ -84,7 +77,7 @@ public final class IslandService {
       this.plugin = plugin;
       this.logger = plugin.getLogger();
       this.config = config;
-      this.store = store;
+      this.persistence = new IslandPersistence(store);
       this.playerData = playerData;
       this.themes = themes;
       this.taskService = taskService;
@@ -94,12 +87,12 @@ public final class IslandService {
 
    public void start() {
       int spacing = this.config.islandSpacing();
-      this.io.execute(() -> {
+      this.persistence.execute(() -> {
          List<Island> loadedIslands;
          List<Island> persistedIslands;
          try {
             this.loadRetiredCells();
-            loadedIslands = this.discardRetiredIslandRecords(new ArrayList(this.store.loadAll()), spacing);
+            loadedIslands = this.discardRetiredIslandRecords(new ArrayList(this.persistence.loadAll()), spacing);
             // Resolve purchase journals only against live islands; never charge for a tombstoned record.
             this.recoverPendingPurchase(loadedIslands);
             persistedIslands = loadedIslands;
@@ -144,7 +137,7 @@ public final class IslandService {
          if (!this.playerData.persistAndWait(profile).get(10L, TimeUnit.SECONDS)) {
             throw new IOException("Profile save failed while recovering purchase " + transaction.id());
          }
-         this.store.saveSnapshot(island.toMap());
+         this.persistence.saveSnapshot(island.toMap());
          this.purchaseJournal.clear();
       } catch (InterruptedException exception) {
          Thread.currentThread().interrupt();
@@ -190,10 +183,10 @@ public final class IslandService {
          this.publishLoadedIslands(persistedIslands, spacing);
       } else {
          try {
-            this.io.execute(() -> {
+            this.persistence.execute(() -> {
                try {
                   for(Island island : pending) {
-                     this.store.save(island);
+                     this.persistence.save(island);
                   }
                } catch (IOException exception) {
                   pending.forEach((islandx) -> islandx.creationPending(true));
@@ -293,7 +286,7 @@ public final class IslandService {
             retained.add(island);
          } else {
             try {
-               this.store.delete(island.owner());
+               this.persistence.delete(island.owner());
                Logger var10000 = this.logger;
                String var10001 = String.valueOf(island.islandId());
                var10000.info("Removed tombstoned island file " + var10001 + " for retired cell " + cellKey);
@@ -533,7 +526,7 @@ public final class IslandService {
       }
       ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.purchase-pending", Map.of());
       try {
-         this.io.execute(() -> {
+         this.persistence.execute(() -> {
             IOException lastFailure = null;
             boolean committed = false;
             for (int attempt = 1; attempt <= 3 && !committed; attempt++) {
@@ -541,7 +534,7 @@ public final class IslandService {
                   if (!this.playerData.persistAndWait(profile).get(10L, TimeUnit.SECONDS)) {
                      throw new IOException("Player profile write failed for island purchase " + transactionId);
                   }
-                  this.store.saveSnapshot(snapshot);
+                  this.persistence.saveSnapshot(snapshot);
                   this.purchaseJournal.clear();
                   committed = true;
                } catch (InterruptedException exception) {
@@ -626,9 +619,9 @@ public final class IslandService {
                this.pendingIslandsByCell.put(cellKey, island);
 
                try {
-                  this.io.execute(() -> {
+                  this.persistence.execute(() -> {
                      try {
-                        this.store.save(island);
+                        this.persistence.save(island);
                      } catch (IOException exception) {
                         this.pendingCreations.remove(owner);
                         this.pendingCells.remove(cellKey);
@@ -654,9 +647,9 @@ public final class IslandService {
                            island.creationPending(false);
 
                            try {
-                              this.io.execute(() -> {
+                              this.persistence.execute(() -> {
                                  try {
-                                    this.store.save(island);
+                                    this.persistence.save(island);
                                  } catch (IOException exception) {
                                     island.creationPending(true);
                                     this.logger.log(Level.SEVERE, "Failed to commit newly created island " + String.valueOf(island.islandId()), exception);
@@ -764,13 +757,13 @@ public final class IslandService {
             }
 
             try {
-               this.io.execute(() -> {
+               this.persistence.execute(() -> {
                   for(UUID player : scrubTargets) {
                      this.playerData.clearIslandAssociationIfMatches(player, removed.islandId());
                   }
 
                   try {
-                     this.store.delete(owner);
+                     this.persistence.delete(owner);
                      Logger var10000 = this.logger;
                      String var10001 = String.valueOf(removed.islandId());
                      var10000.info("Deleted island " + var10001 + " of " + String.valueOf(owner) + " (" + scrubTargets.size() + " association(s) scrubbed, cell retired).");
@@ -848,10 +841,10 @@ public final class IslandService {
       this.islandsByMember.remove(playerId, island);
       Map<String, Object> snapshot = island.toMap();
       try {
-         this.io.execute(() -> {
+         this.persistence.execute(() -> {
             Throwable failure = null;
             try {
-               this.store.saveSnapshot(snapshot);
+               this.persistence.saveSnapshot(snapshot);
                this.playerData.clearIslandAssociationIfMatches(playerId, island.islandId());
             } catch (IOException | RuntimeException exception) { failure = exception; }
             Throwable result = failure;
@@ -898,10 +891,10 @@ public final class IslandService {
       this.islandsByMember.remove(target, team);
       Map<String, Object> snapshot = team.toMap();
       try {
-         this.io.execute(() -> {
+         this.persistence.execute(() -> {
             Throwable failure = null;
             try {
-               this.store.saveSnapshot(snapshot);
+               this.persistence.saveSnapshot(snapshot);
                this.playerData.clearIslandAssociationIfMatches(target, team.islandId());
             } catch (IOException | RuntimeException exception) { failure = exception; }
             Throwable result = failure;
@@ -967,9 +960,9 @@ public final class IslandService {
       UUID islandId = island.islandId();
 
       try {
-         this.io.execute(() -> {
+         this.persistence.execute(() -> {
             try {
-               this.store.saveSnapshot(snapshot);
+               this.persistence.saveSnapshot(snapshot);
             } catch (IOException exception) {
                if (this.islandsById.get(islandId) == island) {
                   this.dirtyIslands.add(islandId);
@@ -1029,12 +1022,12 @@ public final class IslandService {
       this.flushDirty();
 
       try {
-         this.io.submit(() -> {
+         this.persistence.submit(() -> {
             for(Map.Entry<UUID, Map<String, Object>> entry : shutdownSnapshots.entrySet()) {
                UUID islandId = (UUID)entry.getKey();
                if (this.dirtyIslands.contains(islandId) && this.islandsById.containsKey(islandId)) {
                   try {
-                     this.store.saveSnapshot((Map)entry.getValue());
+                     this.persistence.saveSnapshot((Map)entry.getValue());
                      this.dirtyIslands.remove(islandId);
                   } catch (IOException exception) {
                      this.logger.log(Level.SEVERE, "Final retry failed for island " + String.valueOf(islandId) + "; data remains dirty.", exception);
@@ -1054,10 +1047,10 @@ public final class IslandService {
          this.logger.severe("Island data remains dirty at shutdown for " + this.dirtyIslands.size() + " island(s).");
       }
 
-      this.io.shutdown();
+      this.persistence.shutdown();
 
       try {
-         if (!this.io.awaitTermination(10L, TimeUnit.SECONDS)) {
+         if (!this.persistence.awaitTermination(10L, TimeUnit.SECONDS)) {
             this.logger.warning("Island executor did not terminate in 10s.");
          }
       } catch (InterruptedException exception) {

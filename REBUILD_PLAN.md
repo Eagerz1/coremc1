@@ -89,3 +89,5 @@ Hermes audited the clean baseline read-only and recommended the phases and first
 - Hermes' final review found the purchase journal recovery ordering coherent. If an in-flight purchase save outlasts the island shutdown wait, the journal remains for recovery on the next startup; this is intentionally fail-closed and should be visible in shutdown diagnostics.
 
 - Island records now write schema version 6 and preserve unknown top-level YAML fields when loaded and saved, matching the profile compatibility policy while keeping legacy missing-version files readable.
+
+- Architecture remake started with IslandPersistence: the existing IslandService remains the compatibility facade, while the island store and ordered I/O executor now have a replaceable owner. Existing YAML storage and queue ordering are unchanged; the production package compiled all 113 Java sources.
