@@ -30,7 +30,6 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionEffectType;
 
 /**
  * Live effects of the per-activity island upgrade tracks. Every effect
@@ -69,19 +68,6 @@ public final class IslandActivityEffects implements Listener {
             Material.PUMPKIN_SEEDS,
             Material.SUGAR_CANE,
             Material.CACTUS);
-
-    /** Harvested block -> the crop item crop-yield bonuses. */
-    private static final Map<Material, Material> CROP_ITEMS = Map.ofEntries(
-            Map.entry(Material.WHEAT, Material.WHEAT),
-            Map.entry(Material.CARROTS, Material.CARROT),
-            Map.entry(Material.POTATOES, Material.POTATO),
-            Map.entry(Material.BEETROOTS, Material.BEETROOT),
-            Map.entry(Material.NETHER_WART, Material.NETHER_WART),
-            Map.entry(Material.COCOA, Material.COCOA_BEANS),
-            Map.entry(Material.MELON, Material.MELON_SLICE),
-            Map.entry(Material.PUMPKIN, Material.PUMPKIN),
-            Map.entry(Material.SUGAR_CANE, Material.SUGAR_CANE),
-            Map.entry(Material.CACTUS, Material.CACTUS));
 
     private final CoreMCPlugin plugin;
     /** Same spawner-born tag the slayer pipeline filters on. */
@@ -188,26 +174,7 @@ public final class IslandActivityEffects implements Listener {
     }
 
     private void farmingProcs(final Player player, final Island island, final Block block) {
-        final int fortune = tierOf(island, "farming-fortune");
-        if (fortune > 0 && roll(fortune
-                * cfgPercent("farming-fortune", "chance-percent-per-level", 10) / 100.0)) {
-            bonusCopies(block, scaleFor(player, "farming-boost", 1));
-        }
-        final int yieldTier = tierOf(island, "crop-yield");
-        if (yieldTier > 0) {
-            final Material crop = CROP_ITEMS.get(block.getType());
-            if (crop != null) {
-                block.getWorld().dropItemNaturally(
-                        block.getLocation(),
-                        new ItemStack(crop, scaleFor(player, "farming-boost", Math.max(1, yieldTier / 2))));
-            }
-        }
-        tryCurrency(player, island, "farming-tokens", Currency.SKY_TOKENS);
-        tryCurrency(player, island, "farming-credits", Currency.CREDITS);
-        final int speed = hasteAmpForTier(tierOf(island, "harvest-speed"));
-        if (speed >= 0) {
-            plugin.enchantEngine().applyPotion(player, PotionEffectType.HASTE, speed, 100);
-        }
+        rewards.farmingProcs(player, island, block);
     }
 
     private void loggingProcs(final Player player, final Island island, final Block block) {

@@ -23,6 +23,19 @@ import org.bukkit.potion.PotionEffectType;
 /** Owns shared island upgrade rolls, currency rewards, and configured reward tables. */
 public final class IslandActivityRewardCoordinator {
 
+    /** Harvested block -> the crop item crop-yield bonuses. */
+    private static final Map<Material, Material> CROP_ITEMS = Map.ofEntries(
+            Map.entry(Material.WHEAT, Material.WHEAT),
+            Map.entry(Material.CARROTS, Material.CARROT),
+            Map.entry(Material.POTATOES, Material.POTATO),
+            Map.entry(Material.BEETROOTS, Material.BEETROOT),
+            Map.entry(Material.NETHER_WART, Material.NETHER_WART),
+            Map.entry(Material.COCOA, Material.COCOA_BEANS),
+            Map.entry(Material.MELON, Material.MELON_SLICE),
+            Map.entry(Material.PUMPKIN, Material.PUMPKIN),
+            Map.entry(Material.SUGAR_CANE, Material.SUGAR_CANE),
+            Map.entry(Material.CACTUS, Material.CACTUS));
+
     private final CoreMCPlugin plugin;
     /** Parsed island reward tables, cleared on /coremc reload. */
     private final Map<String, List<RewardRoll>> tableCache = new ConcurrentHashMap<>();
@@ -83,6 +96,30 @@ public final class IslandActivityRewardCoordinator {
         tryCurrency(player, island, "mining-tokens", Currency.SKY_TOKENS);
         tryCurrency(player, island, "mining-credits", Currency.CREDITS);
         final int speed = IslandActivityEffects.hasteAmpForTier(tierOf(island, "mining-speed"));
+        if (speed >= 0) {
+            plugin.enchantEngine().applyPotion(player, PotionEffectType.HASTE, speed, 100);
+        }
+    }
+
+    /** Applies farming fortune, crop yield, currency, and harvest haste upgrades. */
+    public void farmingProcs(final Player player, final Island island, final Block block) {
+        final int fortune = tierOf(island, "farming-fortune");
+        if (fortune > 0 && roll(fortune
+                * cfgPercent("farming-fortune", "chance-percent-per-level", 10) / 100.0)) {
+            bonusCopies(block, scaleFor(player, "farming-boost", 1));
+        }
+        final int yieldTier = tierOf(island, "crop-yield");
+        if (yieldTier > 0) {
+            final Material crop = CROP_ITEMS.get(block.getType());
+            if (crop != null) {
+                block.getWorld().dropItemNaturally(
+                        block.getLocation(),
+                        new ItemStack(crop, scaleFor(player, "farming-boost", Math.max(1, yieldTier / 2))));
+            }
+        }
+        tryCurrency(player, island, "farming-tokens", Currency.SKY_TOKENS);
+        tryCurrency(player, island, "farming-credits", Currency.CREDITS);
+        final int speed = IslandActivityEffects.hasteAmpForTier(tierOf(island, "harvest-speed"));
         if (speed >= 0) {
             plugin.enchantEngine().applyPotion(player, PotionEffectType.HASTE, speed, 100);
         }
