@@ -6,7 +6,6 @@ import com.coremc.core.placeable.PlaceableService;
 import com.coremc.core.player.PlayerProfile;
 import com.coremc.core.util.ColorUtil;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,12 +14,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.CreatureSpawner;
-import org.bukkit.block.spawner.SpawnerEntry;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntitySnapshot;
 import org.bukkit.entity.EntityType;
@@ -53,11 +48,7 @@ public final class SpawnerService {
     /** uuid -> rolling kill window (anti-farming); bounded by KILL_WINDOW_SOFT_LIMIT. */
     private final Map<UUID, RollingKillCap> killWindows = new ConcurrentHashMap<>();
 
-    /** One vanilla-compatible snapshot per entity type, for writing SpawnPotentials. */
-    private final Map<EntityType, EntitySnapshot> snapshots = new EnumMap<>(EntityType.class);
-    /** Placement key -> consecutive stalled-at-zero observations (watchdog). */
-    private final Map<String, Integer> stalled = new HashMap<>();
-    private org.bukkit.scheduler.BukkitTask watchdog;
+    private final SpawnerWorldRuntime worldRuntime;
 
     /** Resolved mob + tier for one purchasable spawner id. */
     public record TierRef(SpawnerDefinition mob, SpawnerTier tier) {
@@ -66,6 +57,7 @@ public final class SpawnerService {
     public SpawnerService(final CoreMCPlugin plugin) {
         this.plugin = plugin;
         this.tags = new SpawnerTags(plugin);
+        this.worldRuntime = new SpawnerWorldRuntime(plugin, this);
     }
 
     /** Shared entity tags (mob tagger, island boost extras, kill routing). */
@@ -199,134 +191,20 @@ public final class SpawnerService {
 
     // ------------------------------------------------------------------ world configuration
 
-    /**
-     * Builds the vanilla-compatible entity snapshot a spawner tile needs
-     * for both {@code SpawnData} and {@code SpawnPotentials}. Spawner tiles
-     * whose potential list is empty stall permanently at {@code Delay:0}
-     * once any spawn attempt is refused (mob cap, cancelled spawn event),
-     * because Paper's {@code BaseSpawner} only rolls a fresh timer from
-     * the potential list after a refused attempt on some paths.
-     */
     public synchronized EntitySnapshot snapshotFor(final EntityType type) {
-        EntitySnapshot snapshot = snapshots.get(type);
-        if (snapshot == null) {
-            final String nbt = "{id:\"" + type.getKey() + "\"}";
-            snapshot = Bukkit.getEntityFactory().createEntitySnapshot(nbt);
-            snapshots.put(type, snapshot);
-        }
-        return snapshot;
+        return worldRuntime.snapshotFor(type);
     }
 
-    /**
-     * Applies the full CoreMC tier configuration to a spawner block state:
-     * entity type, spawn count, min/max delay, a positive first delay, and
-     * — critically — a populated potential-spawn list identical to what a
-     * vanilla {@code /setblock} spawner carries.
-     */
     public void configureWorldSpawner(final Block block, final TierRef ref, final int delayTicks) {
-        if (!(block.getState() instanceof CreatureSpawner spawner)) {
-            return;
-        }
-        applyToState(spawner, ref, delayTicks, delayTicks);
-        spawner.update(true);
+        worldRuntime.configureWorldSpawner(block, ref, delayTicks);
     }
 
-    /**
-     * Spawn range is pinned to one block. Islands are small void platforms:
-     * the vanilla range of 4 lets most sampled positions fall into the void
-     * (and a failed single-position cycle leaves the tile parked at Delay:0),
-     * so purchased spawners would look dead. A one-block box keeps every
-     * candidate directly over the platform; the liveness watchdog re-rolls
-     * the occasional bad y sample.
-     */
-    private static final int SPAWN_RANGE_BLOCKS = 1;
-    /** When a stalled tile is re-armed, re-roll within half a second. */
-    private static final int REROLL_DELAY_TICKS = 10;
-
-    private void applyToState(final CreatureSpawner spawner, final TierRef ref,
-            final int delayTicks, final int firstDelayTicks) {
-        final EntitySnapshot snapshot = snapshotFor(ref.mob().entityType());
-        final SpawnerEntry entry = new SpawnerEntry(snapshot, 1, null);
-        // NB: never call setSpawnedType() here — it resets SpawnPotentials to
-        // an empty WeightedList, which makes Paper stall the tile at Delay:0.
-        spawner.setSpawnedEntity(entry);
-        spawner.setPotentialSpawns(List.of(entry));
-        spawner.setSpawnCount(Math.max(1, ref.tier().spawnCount()));
-        final int delay = Math.max(20, delayTicks);
-        spawner.setMinSpawnDelay(delay);
-        spawner.setMaxSpawnDelay(delay);
-        spawner.setSpawnRange(SPAWN_RANGE_BLOCKS);
-        spawner.setDelay(Math.max(1, Math.min(firstDelayTicks, delay)));
-    }
-
-    /**
-     * Starts the liveness watchdog: registered spawner tiles in loaded
-     * chunks are normalised (missing SpawnPotentials filled in — heals
-     * tiles placed by older builds) and any tile whose timer has been
-     * stuck at zero while a player stands in range is re-armed. Runs a
-     * few times a minute; cost is one block-state snapshot per registered
-     * spawner in an already-loaded chunk.
-     */
     public void startWatchdog() {
-        if (watchdog != null) {
-            return;
-        }
-        watchdog = Bukkit.getScheduler().runTaskTimer(plugin, this::tickWatchdog, 100L, 40L);
+        worldRuntime.startWatchdog();
     }
 
     public void stopWatchdog() {
-        if (watchdog != null) {
-            watchdog.cancel();
-            watchdog = null;
-        }
-    }
-
-    private void tickWatchdog() {
-        for (final Map.Entry<String, PlaceableService.Placement> entry
-                : plugin.placeables().placements().entrySet()) {
-            final PlaceableService.Placement placement = entry.getValue();
-            if (placement.type() != PlaceableService.Type.SPAWNER) {
-                continue;
-            }
-            final String key = entry.getKey();
-            final World world = Bukkit.getWorld(placement.worldName());
-            if (world == null || !world.isChunkLoaded(placement.x() >> 4, placement.z() >> 4)) {
-                stalled.remove(key);
-                continue;
-            }
-            final Block block = world.getBlockAt(placement.x(), placement.y(), placement.z());
-            if (!(block.getState() instanceof CreatureSpawner spawner)) {
-                stalled.remove(key);
-                continue;
-            }
-            final TierRef ref = tierFor(placement.id()).orElse(null);
-            final boolean needsPotentials = spawner.getPotentialSpawns().isEmpty();
-            if (ref != null && (needsPotentials || spawner.getSpawnCount() <= 0)) {
-                applyToState(spawner, ref, ref.tier().spawnDelayTicks(),
-                        ref.tier().spawnDelayTicks());
-                spawner.update(true);
-                stalled.remove(key);
-                plugin.getLogger().fine("Normalised spawner at " + key + " (" + placement.id() + ")");
-                continue;
-            }
-            final int range = Math.max(1, spawner.getRequiredPlayerRange());
-            final boolean playerInRange = world.getPlayers().stream().anyMatch(player ->
-                    player.getWorld() == world && player.getLocation().distanceSquared(
-                            block.getLocation().add(0.5, 0.5, 0.5)) <= (double) range * range);
-            if (spawner.getDelay() <= 0 && playerInRange) {
-                final int strikes = stalled.merge(key, 1, Integer::sum);
-                if (strikes >= 2 && ref != null) {
-                    applyToState(spawner, ref, ref.tier().spawnDelayTicks(),
-                            REROLL_DELAY_TICKS);
-                    spawner.update(true);
-                    stalled.remove(key);
-                    plugin.getLogger().fine("Re-armed stalled spawner at " + key
-                            + " (" + placement.id() + ")");
-                }
-            } else {
-                stalled.remove(key);
-            }
-        }
+        worldRuntime.stopWatchdog();
     }
 
     // ------------------------------------------------------------------ progress
