@@ -19,10 +19,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -95,12 +93,12 @@ public final class IslandActivityEffects implements Listener {
     private final NamespacedKey spawnerBornKey;
     /** Parsed island reward tables, cleared on /coremc reload. */
     private final Map<String, List<RewardRoll>> tableCache = new ConcurrentHashMap<>();
-    /** islandId -> live natural-mob estimate for the mob-cap track. */
-    private final Map<UUID, Integer> mobCounters = new ConcurrentHashMap<>();
+    private final IslandMobSpawnCoordinator mobSpawns;
 
     public IslandActivityEffects(final CoreMCPlugin plugin) {
         this.plugin = plugin;
         this.spawnerBornKey = new NamespacedKey(plugin, "spawner-born");
+        this.mobSpawns = new IslandMobSpawnCoordinator(plugin);
     }
 
     /** Clears parsed reward-table caches (called on /coremc reload). */
@@ -110,7 +108,7 @@ public final class IslandActivityEffects implements Listener {
 
     /** Drops the mob-cap counter of a deleted island (no leaks). */
     public void purgeIsland(final UUID islandId) {
-        mobCounters.remove(islandId);
+        mobSpawns.purgeIsland(islandId);
     }
 
     // ------------------------------------------------------------------ helpers
@@ -424,12 +422,8 @@ public final class IslandActivityEffects implements Listener {
             return;
         }
         // Mob-cap bookkeeping counts every island mob death (any killer, any team).
+        mobSpawns.recordDeath(victim);
         final Location at = victim.getLocation();
-        if (at.getWorld() != null) {
-            plugin.islands().islandAt(at.getWorld().getName(), at.getBlockX(), at.getBlockZ())
-                    .ifPresent(island -> mobCounters.computeIfPresent(island.islandId(),
-                            (key, count) -> count > 0 ? count - 1 : 0));
-        }
         final Player killer = victim.getKiller();
         if (killer == null || at.getWorld() == null) {
             return;
@@ -536,71 +530,7 @@ public final class IslandActivityEffects implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onCreatureSpawn(final CreatureSpawnEvent event) {
-        final CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
-        if (reason != CreatureSpawnEvent.SpawnReason.NATURAL
-                && reason != CreatureSpawnEvent.SpawnReason.CHUNK_GEN) {
-            return; // spawner/custom/egg spawns belong to their own systems — never capped here
-        }
-        final Location location = event.getLocation();
-        if (location.getWorld() == null) {
-            return;
-        }
-        final var island = plugin.islands().islandAt(
-                location.getWorld().getName(), location.getBlockX(), location.getBlockZ());
-        if (island.isEmpty()) {
-            return;
-        }
-        final Island value = island.get();
-        // The cap only manages islands that bought the track (tier 0 =
-        // vanilla behaviour, never a nerf); buying in opts into a
-        // raised, enforced cap.
-        final int capTier = tierOf(value, "mob-cap");
-        final int cap = cfgInt("mob-cap", "base-cap", 10)
-                + capTier * cfgInt("mob-cap", "cap-per-level", 5);
-        if (capTier > 0) {
-            int count = mobCounters.getOrDefault(value.islandId(), 0);
-            if (count >= cap) {
-                // Self-healing verify scan: chunk unloads/despawns leak the
-                // estimate upward, so confirm with a real (rare, bounded)
-                // entity census before denying a spawn.
-                count = countIslandMobs(value);
-                mobCounters.put(value.islandId(), count);
-                if (count >= cap) {
-                    event.setCancelled(true);
-                    return;
-                }
-            }
-        }
-        mobCounters.merge(value.islandId(), 1, Integer::sum);
-        final int rate = tierOf(value, "mob-rate");
-        if (rate <= 0
-                || !roll(rate * cfgPercent("mob-rate", "chance-percent-per-level", 10) / 100.0)) {
-            return;
-        }
-        if (capTier > 0 && mobCounters.getOrDefault(value.islandId(), 0) >= cap) {
-            return; // twins never bypass the cap
-        }
-        location.getWorld().spawnEntity(location, event.getEntityType());
-        mobCounters.merge(value.islandId(), 1, Integer::sum);
-    }
-
-    /** Bounded census of living non-player mobs inside the island border. */
-    private int countIslandMobs(final Island island) {
-        final World world = plugin.getServer().getWorld(island.worldName());
-        if (world == null) {
-            return 0;
-        }
-        final int half = Math.max(1, plugin.islands().effectiveBorder(island) / 2);
-        final Location center = new Location(world, island.centerX(), 64.0, island.centerZ());
-        int count = 0;
-        for (final Entity entity : world.getNearbyEntities(center, half, 256, half)) {
-            if (entity instanceof LivingEntity && !(entity instanceof Player)
-                    && plugin.islands().containsBlock(island,
-                            entity.getLocation().getBlockX(), entity.getLocation().getBlockZ())) {
-                count++;
-            }
-        }
-        return count;
+        mobSpawns.onCreatureSpawn(event);
     }
 
     // ------------------------------------------------------------------ island reward tables
