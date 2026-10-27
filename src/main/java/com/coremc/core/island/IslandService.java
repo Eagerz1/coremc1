@@ -34,24 +34,20 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.TreeType;
 import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public final class IslandService {
+public final class IslandService implements IslandCreationHost {
    private final JavaPlugin plugin;
    private final Logger logger;
    private final CoreConfig config;
    private final IslandPersistence persistence;
    private final PlayerDataService playerData;
    private final ThemeService themes;
+   private final IslandPlatformBuilder platformBuilder;
+   private final IslandCreationCoordinator creationCoordinator;
    private final TaskService taskService;
    private final Map<UUID, Island> islandsByOwner = new ConcurrentHashMap();
    private final Map<UUID, Island> islandsById = new ConcurrentHashMap();
@@ -65,13 +61,9 @@ public final class IslandService {
    private final java.util.concurrent.atomic.AtomicBoolean purchaseInProgress = new java.util.concurrent.atomic.AtomicBoolean();
    private final MemberInviteLedger invites = new MemberInviteLedger();
    private final Set<UUID> dirtyIslands = ConcurrentHashMap.newKeySet();
-   private final Set<UUID> pendingCreations = ConcurrentHashMap.newKeySet();
    private final Set<UUID> pendingKicks = ConcurrentHashMap.newKeySet();
    private final Set<UUID> pendingLeaves = ConcurrentHashMap.newKeySet();
-   private final Set<String> pendingCells = ConcurrentHashMap.newKeySet();
-   private final Map<String, Island> pendingIslandsByCell = new ConcurrentHashMap<>();
    private volatile boolean loaded = false;
-   private static final int PLATFORM_RADIUS = 3;
 
    public IslandService(JavaPlugin plugin, CoreConfig config, IslandDataStore store, PlayerDataService playerData, ThemeService themes, TaskService taskService, Path islandFolder) {
       this.plugin = plugin;
@@ -80,7 +72,10 @@ public final class IslandService {
       this.persistence = new IslandPersistence(store);
       this.playerData = playerData;
       this.themes = themes;
+      this.platformBuilder = new IslandPlatformBuilder(this.logger);
       this.taskService = taskService;
+      this.creationCoordinator = new IslandCreationCoordinator(
+              config, persistence, platformBuilder, this.logger, this);
       this.retiredCellsFile = islandFolder.resolve("deleted-cells.txt");
       this.purchaseJournal = new IslandPurchaseJournal(plugin.getDataFolder().toPath().resolve("data/island-purchase.yml"));
    }
@@ -171,7 +166,7 @@ public final class IslandService {
                var10000.warning("Missing theme '" + var10001 + "' while recovering island " + String.valueOf(island.islandId()) + "; using the default starter platform.");
             }
 
-            this.generateStarterIsland(world, island, theme);
+            this.platformBuilder.generate(world, island, theme);
             island.creationPending(false);
          }
       } catch (RuntimeException exception) {
@@ -356,9 +351,7 @@ public final class IslandService {
 
    public boolean isCreationPending(Island island) {
       if (island.creationPending()) return true;
-      int[] cell = island.gridCell(this.config.islandSpacing());
-      String cellKey = GridAssigner.key(cell[0], cell[1], island.worldName());
-      return this.pendingIslandsByCell.get(cellKey) == island;
+      return this.creationCoordinator.isPending(island);
    }
 
    public Optional<Island> islandAtForProtection(String worldName, int x, int z) {
@@ -366,14 +359,7 @@ public final class IslandService {
       if (published.isPresent()) {
          return published;
       }
-      int spacing = this.config.islandSpacing();
-      for (int[] cell : candidateCells(x, z, spacing)) {
-         Island pending = this.pendingIslandsByCell.get(GridAssigner.key(cell[0], cell[1], worldName));
-         if (pending != null && this.containsBlock(pending, x, z)) {
-            return Optional.of(pending);
-         }
-      }
-      return Optional.empty();
+      return Optional.ofNullable(this.creationCoordinator.pendingIslandAt(worldName, x, z));
    }
    static List<int[]> candidateCells(int x, int z, int spacing) {
       int i = Math.floorDiv(x, spacing);
@@ -391,6 +377,43 @@ public final class IslandService {
 
    public Optional<World> islandWorld() {
       return Optional.ofNullable(Bukkit.getWorld(this.config.islandWorldName()));
+   }
+
+   @Override
+   public boolean registryReady() {
+      return this.loaded;
+   }
+
+   @Override
+   public boolean hasIsland(UUID owner) {
+      return this.islandOf(owner).isPresent();
+   }
+
+   @Override
+   public boolean hasPendingMembershipWrite(UUID owner) {
+      return this.pendingKicks.contains(owner) || this.pendingLeaves.contains(owner);
+   }
+
+   @Override
+   public Set<String> occupiedCells() {
+      Set<String> occupied = new HashSet(this.usedCells);
+      occupied.addAll(this.retiredCells);
+      return occupied;
+   }
+
+   @Override
+   public void registerCreated(Island island) {
+      this.register(island);
+   }
+
+   @Override
+   public void associateOwner(Island island) {
+      this.setAssociation(island.owner(), island.islandId());
+   }
+
+   @Override
+   public void scheduleCreationCallback(Runnable callback, String operation) {
+      this.runCreationCallback(callback, operation);
    }
 
    public int memberCapacity(Island island) {
@@ -590,110 +613,7 @@ public final class IslandService {
    }
 
    public CreateResult createIsland(Player player, IslandTheme theme, Consumer<Island> onCreated, Consumer<Throwable> onFailure) {
-      if (!Bukkit.isPrimaryThread()) {
-         throw new IllegalStateException("Island creation must run on the main thread");
-      } else if (!this.loaded) {
-         return IslandService.CreateResult.CREATION_PENDING;
-      } else {
-         UUID owner = player.getUniqueId();
-         if (this.pendingKicks.contains(owner) || this.pendingLeaves.contains(owner)) {
-            return IslandService.CreateResult.CREATION_PENDING;
-         } else if (this.islandOf(owner).isPresent()) {
-            return IslandService.CreateResult.ALREADY_ISLAND;
-         } else if (!this.pendingCreations.add(owner)) {
-            return IslandService.CreateResult.CREATION_PENDING;
-         } else {
-            Optional<World> world = this.islandWorld();
-            if (world.isEmpty()) {
-               this.pendingCreations.remove(owner);
-               return IslandService.CreateResult.WORLD_MISSING;
-            } else {
-               World target = (World)world.get();
-               int spacing = this.config.islandSpacing();
-               int[] cell = GridAssigner.nextFreeCell(this.occupiedCells(), target.getName());
-               String cellKey = GridAssigner.key(cell[0], cell[1], target.getName());
-               this.pendingCells.add(cellKey);
-               Island island = new Island(UUID.randomUUID(), owner, target.getName(), cell[0] * spacing, this.config.islandStartHeight(), cell[1] * spacing, this.config.islandBorderSize(), System.currentTimeMillis());
-               island.theme(theme == null ? "plains" : theme.key());
-               island.creationPending(true);
-               this.pendingIslandsByCell.put(cellKey, island);
-
-               try {
-                  this.persistence.execute(() -> {
-                     try {
-                        this.persistence.save(island);
-                     } catch (IOException exception) {
-                        this.pendingCreations.remove(owner);
-                        this.pendingCells.remove(cellKey);
-                        this.pendingIslandsByCell.remove(cellKey, island);
-                        this.logger.log(Level.SEVERE, "Failed to persist island creation marker for " + String.valueOf(island.islandId()), exception);
-                        this.runCreationCallback(() -> onFailure.accept(exception), "report island creation failure");
-                        return;
-                     }
-
-                     this.runCreationCallback(() -> {
-                        World creationWorld = Bukkit.getWorld(island.worldName());
-                        if (creationWorld == null) {
-                           onFailure.accept(new IllegalStateException("Island world '" + island.worldName() + "' is not loaded"));
-                        } else {
-                           try {
-                              this.generateStarterIsland(creationWorld, island, theme);
-                           } catch (RuntimeException exception) {
-                              this.logger.log(Level.SEVERE, "Failed to generate starter island for " + String.valueOf(owner), exception);
-                              onFailure.accept(exception);
-                              return;
-                           }
-
-                           island.creationPending(false);
-
-                           try {
-                              this.persistence.execute(() -> {
-                                 try {
-                                    this.persistence.save(island);
-                                 } catch (IOException exception) {
-                                    island.creationPending(true);
-                                    this.logger.log(Level.SEVERE, "Failed to commit newly created island " + String.valueOf(island.islandId()), exception);
-                                    this.runCreationCallback(() -> onFailure.accept(exception), "report island commit failure");
-                                    return;
-                                 }
-
-                                 this.runCreationCallback(() -> {
-                                    this.register(island);
-                                    this.pendingCreations.remove(owner);
-                                    this.pendingCells.remove(cellKey);
-                                    this.pendingIslandsByCell.remove(cellKey, island);
-                                    this.setAssociation(owner, island.islandId());
-                                    onCreated.accept(island);
-                                 }, "publish newly created island");
-                              });
-                           } catch (RejectedExecutionException exception) {
-                              island.creationPending(true);
-                              this.logger.log(Level.SEVERE, "Island storage is shutting down; could not commit " + String.valueOf(island.islandId()), exception);
-                              onFailure.accept(exception);
-                           }
-
-                        }
-                     }, "generate starter island");
-                  });
-               } catch (RejectedExecutionException exception) {
-                  this.pendingCreations.remove(owner);
-                  this.pendingCells.remove(cellKey);
-                  this.pendingIslandsByCell.remove(cellKey, island);
-                  this.logger.log(Level.SEVERE, "Island storage is shutting down; could not persist " + String.valueOf(island.islandId()), exception);
-                  return IslandService.CreateResult.CREATION_FAILED;
-               }
-
-               return IslandService.CreateResult.CREATED;
-            }
-         }
-      }
-   }
-
-   private Set<String> occupiedCells() {
-      Set<String> occupied = new HashSet(this.usedCells);
-      occupied.addAll(this.retiredCells);
-      occupied.addAll(this.pendingCells);
-      return occupied;
+      return this.creationCoordinator.createIsland(player, theme, onCreated, onFailure);
    }
 
    private void runCreationCallback(Runnable callback, String operation) {
@@ -1063,9 +983,7 @@ public final class IslandService {
       this.islandsByMember.clear();
       this.islandsByCell.clear();
       this.usedCells.clear();
-      this.pendingCreations.clear();
-      this.pendingCells.clear();
-      this.pendingIslandsByCell.clear();
+      this.creationCoordinator.clearTransient();
       this.pendingKicks.clear();
       this.pendingLeaves.clear();
       this.invites.clear();
@@ -1101,79 +1019,6 @@ public final class IslandService {
          this.islandsByMember.remove(member, island);
       }
 
-   }
-
-   private void generateStarterIsland(World world, Island island, IslandTheme theme) {
-      int cx = island.centerX();
-      int cy = island.centerY();
-      int cz = island.centerZ();
-      Material top = theme == null ? Material.GRASS_BLOCK : theme.top();
-      Material under = theme == null ? Material.DIRT : theme.under();
-
-      for(int dx = -3; dx <= 3; ++dx) {
-         for(int dz = -3; dz <= 3; ++dz) {
-            this.setBlock(world, cx + dx, cy - 2, cz + dz, under);
-            this.setBlock(world, cx + dx, cy - 1, cz + dz, under);
-            this.setBlock(world, cx + dx, cy, cz + dz, top);
-         }
-      }
-
-      this.setBlock(world, cx, cy - 1, cz, Material.BEDROCK);
-      List<Location> saplings = new ArrayList();
-
-      for(String entry : theme == null ? List.of("2,1,2=OAK_SAPLING", "-2,0,-2=WATER", "-1,0,-2=WATER") : theme.decorations()) {
-         Object[] parsed = ThemeService.parseDecoration(entry);
-         if (parsed != null) {
-            int dx = (Integer)parsed[0];
-            int dy = (Integer)parsed[1];
-            int dz = (Integer)parsed[2];
-            Material material = (Material)parsed[3];
-            if (Math.abs(dx) <= 3 && Math.abs(dz) <= 3) {
-               Location at = new Location(world, (double)(cx + dx), (double)(cy + dy), (double)(cz + dz));
-               if (material.name().endsWith("_SAPLING")) {
-                  saplings.add(at);
-               }
-
-               this.setBlock(world, at.getBlockX(), at.getBlockY(), at.getBlockZ(), material);
-            }
-         }
-      }
-
-      boolean tree = theme == null || theme.tree();
-      if (tree && !saplings.isEmpty()) {
-         Location sapling = (Location)saplings.get(0);
-         if (!world.generateTree(sapling, TreeType.TREE)) {
-            this.logger.fine("Tree generation reported failure at " + String.valueOf(sapling) + " — sapling remains.");
-         }
-      }
-
-      this.placeStarterChest(world, island, theme == null ? List.of("ICE:2", "LAVA_BUCKET:1", "BREAD:4", "BONE_MEAL:3") : theme.chestContents());
-   }
-
-   private void placeStarterChest(World world, Island island, List<String> contents) {
-      int x = island.centerX();
-      int y = island.centerY() + 1;
-      int z = island.centerZ() + 2;
-      this.setBlock(world, x, y, z, Material.CHEST);
-      BlockState var8 = world.getBlockAt(x, y, z).getState();
-      if (var8 instanceof Chest chest) {
-         chest.getBlockInventory().clear();
-
-         for(String entry : contents) {
-            Object[] parsed = ThemeService.parseContent(entry);
-            if (parsed != null) {
-               chest.getBlockInventory().addItem(new ItemStack[]{new ItemStack((Material)parsed[0], (Integer)parsed[1])});
-            }
-         }
-
-         chest.update(true);
-      }
-
-   }
-
-   private void setBlock(World world, int x, int y, int z, Material material) {
-      Block block = world.getBlockAt(x, y, z);
-      block.setType(material);
    }
 
    public static enum CreateResult {
