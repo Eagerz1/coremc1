@@ -75,6 +75,7 @@ public final class EnchantEngine implements Listener {
 
     private final CoreMCPlugin plugin;
     private final EnchantDropPipeline dropPipeline;
+    private final EnchantRewardPipeline rewardPipeline;
     private final EnchantRuntimeState runtimeState = new EnchantRuntimeState();
     private final ThreadLocal<Boolean> guarded = ThreadLocal.withInitial(() -> Boolean.FALSE);
     /** Misconfigured names already warned about (warn-once, no log spam). */
@@ -98,6 +99,7 @@ public final class EnchantEngine implements Listener {
     public EnchantEngine(final CoreMCPlugin plugin) {
         this.plugin = plugin;
         this.dropPipeline = new EnchantDropPipeline(plugin, this, runtimeState);
+        this.rewardPipeline = new EnchantRewardPipeline(plugin, this);
     }
 
     /** Quit hook: transient stores never outlive the session. */
@@ -304,44 +306,13 @@ public final class EnchantEngine implements Listener {
             final long base,
             final String roleKey,
             final boolean applyCombo) {
-        if (base <= 0L) {
-            return 0L;
-        }
-        final String target = switch (currency) {
-            case SKY_TOKENS -> "TOKENS";
-            case CREDITS -> "CREDITS";
-            case MONEY -> "MONEY";
-        };
-        double mult = plugin.enchants().passiveMultiplier(profile, roleKey, target);
-        if (applyCombo) {
-            mult *= comboMultiplier(profile, roleKey, "CURRENCY");
-        }
-        // BUFF stage of the pipeline: token/credit boosts multiply here,
-        // exactly once in this single currency funnel, for members
-        // standing on their own island (1.0 everywhere else).
-        mult *= plugin.islandBuffs().currencyMult(player, currency);
-        final long total = Math.max(1L, Math.round(base * mult));
-        try {
-            plugin.economy().deposit(profile, currency, total);
-        } catch (final IllegalArgumentException overflow) {
-            plugin.getLogger().fine("Currency grant overflow for " + player.getName() + ": " + total);
-            return 0L;
-        }
-        return total;
+        return rewardPipeline.grantCurrency(player, profile, currency, base, roleKey, applyCombo);
     }
 
     /** Grants {@code base} souls with passive + combo multipliers. Returns the final amount. */
     public long grantSouls(final Player player, final PlayerProfile profile, final long base,
             final String roleKey) {
-        if (base <= 0L) {
-            return 0L;
-        }
-        final double mult = plugin.enchants().passiveMultiplier(profile, roleKey, "SOULS")
-                * comboMultiplier(profile, roleKey, "SOULS");
-        final long total = Math.max(1L, Math.round(base * mult));
-        profile.souls(profile.souls() > Long.MAX_VALUE - total ? Long.MAX_VALUE : profile.souls() + total);
-        plugin.playerData().markDirty(player.getUniqueId());
-        return total;
+        return rewardPipeline.grantSouls(player, profile, base, roleKey);
     }
 
     /**
@@ -357,46 +328,12 @@ public final class EnchantEngine implements Listener {
             final Enchant enchant,
             final String roleKey,
             final RoleCategory xpCategory) {
-        for (final RewardRoll roll : plugin.enchants().rewardTable(enchant)) {
-            if (!roll(roll.chance())) {
-                continue;
-            }
-            final int amount = roll.rollAmount(runtimeState.random());
-            switch (roll.type()) {
-                case ITEM -> {
-                    final Material material = resolveMaterial(roll.material(), null);
-                    if (material == null) {
-                        warnOnce(enchant.id() + ":material:" + roll.material(),
-                                "Unknown reward material '" + roll.material() + "' — skipped.");
-                        continue;
-                    }
-                    giveOrDrop(player, new ItemStack(material, amount));
-                }
-                case TOKENS -> grantCurrency(
-                        player, profile, Currency.SKY_TOKENS, amount, roleKey, true);
-                case CREDITS ->
-                    grantCurrency(player, profile, Currency.CREDITS, amount, roleKey, true);
-                case XP -> plugin.roles().awardCategoryXp(player, profile, xpCategory, amount);
-                case KEY -> {
-                    plugin.keys().giveKeys(player, roll.keyId(), amount);
-                    final String name = plugin.keys().key(roll.keyId())
-                            .map(key -> ColorUtil.colorize(key.display()))
-                            .orElse(roll.keyId());
-                    plugin.messages().sendPrefixed(player, "key.received",
-                            Map.of("amount", String.valueOf(amount), "name", name));
-                }
-                case SOULS -> grantSouls(player, profile, amount, roleKey);
-            }
-        }
+        rewardPipeline.grantRewards(player, profile, enchant, roleKey, xpCategory);
     }
 
     /** Inventory-first item grant; overflow drops at the player's feet (never voided). */
     public void giveOrDrop(final Player player, final ItemStack stack) {
-        if (stack == null || stack.getType().isAir() || stack.getAmount() <= 0) {
-            return;
-        }
-        player.getInventory().addItem(stack).values()
-                .forEach(rest -> player.getWorld().dropItemNaturally(player.getLocation(), rest));
+        rewardPipeline.giveOrDrop(player, stack);
     }
 
     /**
@@ -405,16 +342,7 @@ public final class EnchantEngine implements Listener {
      */
     public void collectOrDrop(final Player player, final List<ItemStack> drops, final String fallback,
             final Location dropAt) {
-        for (final ItemStack stack : drops) {
-            if (stack == null || stack.getType().isAir() || stack.getAmount() <= 0) {
-                continue;
-            }
-            final Map<Integer, ItemStack> leftover = player.getInventory().addItem(stack);
-            if ("DESPAWN".equalsIgnoreCase(fallback)) {
-                continue;
-            }
-            leftover.values().forEach(rest -> player.getWorld().dropItemNaturally(dropAt, rest));
-        }
+        rewardPipeline.collectOrDrop(player, drops, fallback, dropAt);
     }
 
     // ------------------------------------------------------------------ shared pipeline steps
@@ -496,38 +424,13 @@ public final class EnchantEngine implements Listener {
     /** Fires CURRENCY enchants (grant currency = values.currency, else purchase currency). */
     public void grantCurrencies(final Player player, final PlayerProfile profile, final String roleKey,
             final List<EnchantService.EnchantLevel> active) {
-        for (final EnchantService.EnchantLevel owned : active) {
-            final Enchant enchant = owned.enchant();
-            if (enchant.effect() != EnchantEffect.CURRENCY) {
-                continue;
-            }
-            if (!roll(enchant.chanceAt(owned.level())) || !cooldownReady(player.getUniqueId(), enchant)) {
-                continue;
-            }
-            markCooldown(player.getUniqueId(), enchant.id());
-            final Currency currency = currencyValue(enchant.values(), "currency", enchant.currency());
-            final long base = Math.max(1L, (long) Math.floor(enchant.valueAt(owned.level())));
-            grantCurrency(player, profile, currency, base, roleKey, true);
-        }
+        rewardPipeline.grantCurrencies(player, profile, roleKey, active);
     }
 
     /** Rolls REWARD_TABLE enchants (plus TREASURE-mode FISH_BONUS) in scope. */
     public void grantTables(final Player player, final PlayerProfile profile, final String roleKey,
             final List<EnchantService.EnchantLevel> active, final RoleCategory xpCategory) {
-        for (final EnchantService.EnchantLevel owned : active) {
-            final Enchant enchant = owned.enchant();
-            final boolean table = enchant.effect() == EnchantEffect.REWARD_TABLE
-                    || enchant.effect() == EnchantEffect.FISH_BONUS
-                            && "TREASURE".equalsIgnoreCase(stringValue(enchant.values(), "mode", ""));
-            if (!table) {
-                continue;
-            }
-            if (!roll(enchant.chanceAt(owned.level())) || !cooldownReady(player.getUniqueId(), enchant)) {
-                continue;
-            }
-            markCooldown(player.getUniqueId(), enchant.id());
-            grantRewards(player, profile, enchant, roleKey, xpCategory);
-        }
+        rewardPipeline.grantTables(player, profile, roleKey, active, xpCategory);
     }
 
     /** Applies RECOVERY enchants (heal + feed + extinguish). */
@@ -749,7 +652,7 @@ public final class EnchantEngine implements Listener {
         }
     }
 
-    private void warnOnce(final String key, final String message) {
+    void warnOnce(final String key, final String message) {
         if (badNames.add(key) && plugin != null) {
             plugin.getLogger().warning("[enchants] " + message);
         }

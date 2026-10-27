@@ -107,3 +107,5 @@ Hermes audited the clean baseline read-only and recommended the phases and first
 - The custom-enchant block and kill drop lifecycle now lives in EnchantDropPipeline. The existing EnchantEngine methods remain as compatibility facades; smelting, bonus rolls, magnet collection, depth/material filters, and cloned kill extras retain their prior ordering and behavior. Clean production packaging compiled all 125 sources; tests were skipped.
 
 - Cooldowns, combo stacks, random rolls, temporary boosts, and quit cleanup now live in EnchantRuntimeState shared by the engine and drop pipeline. The Bukkit recursion guard remains in the engine, and existing public engine methods and profile enchant IDs are unchanged. Clean production packaging compiled all 126 sources; tests were skipped.
+
+- Enchant currency, souls, configured reward tables, and item delivery now live in EnchantRewardPipeline. Existing EnchantEngine entry points delegate to it, preserving multiplier order, reward IDs, overflow drops, and dirty-profile behavior. Hermes reviewed the extraction; clean production packaging compiled all 127 sources, with tests skipped.
