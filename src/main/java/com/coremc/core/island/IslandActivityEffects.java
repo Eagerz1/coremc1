@@ -1,13 +1,8 @@
 package com.coremc.core.island;
 
 import com.coremc.core.CoreMCPlugin;
-import com.coremc.core.economy.Currency;
 import com.coremc.core.enchant.EnchantBlocks;
-import com.coremc.core.player.PlayerProfile;
-import com.coremc.core.role.RoleCategory;
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -104,29 +99,12 @@ public final class IslandActivityEffects implements Listener {
         return rewards.tierOf(island, track);
     }
 
-    private int cfgInt(final String track, final String key, final int fallback) {
-        return rewards.cfgInt(track, key, fallback);
-    }
-
     private int cfgPercent(final String track, final String key, final int fallback) {
         return rewards.cfgPercent(track, key, fallback);
     }
 
     private boolean roll(final double chance) {
         return rewards.roll(chance);
-    }
-
-    /**
-     * Scales an island grant by the player's buff (BUFF stage, applied
-     * exactly once per grant; probabilistic rounding keeps fractions fair).
-     */
-    private int scaleFor(final Player player, final String buffId, final int base) {
-        return rewards.scaleFor(player, buffId, base);
-    }
-
-    /** Rare/treasure chance with island-luck applied (capped at 95%). */
-    private boolean luckRoll(final Player player, final double chance) {
-        return rewards.luckRoll(player, chance);
     }
 
     /**
@@ -181,17 +159,6 @@ public final class IslandActivityEffects implements Listener {
         rewards.loggingProcs(player, island, block);
     }
 
-    /** Drops N extra copies of the block's BASE drops (no tool — no Fortune double-dip). */
-    private void bonusCopies(final Block block, final int copies) {
-        rewards.bonusCopies(block, copies);
-    }
-
-    /** One island token/credit proc: chance roll, then the boosted currency funnel. */
-    private void tryCurrency(final Player player, final Island island, final String track,
-            final Currency currency) {
-        rewards.tryCurrency(player, island, track, currency);
-    }
-
     // ------------------------------------------------------------------ seed efficiency
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -206,16 +173,7 @@ public final class IslandActivityEffects implements Listener {
         if (island.isEmpty()) {
             return;
         }
-        final int tier = tierOf(island.get(), "seed-efficiency");
-        if (tier <= 0) {
-            return;
-        }
-        if (roll(tier * cfgPercent("seed-efficiency", "chance-percent-per-level", 15) / 100.0)) {
-            final Map<Integer, ItemStack> leftover =
-                    event.getPlayer().getInventory().addItem(new ItemStack(seed));
-            leftover.values().forEach(rest -> event.getPlayer().getWorld()
-                    .dropItemNaturally(event.getPlayer().getLocation(), rest));
-        }
+        rewards.seedEfficiency(event.getPlayer(), island.get(), seed);
     }
 
     // ------------------------------------------------------------------ fishing
@@ -238,19 +196,7 @@ public final class IslandActivityEffects implements Listener {
         }
         final var island = teamIslandAt(hook.getWorld().getName(), hook.getBlockX(), hook.getBlockZ(),
                 event.getPlayer().getUniqueId());
-        if (island.isEmpty()) {
-            return;
-        }
-        final int tier = tierOf(island.get(), "fishing-speed");
-        if (tier <= 0) {
-            return;
-        }
-        final double reduction = Math.min(0.9, tier
-                * cfgPercent("fishing-speed", "reduction-percent-per-level", 10) / 100.0);
-        final var hookEntity = event.getHook();
-        final int min = Math.max(20, (int) Math.round(hookEntity.getMinWaitTime() * (1.0 - reduction)));
-        final int max = Math.max(min + 20, (int) Math.round(hookEntity.getMaxWaitTime() * (1.0 - reduction)));
-        hookEntity.setWaitTime(min, max);
+        island.ifPresent(value -> rewards.fishingSpeed(value, event.getHook()));
     }
 
     private void onCatch(final PlayerFishEvent event) {
@@ -263,33 +209,7 @@ public final class IslandActivityEffects implements Listener {
         }
         final var island = teamIslandAt(at.getWorld().getName(), at.getBlockX(), at.getBlockZ(),
                 event.getPlayer().getUniqueId());
-        if (island.isEmpty()) {
-            return;
-        }
-        final Island value = island.get();
-        final Player player = event.getPlayer();
-        final int fortune = tierOf(value, "fishing-fortune");
-        if (fortune > 0 && roll(fortune
-                * cfgPercent("fishing-fortune", "chance-percent-per-level", 10) / 100.0)) {
-            final int copies = scaleFor(player, "fishing-boost", 1);
-            for (int copy = 0; copy < copies; copy++) {
-                at.getWorld().dropItemNaturally(hooked.getLocation(), hooked.getItemStack().clone());
-            }
-        }
-        final int treasure = tierOf(value, "fishing-treasure");
-        if (treasure > 0
-                && luckRoll(player, treasure * cfgPercent("fishing-treasure", "chance-percent-per-level", 5) / 100.0)) {
-            grantTable(player, "fishing-treasure", "rewards", RoleCategory.FISHING, false);
-        }
-        final int rare = tierOf(value, "fishing-rare");
-        if (rare > 0 && luckRoll(player, rare * cfgPercent("fishing-rare", "chance-percent-per-level", 5) / 100.0)) {
-            at.getWorld().dropItemNaturally(hooked.getLocation(), hooked.getItemStack().clone());
-            plugin.playerData().profileOf(player.getUniqueId()).ifPresent(profile -> plugin.roles()
-                    .awardCategoryXp(player, profile, RoleCategory.FISHING,
-                            (long) rare * cfgInt("fishing-rare", "bonus-xp-per-level", 5)));
-        }
-        tryCurrency(player, value, "fishing-tokens", Currency.SKY_TOKENS);
-        tryCurrency(player, value, "fishing-credits", Currency.CREDITS);
+        island.ifPresent(value -> rewards.fishingCatch(event.getPlayer(), value, hooked, at));
     }
 
     // ------------------------------------------------------------------ kills (wild + spawner-born)
@@ -313,59 +233,10 @@ public final class IslandActivityEffects implements Listener {
             return;
         }
         if (isSpawnerBorn(victim)) {
-            spawnerBoostKill(killer, island.get(), event);
+            rewards.spawnerBoostKill(killer, island.get(), event);
             return;
         }
-        final int fortune = tierOf(island.get(), "slayer-fortune");
-        if (fortune > 0 && roll(fortune
-                * cfgPercent("slayer-fortune", "chance-percent-per-level", 10) / 100.0)) {
-            // Snapshot first (adding while iterating would corrupt the drop list),
-            // then repeat the snapshot for every buff-scaled bonus round.
-            final List<ItemStack> base = new ArrayList<>();
-            for (final ItemStack stack : event.getDrops()) {
-                if (stack != null && !stack.getType().isAir() && stack.getAmount() > 0) {
-                    base.add(stack.clone());
-                }
-            }
-            final int rounds = scaleFor(killer, "slaying-boost", 1);
-            for (int round = 0; round < rounds; round++) {
-                for (final ItemStack stack : base) {
-                    event.getDrops().add(stack.clone());
-                }
-            }
-        }
-        tryCurrency(killer, island.get(), "slaying-tokens", Currency.SKY_TOKENS);
-        tryCurrency(killer, island.get(), "slaying-credits", Currency.CREDITS);
-        final int rare = tierOf(island.get(), "rare-drops");
-        if (rare > 0 && luckRoll(killer, rare * cfgPercent("rare-drops", "chance-percent-per-level", 5) / 100.0)) {
-            grantTable(killer, "rare-drops", "rewards", RoleCategory.SLAYING, false);
-        }
-    }
-
-    /** Spawner-boost kill effects: drop copies, dropped-XP scaling, ITEM/XP rare table. */
-    private void spawnerBoostKill(final Player killer, final Island island, final EntityDeathEvent event) {
-        final int tier = tierOf(island, "spawner-boost");
-        if (tier <= 0) {
-            return;
-        }
-        if (roll(tier * cfgPercent("spawner-boost", "drop-bonus-percent-per-level", 10) / 100.0)) {
-            final List<ItemStack> extras = new ArrayList<>();
-            for (final ItemStack stack : event.getDrops()) {
-                if (stack != null && !stack.getType().isAir() && stack.getAmount() > 0) {
-                    extras.add(stack.clone());
-                }
-            }
-            event.getDrops().addAll(extras);
-        }
-        final int dropped = event.getDroppedExp();
-        if (dropped > 0) {
-            final double mult = 1.0 + tier
-                    * cfgPercent("spawner-boost", "xp-percent-per-level", 10) / 100.0;
-            event.setDroppedExp(Math.max(dropped, (int) Math.round(dropped * mult)));
-        }
-        if (luckRoll(killer, tier * cfgPercent("spawner-boost", "rare-percent-per-level", 5) / 100.0)) {
-            grantTable(killer, "spawner-boost", "rare-rewards", RoleCategory.SLAYING, true);
-        }
+        rewards.slayingKill(killer, island.get(), event);
     }
 
     private boolean isSpawnerBorn(final LivingEntity victim) {
@@ -391,18 +262,7 @@ public final class IslandActivityEffects implements Listener {
         if (island.isEmpty()) {
             return;
         }
-        final int tier = tierOf(island.get(), "boss-damage");
-        if (tier <= 0) {
-            return;
-        }
-        final List<String> bosses =
-                plugin.getConfig().getStringList("island.upgrades.boss-damage.boss-types");
-        if (!bosses.contains(victim.getType().name())) {
-            return;
-        }
-        final double mult = 1.0 + tier
-                * cfgPercent("boss-damage", "damage-percent-per-level", 10) / 100.0;
-        event.setDamage(event.getDamage() * mult);
+        rewards.bossDamage(player, island.get(), event);
     }
 
     // ------------------------------------------------------------------ mob rate + mob cap
@@ -412,15 +272,4 @@ public final class IslandActivityEffects implements Listener {
         mobSpawns.onCreatureSpawn(event);
     }
 
-    // ------------------------------------------------------------------ island reward tables
-
-    /**
-     * Rolls an island reward table once (every entry rolls independently;
-     * all hits granted through the standard funnels so enchant boosts
-     * stack intentionally). Spawner tables grant ITEM/XP only.
-     */
-    private void grantTable(final Player player, final String track, final String tableKey,
-            final RoleCategory category, final boolean spawnerSafe) {
-        rewards.grantTable(player, track, tableKey, category, spawnerSafe);
-    }
 }

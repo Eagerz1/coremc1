@@ -16,7 +16,11 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.FishHook;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 
@@ -150,6 +154,125 @@ public final class IslandActivityRewardCoordinator {
                 * cfgPercent("tree-growth", "chance-percent-per-level", 15) / 100.0)) {
             regrowTrunk(block);
         }
+    }
+
+    /** Applies the fishing-speed upgrade after the event adapter admits a team-island hook. */
+    public void fishingSpeed(final Island island, final FishHook hook) {
+        final int tier = tierOf(island, "fishing-speed");
+        if (tier <= 0) {
+            return;
+        }
+        final double reduction = Math.min(0.9, tier
+                * cfgPercent("fishing-speed", "reduction-percent-per-level", 10) / 100.0);
+        final int min = Math.max(20, (int) Math.round(hook.getMinWaitTime() * (1.0 - reduction)));
+        final int max = Math.max(min + 20, (int) Math.round(hook.getMaxWaitTime() * (1.0 - reduction)));
+        hook.setWaitTime(min, max);
+    }
+
+    /** Applies the seed-efficiency refund after the event adapter admits a planted seed. */
+    public void seedEfficiency(final Player player, final Island island, final Material seed) {
+        final int tier = tierOf(island, "seed-efficiency");
+        if (tier <= 0 || !roll(tier * cfgPercent("seed-efficiency", "chance-percent-per-level", 15) / 100.0)) {
+            return;
+        }
+        final Map<Integer, ItemStack> leftover = player.getInventory().addItem(new ItemStack(seed));
+        leftover.values().forEach(rest -> player.getWorld().dropItemNaturally(player.getLocation(), rest));
+    }
+
+    /** Applies fishing fortune, treasure, rare-catch, and currency upgrades after admission. */
+    public void fishingCatch(final Player player, final Island island, final Item caught,
+            final Location hookLocation) {
+        final int fortune = tierOf(island, "fishing-fortune");
+        if (fortune > 0 && roll(fortune
+                * cfgPercent("fishing-fortune", "chance-percent-per-level", 10) / 100.0)) {
+            final int copies = scaleFor(player, "fishing-boost", 1);
+            for (int copy = 0; copy < copies; copy++) {
+                hookLocation.getWorld().dropItemNaturally(caught.getLocation(), caught.getItemStack().clone());
+            }
+        }
+        final int treasure = tierOf(island, "fishing-treasure");
+        if (treasure > 0
+                && luckRoll(player, treasure * cfgPercent("fishing-treasure", "chance-percent-per-level", 5) / 100.0)) {
+            grantTable(player, "fishing-treasure", "rewards", RoleCategory.FISHING, false);
+        }
+        final int rare = tierOf(island, "fishing-rare");
+        if (rare > 0 && luckRoll(player, rare * cfgPercent("fishing-rare", "chance-percent-per-level", 5) / 100.0)) {
+            hookLocation.getWorld().dropItemNaturally(caught.getLocation(), caught.getItemStack().clone());
+            plugin.playerData().profileOf(player.getUniqueId()).ifPresent(profile -> plugin.roles()
+                    .awardCategoryXp(player, profile, RoleCategory.FISHING,
+                            (long) rare * cfgInt("fishing-rare", "bonus-xp-per-level", 5)));
+        }
+        tryCurrency(player, island, "fishing-tokens", Currency.SKY_TOKENS);
+        tryCurrency(player, island, "fishing-credits", Currency.CREDITS);
+    }
+
+    /** Applies wild slayer drops, currency, and rare rewards after kill admission. */
+    public void slayingKill(final Player killer, final Island island, final EntityDeathEvent event) {
+        final int fortune = tierOf(island, "slayer-fortune");
+        if (fortune > 0 && roll(fortune
+                * cfgPercent("slayer-fortune", "chance-percent-per-level", 10) / 100.0)) {
+            final List<ItemStack> base = new ArrayList<>();
+            for (final ItemStack stack : event.getDrops()) {
+                if (stack != null && !stack.getType().isAir() && stack.getAmount() > 0) {
+                    base.add(stack.clone());
+                }
+            }
+            final int rounds = scaleFor(killer, "slaying-boost", 1);
+            for (int round = 0; round < rounds; round++) {
+                for (final ItemStack stack : base) {
+                    event.getDrops().add(stack.clone());
+                }
+            }
+        }
+        tryCurrency(killer, island, "slaying-tokens", Currency.SKY_TOKENS);
+        tryCurrency(killer, island, "slaying-credits", Currency.CREDITS);
+        final int rare = tierOf(island, "rare-drops");
+        if (rare > 0 && luckRoll(killer, rare * cfgPercent("rare-drops", "chance-percent-per-level", 5) / 100.0)) {
+            grantTable(killer, "rare-drops", "rewards", RoleCategory.SLAYING, false);
+        }
+    }
+
+    /** Spawner-boost kill effects: item copies, dropped-XP scaling, and ITEM/XP rare table. */
+    public void spawnerBoostKill(final Player killer, final Island island, final EntityDeathEvent event) {
+        final int tier = tierOf(island, "spawner-boost");
+        if (tier <= 0) {
+            return;
+        }
+        if (roll(tier * cfgPercent("spawner-boost", "drop-bonus-percent-per-level", 10) / 100.0)) {
+            final List<ItemStack> extras = new ArrayList<>();
+            for (final ItemStack stack : event.getDrops()) {
+                if (stack != null && !stack.getType().isAir() && stack.getAmount() > 0) {
+                    extras.add(stack.clone());
+                }
+            }
+            event.getDrops().addAll(extras);
+        }
+        final int dropped = event.getDroppedExp();
+        if (dropped > 0) {
+            final double mult = 1.0 + tier
+                    * cfgPercent("spawner-boost", "xp-percent-per-level", 10) / 100.0;
+            event.setDroppedExp(Math.max(dropped, (int) Math.round(dropped * mult)));
+        }
+        if (luckRoll(killer, tier * cfgPercent("spawner-boost", "rare-percent-per-level", 5) / 100.0)) {
+            grantTable(killer, "spawner-boost", "rare-rewards", RoleCategory.SLAYING, true);
+        }
+    }
+
+    /** Applies configured island boss damage scaling after team-island admission. */
+    public void bossDamage(final Player player, final Island island,
+            final EntityDamageByEntityEvent event) {
+        final int tier = tierOf(island, "boss-damage");
+        if (tier <= 0) {
+            return;
+        }
+        final List<String> bosses =
+                plugin.getConfig().getStringList("island.upgrades.boss-damage.boss-types");
+        if (!bosses.contains(event.getEntity().getType().name())) {
+            return;
+        }
+        final double mult = 1.0 + tier
+                * cfgPercent("boss-damage", "damage-percent-per-level", 10) / 100.0;
+        event.setDamage(event.getDamage() * mult);
     }
 
     /** The felled trunk replants a sapling and bonemeals it. */
