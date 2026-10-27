@@ -71,25 +71,14 @@ public final class EnchantEngine implements Listener {
             Material.JIGSAW,
             Material.SPAWNER);
 
-    private static final int STORE_SWEEP_THRESHOLD = 64;
     private static final double MAX_DAMAGE_MULT = 10.0;
 
     private final CoreMCPlugin plugin;
     private final EnchantDropPipeline dropPipeline;
-    private final Random random = new Random();
+    private final EnchantRuntimeState runtimeState = new EnchantRuntimeState();
     private final ThreadLocal<Boolean> guarded = ThreadLocal.withInitial(() -> Boolean.FALSE);
-
-    private final Map<UUID, Map<String, Long>> cooldowns = new ConcurrentHashMap<>();
-    private final Map<UUID, Map<String, ComboState>> combos = new ConcurrentHashMap<>();
-    private final Map<UUID, TempBoost> tempBoosts = new ConcurrentHashMap<>();
     /** Misconfigured names already warned about (warn-once, no log spam). */
     private final Set<String> badNames = ConcurrentHashMap.newKeySet();
-
-    private record ComboState(int stacks, long expiresAt) {
-    }
-
-    private record TempBoost(double xpPct, double dropsPct, long expiresAt) {
-    }
 
     /** Pipeline context for the shared drop stage. */
     public record DropContext(
@@ -108,7 +97,7 @@ public final class EnchantEngine implements Listener {
      */
     public EnchantEngine(final CoreMCPlugin plugin) {
         this.plugin = plugin;
-        this.dropPipeline = new EnchantDropPipeline(plugin, this);
+        this.dropPipeline = new EnchantDropPipeline(plugin, this, runtimeState);
     }
 
     /** Quit hook: transient stores never outlive the session. */
@@ -183,43 +172,23 @@ public final class EnchantEngine implements Listener {
 
     /** Chance roll: 1+ always, 0- never, else uniform. */
     public boolean roll(final double chance) {
-        if (chance >= 1.0) {
-            return true;
-        }
-        if (chance <= 0.0) {
-            return false;
-        }
-        return random.nextDouble() < chance;
+        return runtimeState.roll(chance);
     }
 
     public Random random() {
-        return random;
+        return runtimeState.random();
     }
 
     // ------------------------------------------------------------------ cooldowns
 
     /** Whether {@code enchant}'s cooldown has expired for the player. */
     public boolean cooldownReady(final UUID player, final Enchant enchant) {
-        if (enchant.cooldownSeconds() <= 0L) {
-            return true;
-        }
-        final Map<String, Long> playerCooldowns = cooldowns.get(player);
-        if (playerCooldowns == null) {
-            return true;
-        }
-        final Long last = playerCooldowns.get(enchant.id());
-        return last == null || System.currentTimeMillis() - last >= enchant.cooldownSeconds() * 1000L;
+        return runtimeState.cooldownReady(player, enchant);
     }
 
     /** Starts {@code enchant}'s cooldown for the player (call when the effect FIRES). */
     public void markCooldown(final UUID player, final String enchantId) {
-        final Map<String, Long> playerCooldowns =
-                cooldowns.computeIfAbsent(player, ignored -> new ConcurrentHashMap<>());
-        playerCooldowns.put(enchantId, System.currentTimeMillis());
-        if (playerCooldowns.size() > STORE_SWEEP_THRESHOLD) {
-            final long now = System.currentTimeMillis();
-            playerCooldowns.entrySet().removeIf(entry -> now - entry.getValue() > 3_600_000L);
-        }
+        runtimeState.markCooldown(player, enchantId);
     }
 
     // ------------------------------------------------------------------ combos
@@ -230,31 +199,12 @@ public final class EnchantEngine implements Listener {
      */
     public int recordCombo(final UUID player, final String enchantId, final long windowSeconds,
             final int maxStacks) {
-        final long now = System.currentTimeMillis();
-        final Map<String, ComboState> playerCombos =
-                combos.computeIfAbsent(player, ignored -> new ConcurrentHashMap<>());
-        final ComboState current = playerCombos.get(enchantId);
-        final int stacks = current == null || now >= current.expiresAt()
-                ? 1
-                : Math.min(maxStacks, current.stacks() + 1);
-        playerCombos.put(enchantId, new ComboState(stacks, now + windowSeconds * 1000L));
-        if (playerCombos.size() > STORE_SWEEP_THRESHOLD) {
-            playerCombos.entrySet().removeIf(entry -> now >= entry.getValue().expiresAt());
-        }
-        return stacks;
+        return runtimeState.recordCombo(player, enchantId, windowSeconds, maxStacks);
     }
 
     /** Current live stacks (0 when expired or never started). */
     public int comboStacks(final UUID player, final String enchantId, final long windowSeconds) {
-        final Map<String, ComboState> playerCombos = combos.get(player);
-        if (playerCombos == null) {
-            return 0;
-        }
-        final ComboState current = playerCombos.get(enchantId);
-        if (current == null || System.currentTimeMillis() >= current.expiresAt()) {
-            return 0;
-        }
-        return current.stacks();
+        return runtimeState.comboStacks(player, enchantId);
     }
 
     /**
@@ -322,35 +272,22 @@ public final class EnchantEngine implements Listener {
     /** Starts a temporary boost (TEMP_BOOST / OVERDRIVE ultimates). */
     public void setTempBoost(final UUID player, final double xpPct, final double dropsPct,
             final long durationMillis) {
-        tempBoosts.put(player, new TempBoost(xpPct, dropsPct, System.currentTimeMillis() + durationMillis));
+        runtimeState.setTempBoost(player, xpPct, dropsPct, durationMillis);
     }
 
     /** Live temporary XP percent (0 when expired). */
     public double tempXpPct(final UUID player) {
-        return tempBoost(player).xpPct();
+        return runtimeState.tempXpPct(player);
     }
 
     /** Live temporary drops percent (0 when expired). */
     public double tempDropsPct(final UUID player) {
-        return tempBoost(player).dropsPct();
-    }
-
-    private TempBoost tempBoost(final UUID player) {
-        final TempBoost boost = tempBoosts.get(player);
-        if (boost == null || System.currentTimeMillis() >= boost.expiresAt()) {
-            if (boost != null) {
-                tempBoosts.remove(player);
-            }
-            return new TempBoost(0.0, 0.0, 0L);
-        }
-        return boost;
+        return runtimeState.tempDropsPct(player);
     }
 
     /** Clears every transient entry for a quitting player. */
     public void clearPlayer(final UUID player) {
-        cooldowns.remove(player);
-        combos.remove(player);
-        tempBoosts.remove(player);
+        runtimeState.clearPlayer(player);
     }
 
     // ------------------------------------------------------------------ grants
@@ -424,7 +361,7 @@ public final class EnchantEngine implements Listener {
             if (!roll(roll.chance())) {
                 continue;
             }
-            final int amount = roll.rollAmount(random);
+            final int amount = roll.rollAmount(runtimeState.random());
             switch (roll.type()) {
                 case ITEM -> {
                     final Material material = resolveMaterial(roll.material(), null);

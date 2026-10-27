@@ -105,3 +105,5 @@ Hermes audited the clean baseline read-only and recommended the phases and first
 - Island deletion now delegates to IslandDeletionCoordinator; it persists tombstones before registry removal, then purges invites/activity, rescues online players, and queues profile-association cleanup before file deletion on the island I/O lane.
 
 - The custom-enchant block and kill drop lifecycle now lives in EnchantDropPipeline. The existing EnchantEngine methods remain as compatibility facades; smelting, bonus rolls, magnet collection, depth/material filters, and cloned kill extras retain their prior ordering and behavior. Clean production packaging compiled all 125 sources; tests were skipped.
+
+- Cooldowns, combo stacks, random rolls, temporary boosts, and quit cleanup now live in EnchantRuntimeState shared by the engine and drop pipeline. The Bukkit recursion guard remains in the engine, and existing public engine methods and profile enchant IDs are unchanged. Clean production packaging compiled all 126 sources; tests were skipped.

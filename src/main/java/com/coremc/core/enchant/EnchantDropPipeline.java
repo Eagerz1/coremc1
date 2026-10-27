@@ -16,10 +16,13 @@ final class EnchantDropPipeline {
 
     private final CoreMCPlugin plugin;
     private final EnchantEngine engine;
+    private final EnchantRuntimeState runtimeState;
 
-    EnchantDropPipeline(final CoreMCPlugin plugin, final EnchantEngine engine) {
+    EnchantDropPipeline(final CoreMCPlugin plugin, final EnchantEngine engine,
+            final EnchantRuntimeState runtimeState) {
         this.plugin = plugin;
         this.engine = engine;
+        this.runtimeState = runtimeState;
     }
 
     /**
@@ -76,11 +79,11 @@ final class EnchantDropPipeline {
             if (enchant.effect() != EnchantEffect.SMELT) {
                 continue;
             }
-            if (!engine.roll(enchant.chanceAt(owned.level()))
-                    || !engine.cooldownReady(ctx.player().getUniqueId(), enchant)) {
+            if (!runtimeState.roll(enchant.chanceAt(owned.level()))
+                    || !runtimeState.cooldownReady(ctx.player().getUniqueId(), enchant)) {
                 continue;
             }
-            engine.markCooldown(ctx.player().getUniqueId(), enchant.id());
+            runtimeState.markCooldown(ctx.player().getUniqueId(), enchant.id());
             final List<ItemStack> converted = new ArrayList<>(current.size());
             for (final ItemStack stack : current) {
                 final Material out = EnchantBlocks.smeltResult(stack.getType(), enchant.values(), engine);
@@ -97,17 +100,17 @@ final class EnchantDropPipeline {
             return;
         }
         final double mult = engine.comboMultiplier(ctx.profile(), ctx.roleKey(), "DROPS")
-                * (1.0 + engine.tempDropsPct(ctx.player().getUniqueId()) / 100.0);
+                * (1.0 + runtimeState.tempDropsPct(ctx.player().getUniqueId()) / 100.0);
         for (final EnchantService.EnchantLevel owned : ctx.active()) {
             final Enchant enchant = owned.enchant();
             if (enchant.effect() != EnchantEffect.DROP_BONUS) {
                 continue;
             }
-            if (!engine.roll(enchant.chanceAt(owned.level()))
-                    || !engine.cooldownReady(ctx.player().getUniqueId(), enchant)) {
+            if (!runtimeState.roll(enchant.chanceAt(owned.level()))
+                    || !runtimeState.cooldownReady(ctx.player().getUniqueId(), enchant)) {
                 continue;
             }
-            engine.markCooldown(ctx.player().getUniqueId(), enchant.id());
+            runtimeState.markCooldown(ctx.player().getUniqueId(), enchant.id());
             final int amount = Math.max(1, (int) Math.floor(enchant.valueAt(owned.level()) * mult));
             dupeFiltered(base, amount, EnchantEngine.stringList(enchant.values(), "only-materials"), extras);
         }
@@ -118,11 +121,11 @@ final class EnchantDropPipeline {
             if (maxY != Long.MIN_VALUE && ctx.block().getY() > maxY) {
                 continue;
             }
-            if (!engine.roll(enchant.chanceAt(owned.level()))
-                    || !engine.cooldownReady(ctx.player().getUniqueId(), enchant)) {
+            if (!runtimeState.roll(enchant.chanceAt(owned.level()))
+                    || !runtimeState.cooldownReady(ctx.player().getUniqueId(), enchant)) {
                 continue;
             }
-            engine.markCooldown(ctx.player().getUniqueId(), enchant.id());
+            runtimeState.markCooldown(ctx.player().getUniqueId(), enchant.id());
             final int amount = Math.max(1, (int) Math.floor(enchant.valueAt(owned.level()) * mult));
             dupeFiltered(base, amount, EnchantEngine.stringList(enchant.values(), "only-materials"), extras);
         }
@@ -135,11 +138,11 @@ final class EnchantDropPipeline {
             if (enchant.effect() != EnchantEffect.MAGNET) {
                 continue;
             }
-            if (!engine.roll(enchant.chanceAt(owned.level()))
-                    || !engine.cooldownReady(ctx.player().getUniqueId(), enchant)) {
+            if (!runtimeState.roll(enchant.chanceAt(owned.level()))
+                    || !runtimeState.cooldownReady(ctx.player().getUniqueId(), enchant)) {
                 continue;
             }
-            engine.markCooldown(ctx.player().getUniqueId(), enchant.id());
+            runtimeState.markCooldown(ctx.player().getUniqueId(), enchant.id());
             fallback = EnchantEngine.stringValue(enchant.values(), "fallback", "DROP");
         }
         return fallback;
@@ -153,18 +156,18 @@ final class EnchantDropPipeline {
             return;
         }
         final double mult = engine.comboMultiplier(profile, roleKey, "DROPS")
-                * (1.0 + engine.tempDropsPct(player.getUniqueId()) / 100.0);
+                * (1.0 + runtimeState.tempDropsPct(player.getUniqueId()) / 100.0);
         final List<ItemStack> extras = new ArrayList<>();
         for (final EnchantService.EnchantLevel owned : active) {
             final Enchant enchant = owned.enchant();
             if (enchant.effect() != EnchantEffect.DROP_BONUS) {
                 continue;
             }
-            if (!engine.roll(enchant.chanceAt(owned.level()))
-                    || !engine.cooldownReady(player.getUniqueId(), enchant)) {
+            if (!runtimeState.roll(enchant.chanceAt(owned.level()))
+                    || !runtimeState.cooldownReady(player.getUniqueId(), enchant)) {
                 continue;
             }
-            engine.markCooldown(player.getUniqueId(), enchant.id());
+            runtimeState.markCooldown(player.getUniqueId(), enchant.id());
             dupeFiltered(deathDrops,
                     Math.max(1, (int) Math.floor(enchant.valueAt(owned.level()) * mult)),
                     EnchantEngine.stringList(enchant.values(), "only-materials"), extras);
@@ -175,11 +178,11 @@ final class EnchantDropPipeline {
             if (enchant.values().containsKey("max-y")) {
                 continue;
             }
-            if (!engine.roll(enchant.chanceAt(owned.level()))
-                    || !engine.cooldownReady(player.getUniqueId(), enchant)) {
+            if (!runtimeState.roll(enchant.chanceAt(owned.level()))
+                    || !runtimeState.cooldownReady(player.getUniqueId(), enchant)) {
                 continue;
             }
-            engine.markCooldown(player.getUniqueId(), enchant.id());
+            runtimeState.markCooldown(player.getUniqueId(), enchant.id());
             dupeFiltered(deathDrops,
                     Math.max(1, (int) Math.floor(enchant.valueAt(owned.level()) * mult)),
                     EnchantEngine.stringList(enchant.values(), "only-materials"), extras);
