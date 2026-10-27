@@ -289,11 +289,7 @@ public final class SpawnerService {
                 continue;
             }
             final String key = entry.getKey();
-            final int split = key.indexOf(':');
-            if (split < 0) {
-                continue;
-            }
-            final World world = Bukkit.getWorld(key.substring(0, split));
+            final World world = Bukkit.getWorld(placement.worldName());
             if (world == null || !world.isChunkLoaded(placement.x() >> 4, placement.z() >> 4)) {
                 stalled.remove(key);
                 continue;
@@ -553,24 +549,26 @@ public final class SpawnerService {
         }
         final String price = String.format(Locale.ROOT, "%,d", ref.tier().priceSkyTokens());
         final boolean free = ref.tier().priceSkyTokens() <= 0L;
-        if (!free && !plugin.economy().withdraw(profile, Currency.SKY_TOKENS, ref.tier().priceSkyTokens())) {
-            plugin.messages().sendPrefixed(player, "spawner.insufficient", Map.of("price", price));
-            return false;
-        }
-        final ItemStack item = mint(ref);
-        final var delivery = com.coremc.core.util.ItemDelivery.deliverDetailed(player, item);
-        if (delivery == com.coremc.core.util.ItemDelivery.Result.FAILED) {
-            if (!free) {
-                plugin.economy().deposit(profile, Currency.SKY_TOKENS, ref.tier().priceSkyTokens());
+        synchronized (profile) {
+            if (!free && !plugin.economy().withdraw(profile, Currency.SKY_TOKENS, ref.tier().priceSkyTokens())) {
+                plugin.messages().sendPrefixed(player, "spawner.insufficient", Map.of("price", price));
+                return false;
             }
-            plugin.messages().sendPrefixed(player, "purchase.no-space", Map.of());
-            return false;
+            final ItemStack item = mint(ref);
+            final var delivery = com.coremc.core.util.ItemDelivery.deliverDetailed(player, item);
+            if (delivery == com.coremc.core.util.ItemDelivery.Result.FAILED) {
+                if (!free) {
+                    plugin.economy().deposit(profile, Currency.SKY_TOKENS, ref.tier().priceSkyTokens());
+                }
+                plugin.messages().sendPrefixed(player, "purchase.no-space", Map.of());
+                return false;
+            }
+            if (delivery == com.coremc.core.util.ItemDelivery.Result.DELIVERED_TO_ENDER_CHEST) {
+                plugin.messages().sendPrefixed(player, "gen.bought-enderchest", Map.of());
+            }
+            plugin.messages().sendPrefixed(
+                    player, "spawner.bought", Map.of("name", ref.tier().colouredDisplay(), "price", price));
+            return true;
         }
-        if (delivery == com.coremc.core.util.ItemDelivery.Result.DELIVERED_TO_ENDER_CHEST) {
-            plugin.messages().sendPrefixed(player, "gen.bought-enderchest", Map.of());
-        }
-        plugin.messages().sendPrefixed(
-                player, "spawner.bought", Map.of("name", ref.tier().colouredDisplay(), "price", price));
-        return true;
     }
 }

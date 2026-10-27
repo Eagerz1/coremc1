@@ -42,14 +42,20 @@ public final class YamlIslandDataStore implements IslandDataStore {
 
     @Override
     public void save(final Island island) throws IOException {
+        saveSnapshot(island.toMap());
+    }
+
+    @Override
+    public void saveSnapshot(final Map<String, Object> islandData) throws IOException {
         Files.createDirectories(directory);
 
         final YamlConfiguration yaml = new YamlConfiguration();
-        for (final Map.Entry<String, Object> entry : island.toMap().entrySet()) {
+        for (final Map.Entry<String, Object> entry : islandData.entrySet()) {
             yaml.set("island." + entry.getKey(), entry.getValue());
         }
 
-        final Path target = fileFor(island.owner());
+        final UUID owner = UUID.fromString(String.valueOf(islandData.get("owner")));
+        final Path target = fileFor(owner);
         final Path temp = target.resolveSibling(target.getFileName() + ".tmp");
         Files.write(temp, yaml.saveToString().getBytes(StandardCharsets.UTF_8));
         try {

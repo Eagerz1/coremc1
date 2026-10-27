@@ -32,6 +32,16 @@ public final class GuiService implements Listener {
         this.plugin = plugin;
     }
 
+    /** Rebuilds the currently open CoreMC menu after an asynchronous state commit. */
+    public void refresh(final Player player) {
+        final Inventory inventory = player.getOpenInventory().getTopInventory();
+        if (!(inventory.getHolder(false) instanceof GuiHolder holder)) {
+            return;
+        }
+        inventory.clear();
+        holder.gui().build(player, inventory);
+    }
+
     public void open(final Player player, final Gui gui) {
         final GuiHolder holder = new GuiHolder(gui);
         final Inventory inventory =
@@ -41,7 +51,7 @@ public final class GuiService implements Listener {
         player.openInventory(inventory);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onClick(final InventoryClickEvent event) {
         if (!(event.getInventory().getHolder(false) instanceof GuiHolder holder)) {
             return;

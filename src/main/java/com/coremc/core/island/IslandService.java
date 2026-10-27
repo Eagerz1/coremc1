@@ -1,798 +1,1250 @@
 package com.coremc.core.island;
 
+import com.coremc.core.CoreMCPlugin;
 import com.coremc.core.config.CoreConfig;
+import com.coremc.core.economy.Currency;
 import com.coremc.core.player.PlayerDataService;
 import com.coremc.core.player.PlayerProfile;
 import com.coremc.core.scheduler.TaskService;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.TreeType;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-/**
- * Owns islands: registry (by owner / member / id / grid cell), spiral
- * grid assignment, starter-island generation, team membership, invites,
- * border protection lookups and lifecycle.
- *
- * The full registry is loaded once at startup (async), then mutated on
- * the main thread. Island files save eagerly on every structural
- * change; disk I/O runs on a dedicated daemon executor so the main
- * thread never blocks on disk.
- *
- * Ghost-data guarantees (see deleteIsland):
- *  - member associations are scrubbed from every profile (online AND
- *    offline) before the island file is removed,
- *  - pending invites referencing the island are purged,
- *  - teleport paths resolve only the live registry, so a deleted island
- *    can never be teleported to,
- *  - profiles loaded later self-heal unknown associations at join.
- */
 public final class IslandService {
+   private final JavaPlugin plugin;
+   private final Logger logger;
+   private final CoreConfig config;
+   private final IslandDataStore store;
+   private final PlayerDataService playerData;
+   private final ThemeService themes;
+   private final TaskService taskService;
+   private final Map<UUID, Island> islandsByOwner = new ConcurrentHashMap();
+   private final Map<UUID, Island> islandsById = new ConcurrentHashMap();
+   private final Map<UUID, Island> islandsByMember = new ConcurrentHashMap();
+   private final Map<String, Island> islandsByCell = new ConcurrentHashMap();
+   private final Set<String> usedCells = ConcurrentHashMap.newKeySet();
+   private final Set<String> retiredCells = ConcurrentHashMap.newKeySet();
+   private final Set<UUID> deletedIslandIds = ConcurrentHashMap.newKeySet();
+   private final Path retiredCellsFile;
+   private final IslandPurchaseJournal purchaseJournal;
+   private final java.util.concurrent.atomic.AtomicBoolean purchaseInProgress = new java.util.concurrent.atomic.AtomicBoolean();
+   private final MemberInviteLedger invites = new MemberInviteLedger();
+   private final Set<UUID> dirtyIslands = ConcurrentHashMap.newKeySet();
+   private final Set<UUID> pendingCreations = ConcurrentHashMap.newKeySet();
+   private final Set<UUID> pendingKicks = ConcurrentHashMap.newKeySet();
+   private final Set<UUID> pendingLeaves = ConcurrentHashMap.newKeySet();
+   private final Set<String> pendingCells = ConcurrentHashMap.newKeySet();
+   private final Map<String, Island> pendingIslandsByCell = new ConcurrentHashMap<>();
+   private final ExecutorService io = Executors.newSingleThreadExecutor((runnable) -> {
+      Thread thread = new Thread(runnable, "CoreMC-Islands");
+      thread.setDaemon(true);
+      return thread;
+   });
+   private volatile boolean loaded = false;
+   private static final int PLATFORM_RADIUS = 3;
 
-    private final JavaPlugin plugin;
-    private final Logger logger;
-    private final CoreConfig config;
-    private final IslandDataStore store;
-    private final PlayerDataService playerData;
+   public IslandService(JavaPlugin plugin, CoreConfig config, IslandDataStore store, PlayerDataService playerData, ThemeService themes, TaskService taskService, Path islandFolder) {
+      this.plugin = plugin;
+      this.logger = plugin.getLogger();
+      this.config = config;
+      this.store = store;
+      this.playerData = playerData;
+      this.themes = themes;
+      this.taskService = taskService;
+      this.retiredCellsFile = islandFolder.resolve("deleted-cells.txt");
+      this.purchaseJournal = new IslandPurchaseJournal(plugin.getDataFolder().toPath().resolve("data/island-purchase.yml"));
+   }
 
-    private final Map<UUID, Island> islandsByOwner = new ConcurrentHashMap<>();
-    private final Map<UUID, Island> islandsById = new ConcurrentHashMap<>();
-    /** member uuid -> island (rebuilt on load; owner is NOT in this map). */
-    private final Map<UUID, Island> islandsByMember = new ConcurrentHashMap<>();
-    private final Map<String, Island> islandsByCell = new ConcurrentHashMap<>();
-    private final Set<String> usedCells = ConcurrentHashMap.newKeySet();
-    /**
-     * Cells a DELETED island once occupied. On top of {@link #usedCells} the
-     * spiral never assigns them again, so a fresh island can never spawn on
-     * top of the old island's leftover platform blocks (ghost-reuse guard).
-     * Persisted in {@code islands/deleted-cells.txt}.
-     */
-    private final Set<String> retiredCells = ConcurrentHashMap.newKeySet();
-    private final java.nio.file.Path retiredCellsFile;
-    private final MemberInviteLedger invites = new MemberInviteLedger();
-    /**
-     * Islands with unflushed progression (xp/stats/level). Drained every
-     * minute by the progress timer and on shutdown — per-action disk
-     * writes would be a performance disaster.
-     */
-    private final Set<UUID> dirtyIslands = ConcurrentHashMap.newKeySet();
-
-    private final ExecutorService io = Executors.newSingleThreadExecutor(runnable -> {
-        final Thread thread = new Thread(runnable, "CoreMC-Islands");
-        thread.setDaemon(true);
-        return thread;
-    });
-
-    private volatile boolean loaded = false;
-
-    public IslandService(
-            final JavaPlugin plugin,
-            final CoreConfig config,
-            final IslandDataStore store,
-            final PlayerDataService playerData,
-            final java.nio.file.Path islandFolder) {
-        this.plugin = plugin;
-        this.logger = plugin.getLogger();
-        this.config = config;
-        this.store = store;
-        this.playerData = playerData;
-        this.retiredCellsFile = islandFolder.resolve("deleted-cells.txt");
-    }
-
-    /** Loads the registry from disk on the I/O executor. */
-    public void start() {
-        io.execute(() -> {
-            try {
-                loadRetiredCells();
-                for (final Island island : store.loadAll()) {
-                    register(island);
-                }
-                logger.info("Loaded " + islandsByOwner.size() + " island(s) (" + retiredCells.size()
-                        + " retired cell(s) reserved).");
-            } catch (final IOException exception) {
-                logger.log(Level.SEVERE, "Failed to load islands — island commands may misbehave.", exception);
-            } finally {
-                loaded = true;
-            }
-        });
-    }
-
-    private void loadRetiredCells() {
-        if (!java.nio.file.Files.exists(retiredCellsFile)) {
+   public void start() {
+      int spacing = this.config.islandSpacing();
+      this.io.execute(() -> {
+         List<Island> loadedIslands;
+         List<Island> persistedIslands;
+         try {
+            this.loadRetiredCells();
+            loadedIslands = this.discardRetiredIslandRecords(new ArrayList(this.store.loadAll()), spacing);
+            // Resolve purchase journals only against live islands; never charge for a tombstoned record.
+            this.recoverPendingPurchase(loadedIslands);
+            persistedIslands = loadedIslands;
+         } catch (RuntimeException | IOException exception) {
+            this.logger.log(Level.SEVERE, "Failed to load islands; island commands remain unavailable.", exception);
             return;
-        }
-        try {
-            retiredCells.addAll(java.nio.file.Files.readAllLines(retiredCellsFile));
-        } catch (final IOException exception) {
-            logger.log(Level.WARNING, "Could not read deleted-cells.txt — ghost reuse guard in-memory only.",
-                    exception);
-        }
-    }
+         }
 
-    private void persistRetiredCells() {
-        try {
-            java.nio.file.Files.createDirectories(retiredCellsFile.getParent());
-            java.nio.file.Files.write(retiredCellsFile, new java.util.ArrayList<>(retiredCells));
-        } catch (final IOException exception) {
-            logger.log(Level.WARNING, "Could not persist deleted-cells.txt — guard resets on restart.", exception);
-        }
-    }
+         this.runCreationCallback(() -> this.recoverAndPublish(persistedIslands, spacing), "load island registry");
+      });
+   }
 
-    /** Whether the registry finished loading (commands wait for this). */
-    public boolean isLoaded() {
-        return loaded;
-    }
+   private void recoverPendingPurchase(List<Island> persistedIslands) throws IOException {
+      Optional<IslandPurchaseJournal.Pending> pending = this.purchaseJournal.load();
+      if (pending.isEmpty()) return;
+      IslandPurchaseJournal.Pending transaction = pending.get();
+      Island island = persistedIslands.stream()
+            .filter(candidate -> candidate.islandId().equals(transaction.islandId()))
+            .findFirst().orElseThrow(() -> new IOException("Pending island purchase refers to missing island " + transaction.islandId()));
+      PlayerProfile profile;
+      try {
+         profile = this.playerData.loadForPersistence(transaction.playerId()).get(10L, TimeUnit.SECONDS)
+               .orElseThrow(() -> new IOException("Cannot load profile for pending island purchase " + transaction.id()));
+      } catch (InterruptedException exception) {
+         Thread.currentThread().interrupt();
+         throw new IOException("Interrupted while loading profile for island purchase " + transaction.id(), exception);
+      } catch (ExecutionException | TimeoutException exception) {
+         throw new IOException("Could not load profile for island purchase " + transaction.id(), exception);
+      }
+      if (!transaction.id().equals(profile.lastIslandPurchaseId())) {
+         profile.lastIslandPurchaseId(transaction.id());
+         ((CoreMCPlugin)this.plugin).economy().setBalance(profile, Currency.SKY_TOKENS, transaction.balanceAfter());
+      }
+      if (transaction.kind().equals("upgrade")) {
+         int current = island.upgrades().getOrDefault(transaction.key(), 0);
+         if (current < transaction.tier()) island.setUpgradeTier(transaction.key(), transaction.tier());
+      } else {
+         int current = island.buffs().getOrDefault(transaction.key(), 0);
+         if (current < transaction.tier()) island.setBuffTier(transaction.key(), transaction.tier());
+      }
+      try {
+         if (!this.playerData.persistAndWait(profile).get(10L, TimeUnit.SECONDS)) {
+            throw new IOException("Profile save failed while recovering purchase " + transaction.id());
+         }
+         this.store.saveSnapshot(island.toMap());
+         this.purchaseJournal.clear();
+      } catch (InterruptedException exception) {
+         Thread.currentThread().interrupt();
+         throw new IOException("Interrupted while recovering island purchase " + transaction.id(), exception);
+      } catch (ExecutionException | TimeoutException exception) {
+         throw new IOException("Could not save profile while recovering island purchase " + transaction.id(), exception);
+      }
+      this.logger.info("Recovered interrupted island purchase " + transaction.id() + ".");
+   }
+   private void recoverAndPublish(List<Island> persistedIslands, int spacing) {
+      try {
+         validatePersistedIslands(persistedIslands, spacing);
+      } catch (IllegalStateException exception) {
+         this.logger.log(Level.SEVERE, "Island data contains conflicting owners, members, IDs, or grid cells; island commands remain unavailable until the data is repaired.", exception);
+         return;
+      }
 
-    // ------------------------------------------------------------------ lookups
+      List<Island> pending = persistedIslands.stream().filter(Island::creationPending).toList();
 
-    /** Island OWNED by this player (null if they only belong to someone else's). */
-    public Optional<Island> ownedIsland(final UUID owner) {
-        return Optional.ofNullable(islandsByOwner.get(owner));
-    }
-
-    /** Island this player owns OR belongs to. This is the /is home/info island. */
-    public Optional<Island> islandOf(final UUID player) {
-        final Island owned = islandsByOwner.get(player);
-        if (owned != null) {
-            return Optional.of(owned);
-        }
-        return Optional.ofNullable(islandsByMember.get(player));
-    }
-
-    public Optional<Island> islandById(final UUID islandId) {
-        return Optional.ofNullable(islandsById.get(islandId));
-    }
-
-    /**
-     * Island whose protected border contains (worldName, x, z).
-     *
-     * Island centres sit on grid corners ({@code cell * spacing}), so a
-     * border straddles up to FOUR cells — probing only the point's own
-     * cell resolves just the south-east quadrant. Centres are spacing
-     * apart and borders never exceed spacing (config-clamped), so at
-     * most one island can contain the point: probe the 2x2 candidate
-     * neighbourhood, containment-test each hit, first match wins.
-     * Still O(1) — four hash lookups, no scans.
-     */
-    public Optional<Island> islandAt(final String worldName, final int x, final int z) {
-        final int spacing = config.islandSpacing();
-        for (final int[] cell : candidateCells(x, z, spacing)) {
-            final Island island = islandsByCell.get(GridAssigner.key(cell[0], cell[1], worldName));
-            if (island != null && containsBlock(island, x, z)) {
-                return Optional.of(island);
+      try {
+         for(Island island : pending) {
+            World world = Bukkit.getWorld(island.worldName());
+            if (world == null) {
+               throw new IllegalStateException("Island world '" + island.worldName() + "' is not loaded");
             }
-        }
-        return Optional.empty();
-    }
 
-    /**
-     * The 2x2 grid cells whose corner-centred islands can reach (x, z):
-     * the point's own cell plus its +x/+z neighbours. Pure (unit-tested).
-     */
-    static List<int[]> candidateCells(final int x, final int z, final int spacing) {
-        final int i = Math.floorDiv(x, spacing);
-        final int j = Math.floorDiv(z, spacing);
-        return List.of(new int[] {i, j}, new int[] {i + 1, j}, new int[] {i, j + 1}, new int[] {i + 1, j + 1});
-    }
+            IslandTheme theme = this.themes.theme(island.theme()).orElse(null);
+            if (theme == null) {
+               Logger var10000 = this.logger;
+               String var10001 = island.theme();
+               var10000.warning("Missing theme '" + var10001 + "' while recovering island " + String.valueOf(island.islandId()) + "; using the default starter platform.");
+            }
 
-    public int islandCount() {
-        return islandsByOwner.size();
-    }
+            this.generateStarterIsland(world, island, theme);
+            island.creationPending(false);
+         }
+      } catch (RuntimeException exception) {
+         this.logger.log(Level.SEVERE, "Could not recover pending island creation; island commands remain unavailable.", exception);
+         return;
+      }
 
-    /** Snapshot of every live island (for timers that tick island-scoped effects). */
-    public List<Island> allIslands() {
-        return List.copyOf(islandsByOwner.values());
-    }
+      if (pending.isEmpty()) {
+         this.publishLoadedIslands(persistedIslands, spacing);
+      } else {
+         try {
+            this.io.execute(() -> {
+               try {
+                  for(Island island : pending) {
+                     this.store.save(island);
+                  }
+               } catch (IOException exception) {
+                  pending.forEach((islandx) -> islandx.creationPending(true));
+                  this.logger.log(Level.SEVERE, "Could not persist recovered island creations; island commands remain unavailable.", exception);
+                  return;
+               }
 
-    /** The configured island world, or empty if it does not exist. */
-    public Optional<World> islandWorld() {
-        return Optional.ofNullable(Bukkit.getWorld(config.islandWorldName()));
-    }
+               this.runCreationCallback(() -> this.publishLoadedIslands(persistedIslands, spacing), "publish recovered island registry");
+            });
+         } catch (RejectedExecutionException exception) {
+            pending.forEach((islandx) -> islandx.creationPending(true));
+            this.logger.log(Level.WARNING, "Island storage stopped before recovered islands could be saved.", exception);
+         }
 
-    /** Total member capacity for an island (base config + purchased member-slot upgrades). */
-    public int memberCapacity(final Island island) {
-        return config.islandMemberSlots() + island.upgrades().getOrDefault("member-slots", 0);
-    }
+      }
+   }
 
-    /**
-     * Protected border width including purchased border tiers: absolute
-     * widths from the sizes list when configured (50 -> 200), else the
-     * legacy base + tiers × step.
-     */
-    public int effectiveBorder(final Island island) {
-        final int tier = island.upgrades().getOrDefault("border", 0);
-        final java.util.List<Integer> sizes = config.upgradeBorderSizes();
-        if (!sizes.isEmpty()) {
-            return sizes.get(Math.min(tier, sizes.size() - 1));
-        }
-        return island.borderSize() + tier * config.upgradeBorderStepBlocks();
-    }
+   private void publishLoadedIslands(List<Island> persistedIslands, int spacing) {
+      for(Island island : persistedIslands) {
+         this.register(island, spacing);
+      }
 
-    /** (x,z) containment against the island's EFFECTIVE (upgraded) border. */
-    public boolean containsBlock(final Island island, final int x, final int z) {
-        final int half = effectiveBorder(island) / 2;
-        return x >= island.centerX() - half && x < island.centerX() + half
-                && z >= island.centerZ() - half && z < island.centerZ() + half;
-    }
+      Logger var10000 = this.logger;
+      int var10001 = this.islandsByOwner.size();
+      var10000.info("Loaded " + var10001 + " island(s) (" + this.retiredCells.size() + " retired cell(s) reserved).");
+      this.loaded = true;
 
-    /**
-     * Attempts to buy the next tier of {@code upgradeId} with Sky Tokens.
-     * Failure modes are exact (maxed / insufficient) and the island file is
-     * flushed immediately on success.
-     */
-    public boolean purchaseUpgrade(final org.bukkit.entity.Player player, final Island island, final String upgradeId) {
-        final int tier = island.upgrades().getOrDefault(upgradeId, 0);
-        final int maxTier = config.upgradeMaxTier(upgradeId);
-        if (tier >= maxTier) {
-            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.maxed", Map.of());
+      for(Player player : Bukkit.getOnlinePlayers()) {
+         this.playerData.profileOf(player.getUniqueId()).ifPresent(this::reconcileAssociation);
+      }
+
+   }
+
+   private static void validatePersistedIslands(List<Island> persistedIslands, int spacing) {
+      Set<UUID> islandIds = new HashSet();
+      Set<String> cells = new HashSet();
+      Map<UUID, UUID> playerAssignments = new HashMap();
+
+      for(Island island : persistedIslands) {
+         if (!islandIds.add(island.islandId())) {
+            throw new IllegalStateException("Duplicate island ID " + String.valueOf(island.islandId()));
+         }
+
+         int[] cell = island.gridCell(spacing);
+         String cellKey = GridAssigner.key(cell[0], cell[1], island.worldName());
+         if (!cells.add(cellKey)) {
+            throw new IllegalStateException("Multiple islands resolve to grid cell " + cellKey);
+         }
+
+         UUID ownerConflict = (UUID)playerAssignments.putIfAbsent(island.owner(), island.islandId());
+         if (ownerConflict != null) {
+            String var13 = String.valueOf(island.owner());
+            throw new IllegalStateException("Player " + var13 + " owns multiple islands (" + String.valueOf(ownerConflict) + ", " + String.valueOf(island.islandId()) + ")");
+         }
+
+         for(UUID member : island.members()) {
+            UUID assignmentConflict = (UUID)playerAssignments.putIfAbsent(member, island.islandId());
+            if (assignmentConflict != null) {
+               String var10002 = String.valueOf(member);
+               throw new IllegalStateException("Player " + var10002 + " is assigned to multiple islands (" + String.valueOf(assignmentConflict) + ", " + String.valueOf(island.islandId()) + ")");
+            }
+         }
+      }
+
+   }
+
+   public boolean isIslandWorld(String worldName) {
+      return this.config.islandWorldName().equals(worldName);
+   }
+
+   private void loadRetiredCells() throws IOException {
+      if (Files.exists(this.retiredCellsFile, new LinkOption[0])) {
+         for(String line : Files.readAllLines(this.retiredCellsFile)) {
+            if (!line.isBlank()) {
+               if (line.startsWith("island:")) {
+                  try {
+                     this.deletedIslandIds.add(UUID.fromString(line.substring("island:".length())));
+                  } catch (IllegalArgumentException exception) {
+                     throw new IOException("Invalid island tombstone in " + String.valueOf(this.retiredCellsFile) + ": " + line, exception);
+                  }
+               } else {
+                  this.retiredCells.add(line);
+               }
+            }
+         }
+
+      }
+   }
+
+   private List<Island> discardRetiredIslandRecords(List<Island> persisted, int spacing) {
+      List<Island> retained = new ArrayList(persisted.size());
+
+      for(Island island : persisted) {
+         int[] cell = island.gridCell(spacing);
+         String cellKey = GridAssigner.key(cell[0], cell[1], island.worldName());
+         if (!this.deletedIslandIds.contains(island.islandId()) && !this.retiredCells.contains(cellKey)) {
+            retained.add(island);
+         } else {
+            try {
+               this.store.delete(island.owner());
+               Logger var10000 = this.logger;
+               String var10001 = String.valueOf(island.islandId());
+               var10000.info("Removed tombstoned island file " + var10001 + " for retired cell " + cellKey);
+            } catch (IOException exception) {
+               this.logger.log(Level.WARNING, "Could not remove tombstoned island file " + String.valueOf(island.islandId()), exception);
+            }
+         }
+      }
+
+      return retained;
+   }
+
+   private void persistRetiredCells() throws IOException {
+      Path parent = this.retiredCellsFile.getParent();
+      if (parent != null) {
+         Files.createDirectories(parent);
+      }
+
+      Path temporary = this.retiredCellsFile.resolveSibling(String.valueOf(this.retiredCellsFile.getFileName()) + ".tmp");
+      List<String> sorted = new ArrayList(this.retiredCells);
+
+      for(UUID deletedIslandId : this.deletedIslandIds) {
+         sorted.add("island:" + String.valueOf(deletedIslandId));
+      }
+
+      Collections.sort(sorted);
+      String contents = sorted.isEmpty() ? "" : String.join(System.lineSeparator(), sorted) + System.lineSeparator();
+      Files.writeString(temporary, contents, StandardCharsets.UTF_8);
+
+      try {
+         Files.move(temporary, this.retiredCellsFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+      } catch (AtomicMoveNotSupportedException var6) {
+         Files.move(temporary, this.retiredCellsFile, StandardCopyOption.REPLACE_EXISTING);
+      }
+
+   }
+
+   public boolean isLoaded() {
+      return this.loaded;
+   }
+
+   public Optional<Island> ownedIsland(UUID owner) {
+      return Optional.ofNullable((Island)this.islandsByOwner.get(owner));
+   }
+
+   public Optional<Island> islandOf(UUID player) {
+      Island owned = (Island)this.islandsByOwner.get(player);
+      return owned != null ? Optional.of(owned) : Optional.ofNullable((Island)this.islandsByMember.get(player));
+   }
+
+   public Optional<Island> islandById(UUID islandId) {
+      return Optional.ofNullable((Island)this.islandsById.get(islandId));
+   }
+
+   public Optional<Island> islandAt(String worldName, int x, int z) {
+      int spacing = this.config.islandSpacing();
+
+      for(int[] cell : candidateCells(x, z, spacing)) {
+         Island island = (Island)this.islandsByCell.get(GridAssigner.key(cell[0], cell[1], worldName));
+         if (island != null && this.containsBlock(island, x, z)) {
+            return Optional.of(island);
+         }
+      }
+
+      return Optional.empty();
+   }
+
+   public boolean isCreationPending(Island island) {
+      if (island.creationPending()) return true;
+      int[] cell = island.gridCell(this.config.islandSpacing());
+      String cellKey = GridAssigner.key(cell[0], cell[1], island.worldName());
+      return this.pendingIslandsByCell.get(cellKey) == island;
+   }
+
+   public Optional<Island> islandAtForProtection(String worldName, int x, int z) {
+      Optional<Island> published = this.islandAt(worldName, x, z);
+      if (published.isPresent()) {
+         return published;
+      }
+      int spacing = this.config.islandSpacing();
+      for (int[] cell : candidateCells(x, z, spacing)) {
+         Island pending = this.pendingIslandsByCell.get(GridAssigner.key(cell[0], cell[1], worldName));
+         if (pending != null && this.containsBlock(pending, x, z)) {
+            return Optional.of(pending);
+         }
+      }
+      return Optional.empty();
+   }
+   static List<int[]> candidateCells(int x, int z, int spacing) {
+      int i = Math.floorDiv(x, spacing);
+      int j = Math.floorDiv(z, spacing);
+      return List.of(new int[]{i, j}, new int[]{i + 1, j}, new int[]{i, j + 1}, new int[]{i + 1, j + 1});
+   }
+
+   public int islandCount() {
+      return this.islandsByOwner.size();
+   }
+
+   public List<Island> allIslands() {
+      return List.copyOf(this.islandsByOwner.values());
+   }
+
+   public Optional<World> islandWorld() {
+      return Optional.ofNullable(Bukkit.getWorld(this.config.islandWorldName()));
+   }
+
+   public int memberCapacity(Island island) {
+      return this.config.islandMemberSlots() + (Integer)island.upgrades().getOrDefault("member-slots", 0);
+   }
+
+   public int effectiveBorder(Island island) {
+      int tier = (Integer)island.upgrades().getOrDefault("border", 0);
+      List<Integer> sizes = this.config.upgradeBorderSizes();
+      return !sizes.isEmpty() ? (Integer)sizes.get(Math.min(tier, sizes.size() - 1)) : island.borderSize() + tier * this.config.upgradeBorderStepBlocks();
+   }
+
+   public boolean containsBlock(Island island, int x, int z) {
+      int half = this.effectiveBorder(island) / 2;
+      return x >= island.centerX() - half && x < island.centerX() + half && z >= island.centerZ() - half && z < island.centerZ() + half;
+   }
+
+   public boolean purchaseUpgrade(Player player, Island island, String upgradeId) {
+      synchronized (island) {
+         int tier = island.upgrades().getOrDefault(upgradeId, 0);
+         int maxTier = this.config.upgradeMaxTier(upgradeId);
+         if (tier >= maxTier) {
+            ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.upgrade.maxed", Map.of());
             return false;
-        }
-        final var cost = config.upgradeCost(upgradeId, tier);
-        if (cost.isEmpty()) {
-            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.maxed", Map.of());
+         }
+         OptionalLong cost = this.config.upgradeCost(upgradeId, tier);
+         if (cost.isEmpty()) {
+            ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.upgrade.maxed", Map.of());
             return false;
-        }
-        for (final Map.Entry<String, Integer> requirement
-                : config.upgradeRequiresAt(upgradeId, tier + 1).entrySet()) {
+         }
+         for (Map.Entry<String, Integer> requirement : this.config.upgradeRequiresAt(upgradeId, tier + 1).entrySet()) {
             if (island.upgrades().getOrDefault(requirement.getKey(), 0) < requirement.getValue()) {
-                ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.locked",
-                        Map.of("track", UpgradeCatalog.displayOf(requirement.getKey()),
-                                "tier", String.valueOf(requirement.getValue())));
-                return false;
+               ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.upgrade.locked", Map.of(
+                     "track", UpgradeCatalog.displayOf(requirement.getKey()), "tier", String.valueOf(requirement.getValue())));
+               return false;
             }
-        }
-        final var profile = playerData.profileOf(player.getUniqueId()).orElse(null);
-        if (profile == null) {
+         }
+         PlayerProfile profile = this.playerData.profileOf(player.getUniqueId()).orElse(null);
+         if (profile == null) return false;
+         int needIsland = this.config.upgradeRequiresIslandLevel(upgradeId);
+         if (needIsland > 0 && island.level() < needIsland) {
+            ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.upgrade.locked-island", Map.of(
+                  "level", String.valueOf(needIsland), "yours", String.valueOf(island.level())));
             return false;
-        }
-        // Level gates (spec: upgrades may need island/role levels): the
-        // island's own level, and the buyer's best role level (any role).
-        final int needIsland = config.upgradeRequiresIslandLevel(upgradeId);
-        if (needIsland > 0 && island.level() < needIsland) {
-            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.locked-island",
-                    Map.of("level", String.valueOf(needIsland), "yours", String.valueOf(island.level())));
-            return false;
-        }
-        final int needRole = config.upgradeRequiresRoleLevel(upgradeId);
-        if (needRole > 0) {
-            final int haveRole = ((com.coremc.core.CoreMCPlugin) plugin).roles().maxRoleLevel(profile);
+         }
+         int needRole = this.config.upgradeRequiresRoleLevel(upgradeId);
+         if (needRole > 0) {
+            int haveRole = ((CoreMCPlugin)this.plugin).roles().maxRoleLevel(profile);
             if (haveRole < needRole) {
-                ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.locked-role",
-                        Map.of("level", String.valueOf(needRole), "yours", String.valueOf(haveRole)));
-                return false;
+               ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.upgrade.locked-role", Map.of(
+                     "level", String.valueOf(needRole), "yours", String.valueOf(haveRole)));
+               return false;
             }
-        }
-        final long price = cost.getAsLong();
-        if (price > 0L
-                && !((com.coremc.core.CoreMCPlugin) plugin).economy()
-                        .withdraw(profile, com.coremc.core.economy.Currency.SKY_TOKENS, price)) {
-            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.insufficient",
-                    Map.of("price", String.valueOf(price)));
+         }
+         long price = cost.getAsLong();
+         if (price < 0L) {
+            this.logger.warning("Ignoring negative configured island upgrade price for " + upgradeId);
             return false;
-        }
-        island.setUpgradeTier(upgradeId, tier + 1);
-        flush(island);
-        ((com.coremc.core.CoreMCPlugin) plugin).upgradeEffects().onPurchased(island, upgradeId, tier + 1);
-        ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.upgrade.bought",
-                Map.of("tier", String.valueOf(tier + 1), "max", String.valueOf(maxTier),
-                        "price", String.valueOf(price)));
-        return true;
-    }
+         }
+         return this.queuePurchase(player, profile, island, "upgrade", upgradeId, tier + 1, price, () -> {
+            ((CoreMCPlugin)this.plugin).upgradeEffects().onPurchased(island, upgradeId, tier + 1);
+            ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.upgrade.bought", Map.of(
+                  "tier", String.valueOf(tier + 1), "max", String.valueOf(maxTier), "price", String.valueOf(price)));
+            if (player.isOnline()) ((CoreMCPlugin)this.plugin).gui().refresh(player);
+         });
+      }
+   }
 
-    /**
-     * Attempts to buy the next level of a buff with Sky Tokens.
-     * Mirrors purchaseUpgrade (maxed / insufficient, immediate flush)
-     * but has no prerequisite gates — buffs are standalone by design.
-     */
-    public boolean purchaseBuff(final org.bukkit.entity.Player player, final Island island, final String buffId) {
-        final int tier = island.buffs().getOrDefault(buffId, 0);
-        final int maxTier = config.buffMaxTier(buffId);
-        if (tier >= maxTier) {
-            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.buff.maxed", Map.of());
+   public boolean purchaseBuff(Player player, Island island, String buffId) {
+      synchronized (island) {
+         int tier = island.buffs().getOrDefault(buffId, 0);
+         int maxTier = this.config.buffMaxTier(buffId);
+         if (tier >= maxTier) {
+            ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.buff.maxed", Map.of());
             return false;
-        }
-        final var cost = config.buffCost(buffId, tier);
-        if (cost.isEmpty()) {
-            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.buff.maxed", Map.of());
+         }
+         OptionalLong cost = this.config.buffCost(buffId, tier);
+         if (cost.isEmpty()) {
+            ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.buff.maxed", Map.of());
             return false;
-        }
-        final var profile = playerData.profileOf(player.getUniqueId()).orElse(null);
-        if (profile == null) {
+         }
+         PlayerProfile profile = this.playerData.profileOf(player.getUniqueId()).orElse(null);
+         if (profile == null) return false;
+         long price = cost.getAsLong();
+         if (price < 0L) {
+            this.logger.warning("Ignoring negative configured island buff price for " + buffId);
             return false;
-        }
-        final long price = cost.getAsLong();
-        if (price > 0L
-                && !((com.coremc.core.CoreMCPlugin) plugin).economy()
-                        .withdraw(profile, com.coremc.core.economy.Currency.SKY_TOKENS, price)) {
-            ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.buff.insufficient",
-                    Map.of("price", String.valueOf(price)));
-            return false;
-        }
-        island.setBuffTier(buffId, tier + 1);
-        flush(island);
-        ((com.coremc.core.CoreMCPlugin) plugin).messages().sendPrefixed(player, "island.buff.bought",
-                Map.of("buff", BuffCatalog.displayOf(buffId),
-                        "tier", String.valueOf(tier + 1), "max", String.valueOf(maxTier),
-                        "price", String.valueOf(price)));
-        return true;
-    }
-
-    /** Island level placeholders (for future PlaceholderAPI binding; /is info uses them today). */
-    public Map<String, String> placeholdersOf(final UUID player) {
-        final Optional<Island> island = islandOf(player);
-        if (island.isEmpty()) {
-            return Map.of(
-                    "island_level", "-", "island_border", "-", "island_members", "-", "island_owner", "-");
-        }
-        final Island value = island.get();
-        return Map.of(
-                "island_level", String.valueOf(value.level()),
-                "island_border", effectiveBorder(value) + "x" + effectiveBorder(value),
-                "island_members", String.valueOf(value.members().size()),
-                "island_owner", nameOf(value.owner()));
-    }
-
-    private String nameOf(final UUID uuid) {
-        final Player online = Bukkit.getPlayer(uuid);
-        if (online != null) {
-            return online.getName();
-        }
-        final org.bukkit.OfflinePlayer offline = Bukkit.getOfflinePlayer(uuid);
-        return offline.getName() != null ? offline.getName() : uuid.toString().substring(0, 8);
-    }
-
-    // ------------------------------------------------------------------ lifecycle
-
-    /** Result tokens for create; keeps the command layer thin. */
-    public enum CreateResult { CREATED, ALREADY_ISLAND, WORLD_MISSING }
-
-    /**
-     * Creates an island for {@code player} with the default theme. Convenience
-     * overload of {@link #createIsland(Player, IslandTheme, java.util.function.Consumer)}.
-     */
-    public CreateResult createIsland(final Player player, final java.util.function.Consumer<Island> onCreated) {
-        return createIsland(player, null, onCreated);
-    }
-
-    /**
-     * Creates an island for {@code player}: assigns the next grid cell,
-     * generates the themed starter platform, registers + persists the island
-     * and records the profile association. Must be called on the main
-     * thread. {@code theme} may be null → the default theme is used.
-     */
-    public CreateResult createIsland(
-            final Player player,
-            final IslandTheme theme,
-            final java.util.function.Consumer<Island> onCreated) {
-        final UUID owner = player.getUniqueId();
-        if (islandOf(owner).isPresent()) {
-            return CreateResult.ALREADY_ISLAND;
-        }
-        final Optional<World> world = islandWorld();
-        if (world.isEmpty()) {
-            return CreateResult.WORLD_MISSING;
-        }
-        final World target = world.get();
-        final int spacing = config.islandSpacing();
-        final int[] cell = GridAssigner.nextFreeCell(occupiedCells(), target.getName());
-        final Island island = new Island(
-                UUID.randomUUID(),
-                owner,
-                target.getName(),
-                cell[0] * spacing,
-                config.islandStartHeight(),
-                cell[1] * spacing,
-                config.islandBorderSize(),
-                System.currentTimeMillis());
-        island.theme(theme == null ? Island.DEFAULT_THEME : theme.key());
-
-        generateStarterIsland(target, island, theme);
-        register(island);
-        setAssociation(owner, island.islandId());
-        flush(island);
-        onCreated.accept(island);
-        return CreateResult.CREATED;
-    }
-
-    /** Live + retired cells: the spiral never reuses either (ghost-reuse guard). */
-    private Set<String> occupiedCells() {
-        final Set<String> occupied = new java.util.HashSet<>(usedCells);
-        occupied.addAll(retiredCells);
-        return occupied;
-    }
-
-    /**
-     * Deletes the island owned by {@code owner}. Ghost-proof ordering:
-     *  1. un-register + purge invites referencing the island,
-     *  2. RETIRE the grid cell so the spiral never reuses it (a fresh island
-     *     can never spawn on the old platform's leftover blocks),
-     *  3. scrub member/owner associations (online + offline profiles),
-     *  4. delete the island file LAST.
-     * Platform blocks stay in the world (documented).
-     */
-    public void deleteIsland(final UUID owner) throws IOException {
-        final Island removed = islandsByOwner.remove(owner);
-        if (removed == null) {
-            throw new IllegalStateException("Owner has no island");
-        }
-        unregisterIndexes(removed);
-        invites.purgeIsland(removed.islandId());
-        ((com.coremc.core.CoreMCPlugin) plugin).islandActivity().purgeIsland(removed.islandId());
-        final int spacing = config.islandSpacing();
-        final int[] cell = removed.gridCell(spacing);
-        retiredCells.add(GridAssigner.key(cell[0], cell[1], removed.worldName()));
-        final List<UUID> scrubTargets = new ArrayList<>();
-        scrubTargets.add(owner);
-        scrubTargets.addAll(removed.members());
-
-        // Nobody is left standing on a deleted island: the owner and any
-        // online members on it go to the main-world spawn. Members are
-        // always told why, wherever they are.
-        final Player ownerPlayer = Bukkit.getPlayer(owner);
-        if (ownerPlayer != null) {
-            rescueIfStranded(ownerPlayer, removed);
-        }
-        for (final UUID member : removed.members()) {
-            final Player online = Bukkit.getPlayer(member);
-            if (online != null) {
-                rescueIfStranded(online, removed);
-                ((com.coremc.core.CoreMCPlugin) plugin).messages()
-                        .sendPrefixed(online, "island.deleted-member", Map.of());
+         }
+         return this.queuePurchase(player, profile, island, "buff", buffId, tier + 1, price, () -> {
+            ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.buff.bought", Map.of(
+                  "buff", BuffCatalog.displayOf(buffId), "tier", String.valueOf(tier + 1),
+                  "max", String.valueOf(maxTier), "price", String.valueOf(price)));
+            if (player.isOnline()) ((CoreMCPlugin)this.plugin).gui().refresh(player);
+         });
+      }
+   }
+   private boolean queuePurchase(Player player, PlayerProfile profile, Island island, String kind,
+                                 String key, int tier, long price, Runnable onCommitted) {
+      if (!Bukkit.isPrimaryThread()) throw new IllegalStateException("Island purchases must start on the main thread");
+      if (!this.purchaseInProgress.compareAndSet(false, true)) {
+         ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.purchase-pending", Map.of());
+         return false;
+      }
+      String transactionId = UUID.randomUUID().toString();
+      long balanceAfter;
+      Map<String, Object> snapshot;
+      synchronized (island) {
+         synchronized (profile) {
+            long balance = profile.balanceOf(Currency.SKY_TOKENS);
+            if (balance < price) {
+               this.purchaseInProgress.set(false);
+               ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player,
+                     kind.equals("upgrade") ? "island.upgrade.insufficient" : "island.buff.insufficient",
+                     Map.of("price", String.valueOf(price)));
+               return false;
             }
-        }
-
-        io.execute(() -> {
-            persistRetiredCells();
-            for (final UUID player : scrubTargets) {
-                playerData.clearIslandAssociationIfMatches(player, removed.islandId());
-            }
+            balanceAfter = balance - price;
             try {
-                store.delete(owner);
-                logger.info("Deleted island " + removed.islandId() + " of " + owner + " (" + scrubTargets.size()
-                        + " association(s) scrubbed, cell retired).");
-            } catch (final IOException exception) {
-                logger.log(Level.SEVERE, "Failed to delete island file of " + owner, exception);
+               this.purchaseJournal.write(new IslandPurchaseJournal.Pending(transactionId, player.getUniqueId(),
+                     island.islandId(), kind, key, tier, balanceAfter));
+            } catch (IOException exception) {
+               this.purchaseInProgress.set(false);
+               this.logger.log(Level.SEVERE, "Could not write island purchase journal; purchase was not applied.", exception);
+               ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.purchase-save-failed", Map.of());
+               return false;
             }
-        });
-    }
+            profile.lastIslandPurchaseId(transactionId);
+            ((CoreMCPlugin)this.plugin).economy().setBalance(profile, Currency.SKY_TOKENS, balanceAfter);
+            if (kind.equals("upgrade")) island.setUpgradeTier(key, tier);
+            else island.setBuffTier(key, tier);
+            snapshot = island.toMap();
+         }
+      }
+      ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.purchase-pending", Map.of());
+      try {
+         this.io.execute(() -> {
+            IOException lastFailure = null;
+            boolean committed = false;
+            for (int attempt = 1; attempt <= 3 && !committed; attempt++) {
+               try {
+                  if (!this.playerData.persistAndWait(profile).get(10L, TimeUnit.SECONDS)) {
+                     throw new IOException("Player profile write failed for island purchase " + transactionId);
+                  }
+                  this.store.saveSnapshot(snapshot);
+                  this.purchaseJournal.clear();
+                  committed = true;
+               } catch (InterruptedException exception) {
+                  Thread.currentThread().interrupt();
+                  lastFailure = new IOException("Interrupted while saving island purchase " + transactionId, exception);
+                  break;
+               } catch (ExecutionException | TimeoutException | IOException exception) {
+                  lastFailure = exception instanceof IOException ioException ? ioException
+                        : new IOException("Could not durably save island purchase " + transactionId, exception);
+               }
+            }
+            if (committed) {
+               this.purchaseInProgress.set(false);
+               this.runCreationCallback(onCommitted, "finish island purchase");
+            } else {
+               this.logger.log(Level.SEVERE, "Island purchase remains journaled and will be recovered at restart: " + transactionId, lastFailure);
+               this.runCreationCallback(() -> ((CoreMCPlugin)this.plugin).messages().sendPrefixed(
+                     player, "island.purchase-recovery-pending", Map.of()), "report pending island purchase recovery");
+            }
+         });
+      } catch (RejectedExecutionException exception) {
+         this.logger.log(Level.SEVERE, "Island purchase remains journaled and will be recovered at restart: " + transactionId, exception);
+         ((CoreMCPlugin)this.plugin).messages().sendPrefixed(player, "island.purchase-recovery-pending", Map.of());
+      }
+      return true;
+   }
+   public Map<String, String> placeholdersOf(UUID player) {
+      Optional<Island> island = this.islandOf(player);
+      if (island.isEmpty()) {
+         return Map.of("island_level", "-", "island_border", "-", "island_members", "-", "island_owner", "-");
+      } else {
+         Island value = (Island)island.get();
+         return Map.of("island_level", String.valueOf(value.level()), "island_border", this.effectiveBorder(value) + "x" + this.effectiveBorder(value), "island_members", String.valueOf(value.members().size()), "island_owner", this.nameOf(value.owner()));
+      }
+   }
 
-    // ------------------------------------------------------------------ teams
+   private String nameOf(UUID uuid) {
+      Player online = Bukkit.getPlayer(uuid);
+      if (online != null) {
+         return online.getName();
+      } else {
+         OfflinePlayer offline = Bukkit.getOfflinePlayer(uuid);
+         return offline.getName() != null ? offline.getName() : uuid.toString().substring(0, 8);
+      }
+   }
 
-    public enum InviteResult { SENT, TARGET_HAS_ISLAND, SENDER_NOT_OWNER, TEAM_FULL }
+   public CreateResult createIsland(Player player, Consumer<Island> onCreated) {
+      return this.createIsland(player, (IslandTheme)null, onCreated);
+   }
 
-    /** Owner invites a target. Invites expire per config; ledger is in-memory only. */
-    public InviteResult invite(final Player inviter, final Player target) {
-        final Optional<Island> island = ownedIsland(inviter.getUniqueId());
-        if (island.isEmpty()) {
-            return InviteResult.SENDER_NOT_OWNER;
-        }
-        if (islandOf(target.getUniqueId()).isPresent()) {
-            return InviteResult.TARGET_HAS_ISLAND;
-        }
-        if (island.get().members().size() >= memberCapacity(island.get())) {
-            return InviteResult.TEAM_FULL;
-        }
-        final long expiresAt = System.currentTimeMillis() + config.islandInviteExpirySeconds() * 1000L;
-        invites.invite(target.getUniqueId(), island.get().islandId(), inviter.getUniqueId(), expiresAt);
-        return InviteResult.SENT;
-    }
+   public CreateResult createIsland(Player player, IslandTheme theme, Consumer<Island> onCreated) {
+      return this.createIsland(player, theme, onCreated, (failure) -> this.logger.log(Level.SEVERE, "Failed to create island for " + String.valueOf(player.getUniqueId()), failure));
+   }
 
-    public enum AcceptResult { ACCEPTED, NO_INVITE, EXPIRED, ISLAND_GONE, TEAM_FULL, ALREADY_ISLAND }
+   public CreateResult createIsland(Player player, IslandTheme theme, Consumer<Island> onCreated, Consumer<Throwable> onFailure) {
+      if (!Bukkit.isPrimaryThread()) {
+         throw new IllegalStateException("Island creation must run on the main thread");
+      } else if (!this.loaded) {
+         return IslandService.CreateResult.CREATION_PENDING;
+      } else {
+         UUID owner = player.getUniqueId();
+         if (this.pendingKicks.contains(owner) || this.pendingLeaves.contains(owner)) {
+            return IslandService.CreateResult.CREATION_PENDING;
+         } else if (this.islandOf(owner).isPresent()) {
+            return IslandService.CreateResult.ALREADY_ISLAND;
+         } else if (!this.pendingCreations.add(owner)) {
+            return IslandService.CreateResult.CREATION_PENDING;
+         } else {
+            Optional<World> world = this.islandWorld();
+            if (world.isEmpty()) {
+               this.pendingCreations.remove(owner);
+               return IslandService.CreateResult.WORLD_MISSING;
+            } else {
+               World target = (World)world.get();
+               int spacing = this.config.islandSpacing();
+               int[] cell = GridAssigner.nextFreeCell(this.occupiedCells(), target.getName());
+               String cellKey = GridAssigner.key(cell[0], cell[1], target.getName());
+               this.pendingCells.add(cellKey);
+               Island island = new Island(UUID.randomUUID(), owner, target.getName(), cell[0] * spacing, this.config.islandStartHeight(), cell[1] * spacing, this.config.islandBorderSize(), System.currentTimeMillis());
+               island.theme(theme == null ? "plains" : theme.key());
+               island.creationPending(true);
+               this.pendingIslandsByCell.put(cellKey, island);
 
-    /** Target accepts their pending invite. All race-conditions re-checked. */
-    public AcceptResult acceptInvite(final Player player) {
-        final MemberInviteLedger.Pending invite = invites.take(player.getUniqueId());
-        if (invite == null) {
-            return AcceptResult.NO_INVITE;
-        }
-        if (invite.expiresAtMillis() < System.currentTimeMillis()) {
-            return AcceptResult.EXPIRED;
-        }
-        final Island island = islandsById.get(invite.islandId());
-        if (island == null) {
-            return AcceptResult.ISLAND_GONE; // deleted while the invite was pending
-        }
-        if (islandOf(player.getUniqueId()).isPresent()) {
-            return AcceptResult.ALREADY_ISLAND;
-        }
-        if (island.members().size() >= memberCapacity(island)) {
-            return AcceptResult.TEAM_FULL;
-        }
-        island.addMember(player.getUniqueId());
-        islandsByMember.put(player.getUniqueId(), island);
-        setAssociation(player.getUniqueId(), island.islandId());
-        flush(island);
-        return AcceptResult.ACCEPTED;
-    }
+               try {
+                  this.io.execute(() -> {
+                     try {
+                        this.store.save(island);
+                     } catch (IOException exception) {
+                        this.pendingCreations.remove(owner);
+                        this.pendingCells.remove(cellKey);
+                        this.pendingIslandsByCell.remove(cellKey, island);
+                        this.logger.log(Level.SEVERE, "Failed to persist island creation marker for " + String.valueOf(island.islandId()), exception);
+                        this.runCreationCallback(() -> onFailure.accept(exception), "report island creation failure");
+                        return;
+                     }
 
-    public boolean hasPendingInvite(final UUID player) {
-        final MemberInviteLedger.Pending invite = invites.peek(player);
-        return invite != null && invite.expiresAtMillis() >= System.currentTimeMillis();
-    }
+                     this.runCreationCallback(() -> {
+                        World creationWorld = Bukkit.getWorld(island.worldName());
+                        if (creationWorld == null) {
+                           onFailure.accept(new IllegalStateException("Island world '" + island.worldName() + "' is not loaded"));
+                        } else {
+                           try {
+                              this.generateStarterIsland(creationWorld, island, theme);
+                           } catch (RuntimeException exception) {
+                              this.logger.log(Level.SEVERE, "Failed to generate starter island for " + String.valueOf(owner), exception);
+                              onFailure.accept(exception);
+                              return;
+                           }
 
-    public enum LeaveResult { LEFT, NOT_A_MEMBER }
+                           island.creationPending(false);
 
-    /** Member leaves the island they belong to. */
-    public LeaveResult leave(final Player player) {
-        final Island island = islandsByMember.remove(player.getUniqueId());
-        if (island == null) {
-            return LeaveResult.NOT_A_MEMBER;
-        }
-        island.removeMember(player.getUniqueId());
-        setAssociation(player.getUniqueId(), null);
-        rescueIfStranded(player, island);
-        flush(island);
-        return LeaveResult.LEFT;
-    }
+                           try {
+                              this.io.execute(() -> {
+                                 try {
+                                    this.store.save(island);
+                                 } catch (IOException exception) {
+                                    island.creationPending(true);
+                                    this.logger.log(Level.SEVERE, "Failed to commit newly created island " + String.valueOf(island.islandId()), exception);
+                                    this.runCreationCallback(() -> onFailure.accept(exception), "report island commit failure");
+                                    return;
+                                 }
 
-    public enum KickResult { KICKED, NOT_OWNER, TARGET_NOT_MEMBER, CANNOT_KICK_OWNER }
+                                 this.runCreationCallback(() -> {
+                                    this.register(island);
+                                    this.pendingCreations.remove(owner);
+                                    this.pendingCells.remove(cellKey);
+                                    this.pendingIslandsByCell.remove(cellKey, island);
+                                    this.setAssociation(owner, island.islandId());
+                                    onCreated.accept(island);
+                                 }, "publish newly created island");
+                              });
+                           } catch (RejectedExecutionException exception) {
+                              island.creationPending(true);
+                              this.logger.log(Level.SEVERE, "Island storage is shutting down; could not commit " + String.valueOf(island.islandId()), exception);
+                              onFailure.accept(exception);
+                           }
 
-    /** Owner kicks a member. */
-    public KickResult kick(final Player ownerActor, final UUID target) {
-        final Optional<Island> island = ownedIsland(ownerActor.getUniqueId());
-        if (island.isEmpty()) {
-            return KickResult.NOT_OWNER;
-        }
-        if (target.equals(ownerActor.getUniqueId())) {
-            return KickResult.CANNOT_KICK_OWNER;
-        }
-        final Island team = island.get();
-        if (!team.removeMember(target)) {
-            return KickResult.TARGET_NOT_MEMBER;
-        }
-        islandsByMember.remove(target, team);
-        io.execute(() -> playerData.clearIslandAssociationIfMatches(target, team.islandId()));
-        setAssociation(target, null); // no-op if offline; offline scrub above covers them
-        final Player kicked = Bukkit.getPlayer(target);
-        if (kicked != null) {
-            rescueIfStranded(kicked, team);
-        }
-        flush(team);
-        return KickResult.KICKED;
-    }
+                        }
+                     }, "generate starter island");
+                  });
+               } catch (RejectedExecutionException exception) {
+                  this.pendingCreations.remove(owner);
+                  this.pendingCells.remove(cellKey);
+                  this.pendingIslandsByCell.remove(cellKey, island);
+                  this.logger.log(Level.SEVERE, "Island storage is shutting down; could not persist " + String.valueOf(island.islandId()), exception);
+                  return IslandService.CreateResult.CREATION_FAILED;
+               }
 
-    /**
-     * Main-world spawn: the fallback whenever a player has no island home
-     * (void rescue, leave/kick/delete safety). World 0 is the server's
-     * main world by Bukkit convention.
-     */
-    public Location safeSpawn() {
-        return Bukkit.getWorlds().get(0).getSpawnLocation();
-    }
+               return IslandService.CreateResult.CREATED;
+            }
+         }
+      }
+   }
 
-    /**
-     * Teleports the player to the main-world spawn when they stand on an
-     * island they no longer belong to (leave/kick/delete safety).
-     * Players elsewhere — visiting another island, out in the world —
-     * are left exactly where they are.
-     */
-    private void rescueIfStranded(final Player player, final Island island) {
-        final Location at = player.getLocation();
-        if (at.getWorld() == null || !at.getWorld().getName().equals(island.worldName())) {
-            return;
-        }
-        if (containsBlock(island, at.getBlockX(), at.getBlockZ())) {
-            player.teleport(safeSpawn());
-        }
-    }
+   private Set<String> occupiedCells() {
+      Set<String> occupied = new HashSet(this.usedCells);
+      occupied.addAll(this.retiredCells);
+      occupied.addAll(this.pendingCells);
+      return occupied;
+   }
 
-    // ------------------------------------------------------------------ persistence & associations
+   private void runCreationCallback(Runnable callback, String operation) {
+      try {
+         this.taskService.run(callback);
+      } catch (RuntimeException exception) {
+         this.logger.log(Level.WARNING, "Could not schedule island creation callback to " + operation, exception);
+      }
 
-    /** Marks an island's progression dirty (batched flush, not immediate disk I/O). */
-    public void markDirty(final Island island) {
-        dirtyIslands.add(island.islandId());
-    }
+   }
 
-    /** Flushes every progression-dirty island (progress timer + shutdown). */
-    public void flushDirty() {
-        // Per-id removal AFTER the save is queued: an island dirtied
-        // mid-flush stays (or re-lands) in the set and is caught by the
-        // next flush — the old snapshot+removeAll could drop a dirty
-        // island without saving it (progress loss, worst at shutdown).
-        for (final UUID islandId : new ArrayList<>(dirtyIslands)) {
-            final Island island = islandsById.get(islandId);
+   public void deleteIsland(UUID owner) throws IOException {
+      if (this.purchaseInProgress.get()) {
+         throw new IOException("An island purchase is still being saved; try deleting the island again shortly.");
+      }
+      Island removed = (Island)this.islandsByOwner.get(owner);
+      if (removed == null) {
+         throw new IllegalStateException("Owner has no island");
+      } else {
+         int spacing = this.config.islandSpacing();
+         int[] cell = removed.gridCell(spacing);
+         String cellKey = GridAssigner.key(cell[0], cell[1], removed.worldName());
+         boolean newlyRetired = this.retiredCells.add(cellKey);
+         boolean newlyDeleted = this.deletedIslandIds.add(removed.islandId());
+
+         try {
+            this.persistRetiredCells();
+         } catch (IOException exception) {
+            if (newlyRetired) {
+               this.retiredCells.remove(cellKey);
+            }
+
+            if (newlyDeleted) {
+               this.deletedIslandIds.remove(removed.islandId());
+            }
+
+            throw exception;
+         }
+
+         if (!this.islandsByOwner.remove(owner, removed)) {
+            throw new IllegalStateException("Island changed while deletion was being committed");
+         } else {
+            this.unregisterIndexes(removed);
+            this.invites.purgeIsland(removed.islandId());
+            ((CoreMCPlugin)this.plugin).islandActivity().purgeIsland(removed.islandId());
+            this.dirtyIslands.remove(removed.islandId());
+            List<UUID> scrubTargets = new ArrayList();
+            scrubTargets.add(owner);
+            scrubTargets.addAll(removed.members());
+            Player ownerPlayer = Bukkit.getPlayer(owner);
+            if (ownerPlayer != null) {
+               this.rescueIfStranded(ownerPlayer, removed);
+            }
+
+            for(UUID member : removed.members()) {
+               Player online = Bukkit.getPlayer(member);
+               if (online != null) {
+                  this.rescueIfStranded(online, removed);
+                  ((CoreMCPlugin)this.plugin).messages().sendPrefixed(online, "island.deleted-member", Map.of());
+               }
+            }
+
+            try {
+               this.io.execute(() -> {
+                  for(UUID player : scrubTargets) {
+                     this.playerData.clearIslandAssociationIfMatches(player, removed.islandId());
+                  }
+
+                  try {
+                     this.store.delete(owner);
+                     Logger var10000 = this.logger;
+                     String var10001 = String.valueOf(removed.islandId());
+                     var10000.info("Deleted island " + var10001 + " of " + String.valueOf(owner) + " (" + scrubTargets.size() + " association(s) scrubbed, cell retired).");
+                  } catch (IOException exception) {
+                     this.logger.log(Level.SEVERE, "Failed to remove tombstoned island file of " + String.valueOf(owner), exception);
+                  }
+
+               });
+            } catch (RejectedExecutionException exception) {
+               this.logger.log(Level.WARNING, "Island cleanup queued after shutdown; tombstone remains durable.", exception);
+            }
+
+         }
+      }
+   }
+
+   public InviteResult invite(Player inviter, Player target) {
+      Optional<Island> island = this.ownedIsland(inviter.getUniqueId());
+      if (island.isEmpty()) {
+         return IslandService.InviteResult.SENDER_NOT_OWNER;
+      } else if (this.islandOf(target.getUniqueId()).isPresent()) {
+         return IslandService.InviteResult.TARGET_HAS_ISLAND;
+      } else if (((Island)island.get()).members().size() >= this.memberCapacity((Island)island.get())) {
+         return IslandService.InviteResult.TEAM_FULL;
+      } else {
+         long expiresAt = System.currentTimeMillis() + this.config.islandInviteExpirySeconds() * 1000L;
+         this.invites.invite(target.getUniqueId(), ((Island)island.get()).islandId(), inviter.getUniqueId(), expiresAt);
+         return IslandService.InviteResult.SENT;
+      }
+   }
+
+   public AcceptResult acceptInvite(Player player) {
+      MemberInviteLedger.Pending invite = this.invites.take(player.getUniqueId());
+      if (invite == null) {
+         return IslandService.AcceptResult.NO_INVITE;
+      } else if (invite.expiresAtMillis() < System.currentTimeMillis()) {
+         return IslandService.AcceptResult.EXPIRED;
+      } else {
+         Island island = (Island)this.islandsById.get(invite.islandId());
+         if (island == null) {
+            return IslandService.AcceptResult.ISLAND_GONE;
+         } else if ((this.pendingKicks.contains(player.getUniqueId()) || this.pendingLeaves.contains(player.getUniqueId())) || this.islandOf(player.getUniqueId()).isPresent()) {
+            return IslandService.AcceptResult.ALREADY_ISLAND;
+         } else if (island.members().size() >= this.memberCapacity(island)) {
+            return IslandService.AcceptResult.TEAM_FULL;
+         } else {
+            island.addMember(player.getUniqueId());
+            this.islandsByMember.put(player.getUniqueId(), island);
+            this.setAssociation(player.getUniqueId(), island.islandId());
+            this.flush(island);
+            return IslandService.AcceptResult.ACCEPTED;
+         }
+      }
+   }
+
+   public boolean hasPendingInvite(UUID player) {
+      MemberInviteLedger.Pending invite = this.invites.peek(player);
+      return invite != null && invite.expiresAtMillis() >= System.currentTimeMillis();
+   }
+
+   public LeaveResult leave(Player player, Consumer<LeaveResult> completion) {
+      if (!Bukkit.isPrimaryThread()) {
+         throw new IllegalStateException("Island leave must run on the main thread");
+      }
+      UUID playerId = player.getUniqueId();
+      Island island = this.islandsByMember.get(playerId);
+      if (island == null || island.roleOf(playerId) != IslandRole.MEMBER) {
+         return LeaveResult.NOT_A_MEMBER;
+      }
+      if (!this.pendingLeaves.add(playerId)) return LeaveResult.PENDING;
+      if (!island.removeMember(playerId)) {
+         this.pendingLeaves.remove(playerId);
+         return LeaveResult.NOT_A_MEMBER;
+      }
+      this.islandsByMember.remove(playerId, island);
+      Map<String, Object> snapshot = island.toMap();
+      try {
+         this.io.execute(() -> {
+            Throwable failure = null;
+            try {
+               this.store.saveSnapshot(snapshot);
+               this.playerData.clearIslandAssociationIfMatches(playerId, island.islandId());
+            } catch (IOException | RuntimeException exception) { failure = exception; }
+            Throwable result = failure;
+            this.runCreationCallback(() -> {
+               this.pendingLeaves.remove(playerId);
+               if (result == null) {
+                  this.setAssociation(playerId, null);
+                  Player online = Bukkit.getPlayer(playerId);
+                  if (online != null) this.rescueIfStranded(online, island);
+                  completion.accept(LeaveResult.LEFT);
+               } else {
+                  if (this.islandsById.get(island.islandId()) == island) {
+                     island.addMember(playerId);
+                     this.islandsByMember.put(playerId, island);
+                     this.dirtyIslands.add(island.islandId());
+                  }
+                  this.logger.log(Level.SEVERE, "Failed to persist island leave for " + String.valueOf(playerId), result);
+                  completion.accept(LeaveResult.SAVE_FAILED);
+               }
+            }, "finish island leave");
+         });
+      } catch (RejectedExecutionException exception) {
+         this.pendingLeaves.remove(playerId);
+         island.addMember(playerId);
+         this.islandsByMember.put(playerId, island);
+         return LeaveResult.SAVE_FAILED;
+      }
+      return LeaveResult.PENDING;
+   }
+   public KickResult kick(Player ownerActor, UUID target, Consumer<KickResult> completion) {
+      if (!Bukkit.isPrimaryThread()) {
+         throw new IllegalStateException("Island kick must run on the main thread");
+      }
+      Optional<Island> island = this.ownedIsland(ownerActor.getUniqueId());
+      if (island.isEmpty()) return KickResult.NOT_OWNER;
+      if (target.equals(ownerActor.getUniqueId())) return KickResult.CANNOT_KICK_OWNER;
+      Island team = island.get();
+      if (team.roleOf(target) != IslandRole.MEMBER) return KickResult.TARGET_NOT_MEMBER;
+      if (!this.pendingKicks.add(target)) return KickResult.PENDING;
+      if (!team.removeMember(target)) {
+         this.pendingKicks.remove(target);
+         return KickResult.TARGET_NOT_MEMBER;
+      }
+      this.islandsByMember.remove(target, team);
+      Map<String, Object> snapshot = team.toMap();
+      try {
+         this.io.execute(() -> {
+            Throwable failure = null;
+            try {
+               this.store.saveSnapshot(snapshot);
+               this.playerData.clearIslandAssociationIfMatches(target, team.islandId());
+            } catch (IOException | RuntimeException exception) { failure = exception; }
+            Throwable result = failure;
+            this.runCreationCallback(() -> {
+               this.pendingKicks.remove(target);
+               if (result == null) {
+                  this.setAssociation(target, null);
+                  Player kicked = Bukkit.getPlayer(target);
+                  if (kicked != null) this.rescueIfStranded(kicked, team);
+                  completion.accept(KickResult.KICKED);
+               } else {
+                  if (this.islandsById.get(team.islandId()) == team) {
+                     team.addMember(target);
+                     this.islandsByMember.put(target, team);
+                     this.dirtyIslands.add(team.islandId());
+                  }
+                  this.logger.log(Level.SEVERE, "Failed to persist island kick for " + String.valueOf(target), result);
+                  completion.accept(KickResult.SAVE_FAILED);
+               }
+            }, "finish island kick");
+         });
+      } catch (RejectedExecutionException exception) {
+         this.pendingKicks.remove(target);
+         team.addMember(target);
+         this.islandsByMember.put(target, team);
+         return KickResult.SAVE_FAILED;
+      }
+      return KickResult.PENDING;
+   }
+
+   public Location safeSpawn() {
+      return ((World)Bukkit.getWorlds().get(0)).getSpawnLocation();
+   }
+
+   private void rescueIfStranded(Player player, Island island) {
+      Location at = player.getLocation();
+      if (at.getWorld() != null && at.getWorld().getName().equals(island.worldName())) {
+         if (this.containsBlock(island, at.getBlockX(), at.getBlockZ())) {
+            player.teleport(this.safeSpawn());
+         }
+
+      }
+   }
+
+   public void markDirty(Island island) {
+      this.dirtyIslands.add(island.islandId());
+   }
+
+   public void flushDirty() {
+      for(UUID islandId : new ArrayList<UUID>(this.dirtyIslands)) {
+         if (this.dirtyIslands.remove(islandId)) {
+            Island island = (Island)this.islandsById.get(islandId);
             if (island != null) {
-                flush(island);
+               this.flush(island);
             }
-            dirtyIslands.remove(islandId);
-        }
-    }
+         }
+      }
 
-    /** Saves an island asynchronously (structure changes flush eagerly). */
-    public void flush(final Island island) {
-        io.execute(() -> {
+   }
+
+   public void flush(Island island) {
+      Map<String, Object> snapshot = island.toMap();
+      UUID islandId = island.islandId();
+
+      try {
+         this.io.execute(() -> {
             try {
-                store.save(island);
-            } catch (final IOException exception) {
-                logger.log(Level.SEVERE, "Failed to save island " + island.islandId(), exception);
+               this.store.saveSnapshot(snapshot);
+            } catch (IOException exception) {
+               if (this.islandsById.get(islandId) == island) {
+                  this.dirtyIslands.add(islandId);
+               }
+
+               this.logger.log(Level.SEVERE, "Failed to save island " + String.valueOf(islandId) + "; it will be retried.", exception);
             }
-        });
-    }
 
-    /** Join-time self-heal: drop associations pointing at islands that no longer exist. */
-    public void reconcileAssociation(final PlayerProfile profile) {
-        if (profile.islandId() != null && !islandsById.containsKey(profile.islandId())) {
-            logger.warning("Clearing stale island association on profile " + profile.uuid()
-                    + " (island " + profile.islandId() + " no longer exists).");
-            profile.islandId(null);
-            playerData.persistAfterEconomyChange(profile, true);
-        }
-    }
+         });
+      } catch (RejectedExecutionException exception) {
+         if (this.islandsById.get(islandId) == island) {
+            this.dirtyIslands.add(islandId);
+         }
 
-    private void setAssociation(final UUID player, final UUID islandId) {
-        playerData.profileOf(player).ifPresent(profile -> {
-            profile.islandId(islandId);
-            playerData.persistAfterEconomyChange(profile, true);
-        });
-    }
+         this.logger.log(Level.SEVERE, "Could not queue save for island " + String.valueOf(islandId) + "; it remains dirty.", exception);
+      }
 
-    // ------------------------------------------------------------------ teleport
+   }
 
-    /**
-     * Teleports the player to their island home synchronously (main
-     * thread). The island instance must come from the live registry —
-     * deleted islands are unreachable by design.
-     */
-    public void teleportHome(final Player player, final Island island) {
-        final World world = Bukkit.getWorld(island.worldName());
-        if (world == null) {
-            throw new IllegalStateException("Island world '" + island.worldName() + "' is not loaded");
-        }
-        player.teleport(new Location(world, island.homeX(), island.homeY(), island.homeZ()));
-    }
+   public void reconcileAssociation(PlayerProfile profile) {
+      if (profile.islandId() != null) {
+         Island associatedIsland = (Island)this.islandsById.get(profile.islandId());
+         if (associatedIsland == null || associatedIsland.roleOf(profile.uuid()) == null) {
+            Logger var10000 = this.logger;
+            String var10001 = String.valueOf(profile.uuid());
+            var10000.warning("Clearing stale island association on profile " + var10001 + " (island " + String.valueOf(profile.islandId()) + " does not list this player).");
+            profile.islandId((UUID)null);
+            this.playerData.persistAfterEconomyChange(profile, true);
+         }
 
-    /** Stops the I/O executor. Called on disable. */
-    public void shutdown() {
-        flushDirty(); // queued ahead of the executor stop, so saves land before termination
-        io.shutdown();
-        try {
-            if (!io.awaitTermination(10, TimeUnit.SECONDS)) {
-                logger.warning("Island executor did not terminate in 10s.");
+      }
+   }
+
+   private void setAssociation(UUID player, UUID islandId) {
+      this.playerData.profileOf(player).ifPresent((profile) -> {
+         profile.islandId(islandId);
+         this.playerData.persistAfterEconomyChange(profile, true);
+      });
+   }
+
+   public void teleportHome(Player player, Island island) {
+      World world = Bukkit.getWorld(island.worldName());
+      if (world == null) {
+         throw new IllegalStateException("Island world '" + island.worldName() + "' is not loaded");
+      } else {
+         player.teleport(new Location(world, island.homeX(), island.homeY(), island.homeZ()));
+      }
+   }
+
+   public void shutdown() {
+      Map<UUID, Map<String, Object>> shutdownSnapshots = new LinkedHashMap();
+
+      for(Island island : this.islandsById.values()) {
+         shutdownSnapshots.put(island.islandId(), island.toMap());
+      }
+
+      this.flushDirty();
+
+      try {
+         this.io.submit(() -> {
+            for(Map.Entry<UUID, Map<String, Object>> entry : shutdownSnapshots.entrySet()) {
+               UUID islandId = (UUID)entry.getKey();
+               if (this.dirtyIslands.contains(islandId) && this.islandsById.containsKey(islandId)) {
+                  try {
+                     this.store.saveSnapshot((Map)entry.getValue());
+                     this.dirtyIslands.remove(islandId);
+                  } catch (IOException exception) {
+                     this.logger.log(Level.SEVERE, "Final retry failed for island " + String.valueOf(islandId) + "; data remains dirty.", exception);
+                  }
+               }
             }
-        } catch (final InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            logger.log(Level.WARNING, "Interrupted while stopping island service", exception);
-        }
-        islandsByOwner.clear();
-        islandsById.clear();
-        islandsByMember.clear();
-        islandsByCell.clear();
-        usedCells.clear();
-        invites.clear();
-    }
 
-    // ------------------------------------------------------------------ internals
+         }).get(10L, TimeUnit.SECONDS);
+      } catch (InterruptedException exception) {
+         Thread.currentThread().interrupt();
+         this.logger.log(Level.SEVERE, "Interrupted while retrying island saves during shutdown.", exception);
+      } catch (TimeoutException | RejectedExecutionException | ExecutionException exception) {
+         this.logger.log(Level.SEVERE, "Could not complete the bounded island save retry during shutdown.", exception);
+      }
 
-    private void register(final Island island) {
-        islandsByOwner.put(island.owner(), island);
-        islandsById.put(island.islandId(), island);
-        for (final UUID member : island.members()) {
-            islandsByMember.put(member, island);
-        }
-        final int spacing = config.islandSpacing();
-        final int[] cell = island.gridCell(spacing);
-        final String key = GridAssigner.key(cell[0], cell[1], island.worldName());
-        usedCells.add(key);
-        islandsByCell.put(key, island);
-    }
+      if (!this.dirtyIslands.isEmpty()) {
+         this.logger.severe("Island data remains dirty at shutdown for " + this.dirtyIslands.size() + " island(s).");
+      }
 
-    private void unregisterIndexes(final Island island) {
-        final int spacing = config.islandSpacing();
-        final int[] cell = island.gridCell(spacing);
-        final String key = GridAssigner.key(cell[0], cell[1], island.worldName());
-        usedCells.remove(key);
-        islandsByCell.remove(key);
-        islandsById.remove(island.islandId());
-        for (final UUID member : island.members()) {
-            islandsByMember.remove(member, island);
-        }
-    }
+      this.io.shutdown();
 
-    // ------------------------------------------------------------------ themed generation
+      try {
+         if (!this.io.awaitTermination(10L, TimeUnit.SECONDS)) {
+            this.logger.warning("Island executor did not terminate in 10s.");
+         }
+      } catch (InterruptedException exception) {
+         Thread.currentThread().interrupt();
+         this.logger.log(Level.WARNING, "Interrupted while stopping island service", exception);
+      }
 
-    /** Platform radius: a 7x7 starter island (r=3) — a proper base, not a tiny plot. */
-    private static final int PLATFORM_RADIUS = 3;
+      this.islandsByOwner.clear();
+      this.islandsById.clear();
+      this.islandsByMember.clear();
+      this.islandsByCell.clear();
+      this.usedCells.clear();
+      this.pendingCreations.clear();
+      this.pendingCells.clear();
+      this.pendingIslandsByCell.clear();
+      this.pendingKicks.clear();
+      this.pendingLeaves.clear();
+      this.invites.clear();
+   }
 
-    /**
-     * Builds the themed starter island: a 7x7 two-layer platform (surface over
-     * filler), one bedrock in the centre, the theme's decorations (a tree is
-     * attempted for sapling entries on tree themes) and a starter chest with
-     * the theme's contents.
-     *
-     * {@code theme} may be null (legacy callers): the classic plains look is
-     * generated from hard defaults.
-     */
-    private void generateStarterIsland(final World world, final Island island, final IslandTheme theme) {
-        final int cx = island.centerX();
-        final int cy = island.centerY();
-        final int cz = island.centerZ();
-        final Material top = theme == null ? Material.GRASS_BLOCK : theme.top();
-        final Material under = theme == null ? Material.DIRT : theme.under();
+   private void register(Island island) {
+      this.register(island, this.config.islandSpacing());
+   }
 
-        for (int dx = -PLATFORM_RADIUS; dx <= PLATFORM_RADIUS; dx++) {
-            for (int dz = -PLATFORM_RADIUS; dz <= PLATFORM_RADIUS; dz++) {
-                setBlock(world, cx + dx, cy - 2, cz + dz, under);
-                setBlock(world, cx + dx, cy - 1, cz + dz, under);
-                setBlock(world, cx + dx, cy, cz + dz, top);
+   private void register(Island island, int spacing) {
+      this.islandsByOwner.put(island.owner(), island);
+      this.islandsById.put(island.islandId(), island);
+
+      for(UUID member : island.members()) {
+         this.islandsByMember.put(member, island);
+      }
+
+      int[] cell = island.gridCell(spacing);
+      String key = GridAssigner.key(cell[0], cell[1], island.worldName());
+      this.usedCells.add(key);
+      this.islandsByCell.put(key, island);
+   }
+
+   private void unregisterIndexes(Island island) {
+      int spacing = this.config.islandSpacing();
+      int[] cell = island.gridCell(spacing);
+      String key = GridAssigner.key(cell[0], cell[1], island.worldName());
+      this.usedCells.remove(key);
+      this.islandsByCell.remove(key);
+      this.islandsById.remove(island.islandId());
+
+      for(UUID member : island.members()) {
+         this.islandsByMember.remove(member, island);
+      }
+
+   }
+
+   private void generateStarterIsland(World world, Island island, IslandTheme theme) {
+      int cx = island.centerX();
+      int cy = island.centerY();
+      int cz = island.centerZ();
+      Material top = theme == null ? Material.GRASS_BLOCK : theme.top();
+      Material under = theme == null ? Material.DIRT : theme.under();
+
+      for(int dx = -3; dx <= 3; ++dx) {
+         for(int dz = -3; dz <= 3; ++dz) {
+            this.setBlock(world, cx + dx, cy - 2, cz + dz, under);
+            this.setBlock(world, cx + dx, cy - 1, cz + dz, under);
+            this.setBlock(world, cx + dx, cy, cz + dz, top);
+         }
+      }
+
+      this.setBlock(world, cx, cy - 1, cz, Material.BEDROCK);
+      List<Location> saplings = new ArrayList();
+
+      for(String entry : theme == null ? List.of("2,1,2=OAK_SAPLING", "-2,0,-2=WATER", "-1,0,-2=WATER") : theme.decorations()) {
+         Object[] parsed = ThemeService.parseDecoration(entry);
+         if (parsed != null) {
+            int dx = (Integer)parsed[0];
+            int dy = (Integer)parsed[1];
+            int dz = (Integer)parsed[2];
+            Material material = (Material)parsed[3];
+            if (Math.abs(dx) <= 3 && Math.abs(dz) <= 3) {
+               Location at = new Location(world, (double)(cx + dx), (double)(cy + dy), (double)(cz + dz));
+               if (material.name().endsWith("_SAPLING")) {
+                  saplings.add(at);
+               }
+
+               this.setBlock(world, at.getBlockX(), at.getBlockY(), at.getBlockZ(), material);
             }
-        }
-        setBlock(world, cx, cy - 1, cz, Material.BEDROCK);
+         }
+      }
 
-        final java.util.List<Location> saplings = new ArrayList<>();
-        final java.util.List<String> decorations =
-                theme == null ? List.of("2,1,2=OAK_SAPLING", "-2,0,-2=WATER", "-1,0,-2=WATER")
-                        : theme.decorations();
-        for (final String entry : decorations) {
-            final Object[] parsed = ThemeService.parseDecoration(entry);
-            if (parsed == null) {
-                continue;
-            }
-            final int dx = (Integer) parsed[0];
-            final int dy = (Integer) parsed[1];
-            final int dz = (Integer) parsed[2];
-            final Material material = (Material) parsed[3];
-            if (Math.abs(dx) > PLATFORM_RADIUS || Math.abs(dz) > PLATFORM_RADIUS) {
-                continue; // decoration outside the platform — skip safely
-            }
-            final Location at = new Location(world, cx + dx, cy + dy, cz + dz);
-            if (material.name().endsWith("_SAPLING")) {
-                saplings.add(at);
-            }
-            setBlock(world, at.getBlockX(), at.getBlockY(), at.getBlockZ(), material);
-        }
+      boolean tree = theme == null || theme.tree();
+      if (tree && !saplings.isEmpty()) {
+         Location sapling = (Location)saplings.get(0);
+         if (!world.generateTree(sapling, TreeType.TREE)) {
+            this.logger.fine("Tree generation reported failure at " + String.valueOf(sapling) + " — sapling remains.");
+         }
+      }
 
-        final boolean tree = theme == null || theme.tree();
-        if (tree && !saplings.isEmpty()) {
-            final Location sapling = saplings.get(0);
-            if (!world.generateTree(sapling, TreeType.TREE)) {
-                logger.fine("Tree generation reported failure at " + sapling + " — sapling remains.");
+      this.placeStarterChest(world, island, theme == null ? List.of("ICE:2", "LAVA_BUCKET:1", "BREAD:4", "BONE_MEAL:3") : theme.chestContents());
+   }
+
+   private void placeStarterChest(World world, Island island, List<String> contents) {
+      int x = island.centerX();
+      int y = island.centerY() + 1;
+      int z = island.centerZ() + 2;
+      this.setBlock(world, x, y, z, Material.CHEST);
+      BlockState var8 = world.getBlockAt(x, y, z).getState();
+      if (var8 instanceof Chest chest) {
+         chest.getBlockInventory().clear();
+
+         for(String entry : contents) {
+            Object[] parsed = ThemeService.parseContent(entry);
+            if (parsed != null) {
+               chest.getBlockInventory().addItem(new ItemStack[]{new ItemStack((Material)parsed[0], (Integer)parsed[1])});
             }
-        }
+         }
 
-        placeStarterChest(world, island, theme == null
-                ? List.of("ICE:2", "LAVA_BUCKET:1", "BREAD:4", "BONE_MEAL:3")
-                : theme.chestContents());
-    }
+         chest.update(true);
+      }
 
-    /** Chest south of the centre with the theme's starter contents. */
-    private void placeStarterChest(
-            final World world, final Island island, final List<String> contents) {
-        final int x = island.centerX();
-        final int y = island.centerY() + 1;
-        final int z = island.centerZ() + 2;
-        setBlock(world, x, y, z, Material.CHEST);
-        if (world.getBlockAt(x, y, z).getState() instanceof org.bukkit.block.Chest chest) {
-            for (final String entry : contents) {
-                final Object[] parsed = ThemeService.parseContent(entry);
-                if (parsed == null) {
-                    continue;
-                }
-                chest.getBlockInventory()
-                        .addItem(new org.bukkit.inventory.ItemStack((Material) parsed[0], (Integer) parsed[1]));
-            }
-            chest.update(true);
-        }
-    }
+   }
 
-    private void setBlock(final World world, final int x, final int y, final int z, final Material material) {
-        final Block block = world.getBlockAt(x, y, z);
-        block.setType(material);
-    }
+   private void setBlock(World world, int x, int y, int z, Material material) {
+      Block block = world.getBlockAt(x, y, z);
+      block.setType(material);
+   }
+
+   public static enum CreateResult {
+      CREATED,
+      ALREADY_ISLAND,
+      CREATION_PENDING,
+      WORLD_MISSING,
+      CREATION_FAILED;
+
+      // $FF: synthetic method
+      private static CreateResult[] $values() {
+         return new CreateResult[]{CREATED, ALREADY_ISLAND, CREATION_PENDING, WORLD_MISSING, CREATION_FAILED};
+      }
+   }
+
+   public static enum InviteResult {
+      SENT,
+      TARGET_HAS_ISLAND,
+      SENDER_NOT_OWNER,
+      TEAM_FULL;
+
+      // $FF: synthetic method
+      private static InviteResult[] $values() {
+         return new InviteResult[]{SENT, TARGET_HAS_ISLAND, SENDER_NOT_OWNER, TEAM_FULL};
+      }
+   }
+
+   public static enum AcceptResult {
+      ACCEPTED,
+      NO_INVITE,
+      EXPIRED,
+      ISLAND_GONE,
+      TEAM_FULL,
+      ALREADY_ISLAND;
+
+      // $FF: synthetic method
+      private static AcceptResult[] $values() {
+         return new AcceptResult[]{ACCEPTED, NO_INVITE, EXPIRED, ISLAND_GONE, TEAM_FULL, ALREADY_ISLAND};
+      }
+   }
+
+   public static enum LeaveResult {
+      LEFT,
+      PENDING,
+      SAVE_FAILED,
+      NOT_A_MEMBER;
+
+      // $FF: synthetic method
+      private static LeaveResult[] $values() {
+         return new LeaveResult[]{LEFT, PENDING, SAVE_FAILED, NOT_A_MEMBER};
+      }
+   }
+
+   public static enum KickResult {
+      KICKED,
+      PENDING,
+      SAVE_FAILED,
+      NOT_OWNER,
+      TARGET_NOT_MEMBER,
+      CANNOT_KICK_OWNER;
+
+      // $FF: synthetic method
+      private static KickResult[] $values() {
+         return new KickResult[]{KICKED, PENDING, SAVE_FAILED, NOT_OWNER, TARGET_NOT_MEMBER, CANNOT_KICK_OWNER};
+      }
+   }
 }

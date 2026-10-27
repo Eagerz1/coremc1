@@ -306,53 +306,55 @@ public final class CrateService {
             plugin.messages().sendPrefixed(player, "shop.unavailable", Map.of());
             return false;
         }
-        String keyUsed = null;
-        for (final String keyId : crate.keys()) {
-            if (plugin.keys().countKeys(player, keyId) > 0) {
-                keyUsed = keyId;
-                break;
+        synchronized (profile) {
+            String keyUsed = null;
+            for (final String keyId : crate.keys()) {
+                if (plugin.keys().countKeys(player, keyId) > 0) {
+                    keyUsed = keyId;
+                    break;
+                }
             }
+            if (keyUsed == null) {
+                final String keyName = plugin.keys().key(crate.keys().get(0))
+                        .map(key -> ColorUtil.colorize(key.display()))
+                        .orElse(crate.keys().get(0));
+                plugin.messages().sendPrefixed(player, "crate.no-key", Map.of(
+                        "key", keyName, "crate", ColorUtil.colorize(crate.display())));
+                return false;
+            }
+            final long seen = profile.statOf(crate.pityStatKey()) + 1L;
+            final boolean pityDue = crate.pityReward() != null && crate.pityCount() > 0 && seen >= crate.pityCount();
+            final CrateReward reward =
+                    pityDue ? crate.pityReward() : roll(crate, ThreadLocalRandom.current().nextDouble());
+            if (reward == null) {
+                plugin.getLogger().warning("[crates] crate '" + crate.id() + "' has an empty pool — open refused.");
+                plugin.messages().sendPrefixed(player, "crate.broken", Map.of());
+                return false;
+            }
+            final ItemStack preResolved = preResolve(reward);
+            if (reward.type() == CrateReward.RewardType.CURRENCY
+                    && !plugin.economy().fitsDeposit(
+                            profile, Currency.valueOf(reward.currency()), reward.max())) {
+                // Conservative cap-check on the maximum roll: the key stays in
+                // the inventory and nothing is consumed.
+                plugin.messages().sendPrefixed(player, "economy.error.too-large", Map.of());
+                return false;
+            }
+            if (preResolved == null && needsItem(reward)) {
+                plugin.getLogger().warning("[crates] crate '" + crate.id() + "' reward no longer resolves — refused.");
+                plugin.messages().sendPrefixed(player, "crate.broken", Map.of());
+                return false;
+            }
+            profile.setStat(crate.pityStatKey(),
+                    (pityDue || CrateReward.isJackpot(reward.rarity())) ? 0L : seen);
+            plugin.playerData().markDirty(profile.uuid());
+            plugin.keys().takeKeys(player, keyUsed, 1);
+            final String actual = grant(player, profile, reward, preResolved);
+            plugin.messages().sendPrefixed(player, pityDue ? "crate.pity" : "crate.opened", Map.of(
+                    "crate", ColorUtil.colorize(crate.display()),
+                    "reward", actual));
+            return true;
         }
-        if (keyUsed == null) {
-            final String keyName = plugin.keys().key(crate.keys().get(0))
-                    .map(key -> ColorUtil.colorize(key.display()))
-                    .orElse(crate.keys().get(0));
-            plugin.messages().sendPrefixed(player, "crate.no-key", Map.of(
-                    "key", keyName, "crate", ColorUtil.colorize(crate.display())));
-            return false;
-        }
-        final long seen = profile.statOf(crate.pityStatKey()) + 1L;
-        final boolean pityDue = crate.pityReward() != null && crate.pityCount() > 0 && seen >= crate.pityCount();
-        final CrateReward reward =
-                pityDue ? crate.pityReward() : roll(crate, ThreadLocalRandom.current().nextDouble());
-        if (reward == null) {
-            plugin.getLogger().warning("[crates] crate '" + crate.id() + "' has an empty pool — open refused.");
-            plugin.messages().sendPrefixed(player, "crate.broken", Map.of());
-            return false;
-        }
-        final ItemStack preResolved = preResolve(reward);
-        if (reward.type() == CrateReward.RewardType.CURRENCY
-                && !plugin.economy().fitsDeposit(
-                        profile, Currency.valueOf(reward.currency()), reward.max())) {
-            // Conservative cap-check on the maximum roll: the key stays in
-            // the inventory and nothing is consumed.
-            plugin.messages().sendPrefixed(player, "economy.error.too-large", Map.of());
-            return false;
-        }
-        if (preResolved == null && needsItem(reward)) {
-            plugin.getLogger().warning("[crates] crate '" + crate.id() + "' reward no longer resolves — refused.");
-            plugin.messages().sendPrefixed(player, "crate.broken", Map.of());
-            return false;
-        }
-        profile.setStat(crate.pityStatKey(),
-                (pityDue || CrateReward.isJackpot(reward.rarity())) ? 0L : seen);
-        plugin.playerData().markDirty(profile.uuid());
-        plugin.keys().takeKeys(player, keyUsed, 1);
-        final String actual = grant(player, profile, reward, preResolved);
-        plugin.messages().sendPrefixed(player, pityDue ? "crate.pity" : "crate.opened", Map.of(
-                "crate", ColorUtil.colorize(crate.display()),
-                "reward", actual));
-        return true;
     }
 
     private static boolean needsItem(final CrateReward reward) {

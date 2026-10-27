@@ -211,12 +211,10 @@ public final class IslandUpgradeEffects implements Listener {
         final int pct = configPercent("spawner-boost", "delay-reduction-percent-per-level", 10);
         for (final Map.Entry<String, com.coremc.core.placeable.PlaceableService.Placement> entry :
                 plugin.placeables().placements().entrySet()) {
-            final String key = entry.getKey();
-            final int split = key.indexOf(':');
-            if (split < 0 || !key.substring(0, split).equals(island.worldName())) {
+            final var placement = entry.getValue();
+            if (!placement.worldName().equals(island.worldName())) {
                 continue;
             }
-            final var placement = entry.getValue();
             if (placement.type() != com.coremc.core.placeable.PlaceableService.Type.SPAWNER) {
                 continue;
             }

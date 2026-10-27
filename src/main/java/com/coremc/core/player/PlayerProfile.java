@@ -3,10 +3,11 @@ package com.coremc.core.player;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 /**
- * Persistent per-player data for CoreMC (schema version 6).
+ * Persistent per-player data for CoreMC (schema version 7).
  *
  * Schema versions: 1 = join stats only; 2 = + currencies, single
  * role/omnitool slots, island association, placeholders; 3 = per-role
@@ -14,8 +15,8 @@ import java.util.UUID;
  * 4 = + spawner unlock kill counters;
  * 5 = + OmniTool purchased upgrade levels;
  * 6 = + custom enchant levels, souls, tags, companions, quests, playtime,
- * chat style, lifetime stats, subscription claims, store rank.
- * All loads are tolerant: unknown/missing fields become defaults.
+ * chat style, lifetime stats, subscription claims, store rank; 7 = island-purchase recovery marker.
+ * Missing fields default safely; unknown top-level fields are retained on save.
  *
  * A profile is created the first time a player connects and survives
  * server restarts (YAML on disk). It is deliberately designed for
@@ -28,15 +29,26 @@ import java.util.UUID;
  * snapshot is taken at save time. Offline-profile mutations (admin
  * commands) are loaded, mutated and flushed without being cached.
  *
- * Loading is forward/backward tolerant: unknown/missing fields fall
- * back to defaults, so v1 files seamlessly become v2.
+ * Loading defaults missing fields and preserves unknown top-level fields so an older plugin does not erase newer profile data.
  */
 public final class PlayerProfile {
 
     /** Current on-disk schema version. */
-    public static final int SCHEMA_VERSION = 6;
+    public static final int SCHEMA_VERSION = 7;
+
+    private static final Set<String> KNOWN_FIELDS = Set.of(
+            "schema-version", "username", "first-join-millis", "last-seen-millis", "total-logins",
+            "money", "credits", "sky-tokens", "role", "role-level", "role-xp", "role-progress",
+            "omnitool-level", "omnitool-xp", "island-id", "subscription-tier",
+            "subscription-expires-millis", "cosmetics", "kill-counts", "omni-upgrades", "enchant-levels",
+            "souls", "owned-tags", "equipped-tag", "companions", "equipped-companion", "quest-day",
+            "daily-quests", "quest-progress", "playtime-minutes", "playtime-claimed", "chat-color",
+            "chat-bold", "stats", "subscription-claims", "rank", "last-island-purchase-id");
 
     private final UUID uuid;
+    private int schemaVersion = SCHEMA_VERSION;
+    /** Unknown top-level fields are round-tripped to avoid downgrade data loss. */
+    private final Map<String, Object> unknownFields = new LinkedHashMap<>();
 
     private String username;
     private long firstJoinMillis;
@@ -105,6 +117,7 @@ public final class PlayerProfile {
     private final Map<String, String> subscriptionClaims = new LinkedHashMap<>();
     /** Purchased store rank id ("member" = default). */
     private String rankId = "member";
+    private String lastIslandPurchaseId = "";
 
     private PlayerProfile(final UUID uuid) {
         this.uuid = Objects.requireNonNull(uuid, "uuid");
@@ -123,6 +136,13 @@ public final class PlayerProfile {
     /** Rebuilds a profile from its YAML representation (tolerant of v1 files). */
     public static PlayerProfile fromMap(final UUID uuid, final Map<String, Object> map) {
         final PlayerProfile profile = new PlayerProfile(uuid);
+        profile.schemaVersion = (int) Math.min(Integer.MAX_VALUE,
+                Math.max(SCHEMA_VERSION, asLong(map.get("schema-version"), SCHEMA_VERSION)));
+        for (final Map.Entry<String, Object> entry : map.entrySet()) {
+            if (!KNOWN_FIELDS.contains(entry.getKey())) {
+                profile.unknownFields.put(entry.getKey(), copyYamlValue(entry.getValue()));
+            }
+        }
         profile.username = String.valueOf(map.getOrDefault("username", "unknown"));
         profile.firstJoinMillis = asLong(map.get("first-join-millis"), 0L);
         profile.lastJoinDefaults(map, profile);
@@ -141,7 +161,7 @@ public final class PlayerProfile {
         profile.omniToolLevel = (int) Math.max(1L, asLong(map.get("omnitool-level"), 1L));
         profile.omniToolXp = Math.max(0L, asLong(map.get("omnitool-xp"), 0L));
         final Object island = map.get("island-id");
-        profile.islandId = island == null ? null : UUID.fromString(String.valueOf(island));
+        profile.islandId = parseUuid(island);
         profile.subscriptionTier = String.valueOf(map.getOrDefault("subscription-tier", "none"));
         profile.subscriptionExpiresMillis = Math.max(0L, asLong(map.get("subscription-expires-millis"), 0L));
         final Object progress = map.get("role-progress");
@@ -234,6 +254,7 @@ public final class PlayerProfile {
             }
         }
         profile.rankId = String.valueOf(map.getOrDefault("rank", "member"));
+        profile.lastIslandPurchaseId = String.valueOf(map.getOrDefault("last-island-purchase-id", ""));
     }
 
     /** Tolerant loader for id -> flat string/object record maps (companions, quests). */
@@ -254,9 +275,9 @@ public final class PlayerProfile {
     }
 
     /** Serialises this profile to a YAML-safe map. */
-    public Map<String, Object> toMap() {
+    public synchronized Map<String, Object> toMap() {
         final Map<String, Object> map = new LinkedHashMap<>();
-        map.put("schema-version", SCHEMA_VERSION);
+        map.put("schema-version", schemaVersion);
         map.put("username", username);
         map.put("first-join-millis", firstJoinMillis);
         map.put("last-seen-millis", lastSeenMillis);
@@ -292,61 +313,81 @@ public final class PlayerProfile {
         map.put("stats", new LinkedHashMap<>(stats));
         map.put("subscription-claims", new LinkedHashMap<>(subscriptionClaims));
         map.put("rank", rankId);
+        map.put("last-island-purchase-id", lastIslandPurchaseId);
+        unknownFields.forEach((key, value) -> map.putIfAbsent(key, copyYamlValue(value)));
         return map;
     }
 
+    private static Object copyYamlValue(final Object value) {
+        if (value instanceof Map<?, ?> source) {
+            final Map<String, Object> copy = new LinkedHashMap<>();
+            for (final Map.Entry<?, ?> entry : source.entrySet()) {
+                copy.put(String.valueOf(entry.getKey()), copyYamlValue(entry.getValue()));
+            }
+            return copy;
+        }
+        if (value instanceof java.util.List<?> source) {
+            final java.util.List<Object> copy = new java.util.ArrayList<>(source.size());
+            for (final Object entry : source) {
+                copy.add(copyYamlValue(entry));
+            }
+            return copy;
+        }
+        return value;
+    }
+
     /** Records a successful login. Called on the main thread from the join listener. */
-    public void recordLogin(final String currentName, final long nowMillis) {
+    public synchronized void recordLogin(final String currentName, final long nowMillis) {
         this.username = currentName;
         this.lastSeenMillis = nowMillis;
         this.totalLogins++;
     }
 
     /** Updates the last-seen timestamp (called when the player quits). */
-    public void recordQuit(final long nowMillis) {
+    public synchronized void recordQuit(final long nowMillis) {
         this.lastSeenMillis = nowMillis;
     }
 
     /** Whether this login is the player's first ever. Call before/for {@link #recordLogin}. */
-    public boolean isFirstLogin() {
+    public synchronized boolean isFirstLogin() {
         return totalLogins == 0L;
     }
 
-    public UUID uuid() {
+    public synchronized UUID uuid() {
         return uuid;
     }
 
-    public String username() {
+    public synchronized String username() {
         return username;
     }
 
-    public long firstJoinMillis() {
+    public synchronized long firstJoinMillis() {
         return firstJoinMillis;
     }
 
-    public long lastSeenMillis() {
+    public synchronized long lastSeenMillis() {
         return lastSeenMillis;
     }
 
-    public long totalLogins() {
+    public synchronized long totalLogins() {
         return totalLogins;
     }
 
     // --- currency accessors; the service layer enforces the no-negative/overflow contract ---
 
-    public long money() {
+    public synchronized long money() {
         return money;
     }
 
-    public long credits() {
+    public synchronized long credits() {
         return credits;
     }
 
-    public long skyTokens() {
+    public synchronized long skyTokens() {
         return skyTokens;
     }
 
-    public long balanceOf(final com.coremc.core.economy.Currency currency) {
+    public synchronized long balanceOf(final com.coremc.core.economy.Currency currency) {
         return switch (currency) {
             case MONEY -> money;
             case CREDITS -> credits;
@@ -355,7 +396,7 @@ public final class PlayerProfile {
     }
 
     /** Package-visible low-level setter — ALWAYS go through EconomyService. */
-    public void setBalanceInternal(final com.coremc.core.economy.Currency currency, final long amount) {
+    public synchronized void setBalanceInternal(final com.coremc.core.economy.Currency currency, final long amount) {
         if (amount < 0L) {
             throw new IllegalArgumentException("Balance cannot be negative: " + amount);
         }
@@ -368,29 +409,30 @@ public final class PlayerProfile {
 
     // --- progression accessors ---
 
-    public String roleId() {
+    public synchronized String roleId() {
         return roleId;
     }
 
-    public void roleId(final String roleId) {
+    public synchronized void roleId(final String roleId) {
         this.roleId = roleId;
     }
 
-    public int roleLevel() {
+    public synchronized int roleLevel() {
         return (int) asLong(progressOf(roleId).get("level"), roleLevel);
     }
 
-    public long roleXp() {
+    public synchronized long roleXp() {
         return asLong(progressOf(roleId).get("xp"), roleXp);
     }
 
     /** Per-role progress view: level/xp for any role key (defaults 1/0). */
-    public Map<String, Object> progressOf(final String roleKey) {
-        return roleProgress.getOrDefault(roleKey, java.util.Map.of("level", 1, "xp", 0));
+    public synchronized Map<String, Object> progressOf(final String roleKey) {
+        final Map<String, Object> progress = roleProgress.get(roleKey);
+        return progress == null ? java.util.Map.of("level", 1, "xp", 0) : Map.copyOf(progress);
     }
 
     /** Writes progress for a role key (validated by the progression service). */
-    public void setProgress(final String roleKey, final int level, final long xp) {
+    public synchronized void setProgress(final String roleKey, final int level, final long xp) {
         final Map<String, Object> record = new LinkedHashMap<>();
         record.put("level", level);
         record.put("xp", xp);
@@ -401,8 +443,16 @@ public final class PlayerProfile {
         }
     }
 
-    public Map<String, Map<String, Object>> roleProgress() {
-        return Map.copyOf(roleProgress);
+    public synchronized Map<String, Map<String, Object>> roleProgress() {
+        return deepCopyRoleProgress();
+    }
+
+    private Map<String, Map<String, Object>> deepCopyRoleProgress() {
+        final Map<String, Map<String, Object>> copy = new LinkedHashMap<>();
+        for (final Map.Entry<String, Map<String, Object>> entry : roleProgress.entrySet()) {
+            copy.put(entry.getKey(), new LinkedHashMap<>(entry.getValue()));
+        }
+        return copy;
     }
 
     private Map<String, Object> deepCopyProgress() {
@@ -413,16 +463,16 @@ public final class PlayerProfile {
         return copy;
     }
 
-    public int omniToolLevel() {
+    public synchronized int omniToolLevel() {
         return omniToolLevel;
     }
 
-    public long omniToolXp() {
+    public synchronized long omniToolXp() {
         return omniToolXp;
     }
 
     /** OmniTool progression — use RoleService/ProgressionService math. */
-    public void setOmniToolProgress(final int level, final long xp) {
+    public synchronized void setOmniToolProgress(final int level, final long xp) {
         this.omniToolLevel = Math.max(1, level);
         this.omniToolXp = Math.max(0L, xp);
     }
@@ -430,19 +480,19 @@ public final class PlayerProfile {
     // --- spawner kill progression ---
 
     /** Kills recorded for {@code entityKey} (lowercase entity name). */
-    public long killCountOf(final String entityKey) {
+    public synchronized long killCountOf(final String entityKey) {
         return killCounts.getOrDefault(entityKey, 0L);
     }
 
     /** Increments the kill counter for {@code entityKey} by one. */
-    public void addKillCount(final String entityKey) {
+    public synchronized void addKillCount(final String entityKey) {
         killCounts.merge(entityKey, 1L, Long::sum);
     }
 
     // --- OmniTool purchased upgrades (schema v5) ---
 
     /** Level of the OmniTool upgrade {@code upgradeId} (0 = not owned). */
-    public int omniUpgrade(final String upgradeId) {
+    public synchronized int omniUpgrade(final String upgradeId) {
         return omniUpgrades.getOrDefault(upgradeId, 0);
     }
 
@@ -451,7 +501,7 @@ public final class PlayerProfile {
      * the entry (defaults are never persisted). The max is enforced by the
      * OmniUpgradeCatalog, which owns the catalogue definition.
      */
-    public void setOmniUpgrade(final String upgradeId, final int level) {
+    public synchronized void setOmniUpgrade(final String upgradeId, final int level) {
         if (level <= 0) {
             omniUpgrades.remove(upgradeId);
         } else {
@@ -462,7 +512,7 @@ public final class PlayerProfile {
     // --- custom enchant levels (schema v6) ---
 
     /** Level of custom enchant {@code enchantId} (0 = not owned). */
-    public int enchantLevel(final String enchantId) {
+    public synchronized int enchantLevel(final String enchantId) {
         return enchantLevels.getOrDefault(enchantId, 0);
     }
 
@@ -470,7 +520,7 @@ public final class PlayerProfile {
      * Sets a custom enchant level (level {@code <= 0} clears the entry).
      * Max levels are enforced by the enchant registry, which owns the catalogue.
      */
-    public void setEnchantLevel(final String enchantId, final int level) {
+    public synchronized void setEnchantLevel(final String enchantId, final int level) {
         if (level <= 0) {
             enchantLevels.remove(enchantId);
         } else {
@@ -478,169 +528,179 @@ public final class PlayerProfile {
         }
     }
 
-    public Map<String, Integer> enchantLevels() {
+    public synchronized Map<String, Integer> enchantLevels() {
         return Map.copyOf(enchantLevels);
     }
 
     // --- souls ---
 
-    public long souls() {
+    public synchronized long souls() {
         return souls;
     }
 
-    public void souls(final long souls) {
+    public synchronized void souls(final long souls) {
         this.souls = Math.max(0L, souls);
     }
 
     // --- tags ---
 
-    public java.util.Set<String> ownedTags() {
+    public synchronized java.util.Set<String> ownedTags() {
         return java.util.Set.copyOf(ownedTags);
     }
 
-    public boolean addTag(final String tagId) {
+    public synchronized boolean addTag(final String tagId) {
         return ownedTags.add(tagId);
     }
 
-    public String equippedTag() {
+    public synchronized String equippedTag() {
         return equippedTag;
     }
 
-    public void equippedTag(final String tagId) {
+    public synchronized void equippedTag(final String tagId) {
         this.equippedTag = tagId == null || tagId.isBlank() ? "none" : tagId;
     }
 
     // --- companions ---
 
-    public Map<String, Map<String, Object>> companions() {
+    public synchronized Map<String, Map<String, Object>> companions() {
         return deepCopyRecords(companions);
     }
 
-    public Map<String, Object> companionOf(final String companionId) {
-        return companions.getOrDefault(companionId, Map.of());
+    public synchronized Map<String, Object> companionOf(final String companionId) {
+        final Map<String, Object> record = companions.get(companionId);
+        return record == null ? Map.of() : Map.copyOf(record);
     }
 
-    public void setCompanion(final String companionId, final Map<String, Object> record) {
+    public synchronized void setCompanion(final String companionId, final Map<String, Object> record) {
         companions.put(companionId, new LinkedHashMap<>(record));
     }
 
-    public boolean removeCompanion(final String companionId) {
+    public synchronized boolean removeCompanion(final String companionId) {
         return companions.remove(companionId) != null;
     }
 
-    public String equippedCompanion() {
+    public synchronized String equippedCompanion() {
         return equippedCompanion;
     }
 
-    public void equippedCompanion(final String companionId) {
+    public synchronized void equippedCompanion(final String companionId) {
         this.equippedCompanion = companionId == null || companionId.isBlank() ? "none" : companionId;
     }
 
     // --- quests ---
 
-    public String questDay() {
+    public synchronized String questDay() {
         return questDay;
     }
 
-    public void questDay(final String questDay) {
+    public synchronized void questDay(final String questDay) {
         this.questDay = questDay == null ? "" : questDay;
     }
 
-    public java.util.List<String> dailyQuests() {
+    public synchronized java.util.List<String> dailyQuests() {
         return java.util.List.copyOf(dailyQuests);
     }
 
-    public void dailyQuests(final java.util.List<String> questIds) {
+    public synchronized void dailyQuests(final java.util.List<String> questIds) {
         dailyQuests.clear();
         dailyQuests.addAll(questIds);
     }
 
-    public Map<String, Object> questProgressOf(final String questId) {
-        return questProgress.getOrDefault(questId, Map.of());
+    public synchronized Map<String, Object> questProgressOf(final String questId) {
+        final Map<String, Object> record = questProgress.get(questId);
+        return record == null ? Map.of() : Map.copyOf(record);
     }
 
-    public void setQuestProgress(final String questId, final Map<String, Object> record) {
+    public synchronized void setQuestProgress(final String questId, final Map<String, Object> record) {
         questProgress.put(questId, new LinkedHashMap<>(record));
     }
 
-    public void clearQuestProgress() {
+    public synchronized void clearQuestProgress() {
         questProgress.clear();
     }
 
     // --- playtime ---
 
-    public long playtimeMinutes() {
+    public synchronized long playtimeMinutes() {
         return playtimeMinutes;
     }
 
-    public void addPlaytimeMinutes(final long minutes) {
+    public synchronized void addPlaytimeMinutes(final long minutes) {
         if (minutes > 0L) {
             playtimeMinutes += minutes;
         }
     }
 
     /** Claims a playtime milestone; returns false if already claimed. */
-    public boolean claimPlaytimeMilestone(final String milestoneId) {
+    public synchronized boolean claimPlaytimeMilestone(final String milestoneId) {
         return playtimeClaimed.add(milestoneId);
     }
 
-    public boolean playtimeMilestoneClaimed(final String milestoneId) {
+    public synchronized boolean playtimeMilestoneClaimed(final String milestoneId) {
         return playtimeClaimed.contains(milestoneId);
     }
 
     // --- chat ---
 
-    public String chatColor() {
+    public synchronized String chatColor() {
         return chatColor;
     }
 
-    public void chatColor(final String chatColor) {
+    public synchronized void chatColor(final String chatColor) {
         this.chatColor = chatColor == null || chatColor.isBlank() ? "none" : chatColor;
     }
 
-    public boolean chatBold() {
+    public synchronized boolean chatBold() {
         return chatBold;
     }
 
-    public void chatBold(final boolean chatBold) {
+    public synchronized void chatBold(final boolean chatBold) {
         this.chatBold = chatBold;
     }
 
     // --- stats ---
 
-    public long statOf(final String statKey) {
+    public synchronized long statOf(final String statKey) {
         return stats.getOrDefault(statKey, 0L);
     }
 
-    public void addStat(final String statKey, final long amount) {
+    public synchronized void addStat(final String statKey, final long amount) {
         if (amount > 0L) {
             stats.merge(statKey, amount, Long::sum);
         }
     }
 
     /** Overwrites a stat (crate pity counters reset this way). */
-    public void setStat(final String statKey, final long value) {
+    public synchronized void setStat(final String statKey, final long value) {
         stats.put(statKey, Math.max(0L, value));
     }
 
     // --- subscriptions ---
 
     /** Day-key the {@code tier} rewards were last claimed ("" = never). */
-    public String subscriptionClaimDay(final String tier) {
+    public synchronized String subscriptionClaimDay(final String tier) {
         return subscriptionClaims.getOrDefault(tier, "");
     }
 
-    public void markSubscriptionClaimed(final String tier, final String dayKey) {
+    public synchronized void markSubscriptionClaimed(final String tier, final String dayKey) {
         subscriptionClaims.put(tier, dayKey);
     }
 
     // --- store rank ---
 
-    public String rankId() {
+    public synchronized String lastIslandPurchaseId() {
+        return lastIslandPurchaseId;
+    }
+
+    public synchronized void lastIslandPurchaseId(final String transactionId) {
+        this.lastIslandPurchaseId = transactionId == null ? "" : transactionId;
+    }
+
+    public synchronized String rankId() {
         return rankId;
     }
 
-    public void rankId(final String rankId) {
+    public synchronized void rankId(final String rankId) {
         this.rankId = rankId == null || rankId.isBlank() ? "member" : rankId;
     }
 
@@ -655,26 +715,37 @@ public final class PlayerProfile {
 
     /** Island this player owns or belongs to (null = none). Fast redirect only;
      * team membership authority is the island file. */
-    public UUID islandId() {
+    public synchronized UUID islandId() {
         return islandId;
     }
 
-    public void islandId(final UUID islandId) {
+    public synchronized void islandId(final UUID islandId) {
         this.islandId = islandId;
     }
 
-    public Map<String, String> cosmetics() {
+    public synchronized Map<String, String> cosmetics() {
         return Map.copyOf(cosmetics);
     }
 
-    public String subscriptionTier() {
+    public synchronized String subscriptionTier() {
         return subscriptionTier;
     }
 
-    public long subscriptionExpiresMillis() {
+    public synchronized long subscriptionExpiresMillis() {
         return subscriptionExpiresMillis;
     }
 
+    private static UUID parseUuid(final Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return UUID.fromString(String.valueOf(value));
+        } catch (final IllegalArgumentException ignored) {
+            // An invalid optional island pointer must not make balances and progression unreadable.
+            return null;
+        }
+    }
     private static long asLong(final Object value, final long fallback) {
         if (value instanceof Number number) {
             return number.longValue();
@@ -690,7 +761,7 @@ public final class PlayerProfile {
     }
 
     @Override
-    public String toString() {
+    public synchronized String toString() {
         return "PlayerProfile{uuid=" + uuid + ", username=" + username + ", logins=" + totalLogins + ", credits="
                 + credits + ", skyTokens=" + skyTokens + "}";
     }

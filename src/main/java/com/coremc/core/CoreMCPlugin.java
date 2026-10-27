@@ -71,6 +71,7 @@ public final class CoreMCPlugin extends JavaPlugin {
     private OmniToolService omniToolService;
     private RoleService roleService;
     private PlaceableService placeableService;
+    private PlaceableListener placeableListener;
     private GeneratorService generatorService;
     private SpawnerService spawnerService;
     private ShopService shopService;
@@ -154,6 +155,8 @@ public final class CoreMCPlugin extends JavaPlugin {
                 coreConfig,
                 new YamlIslandDataStore(getDataFolder().toPath().resolve("islands")),
                 playerDataService,
+                themeService,
+                taskService,
                 getDataFolder().toPath().resolve("islands"));
         this.islandService.start();
         this.miningCubeService = new com.coremc.core.island.MiningCubeService(this);
@@ -217,7 +220,8 @@ public final class CoreMCPlugin extends JavaPlugin {
         pluginManager.registerEvents(new FarmingXpListener(this), this);
         pluginManager.registerEvents(new FishingXpListener(this), this);
         pluginManager.registerEvents(new SlayerXpListener(this), this);
-        pluginManager.registerEvents(new PlaceableListener(this), this);
+        this.placeableListener = new PlaceableListener(this);
+        pluginManager.registerEvents(placeableListener, this);
         pluginManager.registerEvents(new com.coremc.core.spawner.SpawnerMobTagger(
                 this, spawnerService.tags()), this);
         pluginManager.registerEvents(new KillProgressListener(this), this);
@@ -243,16 +247,22 @@ public final class CoreMCPlugin extends JavaPlugin {
     }
 
     private void shutdownServices() {
+        // Resolve queued placeable breaks before cancelling their next-tick callbacks.
+        if (placeableListener != null) {
+            placeableListener.resolvePendingBreaksOnShutdown();
+            placeableListener = null;
+        }
         // Stop scheduled work first so nothing touches dead services.
         if (taskService != null) {
             taskService.cancelAll();
         }
-        // Flush and shut down player data (synchronous, safe on disable).
-        if (playerDataService != null) {
-            playerDataService.shutdown();
-        }
+        // Finish island transactions while the profile writer is still accepting durable writes.
         if (islandService != null) {
             islandService.shutdown();
+        }
+        // Flush and shut down player data after island transactions have joined the writer queue.
+        if (playerDataService != null) {
+            playerDataService.shutdown();
         }
         this.taskService = null;
         this.coreConfig = null;
@@ -266,7 +276,16 @@ public final class CoreMCPlugin extends JavaPlugin {
             spawnerService.stopWatchdog();
         }
         if (placeableService != null) {
-            placeableService.save(); // shutdown-critical: never lose placed blocks
+            boolean placementsSaved = false;
+            for (int attempt = 1; attempt <= 3 && !placementsSaved; attempt++) {
+                placementsSaved = placeableService.save();
+                if (!placementsSaved && attempt < 3) {
+                    getLogger().warning("Retrying placeable registry shutdown save (attempt " + (attempt + 1) + "/3).");
+                }
+            }
+            if (!placementsSaved) {
+                getLogger().severe("Could not persist the placeable registry after three shutdown attempts.");
+            }
             placeableService = null;
         }
         this.generatorService = null;

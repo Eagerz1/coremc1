@@ -70,17 +70,21 @@ public final class EconomyService {
         if (amount < 0L) {
             throw new AmountException("negative");
         }
-        apply(profile, currency, amount);
+        synchronized (profile) {
+            apply(profile, currency, amount);
+        }
     }
 
     /** Adds {@code amount}. Rejects overflow rather than wrapping. */
     public void deposit(final PlayerProfile profile, final Currency currency, final long amount) {
         validatePositive(amount);
-        final long balance = profile.balanceOf(currency);
-        if (balance > Long.MAX_VALUE - amount) {
-            throw new AmountException("too-large");
+        synchronized (profile) {
+            final long balance = profile.balanceOf(currency);
+            if (balance > Long.MAX_VALUE - amount) {
+                throw new AmountException("too-large");
+            }
+            apply(profile, currency, balance + amount);
         }
-        apply(profile, currency, balance + amount);
     }
 
     /**
@@ -96,12 +100,14 @@ public final class EconomyService {
     /** Removes {@code amount}; returns false (no change) if unaffordable. */
     public boolean withdraw(final PlayerProfile profile, final Currency currency, final long amount) {
         validatePositive(amount);
-        final long balance = profile.balanceOf(currency);
-        if (balance < amount) {
-            return false;
+        synchronized (profile) {
+            final long balance = profile.balanceOf(currency);
+            if (balance < amount) {
+                return false;
+            }
+            apply(profile, currency, balance - amount);
+            return true;
         }
-        apply(profile, currency, balance - amount);
-        return true;
     }
 
     /** Balance lookup by UUID (cached or one-off disk load; call off-main if cache may miss). */

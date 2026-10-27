@@ -328,6 +328,13 @@ public final class OmniToolService {
      * denied (unknown id, maxed level, or too few Credits).
      */
     public boolean purchaseUpgrade(final Player player, final PlayerProfile profile, final String upgradeId) {
+        synchronized (profile) {
+            return purchaseUpgradeLocked(player, profile, upgradeId);
+        }
+    }
+
+    private boolean purchaseUpgradeLocked(
+            final Player player, final PlayerProfile profile, final String upgradeId) {
         final java.util.Optional<OmniUpgradeCatalog.Upgrade> found = upgrades.upgrade(upgradeId);
         if (found.isEmpty()) {
             plugin.messages().sendPrefixed(player, "omnitool.upgrade-unknown", Map.of());

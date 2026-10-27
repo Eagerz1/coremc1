@@ -3,6 +3,7 @@ package com.coremc.core.placeable;
 import com.coremc.core.CoreMCPlugin;
 import com.coremc.core.gen.GeneratorDefinition;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -24,11 +25,11 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * World rules for core placeables:
- *  - placed PDC-tagged blocks join the placement registry (MONITOR, only if
+ *  - placed PDC-tagged blocks join the placement registry (HIGHEST, only if
  *    nothing cancelled the placement),
  *  - breaking a registered block suppresses vanilla drops and yields exactly
- *    one fresh core item (dupe-safe: an item placed twice is registered
- *    twice, consumed per-placement),
+ *    one fresh core item after the event completes (dupe-safe: an item
+ *    placed twice is registered twice, consumed per-placement),
  *  - explosions disarm placed blocks (registry cleared; item destroyed),
  *  - right-clicking a placed generator harvests its product with a
  *    per-block cooldown so farms tick without redstone exploits.
@@ -44,13 +45,18 @@ public final class PlaceableListener implements Listener {
 
     /** per-player-per-block last harvest millis; bounded, swept on growth. */
     private final Map<String, Long> lastHarvest = new HashMap<>();
+    /** Breaks removed from storage before final event cancellation is known. */
+    private final Map<BlockBreakEvent, PendingBreak> pendingBreaks = new IdentityHashMap<>();
+    private final Map<PendingBreak, BlockBreakEvent> scheduledResolutions = new IdentityHashMap<>();
+
+    private record PendingBreak(PlaceableService.Placement placement, Location location, Material originalType) {}
 
     public PlaceableListener(final CoreMCPlugin plugin) {
         this.plugin = plugin;
         this.placeables = plugin.placeables();
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlace(final BlockPlaceEvent event) {
         final Optional<Map.Entry<PlaceableService.Type, String>> id =
                 placeables.idOf(event.getItemInHand());
@@ -58,9 +64,13 @@ public final class PlaceableListener implements Listener {
             return;
         }
         final Block block = event.getBlockPlaced();
-        placeables.register(
+        if (!placeables.register(
                 block.getWorld().getName(), block.getX(), block.getY(), block.getZ(),
-                id.get().getKey(), id.get().getValue(), event.getPlayer().getUniqueId());
+                id.get().getKey(), id.get().getValue(), event.getPlayer().getUniqueId())) {
+            event.setCancelled(true);
+            plugin.messages().sendPrefixed(event.getPlayer(), "placeable.save-failed", Map.of());
+            return;
+        }
         if (id.get().getKey() == PlaceableService.Type.SPAWNER) {
             plugin.spawners().tierFor(id.get().getValue()).ifPresent(ref -> {
                 if (block.getState() instanceof org.bukkit.block.CreatureSpawner) {
@@ -85,7 +95,7 @@ public final class PlaceableListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBreak(final BlockBreakEvent event) {
         final Optional<PlaceableService.Placement> placement = placeables.at(event.getBlock().getLocation());
         if (placement.isEmpty()) {
@@ -99,13 +109,57 @@ public final class PlaceableListener implements Listener {
             return;
         }
         event.setDropItems(false);
-        placeables.unregister(event.getBlock().getLocation());
-        final ItemStack returned = switch (placement.get().type()) {
-            case GENERATOR -> plugin.generators().mint(placement.get().id()).orElse(null);
-            case SPAWNER -> plugin.spawners().mint(placement.get().id()).orElse(null);
+        if (!placeables.unregister(event.getBlock().getLocation())) {
+            event.setCancelled(true);
+            plugin.messages().sendPrefixed(event.getPlayer(), "placeable.save-failed", Map.of());
+            return;
+        }
+        pendingBreaks.put(event, new PendingBreak(placement.get(), event.getBlock().getLocation().clone(), event.getBlock().getType()));
+    }
+
+    /** Complete a core-block break after the event has finished dispatching. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onBreakMonitor(final BlockBreakEvent event) {
+        final PendingBreak pending = pendingBreaks.remove(event);
+        if (pending == null) {
+            return;
+        }
+        scheduledResolutions.put(pending, event);
+        plugin.tasks().runLater(() -> {
+            scheduledResolutions.remove(pending);
+            resolveBreak(pending);
+        }, 1L);
+    }
+
+    /** Resolve queued break outcomes before the plugin cancels scheduled tasks on shutdown. */
+    public void resolvePendingBreaksOnShutdown() {
+        for (final Map.Entry<PendingBreak, BlockBreakEvent> entry : List.copyOf(scheduledResolutions.entrySet())) {
+            resolveBreak(entry.getKey());
+        }
+        scheduledResolutions.clear();
+    }
+
+    private void resolveBreak(final PendingBreak pending) {
+        final Block block = pending.location().getBlock();
+        if (block.getType() == pending.originalType()) {
+            restorePlacement(pending);
+            return;
+        }
+        final PlaceableService.Placement placement = pending.placement();
+        final ItemStack returned = switch (placement.type()) {
+            case GENERATOR -> plugin.generators().mint(placement.id()).orElse(null);
+            case SPAWNER -> plugin.spawners().mint(placement.id()).orElse(null);
         };
         if (returned != null) {
-            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), returned);
+            pending.location().getWorld().dropItemNaturally(pending.location(), returned);
+        }
+    }
+
+    private void restorePlacement(final PendingBreak pending) {
+        final PlaceableService.Placement placement = pending.placement();
+        if (!placeables.restoreAfterCancelledBreak(pending.location().getWorld().getName(), placement)) {
+            plugin.getLogger().severe("Could not restore the placeable registry after a cancelled block break at "
+                    + pending.location() + "; keeping the placement in memory and retrying on shutdown.");
         }
     }
 
@@ -129,20 +183,22 @@ public final class PlaceableListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(final EntityExplodeEvent event) {
-        clearAffected(event.blockList());
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onBlockExplode(final BlockExplodeEvent event) {
-        clearAffected(event.blockList());
-    }
-
-    private void clearAffected(final List<Block> blocks) {
-        for (final Block block : blocks) {
-            placeables.unregister(block.getLocation());
+        if (!clearAffected(event.blockList())) {
+            event.setCancelled(true);
         }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockExplode(final BlockExplodeEvent event) {
+        if (!clearAffected(event.blockList())) {
+            event.setCancelled(true);
+        }
+    }
+
+    private boolean clearAffected(final List<Block> blocks) {
+        return placeables.unregisterAll(blocks.stream().map(Block::getLocation).toList());
     }
 
     // ------------------------------------------------------------------ generator harvest

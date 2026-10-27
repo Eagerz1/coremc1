@@ -59,6 +59,12 @@ public final class EnchantService {
      * level was granted; every denial is messaged to the player.
      */
     public boolean purchase(final Player player, final PlayerProfile profile, final Enchant enchant) {
+        synchronized (profile) {
+            return purchaseLocked(player, profile, enchant);
+        }
+    }
+
+    private boolean purchaseLocked(final Player player, final PlayerProfile profile, final Enchant enchant) {
         if (!enchant.universal() && !enchant.role().equals(profile.roleId())) {
             plugin.messages().sendPrefixed(player, "enchant.wrong-role",
                     Map.of("role", roleLabel(enchant.role())));

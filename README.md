@@ -86,7 +86,7 @@ cancelled on disable, data flushed synchronously in `onDisable`.
 
 ## Testing
 
-- **140+ JUnit unit tests** run under Maven Surefire (`mvn verify`):
+- **143 JUnit test methods** are defined and run under Maven Surefire (`mvn verify`):
   profile model and every schema migration, YAML persistence round-trips
   and corrupt-file handling, island grid/buff math, economy and GUI
   purchase logic, enchant/catalog parsing, spawner tier/progression math

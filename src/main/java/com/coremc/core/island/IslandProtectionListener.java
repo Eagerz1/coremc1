@@ -28,6 +28,9 @@ import org.bukkit.event.player.PlayerInteractEvent;
 public final class IslandProtectionListener implements Listener {
 
     private static final long DENY_MESSAGE_COOLDOWN_MILLIS = 2000L;
+    /** Fail-closed placeholder used only while the persisted island index is loading. */
+    private static final Island LOADING_ISLAND =
+            new Island(new UUID(0L, 0L), new UUID(0L, 1L), "coremc-loading", 0, 0, 0, 1, 0L);
 
     private final IslandService islands;
     private final MessageService messages;
@@ -162,6 +165,10 @@ public final class IslandProtectionListener implements Listener {
         if (island == null) {
             return false;
         }
+        if (islands.isCreationPending(island)) {
+            refuse(player, "island.creation-pending-area");
+            return true;
+        }
         final IslandRole role = island.roleOf(player.getUniqueId());
         if (role == IslandRole.OWNER) {
             return false;
@@ -185,6 +192,10 @@ public final class IslandProtectionListener implements Listener {
         if (island == null) {
             return false;
         }
+        if (islands.isCreationPending(island)) {
+            refuse(player, "island.creation-pending-area");
+            return true;
+        }
         final IslandRole role = island.roleOf(player.getUniqueId());
         if (role == IslandRole.OWNER) {
             return false;
@@ -205,10 +216,16 @@ public final class IslandProtectionListener implements Listener {
 
     /** The island governing this action, or null when open-world rules apply. */
     private Island islandFor(final Player player, final Block block) {
-        if (!islands.isLoaded() || player.hasPermission("coremc.island.bypass")) {
+        if (player.hasPermission("coremc.island.bypass")) {
             return null;
         }
-        return islands.islandAt(block.getWorld().getName(), block.getX(), block.getZ()).orElse(null);
+        final String worldName = block.getWorld().getName();
+        if (!islands.isLoaded()) {
+            // Do not leave the dedicated island world open while saved ownership
+            // data is unavailable or still being read.
+            return islands.isIslandWorld(worldName) ? LOADING_ISLAND : null;
+        }
+        return islands.islandAtForProtection(worldName, block.getX(), block.getZ()).orElse(null);
     }
 
     private void refuse(final Player player, final String messageKey) {

@@ -40,6 +40,10 @@ import java.util.UUID;
  * Buffs (schema v5): {@link #buffs} maps buff-id -&gt; purchased level
  * for the 12 island buffs. Older files simply have no {@code buffs}
  * key and load with every buff at 0 — no migration step needed.
+ *
+ * Creation recovery (schema v6): {@link #creationPending} marks a new
+ * island whose starter platform still needs durable completion. Missing
+ * keys default to false, preserving all existing islands.
  */
 public final class Island {
 
@@ -95,6 +99,7 @@ public final class Island {
     private final Map<String, Integer> upgrades = new LinkedHashMap<>();
     private final Map<String, Integer> buffs = new LinkedHashMap<>();
     private String theme = DEFAULT_THEME;
+    private boolean creationPending;
     private final Map<String, Boolean> settings = new LinkedHashMap<>();
     private long xp;
     private final Map<String, Long> stats = new LinkedHashMap<>();
@@ -186,6 +191,7 @@ public final class Island {
         map.put("theme", theme);
         map.put("settings", new LinkedHashMap<>(settings));
         map.put("created-millis", createdMillis);
+        map.put("creation-pending", creationPending);
         return map;
     }
 
@@ -201,6 +207,9 @@ public final class Island {
                 asInt(map.get("center-z")),
                 border,
                 asLong(map.get("created-millis")));
+        if (map.get("creation-pending") instanceof Boolean pending) {
+            island.creationPending = pending;
+        }
         if (map.get("level") instanceof Number level) {
             island.level = Math.max(1, level.intValue());
         }
@@ -339,6 +348,16 @@ public final class Island {
 
     public void setBuffTier(final String buffId, final int tier) {
         buffs.put(Objects.requireNonNull(buffId, "buffId"), Math.max(0, tier));
+    }
+
+    /** True until a new island's starter platform and record are fully durable. */
+    public boolean creationPending() {
+        return creationPending;
+    }
+
+    /** Sets whether startup must recover an interrupted island creation. */
+    public void creationPending(final boolean creationPending) {
+        this.creationPending = creationPending;
     }
 
     /** The theme key this island was generated with (never null). */
