@@ -76,6 +76,7 @@ public final class EnchantEngine implements Listener {
     private final CoreMCPlugin plugin;
     private final EnchantDropPipeline dropPipeline;
     private final EnchantRewardPipeline rewardPipeline;
+    private final EnchantEffectPipeline effectPipeline;
     private final EnchantRuntimeState runtimeState = new EnchantRuntimeState();
     private final ThreadLocal<Boolean> guarded = ThreadLocal.withInitial(() -> Boolean.FALSE);
     /** Misconfigured names already warned about (warn-once, no log spam). */
@@ -100,6 +101,7 @@ public final class EnchantEngine implements Listener {
         this.plugin = plugin;
         this.dropPipeline = new EnchantDropPipeline(plugin, this, runtimeState);
         this.rewardPipeline = new EnchantRewardPipeline(plugin, this);
+        this.effectPipeline = new EnchantEffectPipeline(plugin, this);
     }
 
     /** Quit hook: transient stores never outlive the session. */
@@ -350,75 +352,18 @@ public final class EnchantEngine implements Listener {
     /** Records one combo stack per owned COMBO enchant in scope. */
     public void recordCombos(final Player player, final PlayerProfile profile,
             final List<EnchantService.EnchantLevel> active) {
-        for (final EnchantService.EnchantLevel owned : active) {
-            final Enchant enchant = owned.enchant();
-            if (enchant.effect() != EnchantEffect.COMBO) {
-                continue;
-            }
-            if (!roll(enchant.chanceAt(owned.level())) || !cooldownReady(player.getUniqueId(), enchant)) {
-                continue;
-            }
-            markCooldown(player.getUniqueId(), enchant.id());
-            recordCombo(player.getUniqueId(), enchant.id(),
-                    longValue(enchant.values(), "window-seconds", 5L),
-                    (int) longValue(enchant.values(), "max-stacks", 20L));
-        }
+        effectPipeline.recordCombos(player, active);
     }
 
     /** Fires TEMP_BOOST enchants whose combo threshold is currently met. */
     public void triggerTempBoosts(final Player player, final PlayerProfile profile, final String roleKey,
             final List<EnchantService.EnchantLevel> active) {
-        for (final EnchantService.EnchantLevel owned : active) {
-            final Enchant enchant = owned.enchant();
-            if (enchant.effect() != EnchantEffect.TEMP_BOOST) {
-                continue;
-            }
-            if (!roll(enchant.chanceAt(owned.level())) || !cooldownReady(player.getUniqueId(), enchant)) {
-                continue;
-            }
-            final int need = (int) longValue(enchant.values(), "trigger-count", 10L);
-            if (highestComboStacks(profile, roleKey) < need) {
-                continue;
-            }
-            markCooldown(player.getUniqueId(), enchant.id());
-            final long seconds = longValue(enchant.values(), "duration-seconds", 15L);
-            setTempBoost(player.getUniqueId(),
-                    doubleValue(enchant.values(), "mult-xp", 0.0),
-                    doubleValue(enchant.values(), "mult-drops", 0.0),
-                    seconds * 1000L);
-            for (final String spec : stringList(enchant.values(), "effects")) {
-                final PotionEffect effect = parseEffect(spec);
-                if (effect != null) {
-                    player.addPotionEffect(effect, true);
-                }
-            }
-            plugin.messages().sendPrefixed(player, "enchant.overcharge",
-                    Map.of("name", ColorUtil.colorize(enchant.display()),
-                            "seconds", String.valueOf(seconds)));
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 1.4f);
-        }
+        effectPipeline.triggerTempBoosts(player, profile, roleKey, active);
     }
 
     /** Applies the strongest owned HASTE in scope (haste sources never stack). */
     public void applyHaste(final Player player, final List<EnchantService.EnchantLevel> active) {
-        int bestAmp = -1;
-        int bestTicks = 0;
-        for (final EnchantService.EnchantLevel owned : active) {
-            final Enchant enchant = owned.enchant();
-            if (enchant.effect() != EnchantEffect.HASTE) {
-                continue;
-            }
-            if (!roll(enchant.chanceAt(owned.level())) || !cooldownReady(player.getUniqueId(), enchant)) {
-                continue;
-            }
-            markCooldown(player.getUniqueId(), enchant.id());
-            bestAmp = Math.max(bestAmp, (int) Math.floor(enchant.valueAt(owned.level())));
-            bestTicks = Math.max(bestTicks,
-                    (int) longValue(enchant.values(), "duration-seconds", 6L) * 20);
-        }
-        if (bestAmp >= 0) {
-            applyPotion(player, PotionEffectType.HASTE, bestAmp, bestTicks);
-        }
+        effectPipeline.applyHaste(player, active);
     }
 
     /** Fires CURRENCY enchants (grant currency = values.currency, else purchase currency). */
@@ -435,55 +380,13 @@ public final class EnchantEngine implements Listener {
 
     /** Applies RECOVERY enchants (heal + feed + extinguish). */
     public void applyRecovery(final Player player, final List<EnchantService.EnchantLevel> active) {
-        for (final EnchantService.EnchantLevel owned : active) {
-            final Enchant enchant = owned.enchant();
-            if (enchant.effect() != EnchantEffect.RECOVERY) {
-                continue;
-            }
-            if (!roll(enchant.chanceAt(owned.level())) || !cooldownReady(player.getUniqueId(), enchant)) {
-                continue;
-            }
-            markCooldown(player.getUniqueId(), enchant.id());
-            final double hearts = doubleValue(enchant.values(), "hearts", 0.0);
-            if (hearts > 0.0) {
-                player.setHealth(Math.min(player.getMaxHealth(), player.getHealth() + hearts));
-            }
-            final long food = longValue(enchant.values(), "food", 0L);
-            if (food > 0L) {
-                player.setFoodLevel(Math.min(20, player.getFoodLevel() + (int) Math.min(food, 20L)));
-            }
-            if (boolValue(enchant.values(), "extinguish", false)) {
-                player.setFireTicks(0);
-            }
-        }
+        effectPipeline.applyRecovery(player, active);
     }
 
     /** Fires OVERDRIVE ultimates (the ANY-trigger ultimate, checked by every pipeline). */
     public void fireOverdrive(final Player player, final PlayerProfile profile,
             final List<EnchantService.EnchantLevel> active) {
-        for (final EnchantService.EnchantLevel owned : active) {
-            final Enchant enchant = owned.enchant();
-            if (enchant.effect() != EnchantEffect.ULTIMATE
-                    || !"OVERDRIVE".equalsIgnoreCase(stringValue(enchant.values(), "mode", ""))) {
-                continue;
-            }
-            if (!roll(enchant.chanceAt(owned.level())) || !cooldownReady(player.getUniqueId(), enchant)) {
-                continue;
-            }
-            markCooldown(player.getUniqueId(), enchant.id());
-            final long seconds = longValue(enchant.values(), "duration-seconds", 30L);
-            setTempBoost(player.getUniqueId(),
-                    doubleValue(enchant.values(), "mult-xp", 0.0),
-                    doubleValue(enchant.values(), "mult-drops", 0.0),
-                    seconds * 1000L);
-            for (final String spec : stringList(enchant.values(), "effects")) {
-                final PotionEffect effect = parseEffect(spec);
-                if (effect != null) {
-                    player.addPotionEffect(effect, true);
-                }
-            }
-            ultimateFx(player, enchant);
-        }
+        effectPipeline.fireOverdrive(player, active);
     }
 
     // ------------------------------------------------------------------ drop pipeline facade

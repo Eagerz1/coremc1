@@ -109,3 +109,5 @@ Hermes audited the clean baseline read-only and recommended the phases and first
 - Cooldowns, combo stacks, random rolls, temporary boosts, and quit cleanup now live in EnchantRuntimeState shared by the engine and drop pipeline. The Bukkit recursion guard remains in the engine, and existing public engine methods and profile enchant IDs are unchanged. Clean production packaging compiled all 126 sources; tests were skipped.
 
 - Enchant currency, souls, configured reward tables, and item delivery now live in EnchantRewardPipeline. Existing EnchantEngine entry points delegate to it, preserving multiplier order, reward IDs, overflow drops, and dirty-profile behavior. Hermes reviewed the extraction; clean production packaging compiled all 127 sources, with tests skipped.
+
+- Shared combo, temporary boost, haste, recovery, and overdrive effects now live in EnchantEffectPipeline. EnchantEngine keeps its public facade signatures, including legacy unused parameters, and proc/cooldown order is unchanged. Hermes reviewed the extraction; clean production packaging compiled all 128 sources, with tests skipped.
