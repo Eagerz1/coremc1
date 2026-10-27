@@ -53,7 +53,8 @@ public final class PlaceableService {
         return identity.idOf(stack);
     }
 
-    static String keyOf(final String world, final int x, final int y, final int z) {
+    /** Canonical encoded key for a world block location. */
+    public static String keyOf(final String world, final int x, final int y, final int z) {
         return PlaceableRegistryStore.keyOf(world, x, y, z);
     }
 
