@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Logger;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -28,14 +29,18 @@ import org.bukkit.configuration.file.YamlConfiguration;
  */
 final class PlaceableRegistryStore {
 
-    private final CoreMCPlugin plugin;
+    private final Logger logger;
     private final File file;
     private final Map<String, Placement> placements = new HashMap<>();
     private boolean registryReady;
 
     PlaceableRegistryStore(final CoreMCPlugin plugin) {
-        this.plugin = plugin;
-        this.file = new File(plugin.getDataFolder(), "data/placeables.yml");
+        this(new File(plugin.getDataFolder(), "data/placeables.yml"), plugin.getLogger());
+    }
+
+    PlaceableRegistryStore(final File file, final Logger logger) {
+        this.file = file;
+        this.logger = logger;
     }
     // ------------------------------------------------------------------ placement registry
 
@@ -93,6 +98,7 @@ final class PlaceableRegistryStore {
             throw new IllegalStateException("Unsupported placeable registry version in " + file
                     + "; the original file was preserved and CoreMC will fail closed.");
         }
+        final boolean emptyLegacyFile = !hasRegistryVersion && file.length() == 0L;
         final Map<String, java.util.Set<String>> rowFields = new HashMap<>();
         for (final String path : yaml.getKeys(true)) {
             if (path.equals("registry-version")) {
@@ -123,9 +129,23 @@ final class PlaceableRegistryStore {
                 throw new IllegalStateException("Incomplete placement record '" + row.getKey() + "' in " + file);
             }
         }
-        if (rowFields.isEmpty() && !hasRegistryVersion) {
+        if (rowFields.isEmpty() && !hasRegistryVersion && !emptyLegacyFile) {
             throw new IllegalStateException("Empty placeable registry " + file
                     + "; its prior contents may have been truncated, so the original file was preserved and CoreMC will fail closed.");
+        }
+        if (emptyLegacyFile) {
+            final java.nio.file.Path backup = file.toPath().resolveSibling(
+                    file.getName() + ".legacy-backup-" + UUID.randomUUID());
+            try {
+                Files.copy(file.toPath(), backup);
+            } catch (final IOException | SecurityException exception) {
+                logger.warning("Could not back up empty legacy placeable registry " + file
+                        + " to " + backup + "; CoreMC will fail closed.");
+                throw new IllegalStateException("Could not preserve empty legacy placeable registry " + file
+                        + " at backup path " + backup + "; CoreMC will fail closed.", exception);
+            }
+            logger.warning("The empty legacy placeable registry may be valid or truncated; the original file was preserved at "
+                    + backup + ". Restore a trusted backup if placed blocks were expected.");
         }
         boolean rewriteLegacyKeys = false;
         for (final String path : yaml.getKeys(true)) {
@@ -153,9 +173,9 @@ final class PlaceableRegistryStore {
         }
         registryReady = true;
         if (rewriteLegacyKeys && !save()) {
-            plugin.getLogger().severe("Could not migrate legacy placeable registry keys; loaded placements remain in memory.");
+            logger.severe("Could not migrate legacy placeable registry keys; loaded placements remain in memory.");
         }
-        plugin.getLogger().info("Loaded " + placements.size() + " placed block(s).");
+        logger.info("Loaded " + placements.size() + " placed block(s).");
     }
     private static UUID uuidOf(final String raw) {
         try {
@@ -168,7 +188,7 @@ final class PlaceableRegistryStore {
     /** Saves all placements (overwrite; small bounded file). */
     public boolean save() {
         if (!registryReady) {
-            plugin.getLogger().severe("Refusing to overwrite an unreadable placeable registry: " + file);
+            logger.severe("Refusing to overwrite an unreadable placeable registry: " + file);
             return false;
         }
         final YamlConfiguration yaml = new YamlConfiguration();
@@ -195,7 +215,7 @@ final class PlaceableRegistryStore {
                 Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException e) {
-            plugin.getLogger().warning("Could not save placements: " + e.getMessage());
+            logger.warning("Could not save placements: " + e.getMessage());
             return false;
         }
         return true;
@@ -220,7 +240,14 @@ final class PlaceableRegistryStore {
     public boolean restoreAfterCancelledBreak(final String worldName, final Placement placement) {
         final Placement restored = new Placement(worldName, placement.type(), placement.id(), placement.owner(),
                 placement.x(), placement.y(), placement.z());
-        placements.put(keyOf(worldName, placement.x(), placement.y(), placement.z()), restored);
+        return restoreAfterCancelledBreakAll(java.util.List.of(restored));
+    }
+
+    /** Restores a group of placements and persists the registry once. */
+    public boolean restoreAfterCancelledBreakAll(final java.util.Collection<Placement> restoredPlacements) {
+        for (final Placement placement : restoredPlacements) {
+            placements.put(keyOf(placement.worldName(), placement.x(), placement.y(), placement.z()), placement);
+        }
         return save();
     }
     public Optional<Placement> at(final Location location) {

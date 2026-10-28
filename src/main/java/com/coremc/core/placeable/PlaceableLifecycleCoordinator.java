@@ -3,6 +3,7 @@ package com.coremc.core.placeable;
 import com.coremc.core.CoreMCPlugin;
 import com.coremc.core.gen.GeneratorLifecycleCoordinator;
 import com.coremc.core.spawner.SpawnerLifecycleCoordinator;
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +47,12 @@ public final class PlaceableLifecycleCoordinator {
     /** Breaks removed from storage before final event cancellation is known. */
     private final Map<BlockBreakEvent, PendingBreak> pendingBreaks = new IdentityHashMap<>();
     private final Map<PendingBreak, BlockBreakEvent> scheduledResolutions = new IdentityHashMap<>();
+    private final Map<PendingExplosion, Boolean> scheduledExplosionResolutions = new IdentityHashMap<>();
 
     private record PendingBreak(PlaceableService.Placement placement, Location location, Material originalType) {}
+    private record PendingExplosion(org.bukkit.event.Cancellable event, List<PendingExplosionBlock> blocks) {}
+    private record PendingExplosionBlock(Location location, Material originalType,
+            PlaceableService.Placement placement) {}
 
     public PlaceableLifecycleCoordinator(final CoreMCPlugin plugin) {
         this.plugin = plugin;
@@ -155,18 +160,59 @@ public final class PlaceableLifecycleCoordinator {
         }
     }
     public void onEntityExplode(final EntityExplodeEvent event) {
-        if (!clearAffected(event.blockList())) {
-            event.setCancelled(true);
-        }
+        deferExplosionResolution(event, event.blockList());
     }
     public void onBlockExplode(final BlockExplodeEvent event) {
-        if (!clearAffected(event.blockList())) {
-            event.setCancelled(true);
-        }
+        deferExplosionResolution(event, event.blockList());
     }
 
-    private boolean clearAffected(final List<Block> blocks) {
-        return placeables.unregisterAll(blocks.stream().map(Block::getLocation).toList());
+    private void deferExplosionResolution(final org.bukkit.event.Cancellable event,
+            final List<Block> affectedBlocks) {
+        final List<PendingExplosionBlock> candidates = affectedBlocks.stream()
+                .map(block -> placeables.at(block.getLocation())
+                        .map(placement -> new PendingExplosionBlock(
+                                block.getLocation().clone(), block.getType(), placement))
+                        .orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        if (candidates.isEmpty()) {
+            return;
+        }
+        final List<Location> locations = candidates.stream()
+                .map(PendingExplosionBlock::location)
+                .toList();
+        if (!placeables.unregisterAll(locations)) {
+            event.setCancelled(true);
+            return;
+        }
+        final PendingExplosion pending = new PendingExplosion(event, candidates);
+        scheduledExplosionResolutions.put(pending, Boolean.TRUE);
+        plugin.tasks().runLater(() -> {
+            scheduledExplosionResolutions.remove(pending);
+            resolveExplosion(pending);
+        }, 1L);
+    }
+
+    public void resolvePendingExplosionsOnShutdown() {
+        for (final PendingExplosion pending : List.copyOf(scheduledExplosionResolutions.keySet())) {
+            resolveExplosion(pending);
+        }
+        scheduledExplosionResolutions.clear();
+    }
+
+    private void resolveExplosion(final PendingExplosion pending) {
+        final boolean cancelled = pending.event().isCancelled();
+        final List<PlaceableService.Placement> toRestore = new ArrayList<>();
+        for (final PendingExplosionBlock candidate : pending.blocks()) {
+            final boolean blockSurvived = candidate.location().getBlock().getType() == candidate.originalType();
+            if (!PlaceableExplosionOutcome.shouldUnregister(cancelled, blockSurvived)) {
+                toRestore.add(candidate.placement());
+            }
+        }
+        if (!toRestore.isEmpty() && !placeables.restoreAfterCancelledBreakAll(toRestore)) {
+            plugin.getLogger().severe("Could not persist placeable restorations after a cancelled or ineffective explosion; "
+                    + "ownership remains in memory.");
+        }
     }
 
     // ------------------------------------------------------------------ generator harvest

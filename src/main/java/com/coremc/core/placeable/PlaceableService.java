@@ -75,6 +75,10 @@ public final class PlaceableService {
         return registry.restoreAfterCancelledBreak(worldName, placement);
     }
 
+    public boolean restoreAfterCancelledBreakAll(final java.util.Collection<Placement> placements) {
+        return registry.restoreAfterCancelledBreakAll(placements);
+    }
+
     public Optional<Placement> at(final Location location) {
         if (location.getWorld() == null) {
             return Optional.empty();

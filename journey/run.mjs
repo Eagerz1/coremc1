@@ -22,7 +22,8 @@
 //       (overlay: deterministic), mine 2 blocks -> 2 sky keys
 //   P7  /crates: six crates render; open sky x2 (2nd is deterministically
 //       the pity), no-key negative path
-//   P8  outsider protection: guest dig denied, block intact
+//   P8  outsider protection, invite/accept, leave, post-leave protection,
+//       disposable guest island create + confirmed delete
 //   P9  /gens: four generators render; buy cobble gen, place, harvest
 //   P10 void rescue back home
 //   P11 clean restart: everything persists (live + data-file asserts,
@@ -961,12 +962,14 @@ async function main() {
     await closeWin(owner)
   }
 
-  // ------------------------------------------------ P8 protection
-  phase(8, 'outsider protection: guest dig denied, block intact')
+  // ------------------------------------------------ P8 protection + membership lifecycle
+  phase(8, 'outsider protection, membership lifecycle, guest island create/delete')
   guest = makeBot(GUEST)
   check(await waitSpawn(guest), 'guest spawns')
   const gWorld = await waitUntil(() => guest.__world, 30000)
   check(!!gWorld, 'guest reports its level name', String(guest.__world))
+  const bothBotsOnline = !!owner.entity && !!guest.entity
+  check(bothBotsOnline, 'owner and guest are both online for P8')
   let victim = null
   for (let r = 2; r <= 3 && !victim; r++) {
     for (const [dx, dz] of [[-r, 1], [-r, -1], [r, 2], [2, r]]) {
@@ -977,27 +980,173 @@ async function main() {
     }
   }
   check(!!victim, 'found a platform block for the guest to attack')
-  if (victim) {
-    const matBefore = owner.blockAt(v3(victim.x, victim.y, victim.z)).name
+  let guestAtVictim = false
+  let victimMaterialBefore = null
+  if (victim && bothBotsOnline) {
+    victimMaterialBefore = owner.blockAt(v3(victim.x, victim.y, victim.z)).name
     await rc(`execute in ${DIM} run tp ${GUEST} ${victim.x + 2.5} ${GY + 1} ${victim.z + 0.5}`)
-    await waitUntil(() => guest.__world === WORLD_ISLANDS
+    guestAtVictim = !!await waitUntil(() => guest.__world === WORLD_ISLANDS
       && guest.entity.position.distanceTo(v3(victim.x + 2.5, GY + 1, victim.z + 0.5)) < 6, 30000)
-    await waitBlockReady(guest, victim.x, victim.y, victim.z, true, 20000)
-    await sleep(1000)
-    clearChat(guest)
-    const gTarget = guest.blockAt(v3(victim.x, victim.y, victim.z))
-    if (gTarget && gTarget.name !== 'air') {
-      try {
-        await Promise.race([guest.dig(gTarget).catch(() => {}), sleep(9000)])
-      } catch { /* denial may reject — that is the point */ }
+    check(guestAtVictim, 'guest is at the owner island for outsider check')
+    if (guestAtVictim) {
+      await waitBlockReady(guest, victim.x, victim.y, victim.z, true, 20000)
+      await sleep(1000)
+      clearChat(guest)
+      const gTarget = guest.blockAt(v3(victim.x, victim.y, victim.z))
+      if (gTarget && gTarget.name !== 'air') {
+        try {
+          await Promise.race([guest.dig(gTarget).catch(() => {}), sleep(9000)])
+        } catch { /* denial may reject — that is the point */ }
+      }
+      await sleep(1000)
+      const matAfter = owner.blockAt(v3(victim.x, victim.y, victim.z)).name
+      check(matAfter === victimMaterialBefore, 'guest dig leaves the block intact', `${victimMaterialBefore} -> ${matAfter}`)
+      check(await waitChat(guest, /protected/i, 10000), 'guest sees the protection denial')
+    } else {
+      bad('outsider dig skipped safely', 'guest did not reach the owner island victim block')
     }
-    await sleep(1000)
-    const matAfter = owner.blockAt(v3(victim.x, victim.y, victim.z)).name
-    check(matAfter === matBefore, 'guest dig leaves the block intact', `${matBefore} -> ${matAfter}`)
-    check(await waitChat(guest, /protected/i, 10000), 'guest sees the protection denial')
-    quitBot(guest, GUEST)
-    await sleep(1500)
   }
+
+  // Island files are authoritative for membership. Resolve both offline-mode
+  // UUIDs from CoreMC's persisted username index, then poll the atomically
+  // replaced YAML files because membership writes run on the I/O executor.
+  const namesFile = path.join(PLUGIN_DIR, 'profiles', 'usernames.yml')
+  let names = null
+  try { names = yamlLoad(fs.readFileSync(namesFile, 'utf8')) } catch { /* reported below */ }
+  const ownerUuid = names && (names[OWNER.toLowerCase()] || names[OWNER])
+  const guestUuid = names && (names[GUEST.toLowerCase()] || names[GUEST])
+  const islandsDir = path.join(PLUGIN_DIR, 'islands')
+  const ownerIslandFile = ownerUuid && path.join(islandsDir, `${ownerUuid}.yml`)
+  const guestIslandFile = guestUuid && path.join(islandsDir, `${guestUuid}.yml`)
+  let guestLeftOwnerIsland = false
+  let guestReturnedToVictim = false
+  const readIslandFile = (file) => {
+    if (!file || !fs.existsSync(file)) return null
+    try {
+      const data = yamlLoad(fs.readFileSync(file, 'utf8'))
+      return data && (data.island || data)
+    } catch { return null }
+  }
+  check(!!ownerUuid && !!guestUuid, 'username index resolves owner and guest UUIDs',
+    `owner=${ownerUuid || 'missing'} guest=${guestUuid || 'missing'}`)
+  check(!!ownerIslandFile && !!readIslandFile(ownerIslandFile), 'owner island YAML is available for membership checks')
+
+  if (victim && bothBotsOnline && guestAtVictim && ownerUuid && guestUuid && ownerIslandFile) {
+    clearChat(owner)
+    clearChat(guest)
+    owner.chat(`/is invite ${GUEST}`)
+    check(await waitChat(owner, /Invited\s+JGuest\s+to your island/i, 10000),
+      'owner invite command succeeds')
+    check(await waitChat(guest, /JOwner\s+invited you to their island.*\/is accept/i, 10000),
+      'guest receives the island invitation')
+    clearChat(guest)
+    guest.chat('/is accept')
+    check(await waitChat(guest, /You joined the island/i, 10000), 'guest accepts the invitation')
+    const memberFile = await waitUntil(() => {
+      const island = readIslandFile(ownerIslandFile)
+      return island && Array.isArray(island.members)
+        && island.members.map(String).some((id) => id.toLowerCase() === String(guestUuid).toLowerCase())
+        ? island : null
+    }, 30000, 500)
+    check(!!memberFile, 'owner island YAML persists guest UUID in island.members',
+      `file=${ownerIslandFile} guest=${guestUuid}`)
+    log(`[P8 evidence] invite accepted; owner island=${ownerIslandFile}; member=${guestUuid}; persisted=${!!memberFile}`)
+
+    if (memberFile) {
+      clearChat(guest)
+      guest.chat('/is leave')
+      const leaveMessage = await waitChat(guest, /You left the island/i, 15000)
+      check(leaveMessage, 'guest leaves the owner island')
+      const leftFile = leaveMessage && await waitUntil(() => {
+        const island = readIslandFile(ownerIslandFile)
+        return island && Array.isArray(island.members)
+          && !island.members.map(String).some((id) => id.toLowerCase() === String(guestUuid).toLowerCase())
+          ? island : null
+      }, 30000, 500)
+      check(!!leftFile, 'owner island YAML removes guest UUID after leave',
+        `file=${ownerIslandFile} guest=${guestUuid}`)
+      guestLeftOwnerIsland = !!leaveMessage && !!leftFile
+
+      if (guestLeftOwnerIsland) {
+        // The leave completion may rescue the guest away from the island.
+        // Return to the same victim block and verify protection after the
+        // persisted membership removal.
+        await rc(`execute in ${DIM} run tp ${GUEST} ${victim.x + 2.5} ${GY + 1} ${victim.z + 0.5}`)
+        const guestReturned = await waitUntil(() => guest.__world === WORLD_ISLANDS
+          && guest.entity.position.distanceTo(v3(victim.x + 2.5, GY + 1, victim.z + 0.5)) < 6, 30000)
+        check(!!guestReturned, 'guest returns to the same victim block after leaving')
+        guestReturnedToVictim = !!guestReturned
+        if (guestReturnedToVictim) {
+          await waitBlockReady(guest, victim.x, victim.y, victim.z, true, 20000)
+          await sleep(800)
+          clearChat(guest)
+          const postLeaveTarget = guest.blockAt(v3(victim.x, victim.y, victim.z))
+          if (postLeaveTarget && postLeaveTarget.name !== 'air') {
+            try {
+              await Promise.race([guest.dig(postLeaveTarget).catch(() => {}), sleep(9000)])
+            } catch { /* denial may reject */ }
+          }
+          await sleep(800)
+          const postLeaveMat = owner.blockAt(v3(victim.x, victim.y, victim.z))?.name || 'unavailable'
+          check(postLeaveMat === victimMaterialBefore, 'post-leave guest dig leaves the same block intact',
+            `${victimMaterialBefore} -> ${postLeaveMat}`)
+          check(await waitChat(guest, /protected/i, 10000), 'guest sees protection denial after leaving')
+          log(`[P8 evidence] leave persisted=true; return succeeded=true; post-leave victim=${postLeaveMat} (expected ${victimMaterialBefore})`)
+        } else {
+          bad('post-leave protection check skipped safely', 'guest did not return to the victim block; no dig command sent')
+        }
+      } else {
+        bad('post-leave protection check skipped safely', 'leave did not confirm and persist; guest will not dig')
+      }
+    } else {
+      bad('leave and post-leave checks skipped safely', 'guest membership was not confirmed in owner YAML')
+    }
+  } else {
+    bad('membership lifecycle checks skipped safely', 'bots, victim, guest position, or persisted UUID unavailable')
+  }
+
+  // Only create/delete the guest's disposable island when no guest island
+  // file exists already. This keeps a rerun from deleting prior user data.
+  if (guestUuid && guestIslandFile && guestLeftOwnerIsland && guestReturnedToVictim) {
+    const guestFileInitiallyAbsent = !fs.existsSync(guestIslandFile)
+    check(guestFileInitiallyAbsent, 'guest island file is absent before disposable creation', guestIslandFile)
+    if (guestFileInitiallyAbsent) {
+      clearChat(guest)
+      guest.chat('/is create')
+      check(await waitChat(guest, /island has been created/i, 90000), 'guest island creation succeeds directly')
+      const createdFile = await waitUntil(() => {
+        const island = readIslandFile(guestIslandFile)
+        return island && String(island.owner).toLowerCase() === String(guestUuid).toLowerCase()
+          ? island : null
+      }, 90000, 500)
+      check(!!createdFile, 'guest island YAML appears with guest as owner', guestIslandFile)
+      log(`[P8 evidence] disposable guest island created=${!!createdFile}; file=${guestIslandFile}`)
+      if (createdFile) {
+        clearChat(guest)
+        guest.chat('/is delete')
+        const confirmation = await waitChat(guest, /Repeat\s+\/is delete.*within\s+15 seconds to confirm/i, 5000)
+        check(!!confirmation, 'guest island deletion asks for second confirmation')
+        if (confirmation) {
+          guest.chat('/is delete')
+          check(await waitChat(guest, /Your island has been deleted/i, 10000),
+            'second /is delete confirms disposable island deletion')
+          const removed = await waitUntil(() => !fs.existsSync(guestIslandFile), 30000, 500)
+          check(!!removed, 'guest island owner YAML is removed after deletion', guestIslandFile)
+          log(`[P8 evidence] disposable guest island deleted=${!!removed}; file=${guestIslandFile}`)
+        } else {
+          bad('disposable guest island retained safely', 'confirmation text did not match; skipped second delete')
+        }
+      } else {
+        bad('disposable guest island retained safely', 'creation did not persist the guest owner YAML')
+      }
+    } else {
+      bad('guest island create/delete skipped safely', 'guest already has an island file; refusing to delete it')
+    }
+  } else {
+    bad('guest island create/delete skipped safely', 'guest UUID/path unavailable, leave was not persisted, or guest return failed')
+  }
+  quitBot(guest, GUEST)
+  await sleep(1500)
 
   // ------------------------------------------------ P9 generators
   phase(9, '/gens: four generators render; buy cobble gen, place, harvest')
