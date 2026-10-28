@@ -979,8 +979,9 @@ async function main() {
   }
   check(!!victim, 'found a platform block for the guest to attack')
   let guestAtVictim = false
+  let victimMaterialBefore = null
   if (victim && bothBotsOnline) {
-    const matBefore = owner.blockAt(v3(victim.x, victim.y, victim.z)).name
+    victimMaterialBefore = owner.blockAt(v3(victim.x, victim.y, victim.z)).name
     await rc(`execute in ${DIM} run tp ${GUEST} ${victim.x + 2.5} ${GY + 1} ${victim.z + 0.5}`)
     guestAtVictim = !!await waitUntil(() => guest.__world === WORLD_ISLANDS
       && guest.entity.position.distanceTo(v3(victim.x + 2.5, GY + 1, victim.z + 0.5)) < 6, 30000)
@@ -997,7 +998,7 @@ async function main() {
       }
       await sleep(1000)
       const matAfter = owner.blockAt(v3(victim.x, victim.y, victim.z)).name
-      check(matAfter === matBefore, 'guest dig leaves the block intact', `${matBefore} -> ${matAfter}`)
+      check(matAfter === victimMaterialBefore, 'guest dig leaves the block intact', `${victimMaterialBefore} -> ${matAfter}`)
       check(await waitChat(guest, /protected/i, 10000), 'guest sees the protection denial')
     } else {
       bad('outsider dig skipped safely', 'guest did not reach the owner island victim block')
@@ -1085,10 +1086,10 @@ async function main() {
           }
           await sleep(800)
           const postLeaveMat = owner.blockAt(v3(victim.x, victim.y, victim.z))?.name || 'unavailable'
-          check(postLeaveMat === matBefore, 'post-leave guest dig leaves the same block intact',
-            `${matBefore} -> ${postLeaveMat}`)
+          check(postLeaveMat === victimMaterialBefore, 'post-leave guest dig leaves the same block intact',
+            `${victimMaterialBefore} -> ${postLeaveMat}`)
           check(await waitChat(guest, /protected/i, 10000), 'guest sees protection denial after leaving')
-          log(`[P8 evidence] leave persisted=true; return succeeded=true; post-leave victim=${postLeaveMat} (expected ${matBefore})`)
+          log(`[P8 evidence] leave persisted=true; return succeeded=true; post-leave victim=${postLeaveMat} (expected ${victimMaterialBefore})`)
         } else {
           bad('post-leave protection check skipped safely', 'guest did not return to the victim block; no dig command sent')
         }
