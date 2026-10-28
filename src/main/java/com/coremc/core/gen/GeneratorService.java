@@ -1,14 +1,12 @@
 package com.coremc.core.gen;
 
 import com.coremc.core.CoreMCPlugin;
-import com.coremc.core.economy.Currency;
 import com.coremc.core.placeable.PlaceableService;
 import com.coremc.core.player.PlayerProfile;
 import com.coremc.core.util.ColorUtil;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import org.bukkit.Material;
@@ -26,9 +24,15 @@ public final class GeneratorService {
 
     private final CoreMCPlugin plugin;
     private final Map<String, GeneratorDefinition> definitions = new LinkedHashMap<>();
+    private final GeneratorLifecycleCoordinator lifecycle;
 
     public GeneratorService(final CoreMCPlugin plugin) {
         this.plugin = plugin;
+        this.lifecycle = new GeneratorLifecycleCoordinator(plugin, this);
+    }
+
+    public GeneratorLifecycleCoordinator lifecycle() {
+        return lifecycle;
     }
 
     /** (Re)loads {@code generators:} from config. Returns loaded count. */
@@ -95,26 +99,6 @@ public final class GeneratorService {
      * @return true on completed purchase
      */
     public boolean buy(final Player player, final PlayerProfile profile, final GeneratorDefinition def) {
-        final String price = String.format(Locale.ROOT, "%,d", def.priceCredits());
-        final boolean free = def.priceCredits() <= 0L;
-        if (!free && !plugin.economy().withdraw(profile, Currency.CREDITS, def.priceCredits())) {
-            plugin.messages().sendPrefixed(player, "gen.insufficient", Map.of("price", price));
-            return false;
-        }
-        final ItemStack item = mint(def);
-        final var delivery = com.coremc.core.util.ItemDelivery.deliverDetailed(player, item);
-        if (delivery == com.coremc.core.util.ItemDelivery.Result.FAILED) {
-            if (!free) {
-                plugin.economy().deposit(profile, Currency.CREDITS, def.priceCredits());
-            }
-            plugin.messages().sendPrefixed(player, "purchase.no-space", Map.of());
-            return false;
-        }
-        if (delivery == com.coremc.core.util.ItemDelivery.Result.DELIVERED_TO_ENDER_CHEST) {
-            plugin.messages().sendPrefixed(player, "gen.bought-enderchest", Map.of());
-        }
-        plugin.messages().sendPrefixed(
-                player, "gen.bought", Map.of("name", ColorUtil.colorize(def.display()), "price", price));
-        return true;
+        return lifecycle.buy(player, profile, def);
     }
 }

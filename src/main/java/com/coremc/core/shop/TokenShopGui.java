@@ -89,27 +89,32 @@ public final class TokenShopGui implements Gui {
                 if (profile == null) {
                     return false;
                 }
-                final String price = String.format(Locale.ROOT, "%,d", entry.price());
-                if (!plugin.economy().withdraw(profile, entry.currency(), entry.price())) {
-                    plugin.messages().sendPrefixed(
-                            viewer, "shop.insufficient",
-                            java.util.Map.of("price", price, "currency", entry.currency().displayName()));
-                    return false;
+                synchronized (profile) {
+                    final String price = String.format(Locale.ROOT, "%,d", entry.price());
+                    final boolean paid = entry.price() > 0L;
+                    if (paid && !plugin.economy().withdraw(profile, entry.currency(), entry.price())) {
+                        plugin.messages().sendPrefixed(
+                                viewer, "shop.insufficient",
+                                java.util.Map.of("price", price, "currency", entry.currency().displayName()));
+                        return false;
+                    }
+                    if (!plugin.economy().fitsDeposit(
+                            profile, com.coremc.core.economy.Currency.SKY_TOKENS, entry.amount())) {
+                        // Payout would overflow: exact refund (cannot itself overflow —
+                        // it restores the pre-withdraw balance) and a clean refusal.
+                        if (paid) {
+                            plugin.economy().deposit(profile, entry.currency(), entry.price());
+                        }
+                        plugin.messages().sendPrefixed(viewer, "economy.error.too-large", java.util.Map.of());
+                        return false;
+                    }
+                    plugin.economy().deposit(profile, com.coremc.core.economy.Currency.SKY_TOKENS, entry.amount());
+                    plugin.messages().sendPrefixed(viewer, "shop.exchange", java.util.Map.of(
+                            "bought", entry.amount() + " Sky Token" + (entry.amount() == 1 ? "" : "s"),
+                            "price", price,
+                            "currency", entry.currency().displayName()));
+                    return true;
                 }
-                if (!plugin.economy().fitsDeposit(
-                        profile, com.coremc.core.economy.Currency.SKY_TOKENS, entry.amount())) {
-                    // Payout would overflow: exact refund (cannot itself overflow —
-                    // it restores the pre-withdraw balance) and a clean refusal.
-                    plugin.economy().deposit(profile, entry.currency(), entry.price());
-                    plugin.messages().sendPrefixed(viewer, "economy.error.too-large", java.util.Map.of());
-                    return false;
-                }
-                plugin.economy().deposit(profile, com.coremc.core.economy.Currency.SKY_TOKENS, entry.amount());
-                plugin.messages().sendPrefixed(viewer, "shop.exchange", java.util.Map.of(
-                        "bought", entry.amount() + " Sky Token" + (entry.amount() == 1 ? "" : "s"),
-                        "price", price,
-                        "currency", entry.currency().displayName()));
-                return true;
             }
         }
         return false;

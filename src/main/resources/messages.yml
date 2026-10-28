@@ -42,6 +42,8 @@ island:
     insufficient: "&cYou need &b{price} Sky Tokens&c for the next level."
   world-missing: "&cThe island world is not available. Please contact an administrator."
   create-failed: "&cFailed to create your island. Please contact an administrator."
+  creation-pending: "&eYour island setup is pending recovery. CoreMC will retry when the server restarts; contact an admin if it needs to be retried sooner."
+  creation-pending-area: "&eThis island is still being prepared and is temporarily protected."
   created: "Your Skyblock island has been created!"
   teleported: "Teleported to your island."
   rescued: "&7The void rejects you — back to safety."
@@ -62,10 +64,17 @@ island:
   kick-usage: "&eUsage: &f/is kick <member>"
   kick-self: "&cYou cannot kick yourself — delete the island instead."
   kick-not-member: "&cThat player is not a member of your island."
+  kick-pending: "&eSaving the kick for &f{player}&e…"
+  kick-save-failed: "&cThe kick could not be saved. The member was restored."
   kicked:
     owner: "Kicked &f{player}&7 from your island."
     you: "&cYou have been kicked from your island."
   left: "You left the island."
+  leave-pending: "&eSaving your island departure…"
+  leave-save-failed: "&cYour departure could not be saved. You remain on the island."
+  purchase-pending: "&eSaving your island purchase…"
+  purchase-save-failed: "&cYour island purchase could not be saved, so it was not applied."
+  purchase-recovery-pending: "&eYour purchase is recorded and will finish after a restart. Further island purchases are paused."
   leave-owner: "&cOwners cannot leave — use &f/is delete&c or transfer ownership (coming soon)."
   joined: "You joined the island! Use &f/is home&7 to visit."
   member-joined: "&f{player}&7 joined your island."
@@ -173,6 +182,7 @@ spawner:
 
 placeable:
   returned: "&7Picked up your core block."
+  save-failed: "&cCoreMC could not save this block safely. Please try again."
 
 shop:
   bought: "Bought {item}&7 for &a{price} {currency}&7."

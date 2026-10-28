@@ -40,7 +40,10 @@ public final class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPreLogin(final AsyncPlayerPreLoginEvent event) {
-        dataService.handlePreLogin(event.getUniqueId(), event.getName());
+        if (!dataService.handlePreLogin(event.getUniqueId(), event.getName())) {
+            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER,
+                    "CoreMC could not load your saved data. Please reconnect in a moment.");
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

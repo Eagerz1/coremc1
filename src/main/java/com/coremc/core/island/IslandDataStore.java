@@ -2,6 +2,7 @@ package com.coremc.core.island;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -17,6 +18,11 @@ public interface IslandDataStore {
 
     /** Saves one island. */
     void save(Island island) throws IOException;
+
+    /** Saves a detached model snapshot captured before background I/O. */
+    default void saveSnapshot(final Map<String, Object> islandData) throws IOException {
+        save(Island.fromMap(islandData));
+    }
 
     /** Deletes the island file of an owner. No-op when absent. */
     void delete(UUID owner) throws IOException;

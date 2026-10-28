@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -60,6 +61,42 @@ class YamlIslandDataStoreTest {
         assertEquals(Island.DEFAULT_BORDER_SIZE, island.borderSize());
         assertEquals(1, island.level());
         assertTrue(island.members().isEmpty());
+    }
+
+    @Test
+    void legacyIslandSavePreservesFutureFieldsAndProgress() throws IOException {
+        Files.createDirectories(tempDir);
+        final UUID owner = UUID.randomUUID();
+        final UUID islandId = UUID.randomUUID();
+        Files.writeString(tempDir.resolve(owner + ".yml"), "island:\n"
+                + "  schema-version: 42\n"
+                + "  island-id: " + islandId + "\n"
+                + "  owner: " + owner + "\n"
+                + "  world: world\n"
+                + "  center-x: 12\n"
+                + "  center-y: 64\n"
+                + "  center-z: -8\n"
+                + "  border-size: 64\n"
+                + "  created-millis: 84\n"
+                + "  level: 9\n"
+                + "  xp: 750\n"
+                + "  future-feature:\n"
+                + "    tier: 3\n"
+                + "    rewards: [one, two]\n");
+
+        final YamlIslandDataStore store = new YamlIslandDataStore(tempDir);
+        final Island loaded = store.loadAll().iterator().next();
+        assertEquals(9, loaded.level());
+        assertEquals(750L, loaded.xp());
+        loaded.level(10);
+        store.save(loaded);
+
+        final Island restored = store.loadAll().iterator().next();
+        assertEquals(10, restored.level());
+        assertEquals(750L, restored.xp());
+        assertEquals(42, restored.toMap().get("schema-version"));
+        assertEquals(Map.of("tier", 3, "rewards", java.util.List.of("one", "two")),
+                restored.toMap().get("future-feature"));
     }
 
     @Test

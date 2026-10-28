@@ -135,14 +135,25 @@ public final class IslandMembersGui implements Gui {
                 return false;
             }
             pendingKicks.remove(viewer.getUniqueId());
-            plugin.islands().kick(viewer, target);
-            final Player online = Bukkit.getPlayer(target);
-            if (online != null) {
-                plugin.messages().sendPrefixed(online, "island.kicked.you", Map.of());
+            final IslandService.KickResult result = plugin.islands().kick(viewer, target, completed -> {
+                if (completed == IslandService.KickResult.KICKED) {
+                    final Player online = Bukkit.getPlayer(target);
+                    if (online != null) plugin.messages().sendPrefixed(online, "island.kicked.you", Map.of());
+                    plugin.messages().sendPrefixed(viewer, "island.kicked.owner", Map.of("player", nameOf(target)));
+                } else if (completed == IslandService.KickResult.SAVE_FAILED) {
+                    plugin.messages().sendPrefixed(viewer, "island.kick-save-failed", Map.of());
+                }
+                if (viewer.isOnline()) plugin.gui().open(viewer, new IslandMembersGui(plugin));
+            });
+            switch (result) {
+                case PENDING -> plugin.messages().sendPrefixed(viewer, "island.kick-pending", Map.of("player", nameOf(target)));
+                case SAVE_FAILED -> plugin.messages().sendPrefixed(viewer, "island.kick-save-failed", Map.of());
+                case NOT_OWNER -> plugin.messages().sendPrefixed(viewer, "island.not-owner", Map.of());
+                case TARGET_NOT_MEMBER -> plugin.messages().sendPrefixed(viewer, "island.kick-not-member", Map.of());
+                case CANNOT_KICK_OWNER -> plugin.messages().sendPrefixed(viewer, "island.kick-self", Map.of());
+                case KICKED -> { }
             }
-            plugin.messages().sendPrefixed(
-                    viewer, "island.kicked.owner", Map.of("player", nameOf(target)));
-            return true; // re-render without the kicked member
+            return false;
         }
         return false;
     }

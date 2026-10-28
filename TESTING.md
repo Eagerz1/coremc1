@@ -17,7 +17,7 @@ Requirements: JDK 21, Maven 3.8+, network access to
 `repo.papermc.io` and Maven Central on first build.
 
 ```bash
-mvn verify          # compile + 100+ JUnit tests + target/CoreMC-<version>.jar
+mvn verify          # compile + 145 JUnit test methods + target/CoreMC-<version>.jar
 ```
 
 `paper-api` is a `provided` dependency. The jar is built under `target/`;
@@ -27,8 +27,8 @@ copy it into a Paper server's `plugins/` directory. The plugin is the
 ## The live journey (`journey/`)
 
 `journey/run.mjs` is a fully automated end-to-end run against Paper
-1.21.11. GitHub Actions runs it on every push (the
-`journey-live-player-journey` workflow); all evidence (journey log,
+1.21.11. GitHub Actions runs it on pull requests, pushes to `arena/**`, and
+manual dispatch (the `journey-live-player-journey` workflow); all evidence (journey log,
 server log, plugin data files) is uploaded as a workflow artifact named
 `journey-evidence`.
 
@@ -87,8 +87,7 @@ Notes / vanilla semantics the harness accounts for:
   `enchants.yml` and `themes.yml` are **merged** into any existing disk
   file on load: new defaults appear, admin-set values are never
   overwritten.
-- Player profiles (`plugins/CoreMC/profiles/`), islands
-  (`plugins/CoreMC/islands/`) and placeable registries
-  (`plugins/CoreMC/data/`) are YAML on disk with atomic temp-file writes;
-  schema evolution is additive and legacy files continue to load
-  (covered by the profile/datastore unit tests and by phase 11).
+- Player profiles (`plugins/CoreMC/profiles/`) load schema versions 1–7 with defaults for absent fields; unknown top-level fields and higher schema numbers survive a save by an older build.
+- Island records (`plugins/CoreMC/islands/`) preserve existing and unknown top-level fields, retain higher schema numbers, and default the optional creation-recovery marker to false for older records.
+- Placeable registry records (`plugins/CoreMC/data/placeables.yml`) migrate legacy world-coordinate paths to YAML-safe encoded keys. Malformed, partial, conflicting, or unknown rows fail startup without rewriting the original registry.
+- These stores use atomic replacement where supported; phase 11 exercises player/island persistence over a clean restart.

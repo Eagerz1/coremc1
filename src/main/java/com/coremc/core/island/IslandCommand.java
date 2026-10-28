@@ -106,19 +106,30 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
         }
         final IslandTheme chosen = theme;
         final IslandService.CreateResult result = islands.createIsland(player, chosen, island -> {
+            final Player creator = Bukkit.getPlayer(player.getUniqueId());
+            if (creator == null) {
+                return; // The durable island is available through /is home when the player returns.
+            }
             if (chosen != null) {
-                messages.sendPrefixed(player, "island.created-themed",
+                messages.sendPrefixed(creator, "island.created-themed",
                         Map.of("theme", com.coremc.core.util.ColorUtil.colorize(chosen.display())));
             } else {
-                messages.sendPrefixed(player, "island.created", Map.of());
+                messages.sendPrefixed(creator, "island.created", Map.of());
             }
-            islands.teleportHome(player, island);
-            messages.sendPrefixed(player, "island.teleported", Map.of());
+            islands.teleportHome(creator, island);
+            messages.sendPrefixed(creator, "island.teleported", Map.of());
+        }, failure -> {
+            final Player creator = Bukkit.getPlayer(player.getUniqueId());
+            if (creator != null) {
+                messages.sendPrefixed(creator, "island.create-failed", Map.of());
+            }
         });
         switch (result) {
             case ALREADY_ISLAND -> messages.sendPrefixed(player, "island.already-have", Map.of());
+            case CREATION_PENDING -> messages.sendPrefixed(player, "island.creation-pending", Map.of());
             case WORLD_MISSING -> messages.sendPrefixed(player, "island.world-missing", Map.of());
-            case CREATED -> { /* handled in the callback */ }
+            case CREATION_FAILED -> messages.sendPrefixed(player, "island.create-failed", Map.of());
+            case CREATED -> { /* completion runs after the island file is saved */ }
         }
     }
 
@@ -221,9 +232,18 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             messages.sendPrefixed(player, "island.leave-owner", Map.of());
             return;
         }
-        switch (islands.leave(player)) {
-            case LEFT -> messages.sendPrefixed(player, "island.left", Map.of());
+        final IslandService.LeaveResult result = islands.leave(player, completed -> {
+            switch (completed) {
+                case LEFT -> messages.sendPrefixed(player, "island.left", Map.of());
+                case SAVE_FAILED -> messages.sendPrefixed(player, "island.leave-save-failed", Map.of());
+                default -> { }
+            }
+        });
+        switch (result) {
+            case PENDING -> messages.sendPrefixed(player, "island.leave-pending", Map.of());
+            case SAVE_FAILED -> messages.sendPrefixed(player, "island.leave-save-failed", Map.of());
             case NOT_A_MEMBER -> messages.sendPrefixed(player, "island.none", Map.of());
+            case LEFT -> { }
         }
     }
 
@@ -232,27 +252,27 @@ public final class IslandCommand implements CommandExecutor, TabCompleter {
             messages.sendPrefixed(player, "island.kick-usage", Map.of());
             return;
         }
-        final IslandService.KickResult[] resultHolder = new IslandService.KickResult[1];
-        plugin.playerData().resolveUuid(args[1]).ifPresentOrElse(
-                uuid -> resultHolder[0] = islands.kick(player, uuid),
-                () -> resultHolder[0] = null);
-        final IslandService.KickResult result = resultHolder[0];
-        if (result == null) {
-            messages.sendPrefixed(player, "island.target-unknown", Map.of("player", args[1]));
-            return;
-        }
-        switch (result) {
-            case KICKED -> {
-                messages.sendPrefixed(player, "island.kicked.owner", Map.of("player", args[1]));
-                final Player target = Bukkit.getPlayerExact(args[1]);
-                if (target != null) {
-                    messages.sendPrefixed(target, "island.kicked.you", Map.of());
+        plugin.playerData().resolveUuid(args[1]).ifPresentOrElse(uuid -> {
+            final IslandService.KickResult result = islands.kick(player, uuid, completed -> {
+                switch (completed) {
+                    case KICKED -> {
+                        messages.sendPrefixed(player, "island.kicked.owner", Map.of("player", args[1]));
+                        final Player target = Bukkit.getPlayer(uuid);
+                        if (target != null) messages.sendPrefixed(target, "island.kicked.you", Map.of());
+                    }
+                    case SAVE_FAILED -> messages.sendPrefixed(player, "island.kick-save-failed", Map.of());
+                    default -> { }
                 }
+            });
+            switch (result) {
+                case PENDING -> messages.sendPrefixed(player, "island.kick-pending", Map.of("player", args[1]));
+                case SAVE_FAILED -> messages.sendPrefixed(player, "island.kick-save-failed", Map.of());
+                case NOT_OWNER -> messages.sendPrefixed(player, "island.not-owner", Map.of());
+                case TARGET_NOT_MEMBER -> messages.sendPrefixed(player, "island.kick-not-member", Map.of());
+                case CANNOT_KICK_OWNER -> messages.sendPrefixed(player, "island.kick-self", Map.of());
+                case KICKED -> { }
             }
-            case NOT_OWNER -> messages.sendPrefixed(player, "island.not-owner", Map.of());
-            case TARGET_NOT_MEMBER -> messages.sendPrefixed(player, "island.kick-not-member", Map.of());
-            case CANNOT_KICK_OWNER -> messages.sendPrefixed(player, "island.kick-self", Map.of());
-        }
+        }, () -> messages.sendPrefixed(player, "island.target-unknown", Map.of("player", args[1])));
     }
 
     private void delete(final Player player) {
