@@ -158,8 +158,10 @@ function auditLog(label) {
   const txt = fs.existsSync(SERVER_LOG) ? fs.readFileSync(SERVER_LOG, 'utf8') : ''
   const lines = txt.split('\n')
   const serverErrors = lines.filter((l) => /\] ERROR\]:/.test(l))
-  const pluginProblems = lines.filter(
-    (l) => /coremc/i.test(l) && /(WARN|ERROR|Exception|Caused by)/.test(l))
+  const pluginProblemMarker = /\[CoreMC\]/i
+  const problemPattern = /\b(?:WARN(?:INGS?)?|SEVERE|ERRORS?|CAUSED BY|FAIL(?:S|ED|URES?)?|THROWABLES?)\b|\b\w*Exceptions?\b/i
+  const pluginProblems = lines.filter((l) =>
+    pluginProblemMarker.test(l) && problemPattern.test(l))
   check(serverErrors.length === 0, `${label}: zero server ERROR lines`,
     serverErrors.slice(0, 4).join(' | ').slice(0, 400))
   check(pluginProblems.length === 0, `${label}: zero CoreMC warn/error/exception lines`,
