@@ -38,6 +38,10 @@ public final class PlaceableListener implements Listener {
         lifecycle.resolvePendingBreaksOnShutdown();
     }
 
+    public void resolvePendingExplosionsOnShutdown() {
+        lifecycle.resolvePendingExplosionsOnShutdown();
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPistonExtend(final org.bukkit.event.block.BlockPistonExtendEvent event) {
         lifecycle.onPistonExtend(event);

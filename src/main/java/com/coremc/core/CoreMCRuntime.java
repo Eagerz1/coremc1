@@ -248,9 +248,10 @@ public final class CoreMCRuntime {
     }
 
     private void shutdownServices() {
-        // Resolve queued placeable breaks before cancelling their next-tick callbacks.
+        // Resolve queued placeable breaks and explosions before cancelling next-tick callbacks.
         if (placeableListener != null) {
             placeableListener.resolvePendingBreaksOnShutdown();
+            placeableListener.resolvePendingExplosionsOnShutdown();
             placeableListener = null;
         }
         // Stop scheduled work first so nothing touches dead services.
