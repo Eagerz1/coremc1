@@ -17,7 +17,7 @@ Requirements: JDK 21, Maven 3.8+, network access to
 `repo.papermc.io` and Maven Central on first build.
 
 ```bash
-mvn verify          # compile + 143 JUnit test methods + target/CoreMC-<version>.jar
+mvn verify          # compile + 145 JUnit test methods + target/CoreMC-<version>.jar
 ```
 
 `paper-api` is a `provided` dependency. The jar is built under `target/`;
@@ -87,7 +87,7 @@ Notes / vanilla semantics the harness accounts for:
   `enchants.yml` and `themes.yml` are **merged** into any existing disk
   file on load: new defaults appear, admin-set values are never
   overwritten.
-- Player profiles (`plugins/CoreMC/profiles/`) load schema versions 1–6 with defaults for absent fields; unknown top-level fields and higher schema numbers survive a save by an older build.
-- Island records (`plugins/CoreMC/islands/`) keep their existing fields; the optional creation-recovery marker defaults to false for older records.
+- Player profiles (`plugins/CoreMC/profiles/`) load schema versions 1–7 with defaults for absent fields; unknown top-level fields and higher schema numbers survive a save by an older build.
+- Island records (`plugins/CoreMC/islands/`) preserve existing and unknown top-level fields, retain higher schema numbers, and default the optional creation-recovery marker to false for older records.
 - Placeable registry records (`plugins/CoreMC/data/placeables.yml`) migrate legacy world-coordinate paths to YAML-safe encoded keys. Malformed, partial, conflicting, or unknown rows fail startup without rewriting the original registry.
 - These stores use atomic replacement where supported; phase 11 exercises player/island persistence over a clean restart.
